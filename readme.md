@@ -11,8 +11,8 @@ It is largely based off the FastSpeech2/Fastpitch models.
 I recommend using Conda and Python 3.7. To do that, create a new environment:
 
 ```
-conda create --name SmallTeamsSpeech python=3.7
-conda activate SmallTeamsSpeech
+conda create --name SmallTeamSpeech python=3.7
+conda activate SmallTeamSpeech
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 ```
 

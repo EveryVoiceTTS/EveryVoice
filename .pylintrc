@@ -1,0 +1,9 @@
+[MASTER]
+disable=
+    # We use isort for sorting our imports, so nevermind what pylint thinks
+    wrong-import-order,
+    # I find the "unnecessary" else makes code more readable
+    no-else-return
+
+# Add . to the PYTHONPATH so pylint knows test cases can import basic_test_case
+init-hook="import sys; sys.path.append('.')"
