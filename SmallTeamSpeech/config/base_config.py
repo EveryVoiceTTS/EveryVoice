@@ -39,7 +39,7 @@ BASE_TRAINING_HPARAMS = {
         # etc....
     },
 }
-BASE_PREPROCESSING_HPARAMS = {}
+BASE_PREPROCESSING_HPARAMS = {"dataset": "YourDataSet"}
 
 
 class BaseConfig(dict):

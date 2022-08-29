@@ -8,15 +8,15 @@ It is largely based off the FastSpeech2/Fastpitch models.
 
 ### Dependencies
 
-I recommend using Conda and Python 3.7. To do that, create a new environment:
+I recommend using Conda and Python 3.9. To do that, create a new environment:
 
 ```
-conda create --name SmallTeamSpeech python=3.7
+conda create --name SmallTeamSpeech python=3.9
 conda activate SmallTeamSpeech
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 ```
 
-You can then install the Python dependencies with pip or conda
+You can then install the rest of the Python dependencies with pip
 
 ```
 pip3 install -r requirements.txt
