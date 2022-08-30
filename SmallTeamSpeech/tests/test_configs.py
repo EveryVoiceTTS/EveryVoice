@@ -1,9 +1,10 @@
-from unittest import TestCase, main
-from config.base_config import BaseConfig
+from unittest import TestCase
+
 from config.base_config import (
-    BASE_PREPROCESSING_HPARAMS,
     BASE_MODEL_HPARAMS,
+    BASE_PREPROCESSING_HPARAMS,
     BASE_TRAINING_HPARAMS,
+    BaseConfig,
 )
 
 
@@ -28,4 +29,5 @@ class ConfigTest(TestCase):
         self.assertEqual(BASE_PREPROCESSING_HPARAMS, lj_config["preprocessing"])
         self.assertNotEqual(BASE_MODEL_HPARAMS, lj_config["model"])
         self.assertEqual(BASE_TRAINING_HPARAMS, lj_config["training"])
-        self.assertEqual(lj_config)
+        with self.assertRaises(ValueError):
+            BaseConfig("This isn't a dictionary")

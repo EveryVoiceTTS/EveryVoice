@@ -6,25 +6,28 @@
 import os
 import sys
 from unittest import TestLoader, TestSuite, TextTestRunner
+
 from loguru import logger
+from tests.test_configs import ConfigTest
+from tests.test_preprocessing import PreprocessingTest
 
 # Unit tests
 
 
-# Deliberately left out:
-
 LOADER = TestLoader()
 
-CONFIG_TESTS = []
+CONFIG_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [ConfigTest]]
 
-TEXT_TESTS = []
+TEXT_TESTS = []  # type: ignore
 
-PREPROCESSING_TESTS = []
+PREPROCESSING_TESTS = [
+    LOADER.loadTestsFromTestCase(test) for test in [PreprocessingTest]
+]
 
-MODEL_TESTS = []
+MODEL_TESTS = []  # type: ignore
 
 
-DEV_TESTS = (CONFIG_TESTS, TEXT_TESTS, PREPROCESSING_TESTS, MODEL_TESTS)
+DEV_TESTS = CONFIG_TESTS + TEXT_TESTS + PREPROCESSING_TESTS + MODEL_TESTS
 
 
 def run_tests(suite):
