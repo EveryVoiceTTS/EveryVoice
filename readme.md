@@ -22,6 +22,13 @@ You can then install the rest of the Python dependencies with pip
 pip3 install -r requirements.txt
 ```
 
+Alternatively, you can just create the whole thing from our `environment.yml` file:
+
+```
+conda env create -f environment.yml
+conda activate SmallTeamSpeech
+```
+
 ## Contributing
 
 Feel free to dive in! [Open an issue](https://github.com/roedoejet/SmallTeamSpeech/issues/new) or submit PRs.

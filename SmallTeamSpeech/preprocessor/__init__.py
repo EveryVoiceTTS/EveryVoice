@@ -62,7 +62,7 @@ class Preprocessor:
                 sampling_rate,
                 self.config["preprocessing"]["audio"]["sox_effects"],
             )
-        return audio, sampling_rate
+        return audio
 
     def process_audio(self, wav_path: str) -> Tensor:
         """Process audio

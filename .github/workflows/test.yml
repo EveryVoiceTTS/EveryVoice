@@ -1,0 +1,34 @@
+name: Run Tests
+on:
+  - push
+  - pull_request
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          activate-environment: SmallTeamSpeech
+          environment-file: environment.yml
+          python-version: 3.9
+      - name: Check licenses
+        run: |
+          pip3 install pip-licenses
+          if pip-licenses | grep -v 'Artistic License' | grep -v LGPL | grep GNU; then echo 'Please avoid introducing *GPL dependencies'; false; fi
+      - name: Install other dependencies
+        run: |
+          pip3 install coverage
+          pip3 install -r requirements.txt
+      - name: Run tests
+        run: |
+          cd SmallTeamSpeech && coverage run run_tests.py dev
+          coverage xml
+      - uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true # optional (default = false)
+          token: ${{ secrets.CODECOV_TOKEN }}
