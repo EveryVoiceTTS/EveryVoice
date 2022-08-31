@@ -67,8 +67,9 @@ SOX_EFFECTS = [
 
 BASE_PREPROCESSING_HPARAMS = {
     "dataset": "YourDataSet",
-    "f0_type": "phone",  # phone (averaged) | frame | cwt (continuous wavelet transform)
-    "energy_type": "phone",  # phone (averaged) | frame
+    "f0_phone_averaging": True,
+    "energy_phone_averaging": True,
+    "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "audio": {
         "norm_db": -3.0,
         "sil_threshold": 1.0,

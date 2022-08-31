@@ -88,14 +88,44 @@ class PreprocessingTest(TestCase):
             )  # check all same length
 
     def test_f0(self):
-        pass
+        frame_preprocessor_kaldi = Preprocessor(
+            BaseConfig(
+                {"preprocessing": {"f0_phone_averaging": False, "f0_type": "kaldi"}}
+            )
+        )
+        frame_preprocessor_pyworld = Preprocessor(
+            BaseConfig(
+                {"preprocessing": {"f0_phone_averaging": False, "f0_type": "pyworld"}}
+            )
+        )
+        # frame_preprocessor_cwt = Preprocessor(
+        #     BaseConfig(
+        #         {"preprocessing": {"f0_phone_averaging": False, "f0_type": "cwt"}}
+        #     )
+        # )
+        for entry in self.filelist:
+            audio, _ = self.preprocessor.process_audio(
+                self.data_dir / (entry["filename"] + ".wav")
+            )
+            feats = self.preprocessor.extract_spectral_features(audio)
+            # phone_f0 = self.preprocessor.extract_f0(
+            #     feats, []
+            # )  # TODO: need durations
+
+            frame_f0_kaldi = frame_preprocessor_kaldi.extract_f0(audio)
+            self.assertEqual(
+                frame_f0_kaldi.size(0) - 1, feats.size(2)
+            )  # TODO: Why is this -1?
+
+            frame_f0_pyworld = frame_preprocessor_pyworld.extract_f0(audio)
+            self.assertEqual(frame_f0_pyworld.size(0), feats.size(2))
 
     def test_duration(self):
         pass
 
     def test_energy(self):
         frame_preprocessor = Preprocessor(
-            BaseConfig({"preprocessing": {"energy_type": "frame"}})
+            BaseConfig({"preprocessing": {"energy_phone_averaging": False}})
         )
         for entry in self.filelist:
             audio, _ = self.preprocessor.process_audio(

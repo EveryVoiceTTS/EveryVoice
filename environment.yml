@@ -113,6 +113,7 @@ dependencies:
       - pygments==2.13.0
       - pyparsing==3.0.9
       - python-dateutil==2.8.2
+      - pyworld==0.2.10
       - pyyaml==6.0
       - requests==2.28.1
       - resampy==0.4.0

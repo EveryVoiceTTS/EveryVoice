@@ -8,42 +8,45 @@
 
 from typing import Tuple
 
-from loguru import logger
-from torch import Tensor, linalg
+import numpy as np
+import pyworld as pw
+import torchaudio.functional as F
+import torchaudio.transforms as T
+from config import ConfigError
+from torch import Tensor, linalg, tensor
 from torchaudio import load as load_audio
 from torchaudio.sox_effects import apply_effects_tensor
-from torchaudio.transforms import MelSpectrogram, Spectrogram
 
 
 class Preprocessor:
     def __init__(self, config):
         self.config = config
-        audio_config = config["preprocessing"]["audio"]
+        self.audio_config = config["preprocessing"]["audio"]
         # Define Spectral Transform
-        if audio_config["spec_type"] == "mel":
-            self.spectral_transform = MelSpectrogram(
-                sample_rate=audio_config["target_sampling_rate"],
-                n_fft=audio_config["n_fft"],
-                win_length=audio_config["fft_window_frames"],
-                hop_length=audio_config["fft_hop_frames"],
-                n_mels=audio_config["n_mels"],
+        if self.audio_config["spec_type"] == "mel":
+            self.spectral_transform = T.MelSpectrogram(
+                sample_rate=self.audio_config["target_sampling_rate"],
+                n_fft=self.audio_config["n_fft"],
+                win_length=self.audio_config["fft_window_frames"],
+                hop_length=self.audio_config["fft_hop_frames"],
+                n_mels=self.audio_config["n_mels"],
             )
         elif config["preprocessing"]["audio"]["spec_type"] == "linear":
-            self.spectral_transform = Spectrogram(
-                n_fft=audio_config["n_fft"],
-                win_length=audio_config["fft_window_frames"],
-                hop_length=audio_config["fft_hop_frames"],
+            self.spectral_transform = T.Spectrogram(
+                n_fft=self.audio_config["n_fft"],
+                win_length=self.audio_config["fft_window_frames"],
+                hop_length=self.audio_config["fft_hop_frames"],
             )
         elif config["preprocessing"]["audio"]["spec_type"] == "raw":
-            self.spectral_transform = Spectrogram(
-                n_fft=audio_config["n_fft"],
-                win_length=audio_config["fft_window_frames"],
-                hop_length=audio_config["fft_hop_frames"],
+            self.spectral_transform = T.Spectrogram(
+                n_fft=self.audio_config["n_fft"],
+                win_length=self.audio_config["fft_window_frames"],
+                hop_length=self.audio_config["fft_hop_frames"],
                 power=None,
             )
         else:
-            logger.error(
-                f"Spectral feature specification {config['preprocessing']['audio']['spec_type'] == 'mel'} is not supported"
+            raise ConfigError(
+                f"Spectral feature specification {config['preprocessing']['audio']['spec_type'] == 'mel'} is not supported. Please edit your config file."
             )
 
     def process_audio_for_alignment(self, wav_path) -> Tuple[Tensor, int]:
@@ -84,14 +87,54 @@ class Preprocessor:
         """
         return self.spectral_transform(audio_tensor)
 
-    def extract_phone_f0(self, audio_tensor: Tensor, durations):
-        """Given an audio tensor, and durations extract the f0 averaged across a phone
+    def extract_f0(self, audio_tensor: Tensor):
+        """Given an audio tensor, extract the f0
 
         Args:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
-            durations (_type_): _descriptiont    #TODO
         """
-        pass
+        if self.config["preprocessing"]["f0_type"] == "pyworld":
+            pitch, t = pw.dio(
+                audio_tensor.squeeze(0)
+                .numpy()
+                .astype(
+                    np.float64
+                ),  # TODO: why are these np.float64, maybe it's just what pw expects?
+                self.audio_config["target_sampling_rate"],
+                frame_period=self.audio_config["fft_hop_frames"]
+                / self.audio_config["target_sampling_rate"]
+                * 1000,
+                speed=4,
+            )
+            pitch = pw.stonemask(
+                audio_tensor.squeeze(0).numpy().astype(np.float64),
+                pitch,
+                t,
+                self.audio_config["target_sampling_rate"],
+            )
+            pitch = tensor(pitch)
+        elif self.config["preprocessing"]["f0_type"] == "kaldi":
+            pitch = F.compute_kaldi_pitch(
+                waveform=audio_tensor,
+                sample_rate=self.audio_config["target_sampling_rate"],
+                frame_length=self.audio_config["fft_window_frames"]
+                / self.audio_config["target_sampling_rate"]
+                * 1000,
+                frame_shift=self.audio_config["fft_hop_frames"]
+                / self.audio_config["target_sampling_rate"]
+                * 1000,
+                min_f0=50,
+                max_f0=400,
+            )[0][
+                ..., 1
+            ]  # TODO: the docs and C Minxhoffer implementation take [..., 0] but this doesn't appear to be the pitch, at least for this version of torchaudio.
+        elif self.config["preprocessing"]["f0_type"] == "cwt":
+            pass  # TODO: implement this
+        else:
+            raise ConfigError(
+                f"Sorry, the f0 estimation type '{self.config['preprocessing']['f0_type']}' is not supported. Please edit your config file."
+            )
+        return pitch
 
     def extract_durations(self, textgrid_path: str):
         """Extract durations from a textgrid path
