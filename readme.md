@@ -1,5 +1,8 @@
 # Small Team Speech Model
 
+[![codecov](https://codecov.io/gh/roedoejet/SmallTeamSpeech/branch/main/graph/badge.svg?token=yErCxf64IU)](https://codecov.io/gh/roedoejet/SmallTeamSpeech)
+[![license](https://img.shields.io/badge/Licence-MIT-green)](LICENSE)
+
 This is an implementation of the Text-to-Speech (TTS) model used by the Small Teams "Speech Generation for Indigenous Language Education" project.
 
 It is largely based off the FastSpeech2/Fastpitch models.
