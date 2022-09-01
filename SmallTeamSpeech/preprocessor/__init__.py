@@ -13,9 +13,10 @@ import pyworld as pw
 import torchaudio.functional as F
 import torchaudio.transforms as T
 from config import ConfigError
-from torch import Tensor, linalg, tensor
+from torch import Tensor, linalg, mean, tensor
 from torchaudio import load as load_audio
 from torchaudio.sox_effects import apply_effects_tensor
+from utils import read_textgrid
 
 
 class Preprocessor:
@@ -90,6 +91,8 @@ class Preprocessor:
     def extract_f0(self, audio_tensor: Tensor):
         """Given an audio tensor, extract the f0
 
+        TODO: consider CWT and Parselmouth
+
         Args:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
         """
@@ -113,6 +116,7 @@ class Preprocessor:
                 self.audio_config["target_sampling_rate"],
             )
             pitch = tensor(pitch)
+            # TODO: consider interpolating by default when using PyWorld pitch detection
         elif self.config["preprocessing"]["f0_type"] == "kaldi":
             pitch = F.compute_kaldi_pitch(
                 waveform=audio_tensor,
@@ -128,8 +132,6 @@ class Preprocessor:
             )[0][
                 ..., 1
             ]  # TODO: the docs and C Minxhoffer implementation take [..., 0] but this doesn't appear to be the pitch, at least for this version of torchaudio.
-        elif self.config["preprocessing"]["f0_type"] == "cwt":
-            pass  # TODO: implement this
         else:
             raise ConfigError(
                 f"Sorry, the f0 estimation type '{self.config['preprocessing']['f0_type']}' is not supported. Please edit your config file."
@@ -142,9 +144,51 @@ class Preprocessor:
         Args:
             textgrid_path (str): path to a textgrid file
         """
-        pass
+        tg = read_textgrid(textgrid_path)
+        phones = tg.get_tier("phones")
+        return [
+            {
+                "start": x[0],
+                "end": x[1],
+                "dur_ms": (x[1] - x[0]) * 1000,
+                "dur_frames": int(
+                    (
+                        np.round(
+                            x[1]
+                            * self.audio_config["target_sampling_rate"]
+                            / self.audio_config["fft_hop_frames"]
+                        )
+                        - np.round(
+                            x[0]
+                            * self.audio_config["target_sampling_rate"]
+                            / self.audio_config["fft_hop_frames"]
+                        )
+                    )
+                ),
+                "phone": x[2],
+            }
+            for x in phones.get_all_intervals()
+        ]
 
-    def extract_energy(self, spectral_feature_tensor: Tensor, durations):
+    def average_data_by_durations(self, data, durations):
+        current_frame_position = 0
+        new_data = []
+        for duration in durations:
+            if duration["dur_frames"] > 0:
+                new_data.append(
+                    mean(
+                        data[
+                            current_frame_position : current_frame_position
+                            + duration["dur_frames"]
+                        ]
+                    )
+                )
+            else:
+                new_data.append(1e-7)
+            current_frame_position += duration["dur_frames"]
+        return tensor(new_data)
+
+    def extract_energy(self, spectral_feature_tensor: Tensor):
         """Given a spectral feature tensor, and durations extract the energy averaged across a phone
 
         Args:
@@ -152,8 +196,6 @@ class Preprocessor:
             durations (_type_): _descriptiont    #TODO
         """
         energy = linalg.norm(spectral_feature_tensor, dim=1)
-        if durations:
-            pass  # average them based on phones
         return energy
 
     def extract_text_inputs(self, text):

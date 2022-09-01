@@ -57,85 +57,129 @@ class PreprocessingTest(TestCase):
             self.assertEqual(audio.dtype, float32)
             self.assertEqual(audio.size(0), 1)
 
-    def test_feats(self):
+    def test_spectral_feats(self):
         linear_preprocessor = Preprocessor(
             BaseConfig({"preprocessing": {"audio": {"spec_type": "linear"}}})
         )
         complex_preprocessor = Preprocessor(
             BaseConfig({"preprocessing": {"audio": {"spec_type": "raw"}}})
         )
+
         for entry in self.filelist:
             audio, _ = self.preprocessor.process_audio(
                 self.data_dir / (entry["filename"] + ".wav")
             )
+            # ming024_feats = np.load(
+            #     self.data_dir
+            #     / "ming024"
+            #     / ("eng-LJSpeech-mel-" + entry["filename"] + ".npy")
+            # )
             feats = self.preprocessor.extract_spectral_features(audio)
             linear_feats = linear_preprocessor.extract_spectral_features(audio)
             complex_feats = complex_preprocessor.extract_spectral_features(audio)
+            # check single channel
             self.assertEqual(feats.size(0), 1)
+            # check data is same number of mels
             self.assertEqual(
                 feats.size(1),
                 self.preprocessor.config["preprocessing"]["audio"]["n_mels"],
-            )  # check data is same number of mels
+            )
+            # Check linear spec has right number of fft bins
             self.assertEqual(
                 linear_feats.size(1),
                 linear_preprocessor.config["preprocessing"]["audio"]["n_fft"] // 2 + 1,
             )
-            self.assertEqual(
-                feats.size(2), linear_feats.size(2)
-            )  # check all same length
-            self.assertEqual(
-                complex_feats.size(2), linear_feats.size(2)
-            )  # check all same length
+            # check all same length
+            self.assertEqual(feats.size(2), linear_feats.size(2))
+            # check all same length
+            self.assertEqual(complex_feats.size(2), linear_feats.size(2))
 
     def test_f0(self):
-        frame_preprocessor_kaldi = Preprocessor(
+        preprocessor_kaldi = Preprocessor(
             BaseConfig(
                 {"preprocessing": {"f0_phone_averaging": False, "f0_type": "kaldi"}}
             )
         )
-        frame_preprocessor_pyworld = Preprocessor(
+        preprocessor_pyworld = Preprocessor(
             BaseConfig(
                 {"preprocessing": {"f0_phone_averaging": False, "f0_type": "pyworld"}}
             )
         )
-        # frame_preprocessor_cwt = Preprocessor(
-        #     BaseConfig(
-        #         {"preprocessing": {"f0_phone_averaging": False, "f0_type": "cwt"}}
-        #     )
-        # )
+
         for entry in self.filelist:
             audio, _ = self.preprocessor.process_audio(
                 self.data_dir / (entry["filename"] + ".wav")
             )
+            durs = self.preprocessor.extract_durations(
+                self.data_dir / (entry["filename"] + ".TextGrid")
+            )
             feats = self.preprocessor.extract_spectral_features(audio)
-            # phone_f0 = self.preprocessor.extract_f0(
-            #     feats, []
-            # )  # TODO: need durations
-
-            frame_f0_kaldi = frame_preprocessor_kaldi.extract_f0(audio)
+            # ming024_f0 = np.load(
+            #     self.data_dir
+            #     / "ming024"
+            #     / ("eng-LJSpeech-pitch-" + entry["filename"] + ".npy")
+            # )
+            frame_f0_kaldi = preprocessor_kaldi.extract_f0(audio)
+            kaldi_phone_avg_energy = preprocessor_kaldi.average_data_by_durations(
+                frame_f0_kaldi, durs
+            )
+            # Ensure same number of frames
             self.assertEqual(
                 frame_f0_kaldi.size(0) - 1, feats.size(2)
             )  # TODO: Why is this -1?
-
-            frame_f0_pyworld = frame_preprocessor_pyworld.extract_f0(audio)
+            # Ensure avg f0 for each phone
+            self.assertEqual(len(durs), kaldi_phone_avg_energy.size(0))
+            frame_f0_pyworld = preprocessor_pyworld.extract_f0(audio)
+            pyworld_phone_avg_energy = preprocessor_pyworld.average_data_by_durations(
+                frame_f0_pyworld, durs
+            )  # TODO: definitely need to interpolate for averaging
+            # Ensure avg f0 for each phone
+            self.assertEqual(len(durs), pyworld_phone_avg_energy.size(0))
+            # Ensure same number of frames
             self.assertEqual(frame_f0_pyworld.size(0), feats.size(2))
 
     def test_duration(self):
-        pass
+        for entry in self.filelist:
+            audio, _ = self.preprocessor.process_audio(
+                self.data_dir / (entry["filename"] + ".wav")
+            )
+            durs = self.preprocessor.extract_durations(
+                self.data_dir / (entry["filename"] + ".TextGrid")
+            )
+            feats = self.preprocessor.extract_spectral_features(audio)
+            # ming024_durs = np.load(
+            #     self.data_dir
+            #     / "ming024"
+            #     / ("eng-LJSpeech-duration-" + entry["filename"] + ".npy")
+            # )
+            # Ensure durations same number of frames as spectral features
+            self.assertEqual(feats.size(2), sum(x["dur_frames"] for x in durs))
 
     def test_energy(self):
-        frame_preprocessor = Preprocessor(
+        preprocessor = Preprocessor(
             BaseConfig({"preprocessing": {"energy_phone_averaging": False}})
         )
         for entry in self.filelist:
             audio, _ = self.preprocessor.process_audio(
                 self.data_dir / (entry["filename"] + ".wav")
             )
+            durs = self.preprocessor.extract_durations(
+                self.data_dir / (entry["filename"] + ".TextGrid")
+            )
+            # ming024_energy = np.load(
+            #     self.data_dir
+            #     / "ming024"
+            #     / ("eng-LJSpeech-energy-" + entry["filename"] + ".npy")
+            # )
             feats = self.preprocessor.extract_spectral_features(audio)
-            # phone_energy = self.preprocessor.extract_energy(
-            #     feats, []
-            # )  # TODO: need durations
-            frame_energy = frame_preprocessor.extract_energy(feats, None)
+
+            frame_energy = preprocessor.extract_energy(feats)
+            phone_avg_energy = preprocessor.average_data_by_durations(
+                frame_energy.squeeze(), durs
+            )
+            # Ensure avg energy for each phone
+            self.assertEqual(phone_avg_energy.size(0), len(durs))
+            # Ensure same number of frames
             self.assertEqual(frame_energy.size(1), feats.size(2))
 
     def test_text(self):

@@ -81,7 +81,7 @@ BASE_PREPROCESSING_HPARAMS = {
         "f_min": 0,
         "f_max": 8000,
         "n_fft": 1024,
-        "n_mels": 40,
+        "n_mels": 80,
         "spec_type": "mel",  # mel (real) | linear (real) | raw (complex) see https://pytorch.org/audio/stable/tutorials/audio_feature_extractions_tutorial.html#overview-of-audio-features
         "sox_effects": SOX_EFFECTS,
     },

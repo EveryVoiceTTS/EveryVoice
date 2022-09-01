@@ -1,6 +1,13 @@
 import csv
 from os.path import isfile, splitext
 
+from pympi.Praat import TextGrid
+
+
+def read_textgrid(textgrid_path: str):
+    check_file_exists(textgrid_path)
+    return TextGrid(textgrid_path)
+
 
 def read_filelist(
     filelist_path: str,

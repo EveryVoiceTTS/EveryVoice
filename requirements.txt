@@ -1,3 +1,4 @@
 loguru==0.6.0
+pympi-ling==1.70.2
 pyworld == 0.2.10
 typer[all]==0.6.1
