@@ -2,9 +2,10 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase
 
+from torch import float32
+
 from config.base_config import BaseConfig
 from preprocessor import Preprocessor
-from torch import float32
 from utils import read_filelist
 
 

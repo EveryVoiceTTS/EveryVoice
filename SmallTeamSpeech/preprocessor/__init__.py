@@ -12,10 +12,11 @@ import numpy as np
 import pyworld as pw
 import torchaudio.functional as F
 import torchaudio.transforms as T
-from config import ConfigError
 from torch import Tensor, linalg, mean, tensor
 from torchaudio import load as load_audio
 from torchaudio.sox_effects import apply_effects_tensor
+
+from config import ConfigError
 from utils import read_textgrid
 
 

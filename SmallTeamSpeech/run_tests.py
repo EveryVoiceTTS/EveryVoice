@@ -8,6 +8,7 @@ import sys
 from unittest import TestLoader, TestSuite, TextTestRunner
 
 from loguru import logger
+
 from tests.test_configs import ConfigTest
 from tests.test_preprocessing import PreprocessingTest
 
