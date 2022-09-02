@@ -11,6 +11,7 @@ from loguru import logger
 
 from tests.test_configs import ConfigTest
 from tests.test_preprocessing import PreprocessingTest
+from tests.test_text import TextTest
 
 # Unit tests
 
@@ -19,7 +20,7 @@ LOADER = TestLoader()
 
 CONFIG_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [ConfigTest]]
 
-TEXT_TESTS = []  # type: ignore
+TEXT_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [TextTest]]
 
 PREPROCESSING_TESTS = [
     LOADER.loadTestsFromTestCase(test) for test in [PreprocessingTest]

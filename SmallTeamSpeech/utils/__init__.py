@@ -1,7 +1,15 @@
 import csv
+import re
 from os.path import isfile, splitext
 
 from pympi.Praat import TextGrid
+
+# Regular expression matching whitespace:
+_whitespace_re = re.compile(r"\s+")
+
+
+def collapse_whitespace(text):
+    return re.sub(_whitespace_re, " ", text)
 
 
 def read_textgrid(textgrid_path: str):

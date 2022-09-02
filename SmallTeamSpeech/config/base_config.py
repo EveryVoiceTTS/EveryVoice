@@ -7,8 +7,17 @@
 
 from collections.abc import Mapping
 from copy import deepcopy
+from string import ascii_letters
+from unicodedata import normalize
 
-### MODEL HYPERPARAMETERS ###
+from utils import collapse_whitespace
+
+#########################
+#                       #
+#         MODEL         #
+#    HYPERPARAMETERS    #
+#                       #
+#########################
 
 BASE_MODEL_HPARAMS = {
     "encoder": {
@@ -30,7 +39,12 @@ BASE_MODEL_HPARAMS = {
     },
 }
 
-### TRAINING HYPERPARAMETERS ###
+#########################
+#                       #
+#       TRAINING        #
+#    HYPERPARAMETERS    #
+#                       #
+#########################
 
 BASE_TRAINING_HPARAMS = {
     "output_path": "./output",
@@ -47,7 +61,12 @@ BASE_TRAINING_HPARAMS = {
     },
 }
 
-### PREPROCESSING HYPERPARAMETERS ###
+#########################
+#                       #
+#     PREPROCESSING     #
+#    HYPERPARAMETERS    #
+#                       #
+#########################
 
 # These effects are applied to the audio during preprocessing
 SOX_EFFECTS = [
@@ -87,6 +106,32 @@ BASE_PREPROCESSING_HPARAMS = {
     },
 }
 
+#########################
+#                       #
+#   TEXT CONFIGURATION  #
+#                       #
+#########################
+
+
+# These values can be overwritten, and the keys are not specifically named,
+# so you can add other keys to this dictionary (i.e. "ipa_characters" or other such key names)
+# the value of each key here will be turned into a list, so make sure your symbol definitions
+# are iterable. And, make sure that if you have digraphs/multigraphs, that they are defined as
+# a list of strings
+SYMBOLS = {
+    "pad": "_",
+    "punctuation": ';:,.!?¡¿—…"«»“” ',
+    "letters": list(ascii_letters),
+}
+
+# Cleaners are defined in the configuration as opposed to editing a cleaners.py file somewhere else.
+# Functions are applied to text in sequence
+CLEANERS = [
+    lambda text: text.lower(),
+    collapse_whitespace,
+    lambda text: normalize("NFC", text),
+]
+
 
 class BaseConfig(dict):
     def __init__(self, *args, **kwargs):
@@ -96,6 +141,7 @@ class BaseConfig(dict):
             "model": deepcopy(BASE_MODEL_HPARAMS),
             "training": deepcopy(BASE_TRAINING_HPARAMS),
             "preprocessing": deepcopy(BASE_PREPROCESSING_HPARAMS),
+            "text": {"symbols": deepcopy(SYMBOLS), "cleaners": CLEANERS},
         }
         # update from kwargs
         config = update(base, kwargs)

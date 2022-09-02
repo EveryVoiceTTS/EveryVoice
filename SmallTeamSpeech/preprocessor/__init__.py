@@ -1,6 +1,6 @@
 """ Preprocessor Module that given a filelist containing text, wav, textgrid:
     - extracts log Mel spectral features
-    - extracts f0 (phone-level or continuous wavelet)
+    - extracts f0 (phone-level or frame-level)
     - extracts durations
     - extracts energy
     - extracts inputs (ex. phonological feats)
@@ -93,6 +93,11 @@ class Preprocessor:
         """Given an audio tensor, extract the f0
 
         TODO: consider CWT and Parselmouth
+
+        Comparison with other implementations:
+            - ming024 & Christoph Minxhoffer use the pyworld implementation and interpolate along with phone averaging
+            - the Lightspeech implementation seems to use pyworld implementation and not interpolate or average
+            - Christoph Minxhoffer reported no significant differences with continuous wavelet transform so it is not implemented here
 
         Args:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
