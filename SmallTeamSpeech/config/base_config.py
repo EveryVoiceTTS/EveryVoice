@@ -29,7 +29,12 @@ BASE_MODEL_HPARAMS = {
         # etc..
     },
     "vocoder": {
-        # etc...
+        "resblock": "1",
+        "upsample_rates": [8, 8, 2, 2],
+        "upsample_kernel_sizes": [16, 16, 4, 4],
+        "upsample_initial_channel": 512,
+        "resblock_kernel_sizes": [3, 7, 11],
+        "resblock_dilation_sizes": [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
     },
     "use_postnet": True,
     "max_seq_len": 1000,
@@ -47,18 +52,31 @@ BASE_MODEL_HPARAMS = {
 #########################
 
 BASE_TRAINING_HPARAMS = {
-    "output_path": "./output",
-    "steps": {
-        "total": 300000,
-        "log": 100,
-        "synth": 1000,
-        "val": 1000,
-        "save": 100000,
+    "feature_prediction": {
+        "output_path": "./output",
+        "steps": {
+            "total": 300000,
+            "log": 100,
+            "synth": 1000,
+            "val": 1000,
+            "save": 100000,
+        },
+        "optimizer": {
+            "batch_size": 16,
+            # etc....
+        },
     },
-    "optimizer": {
+    "vocoder": {
+        "resblock": "1",
+        "num_gpus": 0,
         "batch_size": 16,
-        # etc....
+        "learning_rate": 0.0002,
+        "adam_b1": 0.8,
+        "adam_b2": 0.99,
+        "lr_decay": 0.999,
+        "seed": 1234,
     },
+    "e2e": {},
 }
 
 #########################
@@ -103,6 +121,7 @@ BASE_PREPROCESSING_HPARAMS = {
         "n_mels": 80,
         "spec_type": "mel",  # mel (real) | linear (real) | raw (complex) see https://pytorch.org/audio/stable/tutorials/audio_feature_extractions_tutorial.html#overview-of-audio-features
         "sox_effects": SOX_EFFECTS,
+        "vocoder_segment_size": 8192,  # this is the size of the segments taken for training HiFI-GAN
     },
 }
 
@@ -119,6 +138,7 @@ BASE_PREPROCESSING_HPARAMS = {
 # are iterable. And, make sure that if you have digraphs/multigraphs, that they are defined as
 # a list of strings
 SYMBOLS = {
+    "silence": ["<SIL>"],
     "pad": "_",
     "punctuation": ';:,.!?¡¿—…"«»“” ',
     "letters": list(ascii_letters),

@@ -146,6 +146,7 @@ class Preprocessor:
 
     def extract_durations(self, textgrid_path: str):
         """Extract durations from a textgrid path
+           Don't use tgt package because it ignores silence
 
         Args:
             textgrid_path (str): path to a textgrid file
