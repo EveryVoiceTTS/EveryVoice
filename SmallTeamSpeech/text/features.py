@@ -5,8 +5,6 @@ from panphon import FeatureTable
 
 FT = FeatureTable()
 
-_silences = ["sp", "spn", "sil", "@sp", "@spn", "@sil"]
-
 
 def get_tone_features(text: List[str]) -> List[List[int]]:
     """Return Wang (1967) style tone features.
@@ -18,7 +16,7 @@ def get_tone_features(text: List[str]) -> List[List[int]]:
         - Falling
         - Convex
 
-    *If your language uses phonemic tone you MUST ammend this function to match your language
+    *If your language uses phonemic tone you MUST amend this function to match your language
     Panphon does not use these features.*
 
     Args:
@@ -57,26 +55,29 @@ def get_tone_features(text: List[str]) -> List[List[int]]:
 
 
 def get_punctuation_features(text):
-    excl = "!"
-    quest = "?"
-    bb = [".", ":", ";"] + _silences
+    excl = ["!", "¡"]
+    quest = ["?", "¿"]
+    silence = ["<SIL>"]
+    bb = [".", ":", ";", "…"]
     sb = [","]
-    qm = ['"']
+    qm = ['"', "'", "“", "”", "«", "»"]
     punctuation_features = []
     for char in text:
         char = normalize("NFC", char)
         if char in excl:
-            punctuation_features.append([1, 0, 0, 0, 0])
+            punctuation_features.append([1, 0, 0, 0, 0, 0])
         elif char in quest:
-            punctuation_features.append([0, 1, 0, 0, 0])
+            punctuation_features.append([0, 1, 0, 0, 0, 0])
         elif char in bb:
-            punctuation_features.append([0, 0, 1, 0, 0])
+            punctuation_features.append([0, 0, 1, 0, 0, 0])
         elif char in sb:
-            punctuation_features.append([0, 0, 0, 1, 0])
+            punctuation_features.append([0, 0, 0, 1, 0, 0])
         elif char in qm:
-            punctuation_features.append([0, 0, 0, 0, 1])
+            punctuation_features.append([0, 0, 0, 0, 1, 0])
+        elif char in silence:
+            punctuation_features.append([0, 0, 0, 0, 0, 1])
         else:
-            punctuation_features.append([0, 0, 0, 0, 0])
+            punctuation_features.append([0, 0, 0, 0, 0, 0])
     return punctuation_features
 
 
@@ -92,10 +93,7 @@ def get_features(tokens):
     # tokens = tokenizer.tokenize(text)
     punctuation_features = get_punctuation_features(tokens)
     tone_features = get_tone_features(tokens)
-    spe_features = [
-        char_to_vector_list(t) if t not in _silences else [] for t in tokens
-    ]
-    spe_features = [x if len(x) > 0 else [0] * 24 for x in spe_features]
+    spe_features = [char_to_vector_list(t) for t in tokens]
     assert len(punctuation_features) == len(tone_features) == len(spe_features)
     return [
         spe_features[i] + tone_features[i] + punctuation_features[i]
