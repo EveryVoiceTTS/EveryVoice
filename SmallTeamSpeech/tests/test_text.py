@@ -17,7 +17,7 @@ class TextTest(TestCase):
         self.assertEqual(self.base_text_processor.sequence_to_text(sequence), text)
 
     def test_sequence_to_text(self):
-        sequence = [24, 21, 28, 28, 31, 16, 39, 31, 34, 28, 20]
+        sequence = [25, 22, 29, 29, 32, 17, 40, 32, 35, 29, 21]
         self.assertEqual(
             self.base_text_processor.text_to_sequence("hello world"), sequence
         )
