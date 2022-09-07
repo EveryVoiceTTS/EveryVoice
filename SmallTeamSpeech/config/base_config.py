@@ -52,8 +52,13 @@ BASE_MODEL_HPARAMS = {
 #########################
 
 BASE_TRAINING_HPARAMS = {
+    "strategy": "e2e",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
+    "logger": {  # Uses MLflow
+        "experiment_name": "Base Experiment",
+        "tags": {"language": "English", "version": "0.1"},
+        "save_dir": "./mlflow",
+    },
     "feature_prediction": {
-        "output_path": "./output",
         "steps": {
             "total": 300000,
             "log": 100,
@@ -65,6 +70,12 @@ BASE_TRAINING_HPARAMS = {
             "batch_size": 16,
             # etc....
         },
+        "freeze_layers": {
+            "encoder": False,
+            "decoder": False,
+            "postnet": False,
+            "variance": {"energy": False, "duration": False, "pitch": False},
+        },
     },
     "vocoder": {
         "resblock": "1",
@@ -75,8 +86,8 @@ BASE_TRAINING_HPARAMS = {
         "adam_b2": 0.99,
         "lr_decay": 0.999,
         "seed": 1234,
+        "freeze_layers": {"mpd": False, "msd": False, "generator": False},
     },
-    "e2e": {},
 }
 
 #########################
