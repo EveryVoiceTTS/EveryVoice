@@ -23,6 +23,7 @@ def get_padding(kernel_size, dilation=1):
 
 
 class ResBlock1(torch.nn.Module):
+    # TODO: refactor to depthwise-separable convolutions in generator
     def __init__(self, config, channels, kernel_size=3, dilation=(1, 3, 5)):
         super(ResBlock1, self).__init__()
         self.config = config

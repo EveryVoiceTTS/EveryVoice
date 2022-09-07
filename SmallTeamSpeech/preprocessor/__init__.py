@@ -25,6 +25,7 @@ class Preprocessor:
         self.config = config
         self.audio_config = config["preprocessing"]["audio"]
         # Define Spectral Transform
+        # Gah, so many ways to do this: https://github.com/CookiePPP/VocoderComparisons/issues/3
         if self.audio_config["spec_type"] == "mel":
             self.spectral_transform = T.MelSpectrogram(
                 sample_rate=self.audio_config["target_sampling_rate"],
