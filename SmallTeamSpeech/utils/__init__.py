@@ -8,6 +8,18 @@ from pympi.Praat import TextGrid
 _whitespace_re = re.compile(r"\s+")
 
 
+def load_lj_metadata_hifigan(path):
+    with open(
+        path,
+        "r",
+        newline="",
+        encoding="utf8",
+    ) as f:
+        reader = csv.reader(f, delimiter="|", quoting=csv.QUOTE_NONE, escapechar="\\")
+        filepaths_and_text = [[x[0], x[1]] for x in reader]
+    return [{"basename": x[0]} for x in filepaths_and_text]
+
+
 def collapse_whitespace(text):
     return re.sub(_whitespace_re, " ", text)
 

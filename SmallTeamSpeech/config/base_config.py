@@ -10,7 +10,7 @@ from copy import deepcopy
 from string import ascii_letters
 from unicodedata import normalize
 
-from utils import collapse_whitespace
+from utils import collapse_whitespace, load_lj_metadata_hifigan
 
 #########################
 #                       #
@@ -54,12 +54,16 @@ BASE_MODEL_HPARAMS = {
 
 BASE_TRAINING_HPARAMS = {
     "strategy": "e2e",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
+    "train_split": 0.9,  # the rest is val
+    "batch_size": 16,
     "logger": {  # Uses MLflow
         "experiment_name": "Base Experiment",
         "tags": {"language": "English", "version": "0.1"},
         "save_dir": "./mlflow",
     },
     "feature_prediction": {
+        "filelist": "./filelists/lj_test.psv",
+        "filelist_loader": load_lj_metadata_hifigan,
         "steps": {
             "total": 300000,
             "log": 100,
@@ -68,7 +72,6 @@ BASE_TRAINING_HPARAMS = {
             "save": 100000,
         },
         "optimizer": {
-            "batch_size": 16,
             # etc....
         },
         "freeze_layers": {
@@ -79,9 +82,10 @@ BASE_TRAINING_HPARAMS = {
         },
     },
     "vocoder": {
+        "filelist": "./filelists/lj_test.psv",
+        "filelist_loader": load_lj_metadata_hifigan,
         "resblock": "1",
         "num_gpus": 0,
-        "batch_size": 16,
         "learning_rate": 0.0002,
         "adam_b1": 0.8,
         "adam_b2": 0.99,
@@ -116,6 +120,8 @@ SOX_EFFECTS = [
 
 BASE_PREPROCESSING_HPARAMS = {
     "dataset": "YourDataSet",
+    "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
+    "save_dir": "./preprocessed/YourDataSet",
     "f0_phone_averaging": True,
     "energy_phone_averaging": True,
     "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
@@ -124,7 +130,9 @@ BASE_PREPROCESSING_HPARAMS = {
         "sil_threshold": 1.0,
         "sil_duration": 0.1,
         "target_sampling_rate": 22050,  # Sampling rate to ensure audio is sampled using for inputs
+        "target_bit_depth": 16,
         "alignment_sampling_rate": 22050,  # Sampling rate from TextGrids. These two sampling rates *should* be the same, but they are separated in case it's not practical for your data
+        "alignment_bit_depth": 16,
         "fft_window_frames": 1024,
         "fft_hop_frames": 256,
         "f_min": 0,
