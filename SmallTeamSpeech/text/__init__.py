@@ -8,6 +8,7 @@ from nltk.tokenize import RegexpTokenizer
 
 from config import ConfigError
 from config.base_config import BaseConfig
+from text.features import get_features
 
 
 class TextProcessor:
@@ -56,6 +57,31 @@ class TextProcessor:
         List of integers corresponding to the symbols in the text
         """
         sequence = []
+        clean_text = self.text_to_tokens(text)
+        for symbol in clean_text:
+            symbol_id = self._symbol_to_id[symbol]
+            sequence += [symbol_id]
+        return sequence
+
+    def text_to_phonological_features(self, text):
+        """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
+        Args:
+        text: string to convert to a sequence
+        cleaner_fns: a list of fns to clean text
+        Returns:
+        List of phonological feature vectors
+        """
+        clean_text = self.text_to_tokens(text)
+        return get_features(clean_text)
+
+    def text_to_tokens(self, text):
+        """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
+        Args:
+        text: string to convert to a sequence
+        cleaner_fns: a list of fns to clean text
+        Returns:
+        List of symbols in the text
+        """
         for cleaner_fn in self.config["text"]["cleaners"]:
             try:
                 text = cleaner_fn(text)
@@ -69,10 +95,7 @@ class TextProcessor:
                 f"Symbol '{symbol}' occurs in the text '{text}' but was not declared in your configuration so it is being ignored."
             )
             self.missing_symbols[symbol] += 1
-        for symbol in clean_text:
-            symbol_id = self._symbol_to_id[symbol]
-            sequence += [symbol_id]
-        return sequence
+        return clean_text
 
     def cleaned_text_to_sequence(self, cleaned_text):
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.

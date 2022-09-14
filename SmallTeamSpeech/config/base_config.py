@@ -21,7 +21,8 @@ from utils import collapse_whitespace
 
 BASE_MODEL_HPARAMS = {
     "encoder": {
-        "encoder_layer": 4
+        "encoder_layer": 4,
+        "num_phon_feats": 37
         # etc...
     },
     "decoder": {},

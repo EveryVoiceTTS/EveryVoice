@@ -29,7 +29,72 @@ class TextTest(TestCase):
         self.assertEqual(self.base_text_processor.sequence_to_text(sequence), text)
 
     def test_phonological_features(self):
-        pass
+        moh_config = BaseConfig(
+            {
+                "text": {
+                    "symbols": {
+                        "letters": [
+                            "ʌ̃̀ː",
+                            "ʌ̃́ː",
+                            "t͡ʃ",
+                            "d͡ʒ",
+                            "ʌ̃́",
+                            "ʌ̃ː",
+                            "kʰʷ",
+                            "ũ̀ː",
+                            "ɡʷ",
+                            "áː",
+                            "àː",
+                            "aː",
+                            "ʌ̃",
+                            "èː",
+                            "éː",
+                            "iː",
+                            "íː",
+                            "ìː",
+                            "kʷ",
+                            "ṹː",
+                            "óː",
+                            "òː",
+                            "ʃ",
+                            "d",
+                            "ɡ",
+                            "á",
+                            "a",
+                            "é",
+                            "e",
+                            "í",
+                            "i",
+                            "k",
+                            "n",
+                            "ṹ",
+                            "ũ",
+                            "ó",
+                            "o",
+                            "r",
+                            "h",
+                            "t",
+                            "s",
+                            "w",
+                            "f",
+                            "j",
+                            "ʔ",
+                        ]
+                    }
+                }
+            }
+        )
+        moh_text_processor = TextProcessor(moh_config)
+        tokens = moh_text_processor.text_to_tokens("shéːkon")
+        feats = moh_text_processor.text_to_phonological_features("shéːkon")
+        self.assertEqual(len(tokens), len(feats))
+        self.assertEqual(
+            len(feats[0]), moh_config["model"]["encoder"]["num_phon_feats"]
+        )
+        extra_tokens = moh_text_processor.text_to_tokens("shéːkon7")
+        extra_feats = moh_text_processor.text_to_phonological_features("shéːkon7")
+        self.assertEqual(len(feats), len(extra_feats))
+        self.assertEqual(len(extra_feats), len(extra_tokens))
 
     def test_duplicate_symbols(self):
         duplicate_symbols_text_processor = TextProcessor(

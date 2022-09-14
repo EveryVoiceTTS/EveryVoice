@@ -182,6 +182,3 @@ class PreprocessingTest(TestCase):
             self.assertEqual(phone_avg_energy.size(0), len(durs))
             # Ensure same number of frames
             self.assertEqual(frame_energy.size(1), feats.size(2))
-
-    def test_text(self):
-        pass
