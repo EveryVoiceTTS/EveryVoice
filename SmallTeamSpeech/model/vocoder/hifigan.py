@@ -8,6 +8,7 @@ from torch.nn import AvgPool1d, Conv1d, Conv2d, ConvTranspose1d
 from torch.nn.utils import remove_weight_norm, spectral_norm, weight_norm
 
 from config.base_config import BaseConfig
+from utils import get_spectral_transform
 
 LRELU_SLOPE = 0.1
 
@@ -409,6 +410,17 @@ class HiFiGAN(pl.LightningModule):
         self.msd = MultiScaleDiscriminator()
         self.generator = Generator(config)
         self.save_hyperparameters()
+        self.audio_config = config["preprocessing"]["audio"]
+        self.spectral_transform = get_spectral_transform(
+            self.audio_config["spec_type"],
+            self.audio_config["n_fft"],
+            self.audio_config["fft_window_frames"],
+            self.audio_config["fft_hop_frames"],
+            f_min=self.audio_config["f_min"],
+            f_max=self.audio_config["f_max"],
+            sample_rate=self.audio_config["target_sampling_rate"],
+            n_mels=self.audio_config["n_mels"],
+        )
         # TODO: figure out continue from checkpoint
         # TODO: figure out multiple nodes/gpus: https://pytorch-lightning.readthedocs.io/en/1.4.0/advanced/multi_gpu.html
 
@@ -469,17 +481,18 @@ class HiFiGAN(pl.LightningModule):
             gen_losses.append(loss)
             g_loss += loss
 
-        return (g_loss,)
+        return (g_loss, gen_losses)
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         x, y, _, y_mel = batch
-        # y = y.unsqueeze(1) # TODO: is this needed?
         # train generator
         if optimizer_idx == 0:
             # generate waveform
             self.generated_wav = self(x)
             # create mel
-            generated_mel_spec = self.generated_wav  # TODO: pass this through mel spec
+            generated_mel_spec = self.spectral_transform(self.generated_wav).squeeze(1)[
+                :, :, 1:
+            ]  # TODO: pass this through mel spec
             # calculate loss
             y_df_hat_r, y_df_hat_g, fmap_f_r, fmap_f_g = self.mpd(y, self.generated_wav)
             y_ds_hat_r, y_ds_hat_g, fmap_s_r, fmap_s_g = self.msd(y, self.generated_wav)
@@ -513,7 +526,9 @@ class HiFiGAN(pl.LightningModule):
         # generate waveform
         self.generated_wav = self(x)
         # create mel
-        generated_mel_spec = self.generated_wav  # TODO: pass this through mel spec
+        generated_mel_spec = self.spectral_transform(self.generated_wav).squeeze(1)[
+            :, :, 1:
+        ]
         val_err_tot = F.l1_loss(y_mel, generated_mel_spec).item()
         # # TODO: Log audio and mel spec
         # # Below is taken from HiFiGAN
