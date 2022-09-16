@@ -1,20 +1,24 @@
 from pytorch_lightning import Trainer
 from pytorch_lightning.loggers import MLFlowLogger
 
-from SmallTeamSpeech.config import CONFIGS
-from SmallTeamSpeech.model.vocoder.hifigan import HiFiGAN
+from config import CONFIGS
+from dataloader import HiFiGANDataModule
+from model.vocoder.hifigan import HiFiGAN
 
 CONFIG = CONFIGS["base"]
 
 MLF_LOGGER = MLFlowLogger(**CONFIG["training"]["logger"])
-TRAINER = Trainer(logger=MLF_LOGGER)
 
 if CONFIG["training"]["strategy"] == "vocoder":
+    TRAINER = Trainer(
+        logger=MLF_LOGGER,
+        accelerator="gpu",
+        devices=1,
+        max_epochs=CONFIG["training"]["vocoder"]["max_epochs"],
+    )
     VOCODER = HiFiGAN(CONFIG)
-    # TODO: load vocoder data
-    train_dataloader = None
-    val_dataloader = None
-    TRAINER.fit(VOCODER, train_dataloader, val_dataloader)
+    data = HiFiGANDataModule(CONFIG)
+    TRAINER.fit(VOCODER, data)
 
 if CONFIG["training"]["strategy"] == "feature_prediction":
     pass
