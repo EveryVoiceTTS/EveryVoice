@@ -3,23 +3,11 @@ import re
 from os.path import isfile, splitext
 from unicodedata import normalize
 
-import torch
 import torchaudio.transforms as T
-from librosa.filters import mel as librosa_mel_fn
 from pympi.Praat import TextGrid
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
-
-
-def dynamic_range_compression_torch(x, C=1, clip_val=1e-5):
-    """spectral normalization"""
-    return torch.log(torch.clamp(x, min=clip_val) * C)
-
-
-def dynamic_range_decompression_torch(x, C=1):
-    """spectral denormalization"""
-    return torch.exp(x) / C
 
 
 def write_filelist(self, files, path):
@@ -34,77 +22,6 @@ def write_filelist(self, files, path):
         writer.writeheader()
         for f in files:
             writer.writerow(f)
-
-
-class LibrosaMelSpectrogram:
-    # TODO: Fix this, or remove it
-    def __init__(
-        self,
-        n_fft,
-        n_mels,
-        sample_rate,
-        hop_length,
-        win_length,
-        f_min,
-        f_max,
-        center=False,
-    ):
-        self.n_fft = n_fft
-        self.num_mels = n_mels
-        self.sampling_rate = sample_rate
-        self.hop_size = hop_length
-        self.win_size = win_length
-        self.f_min = f_min
-        self.f_max = f_max
-        self.center = center
-        self.mel_basis = {}
-        self.hann_window = {}
-
-    def __call__(self, y):
-        """From HiFiGAN"""
-        if torch.min(y) < -1.0:
-            print("min value is ", torch.min(y))
-        if torch.max(y) > 1.0:
-            print("max value is ", torch.max(y))
-
-        if self.f_max not in self.mel_basis:
-            mel = librosa_mel_fn(
-                self.sampling_rate, self.n_fft, self.num_mels, self.f_min, self.f_max
-            )
-            self.mel_basis[f"{str(self.f_max)}_{str(y.device)}"] = (
-                torch.from_numpy(mel).float().to(y.device)
-            )
-
-            self.hann_window[str(y.device)] = torch.hann_window(self.win_size).to(
-                y.device
-            )
-        y = torch.nn.functional.pad(
-            y,
-            (
-                int((self.n_fft - self.hop_size) / 2),
-                int((self.n_fft - self.hop_size) / 2),
-            ),
-            mode="reflect",
-        )
-
-        spec = torch.stft(
-            y,
-            self.n_fft,
-            hop_length=self.hop_size,
-            win_length=self.win_size,
-            window=self.hann_window[str(y.device)],
-            center=self.center,
-            pad_mode="reflect",
-            normalized=False,
-            onesided=True,
-        )
-
-        spec = torch.sqrt(spec.pow(2).sum(-1) + (1e-9))
-
-        spec = torch.matmul(self.mel_basis[f"{str(self.f_max)}_{str(y.device)}"], spec)
-        spec = dynamic_range_compression_torch(spec)
-
-        return spec
 
 
 def get_spectral_transform(
@@ -139,16 +56,6 @@ def get_spectral_transform(
             win_length=win_length,
             hop_length=hop_length,
             power=None,
-        )
-    elif spec_type == "librosa":
-        return LibrosaMelSpectrogram(
-            sample_rate=sample_rate,
-            n_fft=n_fft,
-            f_min=f_min,
-            f_max=f_max,
-            win_length=win_length,
-            hop_length=hop_length,
-            n_mels=n_mels,
         )
     else:
         return None
