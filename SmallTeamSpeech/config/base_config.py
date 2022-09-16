@@ -7,10 +7,15 @@
 
 from collections.abc import Mapping
 from copy import deepcopy
-from string import ascii_letters
-from unicodedata import normalize
+from string import ascii_lowercase, ascii_uppercase
 
-from utils import collapse_whitespace, load_lj_metadata_hifigan
+from utils import (
+    collapse_whitespace,
+    generic_dict_loader,
+    load_lj_metadata_hifigan,
+    lower,
+    nfc_normalize,
+)
 
 #########################
 #                       #
@@ -53,17 +58,19 @@ BASE_MODEL_HPARAMS = {
 #########################
 
 BASE_TRAINING_HPARAMS = {
-    "strategy": "e2e",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
+    "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
     "train_split": 0.9,  # the rest is val
     "batch_size": 16,
+    "train_data_workers": 4,
+    "val_data_workers": 4,
     "logger": {  # Uses MLflow
         "experiment_name": "Base Experiment",
         "tags": {"language": "English", "version": "0.1"},
         "save_dir": "./mlflow",
     },
     "feature_prediction": {
-        "filelist": "./filelists/lj_test.psv",
-        "filelist_loader": load_lj_metadata_hifigan,
+        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
+        "filelist_loader": generic_dict_loader,
         "steps": {
             "total": 300000,
             "log": 100,
@@ -82,8 +89,8 @@ BASE_TRAINING_HPARAMS = {
         },
     },
     "vocoder": {
-        "filelist": "./filelists/lj_test.psv",
-        "filelist_loader": load_lj_metadata_hifigan,
+        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
+        "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "num_gpus": 0,
         "learning_rate": 0.0002,
@@ -92,6 +99,7 @@ BASE_TRAINING_HPARAMS = {
         "lr_decay": 0.999,
         "seed": 1234,
         "freeze_layers": {"mpd": False, "msd": False, "generator": False},
+        "max_epochs": 10,
     },
 }
 
@@ -124,7 +132,10 @@ BASE_PREPROCESSING_HPARAMS = {
     "save_dir": "./preprocessed/YourDataSet",
     "f0_phone_averaging": True,
     "energy_phone_averaging": True,
+    "filelist_loader": load_lj_metadata_hifigan,
+    "filelist": "./filelists/lj_test.psv",
     "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
+    "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {
         "norm_db": -3.0,
         "sil_threshold": 1.0,
@@ -156,21 +167,20 @@ BASE_PREPROCESSING_HPARAMS = {
 # so you can add other keys to this dictionary (i.e. "ipa_characters" or other such key names)
 # the value of each key here will be turned into a list, so make sure your symbol definitions
 # are iterable. And, make sure that if you have digraphs/multigraphs, that they are defined as
-# a list of strings
+# a list of strings.
+# Note there is a limit with MLFlow for 250 characters per category: https://github.com/mlflow/mlflow/issues/6183
 SYMBOLS = {
     "silence": ["<SIL>"],
     "pad": "_",
     "punctuation": ';:,.!?¡¿—…"«»“” ',
-    "letters": list(ascii_letters),
+    "lowercase_letters": list(ascii_lowercase),
+    "uppercase_letters": list(ascii_uppercase),
 }
 
 # Cleaners are defined in the configuration as opposed to editing a cleaners.py file somewhere else.
-# Functions are applied to text in sequence
-CLEANERS = [
-    lambda text: text.lower(),
-    collapse_whitespace,
-    lambda text: normalize("NFC", text),
-]
+# Functions are applied to text in sequence.
+# Unfortunately, you can't use lambda functions, because PyTorch doesn't support it. See https://github.com/pytorch/pytorch/issues/13300
+CLEANERS = [lower, collapse_whitespace, nfc_normalize]
 
 
 class BaseConfig(dict):

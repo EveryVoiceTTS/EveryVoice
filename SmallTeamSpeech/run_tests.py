@@ -10,6 +10,7 @@ from unittest import TestLoader, TestSuite, TextTestRunner
 from loguru import logger
 
 from tests.test_configs import ConfigTest
+from tests.test_dataloader import DataLoaderTest
 from tests.test_model import ModelTest
 from tests.test_preprocessing import PreprocessingTest
 from tests.test_text import TextTest
@@ -21,6 +22,8 @@ LOADER = TestLoader()
 
 CONFIG_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [ConfigTest]]
 
+DATALOADER_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [DataLoaderTest]]
+
 TEXT_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [TextTest]]
 
 PREPROCESSING_TESTS = [
@@ -30,7 +33,9 @@ PREPROCESSING_TESTS = [
 MODEL_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [ModelTest]]
 
 
-DEV_TESTS = CONFIG_TESTS + TEXT_TESTS + PREPROCESSING_TESTS + MODEL_TESTS
+DEV_TESTS = (
+    CONFIG_TESTS + DATALOADER_TESTS + TEXT_TESTS + PREPROCESSING_TESTS + MODEL_TESTS
+)
 
 
 def run_tests(suite):

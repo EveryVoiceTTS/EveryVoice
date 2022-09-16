@@ -57,8 +57,8 @@ class TextProcessor:
         List of integers corresponding to the symbols in the text
         """
         sequence = []
-        clean_text = self.text_to_tokens(text)
-        for symbol in clean_text:
+        clean_tokens = self.text_to_tokens(text)
+        for symbol in clean_tokens:
             symbol_id = self._symbol_to_id[symbol]
             sequence += [symbol_id]
         return sequence
@@ -74,14 +74,8 @@ class TextProcessor:
         clean_text = self.text_to_tokens(text)
         return get_features(clean_text)
 
-    def text_to_tokens(self, text):
-        """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
-        Args:
-        text: string to convert to a sequence
-        cleaner_fns: a list of fns to clean text
-        Returns:
-        List of symbols in the text
-        """
+    def clean_text(self, text):
+        """Converts some text to cleaned text"""
         for cleaner_fn in self.config["text"]["cleaners"]:
             try:
                 text = cleaner_fn(text)
@@ -89,13 +83,24 @@ class TextProcessor:
                 raise ConfigError(
                     f"Cleaner did not work and threw exception {e}"
                 ) from e
-        clean_text = self._tokenizer.tokenize(text)
-        for symbol in self._missing_symbol_finder.tokenize(text):
+        return text
+
+    def text_to_tokens(self, text):
+        """Converts a string of text to a sequence of tokens.
+        Args:
+        text: string to convert to a sequence
+        cleaner_fns: a list of fns to clean text
+        Returns:
+        List of symbols in the text
+        """
+        clean_text = self.clean_text(text)
+        clean_tokens = self._tokenizer.tokenize(clean_text)
+        for symbol in self._missing_symbol_finder.tokenize(clean_text):
             logger.warning(
-                f"Symbol '{symbol}' occurs in the text '{text}' but was not declared in your configuration so it is being ignored."
+                f"Symbol '{symbol}' occurs in the text '{clean_text}' but was not declared in your configuration so it is being ignored."
             )
             self.missing_symbols[symbol] += 1
-        return clean_text
+        return clean_tokens
 
     def cleaned_text_to_sequence(self, cleaned_text):
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.

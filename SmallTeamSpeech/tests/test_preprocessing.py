@@ -78,22 +78,20 @@ class PreprocessingTest(TestCase):
             feats = self.preprocessor.extract_spectral_features(audio)
             linear_feats = linear_preprocessor.extract_spectral_features(audio)
             complex_feats = complex_preprocessor.extract_spectral_features(audio)
-            # check single channel
-            self.assertEqual(feats.size(0), 1)
             # check data is same number of mels
             self.assertEqual(
-                feats.size(1),
+                feats.size(0),
                 self.preprocessor.config["preprocessing"]["audio"]["n_mels"],
             )
             # Check linear spec has right number of fft bins
             self.assertEqual(
-                linear_feats.size(1),
+                linear_feats.size(0),
                 linear_preprocessor.config["preprocessing"]["audio"]["n_fft"] // 2 + 1,
             )
             # check all same length
-            self.assertEqual(feats.size(2), linear_feats.size(2))
+            self.assertEqual(feats.size(1), linear_feats.size(1))
             # check all same length
-            self.assertEqual(complex_feats.size(2), linear_feats.size(2))
+            self.assertEqual(complex_feats.size(1), linear_feats.size(1))
 
     def test_f0(self):
         preprocessor_kaldi = Preprocessor(
@@ -126,7 +124,7 @@ class PreprocessingTest(TestCase):
             )
             # Ensure same number of frames
             self.assertEqual(
-                frame_f0_kaldi.size(0) - 1, feats.size(2)
+                frame_f0_kaldi.size(0) - 1, feats.size(1)
             )  # TODO: Why is this -1?
             # Ensure avg f0 for each phone
             self.assertEqual(len(durs), kaldi_phone_avg_energy.size(0))
@@ -137,7 +135,7 @@ class PreprocessingTest(TestCase):
             # Ensure avg f0 for each phone
             self.assertEqual(len(durs), pyworld_phone_avg_energy.size(0))
             # Ensure same number of frames
-            self.assertEqual(frame_f0_pyworld.size(0), feats.size(2))
+            self.assertEqual(frame_f0_pyworld.size(0), feats.size(1))
 
     def test_duration(self):
         for entry in self.filelist:
@@ -154,7 +152,7 @@ class PreprocessingTest(TestCase):
             #     / ("eng-LJSpeech-duration-" + entry["filename"] + ".npy")
             # )
             # Ensure durations same number of frames as spectral features
-            self.assertEqual(feats.size(2), sum(x["dur_frames"] for x in durs))
+            self.assertEqual(feats.size(1), sum(x["dur_frames"] for x in durs))
 
     def test_energy(self):
         preprocessor = Preprocessor(
@@ -181,4 +179,8 @@ class PreprocessingTest(TestCase):
             # Ensure avg energy for each phone
             self.assertEqual(phone_avg_energy.size(0), len(durs))
             # Ensure same number of frames
-            self.assertEqual(frame_energy.size(1), feats.size(2))
+            self.assertEqual(frame_energy.size(0), feats.size(1))
+
+    def test_sanity(self):
+        """TODO: make sanity checking code for each type of data, maybe also data analysis tooling"""
+        pass
