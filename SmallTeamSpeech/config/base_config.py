@@ -7,6 +7,7 @@
 
 from collections.abc import Mapping
 from copy import deepcopy
+from datetime import datetime
 from string import ascii_lowercase, ascii_uppercase
 
 from utils import (
@@ -41,6 +42,9 @@ BASE_MODEL_HPARAMS = {
         "upsample_initial_channel": 512,
         "resblock_kernel_sizes": [3, 7, 11],
         "resblock_dilation_sizes": [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
+        "depthwise_separable_convolutions": {
+            "generator": True,
+        },
     },
     "use_postnet": True,
     "max_seq_len": 1000,
@@ -60,13 +64,14 @@ BASE_MODEL_HPARAMS = {
 BASE_TRAINING_HPARAMS = {
     "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
     "train_split": 0.9,  # the rest is val
-    "batch_size": 16,
+    "batch_size": 4,
     "train_data_workers": 4,
     "val_data_workers": 4,
-    "logger": {  # Uses MLflow
-        "experiment_name": "Base Experiment",
-        "tags": {"language": "English", "version": "0.1"},
-        "save_dir": "./mlflow",
+    "logger": {  # Uses Tensorboard
+        "name": "Base Experiment",
+        "save_dir": "./logs",
+        "sub_dir": str(int(datetime.today().timestamp())),
+        "version": "base",
     },
     "feature_prediction": {
         "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
@@ -74,7 +79,6 @@ BASE_TRAINING_HPARAMS = {
         "steps": {
             "total": 300000,
             "log": 100,
-            "synth": 1000,
             "val": 1000,
             "save": 100000,
         },
@@ -90,16 +94,16 @@ BASE_TRAINING_HPARAMS = {
     },
     "vocoder": {
         "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
+        "finetune_checkpoint": "",
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
-        "num_gpus": 0,
         "learning_rate": 0.0002,
         "adam_b1": 0.8,
         "adam_b2": 0.99,
         "lr_decay": 0.999,
         "seed": 1234,
         "freeze_layers": {"mpd": False, "msd": False, "generator": False},
-        "max_epochs": 10,
+        "max_epochs": 30,
     },
 }
 

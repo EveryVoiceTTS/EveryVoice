@@ -12,9 +12,6 @@ from config.base_config import BaseConfig
 
 
 class BaseDataModule(pl.LightningDataModule):
-    # TODO: PossibleUserWarning: The dataloader, val_dataloader 0, does not have many workers which may be a bottleneck.
-    # Consider increasing the value of the `num_workers` argument` (try 72 which is the number of cpus on this machine)
-    # in the `DataLoader` init to improve performance.
     def __init__(self, config: BaseConfig):
         super().__init__()
         self.config = config

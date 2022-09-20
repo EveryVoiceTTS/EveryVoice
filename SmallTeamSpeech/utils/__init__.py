@@ -3,11 +3,23 @@ import re
 from os.path import isfile, splitext
 from unicodedata import normalize
 
+import matplotlib.pylab as plt
 import torchaudio.transforms as T
 from pympi.Praat import TextGrid
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
+
+
+def plot_spectrogram(spectrogram):
+    fig, ax = plt.subplots(figsize=(10, 2))
+    im = ax.imshow(spectrogram, aspect="auto", origin="lower", interpolation="none")
+    plt.colorbar(im, ax=ax)
+
+    fig.canvas.draw()
+    plt.close()
+
+    return fig
 
 
 def write_filelist(self, files, path):

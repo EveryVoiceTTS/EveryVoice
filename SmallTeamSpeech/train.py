@@ -1,5 +1,5 @@
 from pytorch_lightning import Trainer
-from pytorch_lightning.loggers import MLFlowLogger
+from pytorch_lightning.loggers import TensorBoardLogger
 
 from config import CONFIGS
 from dataloader import HiFiGANDataModule
@@ -7,18 +7,23 @@ from model.vocoder.hifigan import HiFiGAN
 
 CONFIG = CONFIGS["base"]
 
-MLF_LOGGER = MLFlowLogger(**CONFIG["training"]["logger"])
+TENSORBOARD_LOGGER = TensorBoardLogger(**CONFIG["training"]["logger"])
 
 if CONFIG["training"]["strategy"] == "vocoder":
     TRAINER = Trainer(
-        logger=MLF_LOGGER,
-        accelerator="gpu",
-        devices=1,
+        logger=TENSORBOARD_LOGGER,
+        accelerator="auto",
+        devices="auto",
         max_epochs=CONFIG["training"]["vocoder"]["max_epochs"],
     )
     VOCODER = HiFiGAN(CONFIG)
     data = HiFiGANDataModule(CONFIG)
-    TRAINER.fit(VOCODER, data)
+    TENSORBOARD_LOGGER.log_hyperparams(CONFIG)
+    TRAINER.fit(
+        VOCODER,
+        data,
+        ckpt_path=CONFIG["training"]["vocoder"]["finetune_checkpoint"],
+    )
 
 if CONFIG["training"]["strategy"] == "feature_prediction":
     pass
