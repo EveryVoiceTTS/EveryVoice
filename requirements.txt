@@ -6,4 +6,5 @@ pympi-ling==1.70.2
 pytorch_lightning==1.7.4
 pyworld == 0.2.10
 setuptools==59.5.0 # https://github.com/pytorch/pytorch/issues/69894
+tabulate==0.8.10
 typer[all]==0.6.1
