@@ -10,6 +10,8 @@ from copy import deepcopy
 from datetime import datetime
 from string import ascii_lowercase, ascii_uppercase
 
+from torch import nn
+
 from utils import (
     collapse_whitespace,
     generic_dict_loader,
@@ -55,6 +57,7 @@ BASE_MODEL_HPARAMS = {
         "depthwise_separable_convolutions": {
             "generator": True,
         },
+        "activation_function": nn.SiLU(),  # for original implementation use utils.original_hifigan_leaky_relu,
     },
     "use_postnet": True,
     "max_seq_len": 1000,

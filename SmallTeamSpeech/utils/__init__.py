@@ -4,11 +4,16 @@ from os.path import isfile, splitext
 from unicodedata import normalize
 
 import matplotlib.pylab as plt
+import torch.nn.functional as F
 import torchaudio.transforms as T
 from pympi.Praat import TextGrid
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
+
+
+def original_hifigan_leaky_relu(x):
+    return F.leaky_relu(x, 0.1)
 
 
 def plot_spectrogram(spectrogram):

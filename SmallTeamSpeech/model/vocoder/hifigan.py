@@ -12,8 +12,6 @@ from config.base_config import BaseConfig
 from model.utils import create_depthwise_separable_convolution
 from utils import get_spectral_transform, plot_spectrogram
 
-LRELU_SLOPE = 0.1
-
 
 def init_weights(m, mean=0.0, std=0.01):
     classname = m.__class__.__name__
@@ -101,9 +99,9 @@ class ResBlock1(torch.nn.Module):
 
     def forward(self, x):
         for c1, c2 in zip(self.convs1, self.convs2):
-            xt = F.leaky_relu(x, LRELU_SLOPE)
+            xt = self.config["model"]["vocoder"]["activation_function"](x)
             xt = c1(xt)
-            xt = F.leaky_relu(xt, LRELU_SLOPE)
+            xt = self.config["model"]["vocoder"]["activation_function"](x)
             xt = c2(xt)
             x = xt + x
         return x
@@ -187,7 +185,7 @@ class ResBlock2(torch.nn.Module):
 
     def forward(self, x):
         for c in self.convs:
-            xt = F.leaky_relu(x, LRELU_SLOPE)
+            xt = self.config["model"]["vocoder"]["activation_function"](x)
             xt = c(xt)
             x = xt + x
         return x
@@ -298,7 +296,7 @@ class Generator(torch.nn.Module):
     def forward(self, x):
         x = self.conv_pre(x)
         for i in range(self.num_upsamples):
-            x = F.leaky_relu(x, LRELU_SLOPE)
+            x = self.config["model"]["vocoder"]["activation_function"](x)
             x = self.ups[i](x)
             xs = None
             for j in range(self.num_kernels):
@@ -307,7 +305,7 @@ class Generator(torch.nn.Module):
                 else:
                     xs += self.resblocks[i * self.num_kernels + j](x)
             x = xs / self.num_kernels
-        x = F.leaky_relu(x)
+        x = self.config["model"]["vocoder"]["activation_function"](x)
         x = self.conv_post(x)
         x = torch.tanh(x)
 
@@ -336,9 +334,12 @@ class Generator(torch.nn.Module):
 
 
 class DiscriminatorP(torch.nn.Module):
-    def __init__(self, period, kernel_size=5, stride=3, use_spectral_norm=False):
+    def __init__(
+        self, period, config, kernel_size=5, stride=3, use_spectral_norm=False
+    ):
         super(DiscriminatorP, self).__init__()
         self.period = period
+        self.config = config
         norm_f = weight_norm if use_spectral_norm is False else spectral_norm
         self.convs = nn.ModuleList(
             [
@@ -396,7 +397,7 @@ class DiscriminatorP(torch.nn.Module):
 
         for layer in self.convs:
             x = layer(x)
-            x = F.leaky_relu(x, LRELU_SLOPE)
+            x = self.config["model"]["vocoder"]["activation_function"](x)
             fmap.append(x)
         x = self.conv_post(x)
         fmap.append(x)
@@ -406,15 +407,15 @@ class DiscriminatorP(torch.nn.Module):
 
 
 class MultiPeriodDiscriminator(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, config):
         super(MultiPeriodDiscriminator, self).__init__()
         self.discriminators = nn.ModuleList(
             [
-                DiscriminatorP(2),
-                DiscriminatorP(3),
-                DiscriminatorP(5),
-                DiscriminatorP(7),
-                DiscriminatorP(11),
+                DiscriminatorP(2, config),
+                DiscriminatorP(3, config),
+                DiscriminatorP(5, config),
+                DiscriminatorP(7, config),
+                DiscriminatorP(11, config),
             ]
         )
 
@@ -435,8 +436,9 @@ class MultiPeriodDiscriminator(torch.nn.Module):
 
 
 class DiscriminatorS(torch.nn.Module):
-    def __init__(self, use_spectral_norm=False):
+    def __init__(self, config, use_spectral_norm=False):
         super(DiscriminatorS, self).__init__()
+        self.config = config
         norm_f = weight_norm if use_spectral_norm is False else spectral_norm
         self.convs = nn.ModuleList(
             [
@@ -455,7 +457,7 @@ class DiscriminatorS(torch.nn.Module):
         fmap = []
         for layer in self.convs:
             x = layer(x)
-            x = F.leaky_relu(x, LRELU_SLOPE)
+            x = self.config["model"]["vocoder"]["activation_function"](x)
             fmap.append(x)
         x = self.conv_post(x)
         fmap.append(x)
@@ -465,13 +467,13 @@ class DiscriminatorS(torch.nn.Module):
 
 
 class MultiScaleDiscriminator(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, config):
         super(MultiScaleDiscriminator, self).__init__()
         self.discriminators = nn.ModuleList(
             [
-                DiscriminatorS(use_spectral_norm=True),
-                DiscriminatorS(),
-                DiscriminatorS(),
+                DiscriminatorS(config, use_spectral_norm=True),
+                DiscriminatorS(config),
+                DiscriminatorS(config),
             ]
         )
         self.meanpools = nn.ModuleList(
@@ -501,8 +503,8 @@ class HiFiGAN(pl.LightningModule):
     def __init__(self, config: BaseConfig):
         super().__init__()
         self.config = config
-        self.mpd = MultiPeriodDiscriminator()
-        self.msd = MultiScaleDiscriminator()
+        self.mpd = MultiPeriodDiscriminator(config)
+        self.msd = MultiScaleDiscriminator(config)
         self.generator = Generator(config)
         self.batch_size = self.config["training"][
             "batch_size"
