@@ -29,7 +29,6 @@ def get_padding(kernel_size, dilation=1):
 
 
 class ResBlock1(torch.nn.Module):
-    # TODO: refactor to depthwise-separable convolutions in generator
     def __init__(
         self, config, channels, kernel_size=3, dilation=(1, 3, 5), depthwise=False
     ):
@@ -110,11 +109,18 @@ class ResBlock1(torch.nn.Module):
         return x
 
     def remove_weight_norm(self):
-        # TODO: why does this method exist? in any case, it's not currently compatible with depthwise separable convs
         for layer in self.convs1:
-            remove_weight_norm(layer)
+            if layer.__class__.__name__ == "Sequential":
+                for sub_layer in layer:
+                    remove_weight_norm(sub_layer)
+            else:
+                remove_weight_norm(layer)
         for layer in self.convs2:
-            remove_weight_norm(layer)
+            if layer.__class__.__name__ == "Sequential":
+                for sub_layer in layer:
+                    remove_weight_norm(sub_layer)
+            else:
+                remove_weight_norm(layer)
 
 
 class ResBlock2(torch.nn.Module):
@@ -188,7 +194,11 @@ class ResBlock2(torch.nn.Module):
 
     def remove_weight_norm(self):
         for layer in self.convs:
-            remove_weight_norm(layer)
+            if layer.__class__.__name__ == "Sequential":
+                for sub_layer in layer:
+                    remove_weight_norm(sub_layer)
+            else:
+                remove_weight_norm(layer)
 
 
 class Generator(torch.nn.Module):
@@ -276,8 +286,12 @@ class Generator(torch.nn.Module):
                 self.resblocks.append(
                     resblock(self.config, ch, k, d, depthwise=self.depthwise)
                 )
-
-        self.conv_post = weight_norm(Conv1d(ch, 1, 7, 1, padding=3))
+        if self.depthwise:
+            self.conv_post = create_depthwise_separable_convolution(
+                ch, 1, 7, 1, padding=3, weight_norm=True
+            )
+        else:
+            self.conv_post = weight_norm(Conv1d(ch, 1, 7, 1, padding=3))
         self.ups.apply(init_weights)
         self.conv_post.apply(init_weights)
 
@@ -302,11 +316,23 @@ class Generator(torch.nn.Module):
     def remove_weight_norm(self):
         print("Removing weight norm...")
         for layer in self.ups:
-            remove_weight_norm(layer)
+            if layer.__class__.__name__ == "Sequential":
+                for sub_layer in layer:
+                    remove_weight_norm(sub_layer)
+            else:
+                remove_weight_norm(layer)
         for layer in self.resblocks:
             layer.remove_weight_norm()
-        remove_weight_norm(self.conv_pre)
-        remove_weight_norm(self.conv_post)
+        if self.conv_pre.__class__.__name__ == "Sequential":
+            for sub_layer in self.conv_pre:
+                remove_weight_norm(sub_layer)
+        else:
+            remove_weight_norm(self.conv_pre)
+        if self.conv_post.__class__.__name__ == "Sequential":
+            for sub_layer in self.conv_post:
+                remove_weight_norm(sub_layer)
+        else:
+            remove_weight_norm(self.conv_post)
 
 
 class DiscriminatorP(torch.nn.Module):
