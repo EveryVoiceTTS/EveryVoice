@@ -29,6 +29,7 @@ class Preprocessor:
     def __init__(self, config):
         self.config = config
         self.missing_files: List[str] = []
+        self.skipped_processes = 0
         self.audio_config = config["preprocessing"]["audio"]
         self.sep = config["preprocessing"]["value_separator"]
         self.text_processor = TextProcessor(config)
@@ -57,34 +58,26 @@ class Preprocessor:
                 f"Spectral feature specification {self.audio_config['spec_type']} is not supported. Please edit your config file."
             )
 
-    def process_audio_for_alignment(self, wav_path) -> Tuple[Tensor, int]:
-        """Process audio with any Sox Effects
-
-        Args:
-            wav_path (str): path to wav file
-
-        Returns:
-            [Tensor, int]: audio Tensor, sampling rate
-        """
-        audio, sampling_rate = load_audio(wav_path)
-        if self.config["preprocessing"]["audio"]["sox_effects"]:
-            audio = apply_effects_tensor(
-                audio,
-                sampling_rate,
-                self.config["preprocessing"]["audio"]["sox_effects"],
-            )
-        return audio
-
-    def process_audio(self, wav_path: str) -> Tensor:
+    def process_audio(
+        self, wav_path: str, normalize=True, use_effects=False
+    ) -> Tuple[Tensor, int]:
         """Process audio
 
         Args:
             wav_path (str): path to wav file
+            normalize (bool): normalizes to float32, NOT volume normalization
         Returns:
             [Tensor, int]: audio Tensor, sampling rate
         """
 
-        return load_audio(wav_path)
+        audio, sr = load_audio(wav_path, normalize=normalize)
+        if use_effects and self.config["preprocessing"]["audio"]["sox_effects"]:
+            audio = apply_effects_tensor(
+                audio,
+                sr,
+                self.config["preprocessing"]["audio"]["sox_effects"],
+            )
+        return (audio, sr)
 
     def extract_spectral_features(self, audio_tensor: Tensor):
         """Given an audio tensor, extract the log Mel spectral features
@@ -237,10 +230,11 @@ class Preprocessor:
             ["missing files", len(self.missing_files)],
             ["missing symbols", len(self.text_processor.missing_symbols)],
             ["duplicate symbols", len(self.text_processor.duplicate_symbols)],
+            ["skipped processes", self.skipped_processes],
         ]
         return tabulate(table, headers, tablefmt=tablefmt)
 
-    def preprocess(
+    def preprocess(  # noqa: C901
         self,
         filelist=None,
         output_path="processed_filelist.psv",
@@ -256,7 +250,7 @@ class Preprocessor:
     ):
         # TODO: use multiprocessing
         write_path = self.save_dir / output_path
-        if write_path.exists and not overwrite:
+        if write_path.exists() and not overwrite:
             logger.error(
                 f"Preprocessed filelist at '{write_path}' already exists. Please either set overwrite=True or choose a new path"
             )
@@ -272,87 +266,118 @@ class Preprocessor:
             audio = None
             spec = None
             if process_text:
-                torch.save(
-                    self.extract_text_inputs(f["text"]),
-                    self.save_dir
-                    / self.sep.join([f["basename"], speaker, language, "text.npy"]),
+                save_path = self.save_dir / self.sep.join(
+                    [f["basename"], speaker, language, "text.npy"]
                 )
-                item["raw_text"] = f["text"]
-                item["clean_text"] = self.text_processor.clean_text(f["text"])
+                if overwrite or not save_path.exists():
+                    torch.save(
+                        self.extract_text_inputs(f["text"]),
+                        save_path,
+                    )
+                    item["raw_text"] = f["text"]
+                    item["clean_text"] = self.text_processor.clean_text(f["text"])
+                else:
+                    self.skipped_processes += 1
             if process_pfs:
-                torch.save(
-                    self.extract_text_inputs(f["text"], use_pfs=True),
-                    self.save_dir
-                    / self.sep.join([f["basename"], speaker, language, "pfs.npy"]),
+                save_path = self.save_dir / self.sep.join(
+                    [f["basename"], speaker, language, "pfs.npy"]
                 )
+                if overwrite or not save_path.exists():
+                    torch.save(
+                        self.extract_text_inputs(f["text"], use_pfs=True), save_path
+                    )
+                else:
+                    self.skipped_processes += 1
             if process_sox_audio:
-                save_audio(
-                    self.save_dir
-                    / self.sep.join(
-                        [f["basename"], speaker, language, "processed.wav"]
-                    ),
-                    self.process_audio_for_alignment(
-                        self.data_dir / (f["basename"] + ".wav")
-                    ),
-                    self.config["preprocessing"]["audio"]["alignment_sampling_rate"],
-                    encoding="PCM_S",
-                    bits_per_sample=self.config["preprocessing"]["audio"][
-                        "alignment_bit_depth"
-                    ],
+                save_path = self.save_dir / self.sep.join(
+                    [f["basename"], speaker, language, "processed.wav"]
                 )
+                if overwrite or not save_path.exists():
+                    save_audio(
+                        save_path,
+                        self.process_audio(
+                            self.data_dir / (f["basename"] + ".wav"), use_effects=True
+                        ),
+                        self.config["preprocessing"]["audio"][
+                            "alignment_sampling_rate"
+                        ],
+                        encoding="PCM_S",
+                        bits_per_sample=self.config["preprocessing"]["audio"][
+                            "alignment_bit_depth"
+                        ],
+                    )
+                else:
+                    self.skipped_processes += 1
             if process_audio:
-                audio, _ = self.process_audio(self.data_dir / (f["basename"] + ".wav"))
-                torch.save(
-                    audio,
-                    self.save_dir
-                    / self.sep.join([f["basename"], speaker, language, "audio.npy"]),
+                save_path = self.save_dir / self.sep.join(
+                    [f["basename"], speaker, language, "audio.npy"]
                 )
+                if overwrite or not save_path.exists():
+                    audio, _ = self.process_audio(
+                        self.data_dir / (f["basename"] + ".wav")
+                    )
+                    torch.save(audio, save_path)
+                else:
+                    self.skipped_processes += 1
             if process_spec:
-                if audio is None:
-                    audio, _ = self.process_audio(
-                        self.data_dir / (f["basename"] + ".wav")
-                    )
-                spec = self.extract_spectral_features(audio)
-                torch.save(
-                    spec,
-                    self.save_dir
-                    / self.sep.join(
-                        [
-                            f["basename"],
-                            speaker,
-                            language,
-                            f"spec-{self.audio_config['spec_type']}.npy",
-                        ]
-                    ),
+                save_path = self.save_dir / self.sep.join(
+                    [
+                        f["basename"],
+                        speaker,
+                        language,
+                        f"spec-{self.audio_config['spec_type']}.npy",
+                    ]
                 )
-            if process_f0:
-                if audio is None:
-                    audio, _ = self.process_audio(
-                        self.data_dir / (f["basename"] + ".wav")
-                    )
-                torch.save(
-                    self.extract_f0(audio),
-                    self.save_dir
-                    / self.sep.join([f["basename"], speaker, language, "f0.npy"]),
-                )
-            if process_energy:
-                if spec is None:
+                if overwrite or not save_path.exists():
+                    if audio is None:
+                        audio, _ = self.process_audio(
+                            self.data_dir / (f["basename"] + ".wav")
+                        )
                     spec = self.extract_spectral_features(audio)
-                torch.save(
-                    self.extract_energy(spec),
-                    self.save_dir
-                    / self.sep.join([f["basename"], speaker, language, "energy.npy"]),
+                    torch.save(
+                        spec,
+                        save_path,
+                    )
+                else:
+                    self.skipped_processes += 1
+            if process_f0:
+                save_path = self.save_dir / self.sep.join(
+                    [f["basename"], speaker, language, "f0.npy"]
                 )
+                if overwrite or not save_path.exists():
+                    if audio is None:
+                        audio, _ = self.process_audio(
+                            self.data_dir / (f["basename"] + ".wav")
+                        )
+                    torch.save(
+                        self.extract_f0(audio),
+                        save_path,
+                    )
+                else:
+                    self.skipped_processes += 1
+            if process_energy:
+                save_path = self.save_dir / self.sep.join(
+                    [f["basename"], speaker, language, "energy.npy"]
+                )
+                if overwrite or not save_path.exists():
+                    if spec is None:
+                        spec = self.extract_spectral_features(audio)
+                    torch.save(self.extract_energy(spec), save_path),
+                else:
+                    self.skipped_processes += 1
             if process_duration:
+                save_path = self.save_dir / self.sep.join(
+                    [f["basename"], speaker, language, "duration.npy"]
+                )
                 dur_path = self.data_dir / f["basename"] + ".TextGrid"
                 if not dur_path.exists():
                     logger.warning(f"File '{f}' if missing and will not be processed.")
                     self.missing_files.append(f)
-                torch.save(
-                    self.extract_durations(dur_path),
-                    self.save_dir
-                    / self.sep.join([f["basename"], speaker, language, "duration.npy"]),
-                )
+                    continue
+                if overwrite or not save_path.exists():
+                    torch.save(self.extract_durations(dur_path), save_path)
+                else:
+                    self.skipped_processes += 1
             files.append(item)
             processed += 1
         logger.info(self.report(processed))
