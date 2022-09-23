@@ -72,7 +72,7 @@ class Preprocessor:
 
         audio, sr = load_audio(wav_path, normalize=normalize)
         if use_effects and self.config["preprocessing"]["audio"]["sox_effects"]:
-            audio = apply_effects_tensor(
+            audio, sr = apply_effects_tensor(
                 audio,
                 sr,
                 self.config["preprocessing"]["audio"]["sox_effects"],

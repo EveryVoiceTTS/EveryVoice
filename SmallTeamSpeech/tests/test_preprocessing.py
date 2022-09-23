@@ -41,7 +41,7 @@ class PreprocessingTest(TestCase):
 
     def test_process_audio_for_alignment(self):
         for entry in self.filelist:
-            # This just applies the SOX effects, which currently resample to 16000
+            # This just applies the SOX effects
             audio, sr = self.preprocessor.process_audio(
                 self.data_dir / (entry["filename"] + ".wav"), use_effects=True
             )
