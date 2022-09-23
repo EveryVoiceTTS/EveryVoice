@@ -509,24 +509,19 @@ class HiFiGAN(pl.LightningModule):
         ]  # this is declared explicitly so that auto_scale_batch_size works: https://pytorch-lightning.readthedocs.io/en/stable/advanced/training_tricks.html
         self.save_hyperparameters()
         self.audio_config = config["preprocessing"]["audio"]
+        self.sampling_rate_change = (
+            self.audio_config["target_upsampling_rate"]
+            // self.audio_config["target_sampling_rate"]
+        )
+        # We don't have to set the fft size and hop/window lengths as hyperparameters here, because we can just multiply by the upsampling rate
         self.spectral_transform = get_spectral_transform(
             self.audio_config["spec_type"],
-            self.audio_config["n_fft"],
-            self.audio_config["fft_window_frames"],
-            self.audio_config["fft_hop_frames"],
+            self.audio_config["n_fft"] * self.sampling_rate_change,
+            self.audio_config["fft_window_frames"] * self.sampling_rate_change,
+            self.audio_config["fft_hop_frames"] * self.sampling_rate_change,
             f_min=self.audio_config["f_min"],
             f_max=self.audio_config["f_max"],
             sample_rate=self.audio_config["target_upsampling_rate"],
-            n_mels=self.audio_config["n_mels"],
-        )
-        self.spectral_transform2 = get_spectral_transform(
-            self.audio_config["spec_type"],
-            self.audio_config["n_fft"],
-            self.audio_config["fft_window_frames"],
-            self.audio_config["fft_hop_frames"],
-            f_min=self.audio_config["f_min"],
-            f_max=self.audio_config["f_max"],
-            sample_rate=self.audio_config["target_sampling_rate"],
             n_mels=self.audio_config["n_mels"],
         )
         # TODO: figure out multiple nodes/gpus: https://pytorch-lightning.readthedocs.io/en/1.4.0/advanced/multi_gpu.html
