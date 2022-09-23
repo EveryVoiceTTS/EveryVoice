@@ -1,4 +1,5 @@
 from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
 from config import CONFIGS
@@ -9,12 +10,21 @@ CONFIG = CONFIGS["base"]
 
 TENSORBOARD_LOGGER = TensorBoardLogger(**CONFIG["training"]["logger"])
 
+
 if CONFIG["training"]["strategy"] == "vocoder":
+    ckpt_callback = ModelCheckpoint(
+        monitor="validation/mel_spec_error",
+        mode="min",
+        save_top_k=CONFIG["training"]["vocoder"]["save_top_k_ckpts"],
+        # every_n_train_steps=CONFIG["training"]["vocoder"]["ckpt_steps"],
+        every_n_epochs=100,
+    )
     TRAINER = Trainer(
         logger=TENSORBOARD_LOGGER,
         accelerator="auto",
         devices="auto",
         max_epochs=CONFIG["training"]["vocoder"]["max_epochs"],
+        callbacks=[ckpt_callback],
     )
     VOCODER = HiFiGAN(CONFIG)
     data = HiFiGANDataModule(CONFIG)
