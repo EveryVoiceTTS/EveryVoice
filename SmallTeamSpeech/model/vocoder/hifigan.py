@@ -1,4 +1,5 @@
 import itertools
+import os
 
 import pytorch_lightning as pl
 import torch
@@ -201,17 +202,7 @@ class Generator(torch.nn.Module):
         self.num_kernels = len(self.model_vocoder_config["resblock_kernel_sizes"])
         self.num_upsamples = len(self.model_vocoder_config["upsample_rates"])
         self.conv_pre = (
-            weight_norm(
-                Conv1d(
-                    self.config["preprocessing"]["audio"]["n_mels"],  # in
-                    self.model_vocoder_config["upsample_initial_channel"],  # out
-                    7,  # kernel_size
-                    1,  # stride
-                    padding=3,
-                )
-            )
-            if not self.depthwise
-            else create_depthwise_separable_convolution(
+            create_depthwise_separable_convolution(
                 in_channels=self.config["preprocessing"]["audio"]["n_mels"],
                 out_channels=self.model_vocoder_config["upsample_initial_channel"],
                 kernel_size=7,
@@ -219,7 +210,18 @@ class Generator(torch.nn.Module):
                 padding=3,
                 weight_norm=True,
             )
-        )
+            if self.depthwise
+            else weight_norm(
+                Conv1d(
+                    self.config["preprocessing"]["audio"]["n_mels"],
+                    self.model_vocoder_config["upsample_initial_channel"],
+                    7,
+                    1,
+                    padding=3,
+                )
+            )
+        )  # in  # out  # kernel_size  # stride
+
         resblock = (
             ResBlock1 if self.model_vocoder_config["resblock"] == "1" else ResBlock2
         )
@@ -488,6 +490,16 @@ class HiFiGAN(pl.LightningModule):
             self.audio_config["fft_hop_frames"],
             f_min=self.audio_config["f_min"],
             f_max=self.audio_config["f_max"],
+            sample_rate=self.audio_config["target_upsampling_rate"],
+            n_mels=self.audio_config["n_mels"],
+        )
+        self.spectral_transform2 = get_spectral_transform(
+            self.audio_config["spec_type"],
+            self.audio_config["n_fft"],
+            self.audio_config["fft_window_frames"],
+            self.audio_config["fft_hop_frames"],
+            f_min=self.audio_config["f_min"],
+            f_max=self.audio_config["f_max"],
             sample_rate=self.audio_config["target_sampling_rate"],
             n_mels=self.audio_config["n_mels"],
         )
@@ -496,6 +508,23 @@ class HiFiGAN(pl.LightningModule):
 
     def forward(self, x):
         return self.generator(x)
+
+    def on_save_checkpoint(self, checkpoint):
+        version = (
+            self.config["training"]["logger"]["version"]
+            or f"version_{self.logger.version}"
+        )
+        torch.save(
+            self.generator.state_dict(),
+            os.path.join(
+                self.config["training"]["logger"]["save_dir"],
+                self.config["training"]["logger"]["name"],
+                version,
+                "checkpoints",
+                f"g{self.global_step}.ckpt",
+            ),
+        )
+        return checkpoint
 
     def configure_optimizers(self):
         optim_g = torch.optim.AdamW(
@@ -571,9 +600,11 @@ class HiFiGAN(pl.LightningModule):
             loss_gen_f, _ = self.generator_loss(y_df_hat_g)
             loss_gen_s, _ = self.generator_loss(y_ds_hat_g)
             loss_mel = F.l1_loss(y_mel, generated_mel_spec) * 45
-            result = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_mel
+            gen_loss_total = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_mel
             # log generator loss
-            self.log("g_loss", result, prog_bar=False)
+            self.log("training/gen_loss_total", gen_loss_total, prog_bar=False)
+            self.log("training/mel_spec_error", loss_mel / 45, prog_bar=False)
+            return gen_loss_total
 
         # train discriminators
         if optimizer_idx == 1:
@@ -586,12 +617,13 @@ class HiFiGAN(pl.LightningModule):
             y_ds_hat_r, y_ds_hat_g, _, _ = self.msd(y, y_g_hat.detach())
             loss_disc_s, _, _ = self.discriminator_loss(y_ds_hat_r, y_ds_hat_g)
             # calculate loss
-            result = loss_disc_s + loss_disc_f
+            disc_loss_total = loss_disc_s + loss_disc_f
             # log discriminator loss
-            self.log("d_loss", result, prog_bar=False)
-        return result
+            self.log("training/d_loss_total", disc_loss_total, prog_bar=False)
+            return disc_loss_total
 
     def validation_step(self, batch, batch_idx):
+        # TODO: batch size should be 1, should process full files and samples should be selected chosen on the fly and not cached. Look into DistributedSampler from HiFiGAN
         x, y, _, y_mel = batch
         # generate waveform
         self.generated_wav = self(x)
@@ -622,11 +654,11 @@ class HiFiGAN(pl.LightningModule):
             self.config["preprocessing"]["audio"]["target_sampling_rate"],
         )
 
-        y_hat_spec = self.spectral_transform(self.generated_wav).squeeze(1)[:, :, 1:]
+        y_hat_spec = self.spectral_transform(self.generated_wav[0]).squeeze(1)[:, :, 1:]
         self.logger.experiment.add_figure(
             f"generated/y_hat_spec_{self.global_step}",
             plot_spectrogram(y_hat_spec.squeeze(0).cpu().numpy()),
             self.global_step,
         )
 
-        self.log("val_mel_loss", val_err_tot, prog_bar=False)
+        self.log("validation/mel_spec_error", val_err_tot, prog_bar=False)
