@@ -37,8 +37,18 @@ BASE_MODEL_HPARAMS = {
     },
     "vocoder": {
         "resblock": "1",
-        "upsample_rates": [8, 8, 2, 2],
-        "upsample_kernel_sizes": [16, 16, 4, 4],
+        "upsample_rates": [
+            8,
+            8,
+            2,
+            2,
+        ],  # 8, 8, 2, 2 preserves input sampling rate. 8, 8, 4, 2 doubles it for example.
+        "upsample_kernel_sizes": [
+            16,
+            16,
+            4,
+            4,
+        ],  # must not be less than upsample rate, and must be evenly divisible by upsample rate
         "upsample_initial_channel": 512,
         "resblock_kernel_sizes": [3, 7, 11],
         "resblock_dilation_sizes": [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
@@ -104,6 +114,8 @@ BASE_TRAINING_HPARAMS = {
         "seed": 1234,
         "freeze_layers": {"mpd": False, "msd": False, "generator": False},
         "max_epochs": 30,
+        "save_top_k_ckpts": 5,
+        "ckpt_steps": 10000,
     },
 }
 
@@ -144,7 +156,8 @@ BASE_PREPROCESSING_HPARAMS = {
         "norm_db": -3.0,
         "sil_threshold": 1.0,
         "sil_duration": 0.1,
-        "target_sampling_rate": 22050,  # Sampling rate to ensure audio is sampled using for inputs
+        "target_sampling_rate": 22050,  # Sampling rate to ensure audio input to vocoder (output spec from feature prediction) is sampled at
+        "target_upsampling_rate": 22050,  # Sampling rate to ensure audio output of vocoder is sampled at
         "target_bit_depth": 16,
         "alignment_sampling_rate": 22050,  # Sampling rate from TextGrids. These two sampling rates *should* be the same, but they are separated in case it's not practical for your data
         "alignment_bit_depth": 16,
@@ -156,7 +169,7 @@ BASE_PREPROCESSING_HPARAMS = {
         "n_mels": 80,
         "spec_type": "mel",  # mel (real) | linear (real) | raw (complex) see https://pytorch.org/audio/stable/tutorials/audio_feature_extractions_tutorial.html#overview-of-audio-features
         "sox_effects": SOX_EFFECTS,
-        "vocoder_segment_size": 8192,  # this is the size of the segments taken for training HiFI-GAN
+        "vocoder_segment_size": 8192,  # this is the size of the segments taken for training HiFI-GAN. This should be a multiple of the upsample hop size which itself is equal to the product of the upsample rates.
     },
 }
 
