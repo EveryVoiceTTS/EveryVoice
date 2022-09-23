@@ -22,7 +22,7 @@ def plot_spectrogram(spectrogram):
     return fig
 
 
-def write_filelist(self, files, path):
+def write_filelist(files, path):
     with open(path, "w") as f:
         writer = csv.DictWriter(
             f,
