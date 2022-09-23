@@ -1,6 +1,7 @@
 from .base_config import BaseConfig
+from .lj_config import BaseConfig as LJConfig
 
-CONFIGS = {"base": BaseConfig()}
+CONFIGS = {"base": BaseConfig(), "lj": LJConfig()}
 
 
 class ConfigError(Exception):
