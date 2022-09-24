@@ -17,6 +17,7 @@ from tabulate import tabulate
 from torch import Tensor, linalg, mean, tensor
 from torchaudio import load as load_audio
 from torchaudio import save as save_audio
+from torchaudio.functional import resample
 from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
@@ -39,27 +40,57 @@ class Preprocessor:
         self.filelist = self.config["preprocessing"]["filelist_loader"](
             self.config["preprocessing"]["filelist"]
         )
+        self.input_sampling_rate = self.audio_config["input_sampling_rate"]
+        self.output_sampling_rate = self.audio_config["output_sampling_rate"]
+        self.sampling_rate_change = (
+            self.output_sampling_rate // self.input_sampling_rate
+        )
         # Define Spectral Transform
         # Gah, so many ways to do this: https://github.com/CookiePPP/VocoderComparisons/issues/3
 
-        self.spectral_transform = get_spectral_transform(
+        self.input_spectral_transform = get_spectral_transform(
             self.audio_config["spec_type"],
             self.audio_config["n_fft"],
             self.audio_config["fft_window_frames"],
             self.audio_config["fft_hop_frames"],
-            sample_rate=self.audio_config["target_sampling_rate"],
+            sample_rate=self.input_sampling_rate,
+            n_mels=self.audio_config["n_mels"],
+            f_min=self.audio_config["f_min"],
+            f_max=self.audio_config["f_max"],
+        )
+        self.output_spectral_transform = get_spectral_transform(
+            self.audio_config["spec_type"],
+            self.audio_config["n_fft"] * self.sampling_rate_change,
+            self.audio_config["fft_window_frames"] * self.sampling_rate_change,
+            self.audio_config["fft_hop_frames"] * self.sampling_rate_change,
+            sample_rate=self.output_sampling_rate,
             n_mels=self.audio_config["n_mels"],
             f_min=self.audio_config["f_min"],
             f_max=self.audio_config["f_max"],
         )
 
-        if self.spectral_transform is None:
+        if (
+            self.input_spectral_transform is None
+            or self.output_spectral_transform is None
+        ):
             raise ConfigError(
                 f"Spectral feature specification {self.audio_config['spec_type']} is not supported. Please edit your config file."
             )
 
+    def load_audio_tensor(self, audio_path: str):
+        """Load audio tensor from file
+
+        Args:
+            audio_path (str): path to audio file
+        """
+        try:
+            return torch.load(audio_path)
+        except FileNotFoundError:
+            logger.error("Audio file not found. Please process audio first.")
+            exit()
+
     def process_audio(
-        self, wav_path: str, normalize=True, use_effects=False
+        self, wav_path: str, normalize=True, use_effects=False, resample_rate=None
     ) -> Tuple[Tensor, int]:
         """Process audio
 
@@ -77,16 +108,20 @@ class Preprocessor:
                 sr,
                 self.config["preprocessing"]["audio"]["sox_effects"],
             )
+        if resample_rate is not None and resample_rate != sr:
+            audio = resample(audio, sr, resample_rate)
+            sr = resample_rate
         return (audio, sr)
 
-    def extract_spectral_features(self, audio_tensor: Tensor):
+    def extract_spectral_features(self, audio_tensor: Tensor, transform):
         """Given an audio tensor, extract the log Mel spectral features
         from the given start and end points
 
         Args:
             audio_tensor (Tensor): Tensor trimmed according
+            transform (torchaudio.transforms): transform to apply; use either Preprocessor.input_spectral_transform or Preprocessor.output_spectral_transform
         """
-        return self.spectral_transform(audio_tensor).squeeze()
+        return transform(audio_tensor).squeeze()
 
     def extract_f0(self, audio_tensor: Tensor):
         """Given an audio tensor, extract the f0
@@ -108,9 +143,9 @@ class Preprocessor:
                 .astype(
                     np.float64
                 ),  # TODO: why are these np.float64, maybe it's just what pw expects?
-                self.audio_config["target_sampling_rate"],
+                self.input_sampling_rate,
                 frame_period=self.audio_config["fft_hop_frames"]
-                / self.audio_config["target_sampling_rate"]
+                / self.input_sampling_rate
                 * 1000,
                 speed=4,
             )
@@ -118,19 +153,19 @@ class Preprocessor:
                 audio_tensor.squeeze(0).numpy().astype(np.float64),
                 pitch,
                 t,
-                self.audio_config["target_sampling_rate"],
+                self.input_sampling_rate,
             )
             pitch = tensor(pitch)
             # TODO: consider interpolating by default when using PyWorld pitch detection
         elif self.config["preprocessing"]["f0_type"] == "kaldi":
             pitch = F.compute_kaldi_pitch(
                 waveform=audio_tensor,
-                sample_rate=self.audio_config["target_sampling_rate"],
+                sample_rate=self.input_sampling_rate,
                 frame_length=self.audio_config["fft_window_frames"]
-                / self.audio_config["target_sampling_rate"]
+                / self.input_sampling_rate
                 * 1000,
                 frame_shift=self.audio_config["fft_hop_frames"]
-                / self.audio_config["target_sampling_rate"]
+                / self.input_sampling_rate
                 * 1000,
                 min_f0=50,
                 max_f0=400,
@@ -161,12 +196,12 @@ class Preprocessor:
                     (
                         np.round(
                             x[1]
-                            * self.audio_config["target_sampling_rate"]
+                            * self.input_sampling_rate
                             / self.audio_config["fft_hop_frames"]
                         )
                         - np.round(
                             x[0]
-                            * self.audio_config["target_sampling_rate"]
+                            * self.input_sampling_rate
                             / self.audio_config["fft_hop_frames"]
                         )
                     )
@@ -265,6 +300,22 @@ class Preprocessor:
             item = {**f, **{"speaker": speaker, "language": language}}
             audio = None
             spec = None
+            input_audio_save_path = self.save_dir / self.sep.join(
+                [
+                    f["basename"],
+                    speaker,
+                    language,
+                    f"audio-{self.input_sampling_rate}.npy",
+                ]
+            )
+            output_audio_save_path = self.save_dir / self.sep.join(
+                [
+                    f["basename"],
+                    speaker,
+                    language,
+                    f"audio-{self.output_sampling_rate}.npy",
+                ]
+            )
             if process_text:
                 save_path = self.save_dir / self.sep.join(
                     [f["basename"], speaker, language, "text.npy"]
@@ -309,35 +360,62 @@ class Preprocessor:
                 else:
                     self.skipped_processes += 1
             if process_audio:
-                save_path = self.save_dir / self.sep.join(
-                    [f["basename"], speaker, language, "audio.npy"]
-                )
-                if overwrite or not save_path.exists():
+                if (
+                    overwrite
+                    or not input_audio_save_path.exists()
+                    or not output_audio_save_path.exists()
+                ):
                     audio, _ = self.process_audio(
-                        self.data_dir / (f["basename"] + ".wav")
+                        self.data_dir / (f["basename"] + ".wav"),
+                        resample_rate=self.input_sampling_rate,
                     )
-                    torch.save(audio, save_path)
+                    torch.save(audio, input_audio_save_path)
+                    if self.input_sampling_rate != self.output_sampling_rate:
+                        output_audio, _ = self.process_audio(
+                            self.data_dir / (f["basename"] + ".wav"),
+                            resample_rate=self.output_sampling_rate,
+                        )
+
+                        torch.save(output_audio, output_audio_save_path)
                 else:
                     self.skipped_processes += 1
             if process_spec:
-                save_path = self.save_dir / self.sep.join(
+                input_spec_save_path = self.save_dir / self.sep.join(
                     [
                         f["basename"],
                         speaker,
                         language,
-                        f"spec-{self.audio_config['spec_type']}.npy",
+                        f"spec-{self.input_sampling_rate}-{self.audio_config['spec_type']}.npy",
                     ]
                 )
-                if overwrite or not save_path.exists():
+                output_spec_save_path = self.save_dir / self.sep.join(
+                    [
+                        f["basename"],
+                        speaker,
+                        language,
+                        f"spec-{self.output_sampling_rate}-{self.audio_config['spec_type']}.npy",
+                    ]
+                )
+                if (
+                    overwrite
+                    or not input_spec_save_path.exists()
+                    or not output_spec_save_path.exists()
+                ):
                     if audio is None:
-                        audio, _ = self.process_audio(
-                            self.data_dir / (f["basename"] + ".wav")
-                        )
-                    spec = self.extract_spectral_features(audio)
+                        audio = self.load_audio_tensor(input_audio_save_path)
+                    if output_audio is None:
+                        output_audio = self.load_audio_tensor(output_audio_save_path)
+                    spec = self.extract_spectral_features(
+                        audio, self.input_spectral_transform
+                    )
                     torch.save(
                         spec,
-                        save_path,
+                        input_spec_save_path,
                     )
+                    output_spec = self.extract_spectral_features(
+                        output_audio, self.output_spectral_transform
+                    )
+                    torch.save(output_spec, output_spec_save_path)
                 else:
                     self.skipped_processes += 1
             if process_f0:
@@ -346,9 +424,7 @@ class Preprocessor:
                 )
                 if overwrite or not save_path.exists():
                     if audio is None:
-                        audio, _ = self.process_audio(
-                            self.data_dir / (f["basename"] + ".wav")
-                        )
+                        audio = self.load_audio_tensor(input_audio_save_path)
                     torch.save(
                         self.extract_f0(audio),
                         save_path,
@@ -361,7 +437,13 @@ class Preprocessor:
                 )
                 if overwrite or not save_path.exists():
                     if spec is None:
-                        spec = self.extract_spectral_features(audio)
+                        try:
+                            spec = torch.load(input_spec_save_path)
+                        except FileNotFoundError:
+                            logger.error(
+                                f"Could not find spec file at '{input_spec_save_path}'. Please process the spec first."
+                            )
+                            exit()
                     torch.save(self.extract_energy(spec), save_path),
                 else:
                     self.skipped_processes += 1
