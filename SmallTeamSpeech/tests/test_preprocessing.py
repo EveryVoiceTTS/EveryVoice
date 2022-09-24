@@ -75,9 +75,15 @@ class PreprocessingTest(TestCase):
             #     / "ming024"
             #     / ("eng-LJSpeech-mel-" + entry["filename"] + ".npy")
             # )
-            feats = self.preprocessor.extract_spectral_features(audio)
-            linear_feats = linear_preprocessor.extract_spectral_features(audio)
-            complex_feats = complex_preprocessor.extract_spectral_features(audio)
+            feats = self.preprocessor.extract_spectral_features(
+                audio, self.preprocessor.input_spectral_transform
+            )
+            linear_feats = linear_preprocessor.extract_spectral_features(
+                audio, linear_preprocessor.input_spectral_transform
+            )
+            complex_feats = complex_preprocessor.extract_spectral_features(
+                audio, complex_preprocessor.input_spectral_transform
+            )
             # check data is same number of mels
             self.assertEqual(
                 feats.size(0),
@@ -112,7 +118,9 @@ class PreprocessingTest(TestCase):
             durs = self.preprocessor.extract_durations(
                 self.data_dir / (entry["filename"] + ".TextGrid")
             )
-            feats = self.preprocessor.extract_spectral_features(audio)
+            feats = self.preprocessor.extract_spectral_features(
+                audio, self.preprocessor.input_spectral_transform
+            )
             # ming024_f0 = np.load(
             #     self.data_dir
             #     / "ming024"
@@ -145,7 +153,9 @@ class PreprocessingTest(TestCase):
             durs = self.preprocessor.extract_durations(
                 self.data_dir / (entry["filename"] + ".TextGrid")
             )
-            feats = self.preprocessor.extract_spectral_features(audio)
+            feats = self.preprocessor.extract_spectral_features(
+                audio, self.preprocessor.input_spectral_transform
+            )
             # ming024_durs = np.load(
             #     self.data_dir
             #     / "ming024"
@@ -170,7 +180,9 @@ class PreprocessingTest(TestCase):
             #     / "ming024"
             #     / ("eng-LJSpeech-energy-" + entry["filename"] + ".npy")
             # )
-            feats = self.preprocessor.extract_spectral_features(audio)
+            feats = self.preprocessor.extract_spectral_features(
+                audio, self.preprocessor.input_spectral_transform
+            )
 
             frame_energy = preprocessor.extract_energy(feats)
             phone_avg_energy = preprocessor.average_data_by_durations(

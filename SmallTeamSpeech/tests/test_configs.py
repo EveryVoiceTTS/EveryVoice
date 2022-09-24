@@ -38,9 +38,9 @@ class ConfigTest(TestCase):
         """Because the vocoder is set up to upsample"""
         for config in CONFIGS.values():
             # check that same number of kernels and kernel sizes exist
-            sampling_rate = config["preprocessing"]["audio"]["target_sampling_rate"]
+            sampling_rate = config["preprocessing"]["audio"]["input_sampling_rate"]
             upsampled_sampling_rate = config["preprocessing"]["audio"][
-                "target_upsampling_rate"
+                "output_sampling_rate"
             ]
             self.assertEqual(
                 len(config["model"]["vocoder"]["upsample_kernel_sizes"]),
