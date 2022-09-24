@@ -512,8 +512,8 @@ class HiFiGAN(pl.LightningModule):
         self.save_hyperparameters()
         self.audio_config = config["preprocessing"]["audio"]
         self.sampling_rate_change = (
-            self.audio_config["target_upsampling_rate"]
-            // self.audio_config["target_sampling_rate"]
+            self.audio_config["output_sampling_rate"]
+            // self.audio_config["input_sampling_rate"]
         )
         # We don't have to set the fft size and hop/window lengths as hyperparameters here, because we can just multiply by the upsampling rate
         self.spectral_transform = get_spectral_transform(
@@ -523,7 +523,7 @@ class HiFiGAN(pl.LightningModule):
             self.audio_config["fft_hop_frames"] * self.sampling_rate_change,
             f_min=self.audio_config["f_min"],
             f_max=self.audio_config["f_max"],
-            sample_rate=self.audio_config["target_upsampling_rate"],
+            sample_rate=self.audio_config["output_sampling_rate"],
             n_mels=self.audio_config["n_mels"],
         )
         # TODO: figure out multiple nodes/gpus: https://pytorch-lightning.readthedocs.io/en/1.4.0/advanced/multi_gpu.html
@@ -662,7 +662,7 @@ class HiFiGAN(pl.LightningModule):
                 f"gt/y_{self.global_step}",
                 y[0],
                 self.global_step,
-                self.config["preprocessing"]["audio"]["target_sampling_rate"],
+                self.config["preprocessing"]["audio"]["output_sampling_rate"],
             )
             self.logger.experiment.add_figure(
                 f"gt/y_spec_{self.global_step}",
@@ -674,7 +674,7 @@ class HiFiGAN(pl.LightningModule):
             f"generated/y_hat_{self.global_step}",
             self.generated_wav[0],
             self.global_step,
-            self.config["preprocessing"]["audio"]["target_sampling_rate"],
+            self.config["preprocessing"]["audio"]["output_sampling_rate"],
         )
 
         y_hat_spec = self.spectral_transform(self.generated_wav[0]).squeeze(1)[:, :, 1:]
