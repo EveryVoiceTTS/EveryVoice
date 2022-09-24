@@ -10,6 +10,8 @@ from copy import deepcopy
 from datetime import datetime
 from string import ascii_lowercase, ascii_uppercase
 
+from torch.nn import functional as F
+
 from utils import (
     collapse_whitespace,
     generic_dict_loader,
@@ -37,14 +39,25 @@ BASE_MODEL_HPARAMS = {
     },
     "vocoder": {
         "resblock": "1",
-        "upsample_rates": [8, 8, 2, 2],
-        "upsample_kernel_sizes": [16, 16, 4, 4],
+        "upsample_rates": [
+            8,
+            8,
+            4,
+            2,
+        ],  # 8, 8, 2, 2 preserves input sampling rate. 8, 8, 4, 2 doubles it for example.
+        "upsample_kernel_sizes": [
+            16,
+            16,
+            8,
+            4,
+        ],  # must not be less than upsample rate, and must be evenly divisible by upsample rate
         "upsample_initial_channel": 512,
         "resblock_kernel_sizes": [3, 7, 11],
         "resblock_dilation_sizes": [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
         "depthwise_separable_convolutions": {
             "generator": True,
         },
+        "activation_function": F.silu,  # for original implementation use utils.original_hifigan_leaky_relu,
     },
     "use_postnet": True,
     "max_seq_len": 1000,
@@ -64,17 +77,17 @@ BASE_MODEL_HPARAMS = {
 BASE_TRAINING_HPARAMS = {
     "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
     "train_split": 0.9,  # the rest is val
-    "batch_size": 11790,
+    "batch_size": 4,
     "train_data_workers": 4,
     "val_data_workers": 4,
     "logger": {  # Uses Tensorboard
-        "name": "LJ",
+        "name": "Base Experiment",
         "save_dir": "./logs",
         "sub_dir": str(int(datetime.today().timestamp())),
         "version": "base",
     },
     "feature_prediction": {
-        "filelist": "./preprocessed/LJ/preprocessed_filelist.psv",
+        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
         "filelist_loader": generic_dict_loader,
         "steps": {
             "total": 300000,
@@ -93,7 +106,7 @@ BASE_TRAINING_HPARAMS = {
         },
     },
     "vocoder": {
-        "filelist": "./preprocessed/LJ/preprocessed_filelist.psv",
+        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
         "finetune_checkpoint": "",
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
@@ -146,20 +159,20 @@ BASE_PREPROCESSING_HPARAMS = {
         "norm_db": -3.0,
         "sil_threshold": 1.0,
         "sil_duration": 0.1,
-        "target_sampling_rate": 22050,  # Sampling rate to ensure audio is sampled using for inputs
-        "target_upsampling_rate": 22050,  # Sampling rate for vocoder to upsample to
+        "input_sampling_rate": 22050,  # Sampling rate to ensure audio input to vocoder (output spec from feature prediction) is sampled at
+        "output_sampling_rate": 44100,  # Sampling rate to ensure audio output of vocoder is sampled at
         "target_bit_depth": 16,
         "alignment_sampling_rate": 22050,  # Sampling rate from TextGrids. These two sampling rates *should* be the same, but they are separated in case it's not practical for your data
         "alignment_bit_depth": 16,
-        "fft_window_frames": 1024,
-        "fft_hop_frames": 256,
+        "fft_window_frames": 1024,  # set this to the input sampling rate
+        "fft_hop_frames": 256,  # set this to the input sampling rate
         "f_min": 0,
         "f_max": 8000,
-        "n_fft": 1024,
+        "n_fft": 1024,  # set this to the input sampling rate
         "n_mels": 80,
         "spec_type": "mel",  # mel (real) | linear (real) | raw (complex) see https://pytorch.org/audio/stable/tutorials/audio_feature_extractions_tutorial.html#overview-of-audio-features
         "sox_effects": SOX_EFFECTS,
-        "vocoder_segment_size": 8192,  # this is the size of the segments taken for training HiFI-GAN
+        "vocoder_segment_size": 16384,  # this is the size of the segments taken for training HiFI-GAN. set proportional to output sampling rate; 8192 is for output of 22050Hz. This should be a multiple of the upsample hop size which itself is equal to the product of the upsample rates.
     },
 }
 

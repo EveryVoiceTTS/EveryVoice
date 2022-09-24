@@ -28,6 +28,12 @@ class BaseDataModule(pl.LightningDataModule):
         self.train_dataset, self.val_dataset = random_split(
             self.dataset, [train_split, len(self.dataset) - train_split]
         )
+        self.train_dataset = SpecDataset(
+            self.train_dataset, self.config, use_segments=True
+        )
+        self.val_dataset = SpecDataset(
+            self.val_dataset, self.config, use_segments=False
+        )
         # save it to disk
         torch.save(self.train_dataset, self.train_path)
         torch.save(self.val_dataset, self.val_path)
@@ -42,13 +48,17 @@ class BaseDataModule(pl.LightningDataModule):
             self.train_dataset,
             batch_size=self.config["training"]["batch_size"],
             num_workers=self.config["training"]["train_data_workers"],
+            pin_memory=True,
+            drop_last=True,
         )
 
     def val_dataloader(self):
         return DataLoader(
             self.val_dataset,
-            batch_size=self.config["training"]["batch_size"],
-            num_workers=self.config["training"]["val_data_workers"],
+            batch_size=1,
+            num_workers=1,
+            pin_memory=True,
+            drop_last=True,
         )
 
     def load_dataset(self):
@@ -59,76 +69,114 @@ class BaseDataModule(pl.LightningDataModule):
 
 
 class SpecDataset(Dataset):
-    def __init__(self, config, finetune=False):
+    def __init__(self, audio_files, config, use_segments=False, finetune=False):
         self.config = config
         self.sep = config["preprocessing"]["value_separator"]
-        self.audio_files = self.config["training"]["vocoder"]["filelist_loader"](
-            self.config["training"]["vocoder"]["filelist"]
-        )
+        self.use_segments = use_segments
+        self.audio_files = audio_files
         self.preprocessed_dir = Path(self.config["preprocessing"]["save_dir"])
         self.finetune = finetune
         random.seed(self.config["training"]["vocoder"]["seed"])
         self.segment_size = self.config["preprocessing"]["audio"][
             "vocoder_segment_size"
         ]
-        self.hop_size = self.config["preprocessing"]["audio"]["fft_hop_frames"]
+        self.output_sampling_rate = self.config["preprocessing"]["audio"][
+            "output_sampling_rate"
+        ]
+        self.input_sampling_rate = self.config["preprocessing"]["audio"][
+            "input_sampling_rate"
+        ]
+        self.sampling_rate_change = (
+            self.output_sampling_rate // self.input_sampling_rate
+        )
+        self.input_hop_size = self.config["preprocessing"]["audio"]["fft_hop_frames"]
+        self.output_hop_size = (
+            self.config["preprocessing"]["audio"]["fft_hop_frames"]
+            * self.sampling_rate_change
+        )
 
     def __getitem__(self, index):
+        """
+        x = mel spectrogram from potentially downsampled audio or from acoustic feature prediction
+        y = waveform from potentially upsampled audio
+        y_mel = mel spectrogram calculated from y
+        """
         item = self.audio_files[index]
         speaker = "default" if "speaker" not in item else item["speaker"]
         language = "default" if "language" not in item else item["language"]
-        audio = torch.load(
-            self.preprocessed_dir
-            / self.sep.join([item["basename"], speaker, language, "audio.npy"])
-        )  # [channels, samples]
-        spec = spec_from_audio = torch.load(
+        y = torch.load(
             self.preprocessed_dir
             / self.sep.join(
                 [
                     item["basename"],
                     speaker,
                     language,
-                    f"spec-{self.config['preprocessing']['audio']['spec_type']}.npy",
+                    f"audio-{self.output_sampling_rate}.npy",
+                ]
+            )
+        )  # [channels, samples] should be output sample rate
+        y_mel = torch.load(
+            self.preprocessed_dir
+            / self.sep.join(
+                [
+                    item["basename"],
+                    speaker,
+                    language,
+                    f"spec-{self.output_sampling_rate}-{self.config['preprocessing']['audio']['spec_type']}.npy",
                 ]
             )
         )  # [mel_bins, frames]
-
         if self.finetune:
             # If finetuning, use the synthesized spectral features
-            spec = torch.load(
+            x = torch.load(
                 self.preprocessed_dir
                 / self.sep.join(
                     [item["basename"], speaker, language, "spec-synthesized.npy"]
                 )
             )
-        frames_per_seg = math.ceil(self.segment_size / self.hop_size)
-        if audio.size(1) >= self.segment_size:
-            max_spec_start = spec.size(1) - frames_per_seg - 1
-            spec_start = random.randint(0, max_spec_start)
-            spec = spec[:, spec_start : spec_start + frames_per_seg]
-            spec_from_audio = spec_from_audio[
-                :, spec_start : spec_start + frames_per_seg
-            ]
-            audio = audio[
-                :,
-                spec_start
-                * self.hop_size : (spec_start + frames_per_seg)
-                * self.hop_size,
-            ]
         else:
-            spec = torch.nn.functional.pad(
-                spec, (0, frames_per_seg - spec.size(1)), "constant"
-            )
-            spec_from_audio = torch.nn.functional.pad(
-                spec_from_audio,
-                (0, frames_per_seg - spec_from_audio.size(2)),
-                "constant",
-            )
-            audio = torch.nn.functional.pad(
-                audio, (0, self.segment_size - audio.size(1)), "constant"
-            )
+            x = torch.load(
+                self.preprocessed_dir
+                / self.sep.join(
+                    [
+                        item["basename"],
+                        speaker,
+                        language,
+                        f"spec-{self.input_sampling_rate}-{self.config['preprocessing']['audio']['spec_type']}.npy",
+                    ]
+                )
+            )  # [mel_bins, frames]
+        frames_per_seg = math.ceil(
+            self.segment_size / self.output_hop_size
+        )  # segment size is relative to output_sampling_rate, so we use the output_hop_size, but frames_per_seg is in frequency domain, so invariant to x and y_mel
+        # other implementations just resample y and take the mel spectrogram of that, but this solution allows for segmenting predicted mel spectrograms from the acoustic feature prediction network too
 
-        return (spec, audio, self.audio_files[index]["basename"], spec_from_audio)
+        if self.use_segments:
+            # randomly select a segment, if the segment is too short, pad it with zeros
+            if y.size(1) >= self.segment_size:
+                max_spec_start = x.size(1) - frames_per_seg - 1
+                spec_start = random.randint(0, max_spec_start)
+                x = x[:, spec_start : spec_start + frames_per_seg]
+                y_mel = y_mel[:, spec_start : spec_start + frames_per_seg]
+                y = y[
+                    :,
+                    spec_start
+                    * self.output_hop_size : (spec_start + frames_per_seg)
+                    * self.output_hop_size,
+                ]
+            else:
+                x = torch.nn.functional.pad(
+                    x, (0, frames_per_seg - x.size(1)), "constant"
+                )
+                y_mel = torch.nn.functional.pad(
+                    y_mel,
+                    (0, frames_per_seg - y_mel.size(1)),
+                    "constant",
+                )
+                y = torch.nn.functional.pad(
+                    y, (0, self.segment_size - y.size(1)), "constant"
+                )
+        return (x, y, self.audio_files[index]["basename"], y_mel)
 
     def __len__(self):
         return len(self.audio_files)
@@ -136,7 +184,15 @@ class SpecDataset(Dataset):
 
 class HiFiGANDataModule(BaseDataModule):
     def load_dataset(self):
-        self.dataset = SpecDataset(config=self.config)
+        self.dataset = self.config["training"]["vocoder"]["filelist_loader"](
+            self.config["training"]["vocoder"]["filelist"]
+        )
+
+    def load_train_dataset(self):
+        self.train_dataset = SpecDataset(config=self.config, use_segments=True)
+
+    def load_val_dataset(self):
+        self.val_dataset = SpecDataset(config=self.config, use_segments=False)
 
 
 class HiFiGANFineTuneDataModule(BaseDataModule):
@@ -145,6 +201,7 @@ class HiFiGANFineTuneDataModule(BaseDataModule):
 
 
 class FeaturePredictionDataModule(BaseDataModule):
+    # TODO: look into compatibility with base data module; ie pin_memory, drop_last, etc
     def load_dataset(self):
         pass
 
