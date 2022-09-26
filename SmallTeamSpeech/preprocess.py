@@ -1,7 +1,7 @@
 from config import CONFIGS
 from preprocessor import Preprocessor
 
-CONFIG = CONFIGS["base"]
+CONFIG = CONFIGS["lj"]
 
 PREPROCESSOR = Preprocessor(CONFIG)
 

@@ -77,17 +77,17 @@ BASE_MODEL_HPARAMS = {
 BASE_TRAINING_HPARAMS = {
     "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
     "train_split": 0.9,  # the rest is val
-    "batch_size": 4,
+    "batch_size": 16,
     "train_data_workers": 4,
-    "val_data_workers": 4,
+    "val_data_workers": 1,
     "logger": {  # Uses Tensorboard
-        "name": "Base Experiment",
+        "name": "LJ",
         "save_dir": "./logs",
         "sub_dir": str(int(datetime.today().timestamp())),
         "version": "base",
     },
     "feature_prediction": {
-        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
+        "filelist": "./preprocessed/LJ/preprocessed_filelist.psv",
         "filelist_loader": generic_dict_loader,
         "steps": {
             "total": 300000,
@@ -106,8 +106,8 @@ BASE_TRAINING_HPARAMS = {
         },
     },
     "vocoder": {
-        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
-        "finetune_checkpoint": "",
+        "filelist": "./preprocessed/LJ/preprocessed_filelist.psv",
+        "finetune_checkpoint": "./logs/LJ/base/checkpoints/last.ckpt",
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "learning_rate": 0.0002,
@@ -116,9 +116,10 @@ BASE_TRAINING_HPARAMS = {
         "lr_decay": 0.999,
         "seed": 1234,
         "freeze_layers": {"mpd": False, "msd": False, "generator": False},
-        "max_epochs": 30,
+        "max_epochs": 1000,
         "save_top_k_ckpts": 5,
-        "ckpt_steps": 10000,
+        "ckpt_steps": None,
+        "ckpt_epochs": 1,
     },
 }
 

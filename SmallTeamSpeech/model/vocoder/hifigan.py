@@ -537,15 +537,24 @@ class HiFiGAN(pl.LightningModule):
             self.config["training"]["logger"]["version"]
             or f"version_{self.logger.version}"
         )
+        gen_dir = os.path.join(
+            self.config["training"]["logger"]["save_dir"],
+            self.config["training"]["logger"]["name"],
+            version,
+            "checkpoints",
+        )
+        if not os.path.exists(gen_dir):
+            os.makedirs(gen_dir)
+        gen_path = os.path.join(
+            self.config["training"]["logger"]["save_dir"],
+            self.config["training"]["logger"]["name"],
+            version,
+            "checkpoints",
+            f"g{self.global_step}.ckpt",
+        )
         torch.save(
             self.generator.state_dict(),
-            os.path.join(
-                self.config["training"]["logger"]["save_dir"],
-                self.config["training"]["logger"]["name"],
-                version,
-                "checkpoints",
-                f"g{self.global_step}.ckpt",
-            ),
+            gen_path,
         )
         return checkpoint
 
@@ -647,7 +656,7 @@ class HiFiGAN(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         # TODO: batch size should be 1, should process full files and samples should be selected chosen on the fly and not cached. Look into DistributedSampler from HiFiGAN
-        x, y, _, y_mel = batch
+        x, y, bn, y_mel = batch
         # generate waveform
         self.generated_wav = self(x)
         # create mel
@@ -659,29 +668,32 @@ class HiFiGAN(pl.LightningModule):
         if self.global_step == 0:
             # Log ground truth audio and spec
             self.logger.experiment.add_audio(
-                f"gt/y_{self.global_step}",
+                f"gt/y_{self.global_step}_{bn[0]}",
                 y[0],
                 self.global_step,
                 self.config["preprocessing"]["audio"]["output_sampling_rate"],
             )
             self.logger.experiment.add_figure(
-                f"gt/y_spec_{self.global_step}",
+                f"gt/y_spec_{self.global_step}_{bn[0]}",
                 plot_spectrogram(x[0].cpu().numpy()),
                 self.global_step,
             )
         #
-        self.logger.experiment.add_audio(
-            f"generated/y_hat_{self.global_step}",
-            self.generated_wav[0],
-            self.global_step,
-            self.config["preprocessing"]["audio"]["output_sampling_rate"],
-        )
+        if batch_idx == 0:
+            self.logger.experiment.add_audio(
+                f"generated/y_hat_{self.global_step}_{bn[0]}",
+                self.generated_wav[0],
+                self.global_step,
+                self.config["preprocessing"]["audio"]["output_sampling_rate"],
+            )
 
-        y_hat_spec = self.spectral_transform(self.generated_wav[0]).squeeze(1)[:, :, 1:]
-        self.logger.experiment.add_figure(
-            f"generated/y_hat_spec_{self.global_step}",
-            plot_spectrogram(y_hat_spec.squeeze(0).cpu().numpy()),
-            self.global_step,
-        )
+            y_hat_spec = self.spectral_transform(self.generated_wav[0]).squeeze(1)[
+                :, :, 1:
+            ]
+            self.logger.experiment.add_figure(
+                f"generated/y_hat_spec_{self.global_step}_{bn[0]}",
+                plot_spectrogram(y_hat_spec.squeeze(0).cpu().numpy()),
+                self.global_step,
+            )
 
         self.log("validation/mel_spec_error", val_err_tot, prog_bar=False)

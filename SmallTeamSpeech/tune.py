@@ -4,7 +4,7 @@ from config import CONFIGS
 from dataloader import HiFiGANDataModule
 from model.vocoder.hifigan import HiFiGAN
 
-CONFIG = CONFIGS["base"]
+CONFIG = CONFIGS["lj"]
 
 if CONFIG["training"]["strategy"] == "vocoder":
     TRAINER = Trainer(

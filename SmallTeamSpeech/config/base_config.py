@@ -107,7 +107,7 @@ BASE_TRAINING_HPARAMS = {
     },
     "vocoder": {
         "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
-        "finetune_checkpoint": "",
+        "finetune_checkpoint": "./logs/Base Experiment/base/checkpoints/last.ckpt",
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "learning_rate": 0.0002,
@@ -118,7 +118,8 @@ BASE_TRAINING_HPARAMS = {
         "freeze_layers": {"mpd": False, "msd": False, "generator": False},
         "max_epochs": 30,
         "save_top_k_ckpts": 5,
-        "ckpt_steps": 10000,
+        "ckpt_steps": None,
+        "ckpt_epochs": 1,
     },
 }
 
