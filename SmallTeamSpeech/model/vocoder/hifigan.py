@@ -545,12 +545,13 @@ class HiFiGAN(pl.LightningModule):
         )
         if not os.path.exists(gen_dir):
             os.makedirs(gen_dir)
+        gen_step = self.global_step // 2
         gen_path = os.path.join(
             self.config["training"]["logger"]["save_dir"],
             self.config["training"]["logger"]["name"],
             version,
             "checkpoints",
-            f"g{self.global_step}.ckpt",
+            f"g{gen_step}.ckpt",
         )
         torch.save(
             self.generator.state_dict(),
@@ -631,11 +632,15 @@ class HiFiGAN(pl.LightningModule):
             loss_fm_s = self.feature_loss(fmap_s_r, fmap_s_g)
             loss_gen_f, _ = self.generator_loss(y_df_hat_g)
             loss_gen_s, _ = self.generator_loss(y_ds_hat_g)
+            self.log("training/gen/loss_fmap_f", loss_fm_f, prog_bar=False)
+            self.log("training/gen/loss_fmap_s", loss_fm_s, prog_bar=False)
+            self.log("training/gen/loss_gen_f", loss_gen_f, prog_bar=False)
+            self.log("training/gen/loss_gen_s", loss_gen_s, prog_bar=False)
             loss_mel = F.l1_loss(y_mel, generated_mel_spec) * 45
             gen_loss_total = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_mel
             # log generator loss
-            self.log("training/gen_loss_total", gen_loss_total, prog_bar=False)
-            self.log("training/mel_spec_error", loss_mel / 45, prog_bar=False)
+            self.log("training/gen/gen_loss_total", gen_loss_total, prog_bar=False)
+            self.log("training/gen/mel_spec_error", loss_mel / 45, prog_bar=False)
             return gen_loss_total
 
         # train discriminators
@@ -644,19 +649,23 @@ class HiFiGAN(pl.LightningModule):
             # MPD
             y_df_hat_r, y_df_hat_g, _, _ = self.mpd(y, y_g_hat.detach())
             loss_disc_f, _, _ = self.discriminator_loss(y_df_hat_r, y_df_hat_g)
-
+            self.log("training/disc//mpd_loss", loss_disc_f, prog_bar=False)
             # MSD
             y_ds_hat_r, y_ds_hat_g, _, _ = self.msd(y, y_g_hat.detach())
             loss_disc_s, _, _ = self.discriminator_loss(y_ds_hat_r, y_ds_hat_g)
+            self.log("training/disc//msd_loss", loss_disc_s, prog_bar=False)
             # calculate loss
             disc_loss_total = loss_disc_s + loss_disc_f
             # log discriminator loss
-            self.log("training/d_loss_total", disc_loss_total, prog_bar=False)
+            self.log("training/disc/d_loss_total", disc_loss_total, prog_bar=False)
             return disc_loss_total
 
     def validation_step(self, batch, batch_idx):
         # TODO: batch size should be 1, should process full files and samples should be selected chosen on the fly and not cached. Look into DistributedSampler from HiFiGAN
         x, y, bn, y_mel = batch
+        current_step = (
+            self.global_step // 2
+        )  # because self.global_step counts gen/disc steps
         # generate waveform
         self.generated_wav = self(x)
         # create mel
@@ -668,22 +677,22 @@ class HiFiGAN(pl.LightningModule):
         if self.global_step == 0:
             # Log ground truth audio and spec
             self.logger.experiment.add_audio(
-                f"gt/y_{self.global_step}_{bn[0]}",
+                f"gt/y_{current_step}_{bn[0]}",
                 y[0],
-                self.global_step,
+                current_step,
                 self.config["preprocessing"]["audio"]["output_sampling_rate"],
             )
             self.logger.experiment.add_figure(
-                f"gt/y_spec_{self.global_step}_{bn[0]}",
+                f"gt/y_spec_{current_step}_{bn[0]}",
                 plot_spectrogram(x[0].cpu().numpy()),
-                self.global_step,
+                current_step,
             )
         #
         if batch_idx == 0:
             self.logger.experiment.add_audio(
-                f"generated/y_hat_{self.global_step}_{bn[0]}",
+                f"generated/y_hat_{current_step}_{bn[0]}",
                 self.generated_wav[0],
-                self.global_step,
+                current_step,
                 self.config["preprocessing"]["audio"]["output_sampling_rate"],
             )
 
@@ -691,9 +700,9 @@ class HiFiGAN(pl.LightningModule):
                 :, :, 1:
             ]
             self.logger.experiment.add_figure(
-                f"generated/y_hat_spec_{self.global_step}_{bn[0]}",
+                f"generated/y_hat_spec_{current_step}_{bn[0]}",
                 plot_spectrogram(y_hat_spec.squeeze(0).cpu().numpy()),
-                self.global_step,
+                current_step,
             )
 
         self.log("validation/mel_spec_error", val_err_tot, prog_bar=False)
