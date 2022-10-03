@@ -8,7 +8,7 @@ from config import CONFIGS
 from dataloader import HiFiGANDataModule
 from model.vocoder.hifigan import HiFiGAN
 
-CONFIG = CONFIGS["base"]
+CONFIG = CONFIGS["lj"]
 
 TENSORBOARD_LOGGER = TensorBoardLogger(**CONFIG["training"]["logger"])
 
