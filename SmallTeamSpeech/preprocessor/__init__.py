@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import List, Tuple
 
 import numpy as np
-import pyworld as pw
+
+# import pyworld as pw
 import torch  # fix torch imports
 import torchaudio.functional as F
 from loguru import logger
@@ -137,6 +138,9 @@ class Preprocessor:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
         """
         if self.config["preprocessing"]["f0_type"] == "pyworld":
+            import pyworld as pw  # This isn't a very good place for an import,
+
+            # but also pyworld is very annoying to install so this is a compromise
             pitch, t = pw.dio(
                 audio_tensor.squeeze(0)
                 .numpy()
@@ -377,6 +381,8 @@ class Preprocessor:
                         )
 
                         torch.save(output_audio, output_audio_save_path)
+                    else:
+                        output_audio = audio
                 else:
                     self.skipped_processes += 1
             if process_spec:
