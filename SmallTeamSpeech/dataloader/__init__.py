@@ -16,10 +16,14 @@ class BaseDataModule(pl.LightningDataModule):
         super().__init__()
         self.config = config
         self.train_path = os.path.join(
-            self.config["training"]["logger"]["save_dir"], "train_data.pth"
+            self.config["training"]["logger"]["save_dir"],
+            self.config["training"]["logger"]["name"],
+            "train_data.pth",
         )
         self.val_path = os.path.join(
-            self.config["training"]["logger"]["save_dir"], "val_data.pth"
+            self.config["training"]["logger"]["save_dir"],
+            self.config["training"]["logger"]["name"],
+            "val_data.pth",
         )
 
     def prepare_data(self):
