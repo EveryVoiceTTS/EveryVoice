@@ -134,7 +134,7 @@ class ResBlock2(torch.nn.Module):
         super(ResBlock2, self).__init__()
         self.config = config
         self.depthwise = depthwise
-        if self.depthwsise:
+        if self.depthwise:
             self.convs = nn.ModuleList(
                 [
                     create_depthwise_separable_convolution(
