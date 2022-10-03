@@ -83,14 +83,15 @@ class ResBlock1(torch.nn.Module):
         else:
             self.convs2 = nn.ModuleList(
                 [
-                    Conv1d(
-                        channels,
-                        channels,
-                        kernel_size,
-                        1,
-                        dilation=1,
-                        padding=get_padding(kernel_size, 1),
-                        weight_norm=True,
+                    weight_norm(
+                        Conv1d(
+                            channels,
+                            channels,
+                            kernel_size,
+                            1,
+                            dilation=1,
+                            padding=get_padding(kernel_size, 1),
+                        )
                     )
                     for _ in dilation
                 ]
