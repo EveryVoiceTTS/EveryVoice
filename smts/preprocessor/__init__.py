@@ -303,6 +303,7 @@ class Preprocessor:
             language = "default" if "language" not in f else f["language"]
             item = {**f, **{"speaker": speaker, "language": language}}
             audio = None
+            output_audio = None
             spec = None
             input_audio_save_path = self.save_dir / self.sep.join(
                 [
