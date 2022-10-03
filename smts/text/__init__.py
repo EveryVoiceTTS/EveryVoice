@@ -6,9 +6,9 @@ from typing import Dict
 from loguru import logger
 from nltk.tokenize import RegexpTokenizer
 
-from config import ConfigError
-from config.base_config import BaseConfig
-from text.features import get_features
+from smts.config import ConfigError
+from smts.config.base_config import BaseConfig
+from smts.text.features import get_features
 
 
 class TextProcessor:

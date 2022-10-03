@@ -1,5 +1,5 @@
-from config import CONFIGS
-from preprocessor import Preprocessor
+from smts.config import CONFIGS
+from smts.preprocessor import Preprocessor
 
 CONFIG = CONFIGS["lj"]
 

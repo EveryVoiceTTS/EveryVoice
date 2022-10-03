@@ -8,7 +8,7 @@ import pytorch_lightning as pl
 import torch
 from torch.utils.data import DataLoader, Dataset, random_split
 
-from config.base_config import BaseConfig
+from smts.config.base_config import BaseConfig
 
 
 class BaseDataModule(pl.LightningDataModule):

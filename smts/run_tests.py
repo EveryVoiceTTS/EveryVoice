@@ -9,11 +9,11 @@ from unittest import TestLoader, TestSuite, TextTestRunner
 
 from loguru import logger
 
-from tests.test_configs import ConfigTest
-from tests.test_dataloader import DataLoaderTest
-from tests.test_model import ModelTest
-from tests.test_preprocessing import PreprocessingTest
-from tests.test_text import TextTest
+from smts.tests.test_configs import ConfigTest
+from smts.tests.test_dataloader import DataLoaderTest
+from smts.tests.test_model import ModelTest
+from smts.tests.test_preprocessing import PreprocessingTest
+from smts.tests.test_text import TextTest
 
 # Unit tests
 

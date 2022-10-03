@@ -12,7 +12,7 @@ from string import ascii_lowercase, ascii_uppercase
 
 from torch.nn import functional as F
 
-from utils import (
+from smts.utils import (
     collapse_whitespace,
     generic_dict_loader,
     load_lj_metadata_hifigan,
@@ -77,17 +77,17 @@ BASE_MODEL_HPARAMS = {
 BASE_TRAINING_HPARAMS = {
     "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
     "train_split": 0.9,  # the rest is val
-    "batch_size": 4,
+    "batch_size": 16,
     "train_data_workers": 4,
-    "val_data_workers": 4,
+    "val_data_workers": 1,
     "logger": {  # Uses Tensorboard
-        "name": "Base Experiment",
+        "name": "test",
         "save_dir": "./logs",
         "sub_dir": str(int(datetime.today().timestamp())),
         "version": "base",
     },
     "feature_prediction": {
-        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
+        "filelist": "./preprocessed/LJ/preprocessed_filelist.psv",
         "filelist_loader": generic_dict_loader,
         "steps": {
             "total": 300000,
@@ -106,8 +106,8 @@ BASE_TRAINING_HPARAMS = {
         },
     },
     "vocoder": {
-        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
-        "finetune_checkpoint": "./logs/Base Experiment/base/checkpoints/last.ckpt",
+        "filelist": "./preprocessed/LJ/preprocessed_filelist.psv",
+        "finetune_checkpoint": "./logs/LJ/base/checkpoints/last.ckpt",
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "learning_rate": 0.0002,
@@ -116,7 +116,7 @@ BASE_TRAINING_HPARAMS = {
         "lr_decay": 0.999,
         "seed": 1234,
         "freeze_layers": {"mpd": False, "msd": False, "generator": False},
-        "max_epochs": 30,
+        "max_epochs": 1000,
         "save_top_k_ckpts": 5,
         "ckpt_steps": None,
         "ckpt_epochs": 1,
@@ -147,13 +147,13 @@ SOX_EFFECTS = [
 ]
 
 BASE_PREPROCESSING_HPARAMS = {
-    "dataset": "YourDataSet",
+    "dataset": "LJ",
     "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
-    "save_dir": "./preprocessed/YourDataSet",
+    "save_dir": "./preprocessed/LJ",
     "f0_phone_averaging": True,
     "energy_phone_averaging": True,
     "filelist_loader": load_lj_metadata_hifigan,
-    "filelist": "./filelists/lj_test.psv",
+    "filelist": "./filelists/lj_full.psv",
     "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {

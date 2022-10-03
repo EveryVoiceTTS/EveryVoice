@@ -1,8 +1,7 @@
-from pytorch_lightning import Trainer
-
 from config import CONFIGS
 from dataloader import HiFiGANDataModule
 from model.vocoder.hifigan import HiFiGAN
+from pytorch_lightning import Trainer
 
 CONFIG = CONFIGS["lj"]
 

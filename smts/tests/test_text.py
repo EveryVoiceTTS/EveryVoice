@@ -1,8 +1,8 @@
 from unicodedata import normalize
 from unittest import TestCase
 
-from config import BaseConfig
-from text import TextProcessor
+from smts.config import BaseConfig
+from smts.text import TextProcessor
 
 
 class TextTest(TestCase):

@@ -50,6 +50,12 @@ Have a look at [Contributing.md](Contributing.md) for the full details on the
 Conventional Commit messages we prefer, our code formatting conventions, and
 our Git hooks.
 
+You can then interactively install the package by running the following command from the project root:
+
+```sh
+pip install -e .
+```
+
 ## Tests
 
 Run unit tests by `python3 -m unittest tests/test_configs.py`

@@ -4,9 +4,9 @@ from unittest import TestCase
 
 from torch import float32
 
-from config.base_config import BaseConfig
-from preprocessor import Preprocessor
-from utils import read_filelist
+from smts.config.base_config import BaseConfig
+from smts.preprocessor import Preprocessor
+from smts.utils import read_filelist
 
 
 class PreprocessingTest(TestCase):
@@ -27,7 +27,7 @@ class PreprocessingTest(TestCase):
             self.tempdir = tempfile.mkdtemp(prefix=tempdir_prefix, dir=".")
             print(f"tmpdir={self.tempdir}")
         self.tempdir = Path(self.tempdir)  # type: ignore
-        self.filelist = read_filelist(self.data_dir / "metadata.csv")
+        self.filelist = read_filelist(self.data_dir / "metadata.csv")  # type: ignore
         self.preprocessor = Preprocessor(BaseConfig())
 
     def tearDown(self):

@@ -22,9 +22,9 @@ from torchaudio.functional import resample
 from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
-from config import ConfigError
-from text import TextProcessor
-from utils import get_spectral_transform, read_textgrid, write_filelist
+from smts.config import ConfigError
+from smts.text import TextProcessor
+from smts.utils import get_spectral_transform, read_textgrid, write_filelist
 
 
 class Preprocessor:

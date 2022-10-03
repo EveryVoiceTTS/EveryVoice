@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from config.base_config import BaseConfig
-from dataloader import BaseDataModule, HiFiGANDataModule, SpecDataset
+from smts.config.base_config import BaseConfig
+from smts.dataloader import BaseDataModule, HiFiGANDataModule, SpecDataset
 
 
 class DataLoaderTest(TestCase):

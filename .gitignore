@@ -5,3 +5,4 @@ logs
 *.ckpt
 preprocessed
 .vscode
+*egg-info

@@ -6,7 +6,7 @@ from typing import List, Optional
 import typer
 from loguru import logger
 
-from SmallTeamSpeech.config import CONFIGS
+from smts.config import CONFIGS
 
 app = typer.Typer()
 

@@ -1,8 +1,8 @@
 import math
 from unittest import TestCase
 
-from config import CONFIGS
-from config.base_config import (
+from smts.config import CONFIGS
+from smts.config.base_config import (
     BASE_MODEL_HPARAMS,
     BASE_PREPROCESSING_HPARAMS,
     BASE_TRAINING_HPARAMS,

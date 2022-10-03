@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from config import BaseConfig
-from model.vocoder.hifigan import HiFiGAN
+from smts.config import BaseConfig
+from smts.model.vocoder.hifigan import HiFiGAN
 
 
 class ModelTest(TestCase):

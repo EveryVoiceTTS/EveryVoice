@@ -1,12 +1,11 @@
 import os
 
-from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.loggers import TensorBoardLogger
-
 from config import CONFIGS
 from dataloader import HiFiGANDataModule
 from model.vocoder.hifigan import HiFiGAN
+from pytorch_lightning import Trainer
+from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.loggers import TensorBoardLogger
 
 CONFIG = CONFIGS["lj"]
 
