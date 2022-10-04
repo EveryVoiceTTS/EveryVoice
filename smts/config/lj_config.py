@@ -18,6 +18,7 @@ from smts.utils import (
     load_lj_metadata_hifigan,
     lower,
     nfc_normalize,
+    rel_path_to_abs_path,
 )
 
 #########################
@@ -82,12 +83,12 @@ BASE_TRAINING_HPARAMS = {
     "val_data_workers": 1,
     "logger": {  # Uses Tensorboard
         "name": "test",
-        "save_dir": "./logs",
+        "save_dir": rel_path_to_abs_path("./logs"),
         "sub_dir": str(int(datetime.today().timestamp())),
         "version": "base",
     },
     "feature_prediction": {
-        "filelist": "./preprocessed/LJ/preprocessed_filelist.psv",
+        "filelist": rel_path_to_abs_path("./preprocessed/LJ/preprocessed_filelist.psv"),
         "filelist_loader": generic_dict_loader,
         "steps": {
             "total": 300000,
@@ -106,8 +107,10 @@ BASE_TRAINING_HPARAMS = {
         },
     },
     "vocoder": {
-        "filelist": "./preprocessed/LJ/preprocessed_filelist.psv",
-        "finetune_checkpoint": "./logs/LJ/base/checkpoints/last.ckpt",
+        "filelist": rel_path_to_abs_path("./preprocessed/LJ/preprocessed_filelist.psv"),
+        "finetune_checkpoint": rel_path_to_abs_path(
+            "./logs/LJ/base/checkpoints/last.ckpt"
+        ),
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "learning_rate": 0.0002,
@@ -149,11 +152,11 @@ SOX_EFFECTS = [
 BASE_PREPROCESSING_HPARAMS = {
     "dataset": "LJ",
     "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
-    "save_dir": "./preprocessed/LJ",
+    "save_dir": rel_path_to_abs_path("./preprocessed/LJ"),
     "f0_phone_averaging": True,
     "energy_phone_averaging": True,
     "filelist_loader": load_lj_metadata_hifigan,
-    "filelist": "./filelists/lj_full.psv",
+    "filelist": rel_path_to_abs_path("./filelists/lj_full.psv"),
     "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {

@@ -18,6 +18,7 @@ from smts.utils import (
     load_lj_metadata_hifigan,
     lower,
     nfc_normalize,
+    rel_path_to_abs_path,
 )
 
 #########################
@@ -82,12 +83,14 @@ BASE_TRAINING_HPARAMS = {
     "val_data_workers": 4,
     "logger": {  # Uses Tensorboard
         "name": "Base Experiment",
-        "save_dir": "./logs",
+        "save_dir": rel_path_to_abs_path("./logs"),
         "sub_dir": str(int(datetime.today().timestamp())),
         "version": "base",
     },
     "feature_prediction": {
-        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
+        "filelist": rel_path_to_abs_path(
+            "./preprocessed/YourDataSet/preprocessed_filelist.psv"
+        ),
         "filelist_loader": generic_dict_loader,
         "steps": {
             "total": 300000,
@@ -106,8 +109,12 @@ BASE_TRAINING_HPARAMS = {
         },
     },
     "vocoder": {
-        "filelist": "./preprocessed/YourDataSet/preprocessed_filelist.psv",
-        "finetune_checkpoint": "./logs/Base Experiment/base/checkpoints/last.ckpt",
+        "filelist": rel_path_to_abs_path(
+            "./preprocessed/YourDataSet/preprocessed_filelist.psv"
+        ),
+        "finetune_checkpoint": rel_path_to_abs_path(
+            "./logs/Base Experiment/base/checkpoints/last.ckpt"
+        ),
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "learning_rate": 0.0002,
@@ -149,11 +156,11 @@ SOX_EFFECTS = [
 BASE_PREPROCESSING_HPARAMS = {
     "dataset": "YourDataSet",
     "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
-    "save_dir": "./preprocessed/YourDataSet",
+    "save_dir": rel_path_to_abs_path("./preprocessed/YourDataSet"),
     "f0_phone_averaging": True,
     "energy_phone_averaging": True,
     "filelist_loader": load_lj_metadata_hifigan,
-    "filelist": "./filelists/lj_test.psv",
+    "filelist": rel_path_to_abs_path("./filelists/lj_test.psv"),
     "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {

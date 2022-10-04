@@ -1,6 +1,7 @@
 import csv
 import re
-from os.path import isfile, splitext
+from os.path import dirname, isabs, isfile, splitext
+from pathlib import Path
 from unicodedata import normalize
 
 import matplotlib.pylab as plt
@@ -8,8 +9,18 @@ import torch.nn.functional as F
 import torchaudio.transforms as T
 from pympi.Praat import TextGrid
 
+import smts
+
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
+
+
+def rel_path_to_abs_path(path: str, base_path: str = dirname(smts.__file__)):
+    if isabs(path):
+        return Path(path)
+    base_path = Path(base_path)  # type: ignore
+    path = Path(path)  # type: ignore
+    return (base_path / path).resolve()  # type: ignore
 
 
 def original_hifigan_leaky_relu(x):

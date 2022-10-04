@@ -58,4 +58,4 @@ pip install -e .
 
 ## Tests
 
-Run unit tests by `python3 -m unittest tests/test_configs.py`
+Run unit tests by `python3 -m unittest tests/test_configs.py` or suites of tests by running `smts test dev` if you have the package installed interactively.
