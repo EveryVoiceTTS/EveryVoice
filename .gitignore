@@ -6,3 +6,6 @@ logs
 preprocessed
 .vscode
 *egg-info
+gpu_output
+slurm*
+smts/data
