@@ -42,14 +42,10 @@ BASE_MODEL_HPARAMS = {
         "upsample_rates": [
             8,
             8,
-            4,
-            2,
         ],  # 8, 8, 2, 2 preserves input sampling rate. 8, 8, 4, 2 doubles it for example.
         "upsample_kernel_sizes": [
             16,
             16,
-            8,
-            4,
         ],  # must not be less than upsample rate, and must be evenly divisible by upsample rate
         "upsample_initial_channel": 512,
         "resblock_kernel_sizes": [3, 7, 11],
@@ -58,7 +54,7 @@ BASE_MODEL_HPARAMS = {
             "generator": False,
         },
         "activation_function": original_hifigan_leaky_relu,  # for original implementation use utils.original_hifigan_leaky_relu,
-        "istft_layer": False,  # Uses C8C8I model https://arxiv.org/pdf/2203.02395.pdf - must change upsample rates and upsample_kernel_sizes appropriately.
+        "istft_layer": True,  # Uses C8C8I model https://arxiv.org/pdf/2203.02395.pdf - must change upsample rates and upsample_kernel_sizes appropriately.
     },
     "use_postnet": True,
     "max_seq_len": 1000,
@@ -78,14 +74,14 @@ BASE_MODEL_HPARAMS = {
 BASE_TRAINING_HPARAMS = {
     "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
     "train_split": 0.9,  # the rest is val
-    "batch_size": 16,
+    "batch_size": 64,
     "train_data_workers": 4,
     "val_data_workers": 1,
     "logger": {  # Uses Tensorboard
-        "name": "test",
+        "name": "LJ",
         "save_dir": rel_path_to_abs_path("./logs"),
         "sub_dir": str(int(datetime.today().timestamp())),
-        "version": "base",
+        "version": "istft",
     },
     "feature_prediction": {
         "filelist": rel_path_to_abs_path("./preprocessed/LJ/preprocessed_filelist.psv"),
@@ -109,6 +105,9 @@ BASE_TRAINING_HPARAMS = {
     "vocoder": {
         "filelist": rel_path_to_abs_path("./preprocessed/LJ/preprocessed_filelist.psv"),
         "finetune_checkpoint": "",
+        # "finetune_checkpoint": rel_path_to_abs_path(
+        #     "./logs/LJ/istft/checkpoints/last.ckpt"
+        # ),
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "learning_rate": 0.0002,
@@ -122,8 +121,8 @@ BASE_TRAINING_HPARAMS = {
         "ckpt_steps": None,
         "ckpt_epochs": 1,
         "generator_warmup": 0,
-        "gan_type": "original",  # original, wgan, wgan-gp
-        "gan_optimizer": "adam",  # adam, rmsprop
+        "gan_type": "wgan",  # original, wgan, wgan-gp
+        "gan_optimizer": "rmsprop",  # adam, rmsprop
         "wgan_clip_value": 0.01,
     },
 }
@@ -169,7 +168,7 @@ BASE_PREPROCESSING_HPARAMS = {
         "sil_threshold": 1.0,
         "sil_duration": 0.1,
         "input_sampling_rate": 22050,  # Sampling rate to ensure audio input to vocoder (output spec from feature prediction) is sampled at
-        "output_sampling_rate": 44100,  # Sampling rate to ensure audio output of vocoder is sampled at
+        "output_sampling_rate": 22050,  # Sampling rate to ensure audio output of vocoder is sampled at
         "target_bit_depth": 16,
         "alignment_sampling_rate": 22050,  # Sampling rate from TextGrids. These two sampling rates *should* be the same, but they are separated in case it's not practical for your data
         "alignment_bit_depth": 16,
@@ -181,7 +180,7 @@ BASE_PREPROCESSING_HPARAMS = {
         "n_mels": 80,
         "spec_type": "mel-librosa",  # mel-torch or mel-librosa (real) | linear (real) | raw (complex) see https://pytorch.org/audio/stable/tutorials/audio_feature_extractions_tutorial.html#overview-of-audio-features
         "sox_effects": SOX_EFFECTS,
-        "vocoder_segment_size": 16384,  # this is the size of the segments taken for training HiFI-GAN. set proportional to output sampling rate; 8192 is for output of 22050Hz. This should be a multiple of the upsample hop size which itself is equal to the product of the upsample rates.
+        "vocoder_segment_size": 8192,  # this is the size of the segments taken for training HiFI-GAN. set proportional to output sampling rate; 8192 is for output of 22050Hz. This should be a multiple of the upsample hop size which itself is equal to the product of the upsample rates.
     },
 }
 
