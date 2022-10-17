@@ -29,6 +29,7 @@ jobs:
           pip3 install -e .
       - name: Run tests
         run: |
+          smts preprocess base -d mel -d audio -O
           smts test dev
           coverage xml
       - uses: codecov/codecov-action@v2
