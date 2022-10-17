@@ -5,14 +5,24 @@ from pathlib import Path
 from unicodedata import normalize
 
 import matplotlib.pylab as plt
+import torch
 import torch.nn.functional as F
 import torchaudio.transforms as T
+from librosa.filters import mel as librosa_mel
 from pympi.Praat import TextGrid
 
 import smts
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
+
+
+def dynamic_range_compression_torch(x, C=1, clip_val=1e-5):
+    return torch.log(torch.clamp(x, min=clip_val) * C)
+
+
+def dynamic_range_decompression_torch(x, C=1):
+    return torch.exp(x) / C
 
 
 def rel_path_to_abs_path(path: str, base_path: str = dirname(smts.__file__)):
@@ -62,7 +72,7 @@ def get_spectral_transform(
     f_min=0,
     f_max=8000,
 ):
-    if spec_type == "mel":
+    if spec_type == "mel-torch":
         return T.MelSpectrogram(
             sample_rate=sample_rate,
             n_fft=n_fft,
@@ -71,7 +81,39 @@ def get_spectral_transform(
             win_length=win_length,
             hop_length=hop_length,
             n_mels=n_mels,
+            norm="slaney",
+            center=True,
         )
+    elif spec_type == "mel-librosa":
+        transform = T.Spectrogram(
+            n_fft=n_fft,
+            win_length=win_length,
+            hop_length=hop_length,
+            pad=0,
+            window_fn=torch.hann_window,
+            power=2.0,
+            normalized=False,
+            center=True,
+            pad_mode="reflect",
+            onesided=True,
+        )
+        mel_basis = librosa_mel(
+            sr=sample_rate,
+            n_fft=n_fft,
+            n_mels=n_mels,
+            fmin=f_min,
+            fmax=f_max,
+        )
+        mel_basis = torch.from_numpy(mel_basis).float()
+
+        def mel_transform(x):
+            transform.to(x.device)
+            spec = transform(x)
+            sine_windowed_spec = torch.sqrt(spec + 1e-9)
+            mel = torch.matmul(mel_basis.to(x.device), sine_windowed_spec)
+            return mel
+
+        return mel_transform
     elif spec_type == "linear":
         return T.Spectrogram(
             n_fft=n_fft,
@@ -84,6 +126,10 @@ def get_spectral_transform(
             win_length=win_length,
             hop_length=hop_length,
             power=None,
+        )
+    elif spec_type == "istft":
+        return T.InverseSpectrogram(
+            n_fft=n_fft, win_length=win_length, hop_length=hop_length
         )
     else:
         return None

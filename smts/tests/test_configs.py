@@ -59,6 +59,10 @@ class ConfigTest(TestCase):
             upsampling_hop_size = (upsampled_sampling_rate // sampling_rate) * config[
                 "preprocessing"
             ]["audio"]["fft_hop_frames"]
+            if config["model"]["vocoder"][
+                "istft_layer"
+            ]:  # Because the istft layer will upsample the rest.
+                upsampling_hop_size /= 4
             self.assertEqual(
                 upsampling_hop_size,
                 math.prod(config["model"]["vocoder"]["upsample_rates"]),

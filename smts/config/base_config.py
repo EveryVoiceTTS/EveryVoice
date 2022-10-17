@@ -10,14 +10,13 @@ from copy import deepcopy
 from datetime import datetime
 from string import ascii_lowercase, ascii_uppercase
 
-from torch.nn import functional as F
-
 from smts.utils import (
     collapse_whitespace,
     generic_dict_loader,
     load_lj_metadata_hifigan,
     lower,
     nfc_normalize,
+    original_hifigan_leaky_relu,
     rel_path_to_abs_path,
 )
 
@@ -43,22 +42,23 @@ BASE_MODEL_HPARAMS = {
         "upsample_rates": [
             8,
             8,
-            4,
+            2,
             2,
         ],  # 8, 8, 2, 2 preserves input sampling rate. 8, 8, 4, 2 doubles it for example.
         "upsample_kernel_sizes": [
             16,
             16,
-            8,
+            4,
             4,
         ],  # must not be less than upsample rate, and must be evenly divisible by upsample rate
         "upsample_initial_channel": 512,
         "resblock_kernel_sizes": [3, 7, 11],
         "resblock_dilation_sizes": [[1, 3, 5], [1, 3, 5], [1, 3, 5]],
         "depthwise_separable_convolutions": {
-            "generator": True,
+            "generator": False,
         },
-        "activation_function": F.silu,  # for original implementation use utils.original_hifigan_leaky_relu,
+        "activation_function": original_hifigan_leaky_relu,  # for original implementation use utils.original_hifigan_leaky_relu,
+        "istft_layer": False,  # Uses C8C8I model https://arxiv.org/pdf/2203.02395.pdf - must change upsample rates and upsample_kernel_sizes appropriately.
     },
     "use_postnet": True,
     "max_seq_len": 1000,
@@ -78,18 +78,18 @@ BASE_MODEL_HPARAMS = {
 BASE_TRAINING_HPARAMS = {
     "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
     "train_split": 0.9,  # the rest is val
-    "batch_size": 4,
+    "batch_size": 16,
     "train_data_workers": 4,
-    "val_data_workers": 4,
+    "val_data_workers": 1,
     "logger": {  # Uses Tensorboard
         "name": "Base Experiment",
         "save_dir": rel_path_to_abs_path("./logs"),
         "sub_dir": str(int(datetime.today().timestamp())),
-        "version": "base",
+        "version": "sanity",
     },
     "feature_prediction": {
         "filelist": rel_path_to_abs_path(
-            "./preprocessed/YourDataSet/preprocessed_filelist.psv"
+            "./preprocessed/YourDataSet/processed_filelist.psv"
         ),
         "filelist_loader": generic_dict_loader,
         "steps": {
@@ -110,10 +110,10 @@ BASE_TRAINING_HPARAMS = {
     },
     "vocoder": {
         "filelist": rel_path_to_abs_path(
-            "./preprocessed/YourDataSet/preprocessed_filelist.psv"
+            "./preprocessed/YourDataSet/processed_filelist.psv"
         ),
         "finetune_checkpoint": rel_path_to_abs_path(
-            "./logs/Base Experiment/base/checkpoints/last.ckpt"
+            "./logs/Base Experiment/sanity/checkpoints/last.ckpt"
         ),
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
@@ -123,10 +123,14 @@ BASE_TRAINING_HPARAMS = {
         "lr_decay": 0.999,
         "seed": 1234,
         "freeze_layers": {"mpd": False, "msd": False, "generator": False},
-        "max_epochs": 30,
+        "max_epochs": 1000,
         "save_top_k_ckpts": 5,
         "ckpt_steps": None,
         "ckpt_epochs": 1,
+        "generator_warmup": 0,
+        "gan_type": "original",  # original, wgan, wgan-gp
+        "gan_optimizer": "adam",  # adam, rmsprop
+        "wgan_clip_value": 0.01,
     },
 }
 
@@ -164,11 +168,14 @@ BASE_PREPROCESSING_HPARAMS = {
     "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {
+        "min_audio_length": 0.25,  # seconds
+        "max_audio_length": 11,  # seconds
+        "max_wav_value": 32768.0,
         "norm_db": -3.0,
         "sil_threshold": 1.0,
         "sil_duration": 0.1,
         "input_sampling_rate": 22050,  # Sampling rate to ensure audio input to vocoder (output spec from feature prediction) is sampled at
-        "output_sampling_rate": 44100,  # Sampling rate to ensure audio output of vocoder is sampled at
+        "output_sampling_rate": 22050,  # Sampling rate to ensure audio output of vocoder is sampled at
         "target_bit_depth": 16,
         "alignment_sampling_rate": 22050,  # Sampling rate from TextGrids. These two sampling rates *should* be the same, but they are separated in case it's not practical for your data
         "alignment_bit_depth": 16,
@@ -178,9 +185,9 @@ BASE_PREPROCESSING_HPARAMS = {
         "f_max": 8000,
         "n_fft": 1024,  # set this to the input sampling rate
         "n_mels": 80,
-        "spec_type": "mel",  # mel (real) | linear (real) | raw (complex) see https://pytorch.org/audio/stable/tutorials/audio_feature_extractions_tutorial.html#overview-of-audio-features
+        "spec_type": "mel-librosa",  # mel (real) | linear (real) | raw (complex) see https://pytorch.org/audio/stable/tutorials/audio_feature_extractions_tutorial.html#overview-of-audio-features
         "sox_effects": SOX_EFFECTS,
-        "vocoder_segment_size": 16384,  # this is the size of the segments taken for training HiFI-GAN. set proportional to output sampling rate; 8192 is for output of 22050Hz. This should be a multiple of the upsample hop size which itself is equal to the product of the upsample rates.
+        "vocoder_segment_size": 8192,  # this is the size of the segments taken for training HiFI-GAN. set proportional to output sampling rate; 8192 is for output of 22050Hz. This should be a multiple of the upsample hop size which itself is equal to the product of the upsample rates.
     },
 }
 

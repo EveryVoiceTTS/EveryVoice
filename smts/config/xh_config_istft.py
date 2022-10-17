@@ -42,13 +42,11 @@ BASE_MODEL_HPARAMS = {
         "upsample_rates": [
             8,
             8,
-            4,
             2,
         ],  # 8, 8, 2, 2 preserves input sampling rate. 8, 8, 4, 2 doubles it for example.
         "upsample_kernel_sizes": [
             16,
             16,
-            8,
             4,
         ],  # must not be less than upsample rate, and must be evenly divisible by upsample rate
         "upsample_initial_channel": 512,
@@ -58,7 +56,7 @@ BASE_MODEL_HPARAMS = {
             "generator": False,
         },
         "activation_function": original_hifigan_leaky_relu,  # for original implementation use utils.original_hifigan_leaky_relu,
-        "istft_layer": False,  # Uses C8C8I model https://arxiv.org/pdf/2203.02395.pdf - must change upsample rates and upsample_kernel_sizes appropriately.
+        "istft_layer": True,  # Uses C8C8I model https://arxiv.org/pdf/2203.02395.pdf - must change upsample rates and upsample_kernel_sizes appropriately.
     },
     "use_postnet": True,
     "max_seq_len": 1000,
@@ -78,17 +76,19 @@ BASE_MODEL_HPARAMS = {
 BASE_TRAINING_HPARAMS = {
     "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
     "train_split": 0.9,  # the rest is val
-    "batch_size": 16,
-    "train_data_workers": 4,
+    "batch_size": 32,
+    "train_data_workers": 1,
     "val_data_workers": 1,
     "logger": {  # Uses Tensorboard
-        "name": "test",
+        "name": "OpenSLR-xh",
         "save_dir": rel_path_to_abs_path("./logs"),
         "sub_dir": str(int(datetime.today().timestamp())),
-        "version": "base",
+        "version": "istft",
     },
     "feature_prediction": {
-        "filelist": rel_path_to_abs_path("./preprocessed/LJ/preprocessed_filelist.psv"),
+        "filelist": rel_path_to_abs_path(
+            "./preprocessed/OpenSLR/xh/processed_filelist.psv"
+        ),
         "filelist_loader": generic_dict_loader,
         "steps": {
             "total": 300000,
@@ -107,8 +107,13 @@ BASE_TRAINING_HPARAMS = {
         },
     },
     "vocoder": {
-        "filelist": rel_path_to_abs_path("./preprocessed/LJ/preprocessed_filelist.psv"),
+        "filelist": rel_path_to_abs_path(
+            "./preprocessed/OpenSLR/xh/processed_filelist.psv"
+        ),
         "finetune_checkpoint": "",
+        # "finetune_checkpoint": rel_path_to_abs_path(
+        #     "./logs/LJ/istft/checkpoints/last.ckpt"
+        # ),
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "learning_rate": 0.0002,
@@ -152,13 +157,13 @@ SOX_EFFECTS = [
 ]
 
 BASE_PREPROCESSING_HPARAMS = {
-    "dataset": "LJ",
-    "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
-    "save_dir": rel_path_to_abs_path("./preprocessed/LJ"),
+    "dataset": "OpenSLR-xh",
+    "data_dir": "/home/aip000/tts/corpora/Speech/OpenSLR/xh_za/za/xho/wavs",
+    "save_dir": rel_path_to_abs_path("./preprocessed/OpenSLR/xh"),
     "f0_phone_averaging": True,
     "energy_phone_averaging": True,
     "filelist_loader": load_lj_metadata_hifigan,
-    "filelist": rel_path_to_abs_path("./filelists/lj_full.psv"),
+    "filelist": rel_path_to_abs_path("./filelists/xh_full.psv"),
     "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {
@@ -168,10 +173,10 @@ BASE_PREPROCESSING_HPARAMS = {
         "norm_db": -3.0,
         "sil_threshold": 1.0,
         "sil_duration": 0.1,
-        "input_sampling_rate": 22050,  # Sampling rate to ensure audio input to vocoder (output spec from feature prediction) is sampled at
-        "output_sampling_rate": 44100,  # Sampling rate to ensure audio output of vocoder is sampled at
+        "input_sampling_rate": 24000,  # Sampling rate to ensure audio input to vocoder (output spec from feature prediction) is sampled at
+        "output_sampling_rate": 48000,  # Sampling rate to ensure audio output of vocoder is sampled at
         "target_bit_depth": 16,
-        "alignment_sampling_rate": 22050,  # Sampling rate from TextGrids. These two sampling rates *should* be the same, but they are separated in case it's not practical for your data
+        "alignment_sampling_rate": 24000,  # Sampling rate from TextGrids. These two sampling rates *should* be the same, but they are separated in case it's not practical for your data
         "alignment_bit_depth": 16,
         "fft_window_frames": 1024,  # set this to the input sampling rate
         "fft_hop_frames": 256,  # set this to the input sampling rate

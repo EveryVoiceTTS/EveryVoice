@@ -6,7 +6,7 @@ from typing import List, Optional
 import typer
 from loguru import logger
 from pytorch_lightning import Trainer
-from pytorch_lightning.callbacks import ModelCheckpoint
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 
 from smts.config import CONFIGS
@@ -35,7 +35,7 @@ class PreprocessCategories(str, Enum):
 
 class TestSuites(str, Enum):
     all = "all"
-    config = "config"
+    configs = "configs"
     dev = "dev"
     model = "model"
     preprocessing = "preprocessing"
@@ -117,13 +117,15 @@ def train(
             every_n_train_steps=config["training"]["vocoder"]["ckpt_steps"],
             every_n_epochs=config["training"]["vocoder"]["ckpt_epochs"],
         )
+        lr_monitor = LearningRateMonitor(logging_interval="step")
         trainer = Trainer(
             logger=tensorboard_logger,
             accelerator=accelerator,
             devices=devices,
             max_epochs=config["training"]["vocoder"]["max_epochs"],
-            callbacks=[ckpt_callback],
+            callbacks=[ckpt_callback, lr_monitor],
             strategy=strategy,
+            detect_anomaly=False,  # used for debugging, but triples training time
         )
         vocoder = HiFiGAN(config)
         data = HiFiGANDataModule(config)

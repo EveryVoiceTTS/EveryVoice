@@ -1,6 +1,8 @@
 import itertools
+import math
 import os
 
+import numpy as np
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
@@ -10,7 +12,11 @@ from torch.nn.utils import remove_weight_norm, spectral_norm, weight_norm
 
 from smts.config.base_config import BaseConfig
 from smts.model.utils import create_depthwise_separable_convolution
-from smts.utils import get_spectral_transform, plot_spectrogram
+from smts.utils import (
+    dynamic_range_compression_torch,
+    get_spectral_transform,
+    plot_spectrogram,
+)
 
 
 def init_weights(m, mean=0.0, std=0.01):
@@ -207,12 +213,17 @@ class Generator(torch.nn.Module):
         self.depthwise = config["model"]["vocoder"]["depthwise_separable_convolutions"][
             "generator"
         ]
+        self.audio_config = config["preprocessing"]["audio"]
+        self.sampling_rate_change = (
+            self.audio_config["output_sampling_rate"]
+            // self.audio_config["input_sampling_rate"]
+        )
         self.model_vocoder_config = config["model"]["vocoder"]
         self.num_kernels = len(self.model_vocoder_config["resblock_kernel_sizes"])
         self.num_upsamples = len(self.model_vocoder_config["upsample_rates"])
         self.conv_pre = (
             create_depthwise_separable_convolution(
-                in_channels=self.config["preprocessing"]["audio"]["n_mels"],
+                in_channels=self.audio_config["n_mels"],
                 out_channels=self.model_vocoder_config["upsample_initial_channel"],
                 kernel_size=7,
                 stride=1,
@@ -222,7 +233,7 @@ class Generator(torch.nn.Module):
             if self.depthwise
             else weight_norm(
                 Conv1d(
-                    self.config["preprocessing"]["audio"]["n_mels"],
+                    self.audio_config["n_mels"],
                     self.model_vocoder_config["upsample_initial_channel"],
                     7,
                     1,
@@ -242,6 +253,7 @@ class Generator(torch.nn.Module):
                 self.model_vocoder_config["upsample_kernel_sizes"],
             )
         ):
+            # TODO: add sensible upsampling layer
             if self.depthwise:
                 self.ups.append(
                     create_depthwise_separable_convolution(
@@ -285,12 +297,23 @@ class Generator(torch.nn.Module):
                 self.resblocks.append(
                     resblock(self.config, ch, k, d, depthwise=self.depthwise)
                 )
+        if self.config["model"]["vocoder"]["istft_layer"]:
+            self.post_n_fft = (
+                self.audio_config["n_fft"] * self.sampling_rate_change
+            ) // math.prod(self.config["model"]["vocoder"]["upsample_rates"])
+            self.reflection_pad = torch.nn.ReflectionPad1d((1, 0))
+            conv_post_out_channels = self.post_n_fft + 2
+        else:
+            self.post_n_fft = conv_post_out_channels = 1
+
         if self.depthwise:
             self.conv_post = create_depthwise_separable_convolution(
-                ch, 1, 7, 1, padding=3, weight_norm=True
+                ch, conv_post_out_channels, 7, 1, padding=3, weight_norm=True
             )
         else:
-            self.conv_post = weight_norm(Conv1d(ch, 1, 7, 1, padding=3))
+            self.conv_post = weight_norm(
+                Conv1d(ch, conv_post_out_channels, 7, 1, padding=3)
+            )
         self.ups.apply(init_weights)
         self.conv_post.apply(init_weights)
 
@@ -307,10 +330,16 @@ class Generator(torch.nn.Module):
                     xs += self.resblocks[i * self.num_kernels + j](x)
             x = xs / self.num_kernels
         x = self.config["model"]["vocoder"]["activation_function"](x)
-        x = self.conv_post(x)
-        x = torch.tanh(x)
-
-        return x
+        if self.config["model"]["vocoder"]["istft_layer"]:
+            x = self.reflection_pad(x)
+            x = self.conv_post(x)
+            spec = torch.exp(x[:, : self.post_n_fft // 2 + 1, :])
+            phase = torch.sin(x[:, self.post_n_fft // 2 + 1 :, :])
+            return spec, phase
+        else:
+            x = self.conv_post(x)
+            x = torch.tanh(x)
+            return x
 
     def remove_weight_norm(self):
         print("Removing weight norm...")
@@ -420,6 +449,15 @@ class MultiPeriodDiscriminator(torch.nn.Module):
             ]
         )
 
+    def forward_interpolates(self, interp):
+        y_ds = []
+        f_maps = []
+        for d in self.discriminators:
+            y_d, f_map = d(interp)
+            y_ds.append(y_d)
+            f_maps.append(f_map)
+        return y_ds, f_maps
+
     def forward(self, y, y_hat):
         y_d_rs = []
         y_d_gs = []
@@ -481,6 +519,17 @@ class MultiScaleDiscriminator(torch.nn.Module):
             [AvgPool1d(4, 2, padding=2), AvgPool1d(4, 2, padding=2)]
         )
 
+    def forward_interpolates(self, interp):
+        y_ds = []
+        f_maps = []
+        for i, d in enumerate(self.discriminators):
+            if i != 0:
+                interp = self.meanpools[i - 1](interp)
+            y_d, f_map = d(interp)
+            y_ds.append(y_d)
+            f_maps.append(f_map)
+        return y_ds, f_maps
+
     def forward(self, y, y_hat):
         y_d_rs = []
         y_d_gs = []
@@ -516,6 +565,10 @@ class HiFiGAN(pl.LightningModule):
             self.audio_config["output_sampling_rate"]
             // self.audio_config["input_sampling_rate"]
         )
+        self.use_gradient_penalty = (
+            self.config["training"]["vocoder"]["gan_type"] == "wgan-gp"
+        )
+        self.use_wgan = self.config["training"]["vocoder"]["gan_type"] == "wgan"
         # We don't have to set the fft size and hop/window lengths as hyperparameters here, because we can just multiply by the upsampling rate
         self.spectral_transform = get_spectral_transform(
             self.audio_config["spec_type"],
@@ -527,6 +580,13 @@ class HiFiGAN(pl.LightningModule):
             sample_rate=self.audio_config["output_sampling_rate"],
             n_mels=self.audio_config["n_mels"],
         )
+        if self.config["model"]["vocoder"]["istft_layer"]:
+            self.inverse_spectral_transform = get_spectral_transform(
+                "istft",
+                self.generator.post_n_fft,
+                self.generator.post_n_fft,
+                self.generator.post_n_fft // 4,
+            )
         # TODO: figure out multiple nodes/gpus: https://pytorch-lightning.readthedocs.io/en/1.4.0/advanced/multi_gpu.html
         # TODO: figure out freezing layers
 
@@ -561,29 +621,45 @@ class HiFiGAN(pl.LightningModule):
         return checkpoint
 
     def configure_optimizers(self):
-        optim_g = torch.optim.AdamW(
-            self.generator.parameters(),
-            self.config["training"]["vocoder"]["learning_rate"],
-            betas=[
-                self.config["training"]["vocoder"]["adam_b1"],
-                self.config["training"]["vocoder"]["adam_b2"],
-            ],
-        )
-        optim_d = torch.optim.AdamW(
-            itertools.chain(self.msd.parameters(), self.mpd.parameters()),
-            self.config["training"]["vocoder"]["learning_rate"],
-            betas=[
-                self.config["training"]["vocoder"]["adam_b1"],
-                self.config["training"]["vocoder"]["adam_b2"],
-            ],
-        )
-        scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
-            optim_g, gamma=self.config["training"]["vocoder"]["lr_decay"]
-        )
-        scheduler_d = torch.optim.lr_scheduler.ExponentialLR(
-            optim_d, gamma=self.config["training"]["vocoder"]["lr_decay"]
-        )
-        return [optim_g, optim_d], [scheduler_g, scheduler_d]
+        if self.config["training"]["vocoder"]["gan_optimizer"] == "adam":
+            optim_g = torch.optim.AdamW(
+                self.generator.parameters(),
+                self.config["training"]["vocoder"]["learning_rate"],
+                betas=[
+                    self.config["training"]["vocoder"]["adam_b1"],
+                    self.config["training"]["vocoder"]["adam_b2"],
+                ],
+            )
+            optim_d = torch.optim.AdamW(
+                itertools.chain(self.msd.parameters(), self.mpd.parameters()),
+                self.config["training"]["vocoder"]["learning_rate"],
+                betas=[
+                    self.config["training"]["vocoder"]["adam_b1"],
+                    self.config["training"]["vocoder"]["adam_b2"],
+                ],
+            )
+        else:
+            optim_g = torch.optim.RMSprop(
+                self.generator.parameters(),
+                lr=self.config["training"]["vocoder"]["learning_rate"],
+            )
+            optim_d = torch.optim.RMSprop(
+                itertools.chain(self.msd.parameters(), self.mpd.parameters()),
+                lr=self.config["training"]["vocoder"]["learning_rate"],
+            )
+        if self.use_wgan or self.use_gradient_penalty:
+            return (
+                {"optimizer": optim_g, "frequency": 1},
+                {"optimizer": optim_d, "frequency": 5},
+            )
+        else:
+            scheduler_g = torch.optim.lr_scheduler.ExponentialLR(
+                optim_g, gamma=self.config["training"]["vocoder"]["lr_decay"]
+            )
+            scheduler_d = torch.optim.lr_scheduler.ExponentialLR(
+                optim_d, gamma=self.config["training"]["vocoder"]["lr_decay"]
+            )
+            return [optim_g, optim_d], [scheduler_g, scheduler_d]
 
     def feature_loss(self, fmap_r, fmap_g):
         loss = 0
@@ -593,46 +669,102 @@ class HiFiGAN(pl.LightningModule):
 
         return loss * 2
 
-    def discriminator_loss(self, disc_real_outputs, disc_generated_outputs):
+    def discriminator_loss(
+        self,
+        disc_real_outputs,
+        disc_generated_outputs,
+        gp=None,
+        lambda_gp=10,
+    ):
         loss = 0
         r_losses = []
         g_losses = []
         for dr, dg in zip(disc_real_outputs, disc_generated_outputs):
-            r_loss = torch.mean((1 - dr) ** 2)
-            g_loss = torch.mean(dg**2)
-            loss += r_loss + g_loss
+            if gp is not None:
+                r_loss = -torch.mean(dr)
+                g_loss = torch.mean(dg)
+                loss += r_loss + g_loss + lambda_gp * gp
+            else:
+                r_loss = torch.mean((1 - dr) ** 2)
+                g_loss = torch.mean(dg**2)
+                loss += r_loss + g_loss
             r_losses.append(r_loss.item())
             g_losses.append(g_loss.item())
 
         return loss, r_losses, g_losses
 
-    def generator_loss(self, disc_outputs):
+    def generator_loss(self, disc_outputs, gp=True):
         g_loss = 0
         gen_losses = []
         for dg in disc_outputs:
-            loss = torch.mean((1 - dg) ** 2)
+            if gp:
+                loss = -torch.mean(dg)
+            else:
+                loss = torch.mean((1 - dg) ** 2)
             gen_losses.append(loss)
             g_loss += loss
 
         return (g_loss, gen_losses)
 
+    def compute_gradient_penalty(self, real_samples, fake_samples, discriminator):
+        """Calculates the gradient penalty loss for WGAN GP"""
+        # TODO: this isn't working
+        # Random weight term for interpolation between real and fake samples
+        alpha = torch.Tensor(np.random.random((real_samples.size(0), 1, 1))).to(
+            self.device
+        )
+        # Get random interpolation between real and fake samples
+        interpolates = (
+            alpha * real_samples + ((1 - alpha) * fake_samples)
+        ).requires_grad_(True)
+        interpolates = interpolates.to(self.device)
+        d_interpolates, _ = discriminator.forward_interpolates(interpolates)
+        fake = torch.Tensor(real_samples.shape[0], 1).fill_(1.0).to(self.device)
+        # Get gradient w.r.t. interpolates
+        gradients = torch.autograd.grad(
+            outputs=d_interpolates,
+            inputs=interpolates,
+            grad_outputs=fake,
+            create_graph=True,
+            retain_graph=True,
+            only_inputs=True,
+        )[0]
+        gradients = gradients.view(gradients.size(0), -1).to(self.device)
+        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+        return gradient_penalty
+
     def training_step(self, batch, batch_idx, optimizer_idx):
         x, y, _, y_mel = batch
+        y = y.unsqueeze(1)
+        # x.size() & y_mel.size() = [batch_size, n_mels=80, n_frames=32]
+        # y.size() = [batch_size, segment_size=8192]
         # train generator
         if optimizer_idx == 0:
             # generate waveform
-            self.generated_wav = self(x)
+            if self.config["model"]["vocoder"]["istft_layer"]:
+                mag, phase = self(x)
+                self.generated_wav = self.inverse_spectral_transform(
+                    mag * torch.exp(phase * 1j)
+                ).unsqueeze(-2)
+            else:
+                self.generated_wav = self(x)
             # create mel
-            generated_mel_spec = self.spectral_transform(self.generated_wav).squeeze(1)[
-                :, :, 1:
-            ]
+            generated_mel_spec = dynamic_range_compression_torch(
+                self.spectral_transform(self.generated_wav).squeeze(1)[:, :, 1:]
+            )
             # calculate loss
             y_df_hat_r, y_df_hat_g, fmap_f_r, fmap_f_g = self.mpd(y, self.generated_wav)
             y_ds_hat_r, y_ds_hat_g, fmap_s_r, fmap_s_g = self.msd(y, self.generated_wav)
             loss_fm_f = self.feature_loss(fmap_f_r, fmap_f_g)
             loss_fm_s = self.feature_loss(fmap_s_r, fmap_s_g)
-            loss_gen_f, _ = self.generator_loss(y_df_hat_g)
-            loss_gen_s, _ = self.generator_loss(y_ds_hat_g)
+            # loss_gen_f = -torch.mean(y_df_hat_g)
+            # loss_gen_s = -torch.mean(y_ds_hat_g)
+            loss_gen_f, _ = self.generator_loss(
+                y_df_hat_g, gp=self.use_gradient_penalty
+            )
+            loss_gen_s, _ = self.generator_loss(
+                y_ds_hat_g, gp=self.use_gradient_penalty
+            )
             self.log("training/gen/loss_fmap_f", loss_fm_f, prog_bar=False)
             self.log("training/gen/loss_fmap_s", loss_fm_s, prog_bar=False)
             self.log("training/gen/loss_gen_f", loss_gen_f, prog_bar=False)
@@ -645,16 +777,49 @@ class HiFiGAN(pl.LightningModule):
             return gen_loss_total
 
         # train discriminators
-        if optimizer_idx == 1:
-            y_g_hat = self(x)
+        if (
+            self.global_step >= self.config["training"]["vocoder"]["generator_warmup"]
+            and optimizer_idx == 1
+        ):
+            if self.config["model"]["vocoder"]["istft_layer"]:
+                mag, phase = self(x)
+                y_g_hat = (
+                    self.inverse_spectral_transform(mag * torch.exp(phase * 1j))
+                    .unsqueeze(-2)
+                    .detach()
+                )
+            else:
+                y_g_hat = self(x).detach()
             # MPD
-            y_df_hat_r, y_df_hat_g, _, _ = self.mpd(y, y_g_hat.detach())
-            loss_disc_f, _, _ = self.discriminator_loss(y_df_hat_r, y_df_hat_g)
-            self.log("training/disc//mpd_loss", loss_disc_f, prog_bar=False)
+            y_df_hat_r, y_df_hat_g, _, _ = self.mpd(y, y_g_hat)
+            if self.use_gradient_penalty:
+                gp_f = self.compute_gradient_penalty(y.data, y_g_hat.data, self.mpd)
+            else:
+                gp_f = None
+            loss_disc_f, _, _ = self.discriminator_loss(y_df_hat_r, y_df_hat_g, gp=gp_f)
+            self.log("training/disc/mpd_loss", loss_disc_f, prog_bar=False)
             # MSD
-            y_ds_hat_r, y_ds_hat_g, _, _ = self.msd(y, y_g_hat.detach())
-            loss_disc_s, _, _ = self.discriminator_loss(y_ds_hat_r, y_ds_hat_g)
-            self.log("training/disc//msd_loss", loss_disc_s, prog_bar=False)
+            y_ds_hat_r, y_ds_hat_g, _, _ = self.msd(y, y_g_hat)
+            # gp_s = self.compute_gradient_penalty(y_ds_hat_r, y_ds_hat_g)
+            # loss_disc_s = -torch.mean(y_ds_hat_r) + torch.mean(y_ds_hat_g) + 10 * gp_s
+            if self.use_gradient_penalty:
+                gp_s = self.compute_gradient_penalty(y.data, y_g_hat.data, self.msd)
+            else:
+                gp_s = None
+            loss_disc_s, _, _ = self.discriminator_loss(y_ds_hat_r, y_ds_hat_g, gp=gp_s)
+            self.log("training/disc/msd_loss", loss_disc_s, prog_bar=False)
+            # WGAN
+            if self.use_wgan:
+                for p in self.msd.parameters():
+                    p.data.clamp_(
+                        -self.config["training"]["vocoder"]["wgan_clip_value"],
+                        self.config["training"]["vocoder"]["wgan_clip_value"],
+                    )
+                for p in self.mpd.parameters():
+                    p.data.clamp_(
+                        -self.config["training"]["vocoder"]["wgan_clip_value"],
+                        self.config["training"]["vocoder"]["wgan_clip_value"],
+                    )
             # calculate loss
             disc_loss_total = loss_disc_s + loss_disc_f
             # log discriminator loss
@@ -668,11 +833,17 @@ class HiFiGAN(pl.LightningModule):
             self.global_step // 2
         )  # because self.global_step counts gen/disc steps
         # generate waveform
-        self.generated_wav = self(x)
+        if self.config["model"]["vocoder"]["istft_layer"]:
+            mag, phase = self(x)
+            self.generated_wav = self.inverse_spectral_transform(
+                mag * torch.exp(phase * 1j)
+            ).unsqueeze(-2)
+        else:
+            self.generated_wav = self(x)
         # create mel
-        generated_mel_spec = self.spectral_transform(self.generated_wav).squeeze(1)[
-            :, :, 1:
-        ]
+        generated_mel_spec = dynamic_range_compression_torch(
+            self.spectral_transform(self.generated_wav).squeeze(1)[:, :, 1:]
+        )
         val_err_tot = F.l1_loss(y_mel, generated_mel_spec).item()
         # # Below is taken from HiFiGAN
         if self.global_step == 0:
@@ -697,9 +868,9 @@ class HiFiGAN(pl.LightningModule):
                 self.config["preprocessing"]["audio"]["output_sampling_rate"],
             )
 
-            y_hat_spec = self.spectral_transform(self.generated_wav[0]).squeeze(1)[
-                :, :, 1:
-            ]
+            y_hat_spec = dynamic_range_compression_torch(
+                self.spectral_transform(self.generated_wav[0]).squeeze(1)[:, :, 1:]
+            )
             self.logger.experiment.add_figure(
                 f"generated/y_hat_spec_{current_step}_{bn[0]}",
                 plot_spectrogram(y_hat_spec.squeeze(0).cpu().numpy()),
