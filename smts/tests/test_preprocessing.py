@@ -47,7 +47,6 @@ class PreprocessingTest(TestCase):
             )
             self.assertEqual(sr, 16000)
             self.assertEqual(audio.dtype, float32)
-            self.assertEqual(audio.size(0), 1)
 
     def test_process_audio(self):
         for entry in self.filelist:
@@ -56,7 +55,6 @@ class PreprocessingTest(TestCase):
             )
             self.assertEqual(sr, 22050)
             self.assertEqual(audio.dtype, float32)
-            self.assertEqual(audio.size(0), 1)
 
     def test_spectral_feats(self):
         linear_preprocessor = Preprocessor(
@@ -82,7 +80,7 @@ class PreprocessingTest(TestCase):
                 audio, linear_preprocessor.input_spectral_transform
             )
             complex_feats = complex_preprocessor.extract_spectral_features(
-                audio, complex_preprocessor.input_spectral_transform
+                audio, complex_preprocessor.input_spectral_transform, normalize=False
             )
             # check data is same number of mels
             self.assertEqual(
@@ -126,7 +124,7 @@ class PreprocessingTest(TestCase):
             #     / "ming024"
             #     / ("eng-LJSpeech-pitch-" + entry["filename"] + ".npy")
             # )
-            frame_f0_kaldi = preprocessor_kaldi.extract_f0(audio)
+            frame_f0_kaldi = preprocessor_kaldi.extract_f0(audio.unsqueeze(0))
             kaldi_phone_avg_energy = preprocessor_kaldi.average_data_by_durations(
                 frame_f0_kaldi, durs
             )
@@ -144,6 +142,8 @@ class PreprocessingTest(TestCase):
             self.assertEqual(len(durs), pyworld_phone_avg_energy.size(0))
             # Ensure same number of frames
             self.assertEqual(frame_f0_pyworld.size(0), feats.size(1))
+
+    # TODO: test nans: torch.any(torch.Tensor([[torch.nan, 2]]).isnan())
 
     def test_duration(self):
         for entry in self.filelist:
@@ -186,7 +186,7 @@ class PreprocessingTest(TestCase):
 
             frame_energy = preprocessor.extract_energy(feats)
             phone_avg_energy = preprocessor.average_data_by_durations(
-                frame_energy.squeeze(), durs
+                frame_energy, durs
             )
             # Ensure avg energy for each phone
             self.assertEqual(phone_avg_energy.size(0), len(durs))

@@ -118,7 +118,7 @@ class SpecDataset(Dataset):
                     f"audio-{self.output_sampling_rate}.npy",
                 ]
             )
-        )  # [channels, samples] should be output sample rate
+        )  # [samples] should be output sample rate
         y_mel = torch.load(
             self.preprocessed_dir
             / self.sep.join(
@@ -157,13 +157,12 @@ class SpecDataset(Dataset):
 
         if self.use_segments:
             # randomly select a segment, if the segment is too short, pad it with zeros
-            if y.size(1) >= self.segment_size:
+            if y.size(0) >= self.segment_size:
                 max_spec_start = x.size(1) - frames_per_seg - 1
                 spec_start = random.randint(0, max_spec_start)
                 x = x[:, spec_start : spec_start + frames_per_seg]
                 y_mel = y_mel[:, spec_start : spec_start + frames_per_seg]
                 y = y[
-                    :,
                     spec_start
                     * self.output_hop_size : (spec_start + frames_per_seg)
                     * self.output_hop_size,
@@ -178,7 +177,7 @@ class SpecDataset(Dataset):
                     "constant",
                 )
                 y = torch.nn.functional.pad(
-                    y, (0, self.segment_size - y.size(1)), "constant"
+                    y, (0, self.segment_size - y.size(0)), "constant"
                 )
         return (x, y, self.audio_files[index]["basename"], y_mel)
 
