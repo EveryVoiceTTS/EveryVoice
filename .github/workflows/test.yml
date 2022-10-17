@@ -17,7 +17,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           activate-environment: SmallTeamSpeech
-          environment-file: environment.yml
+          environment-file: explicit-env.txt
           python-version: 3.9
       - name: Check licenses
         run: |
