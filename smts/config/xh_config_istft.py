@@ -158,7 +158,7 @@ SOX_EFFECTS = [
 
 BASE_PREPROCESSING_HPARAMS = {
     "dataset": "OpenSLR-xh",
-    "data_dir": "/home/aip000/tts/corpora/Speech/OpenSLR/xh_za/za/xho/wavs",
+    "data_dir": rel_path_to_abs_path("./data/OpenSLR/xh_za/za/xho/wavs"),
     "save_dir": rel_path_to_abs_path("./preprocessed/OpenSLR/xh"),
     "f0_phone_averaging": True,
     "energy_phone_averaging": True,

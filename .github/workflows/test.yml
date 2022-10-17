@@ -18,7 +18,6 @@ jobs:
         with:
           activate-environment: SmallTeamSpeech
           environment-file: explicit-env.txt
-          python-version: 3.9
       - name: Check licenses
         run: |
           pip3 install pip-licenses
