@@ -163,7 +163,7 @@ BASE_PREPROCESSING_HPARAMS = {
     "source_data": [
         {
             "name": "LJ_TEST",
-            "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
+            "data_dir": rel_path_to_abs_path("./tests/data/lj/wavs"),
             "save_dir": rel_path_to_abs_path("./preprocessed/YourDataSet"),
             "filelist_loader": load_lj_metadata_hifigan,
             "filelist": rel_path_to_abs_path("./filelists/lj_test.psv"),
