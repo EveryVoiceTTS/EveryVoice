@@ -158,12 +158,12 @@ BASE_PREPROCESSING_HPARAMS = {
         {
             "name": "LJ",
             "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
-            "save_dir": rel_path_to_abs_path("./preprocessed/LJ"),
             "filelist_loader": load_lj_metadata_hifigan,
             "filelist": rel_path_to_abs_path("./filelists/lj_full.psv"),
             "sox_effects": SOX_EFFECTS,
         }
     ],
+    "save_dir": rel_path_to_abs_path("./preprocessed/LJ"),
     "f0_phone_averaging": True,
     "energy_phone_averaging": True,
     "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
