@@ -162,7 +162,7 @@ BASE_PREPROCESSING_HPARAMS = {
     "dataset": "YourDataSet",
     "source_data": [
         {
-            "name": "LJ_TEST",
+            "label": "LJ_TEST",
             "data_dir": rel_path_to_abs_path("./tests/data/lj/wavs"),
             "filelist_loader": load_lj_metadata_hifigan,
             "filelist": rel_path_to_abs_path("./filelists/lj_test.psv"),

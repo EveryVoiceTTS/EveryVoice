@@ -156,7 +156,7 @@ BASE_PREPROCESSING_HPARAMS = {
     "dataset": "LJ",
     "source_data": [
         {
-            "name": "LJ",
+            "label": "LJ",
             "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
             "filelist_loader": load_lj_metadata_hifigan,
             "filelist": rel_path_to_abs_path("./filelists/lj_full.psv"),
