@@ -108,7 +108,7 @@ def train(
     config_path: Path = typer.Option(None, exists=True, dir_okay=False, file_okay=True),
 ):
     original_config = CONFIGS[name.value]
-    if config is not None:
+    if config is not None and config:
         for update in config:
             key, value = update.split("=")
             logger.info(f"Updating config '{key}' to value '{value}'")
