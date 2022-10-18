@@ -1,6 +1,5 @@
 import json
 import os
-from collections import ChainMap
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional
@@ -110,12 +109,16 @@ def train(
 ):
     original_config = CONFIGS[name.value]
     if config is not None:
-        config_override = ChainMap(*[expand_config_string_syntax(x) for x in config])
-        config = update_config(original_config, config_override)
+        for update in config:
+            key, value = update.split("=")
+            logger.info(f"Updating config '{key}' to value '{value}'")
+            original_config = update_config(
+                original_config, expand_config_string_syntax(update)
+            )
     else:
         config = original_config
-
     if config_path is not None:
+        logger.info(f"Loading and updating config from '{config_path}'")
         config_override = json.load(config_path)
         config = update_config(config, config_override)
     if model.value == "hifigan":

@@ -559,7 +559,7 @@ class HiFiGAN(pl.LightningModule):
         self.batch_size = self.config["training"][
             "batch_size"
         ]  # this is declared explicitly so that auto_scale_batch_size works: https://pytorch-lightning.readthedocs.io/en/stable/advanced/training_tricks.html
-        self.save_hyperparameters()
+        self.save_hyperparameters()  # TODO: ignore=['specific keys'] - I should ignore some unnecessary/problem values
         self.audio_config = config["preprocessing"]["audio"]
         self.sampling_rate_change = (
             self.audio_config["output_sampling_rate"]
