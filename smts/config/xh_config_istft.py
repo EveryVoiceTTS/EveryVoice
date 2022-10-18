@@ -77,7 +77,7 @@ BASE_TRAINING_HPARAMS = {
     "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
     "train_split": 0.9,  # the rest is val
     "batch_size": 32,
-    "train_data_workers": 1,
+    "train_data_workers": 4,
     "val_data_workers": 1,
     "logger": {  # Uses Tensorboard
         "name": "OpenSLR-xh",
