@@ -4,7 +4,7 @@ from unittest import TestCase
 
 from torch import float32
 
-from smts.config.base_config import BaseConfig
+from smts.config.base_config import SOX_EFFECTS, BaseConfig
 from smts.preprocessor import Preprocessor
 from smts.utils import read_filelist
 
@@ -43,7 +43,9 @@ class PreprocessingTest(TestCase):
         for entry in self.filelist:
             # This just applies the SOX effects
             audio, sr = self.preprocessor.process_audio(
-                self.data_dir / (entry["filename"] + ".wav"), use_effects=True
+                self.data_dir / (entry["filename"] + ".wav"),
+                use_effects=True,
+                sox_effects=SOX_EFFECTS,
             )
             self.assertEqual(sr, 16000)
             self.assertEqual(audio.dtype, float32)
