@@ -708,18 +708,26 @@ class HiFiGAN(pl.LightningModule):
 
     def compute_gradient_penalty(self, real_samples, fake_samples, discriminator):
         """Calculates the gradient penalty loss for WGAN GP"""
-        # TODO: this isn't working
         # Random weight term for interpolation between real and fake samples
+        # real_samples.size() = (batch_size, 1, segment_size)
         alpha = torch.Tensor(np.random.random((real_samples.size(0), 1, 1))).to(
             self.device
-        )
+        )  # size = (batch_size, 1, 1)
         # Get random interpolation between real and fake samples
         interpolates = (
             alpha * real_samples + ((1 - alpha) * fake_samples)
-        ).requires_grad_(True)
+        ).requires_grad_(
+            True
+        )  # size = (batch_size, 1, segment_size)
         interpolates = interpolates.to(self.device)
         d_interpolates, _ = discriminator.forward_interpolates(interpolates)
-        fake = torch.Tensor(real_samples.shape[0], 1).fill_(1.0).to(self.device)
+        d_interpolates = [torch.mean(x, dim=1) for x in d_interpolates]
+        d_interpolates = (
+            torch.stack(d_interpolates).sum(dim=0).unsqueeze(1)
+        )  # size = (batch_size, 1)
+        fake = (
+            torch.Tensor(real_samples.shape[0], 1).fill_(1.0).to(self.device)
+        )  # size = (batch_size, 1)
         # Get gradient w.r.t. interpolates
         gradients = torch.autograd.grad(
             outputs=d_interpolates,
@@ -728,15 +736,19 @@ class HiFiGAN(pl.LightningModule):
             create_graph=True,
             retain_graph=True,
             only_inputs=True,
-        )[0]
-        gradients = gradients.view(gradients.size(0), -1).to(self.device)
-        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()
+        )[
+            0
+        ]  # size = (batch_size, 1, segment_size)
+        gradients = gradients.view(gradients.size(0), -1).to(
+            self.device
+        )  # size = (batch_size, segment_size)
+        gradient_penalty = ((gradients.norm(2, dim=1) - 1) ** 2).mean()  # size = (1)
+        self.log("train/gradient_penalty", gradient_penalty)
         return gradient_penalty
 
     def training_step(self, batch, batch_idx, optimizer_idx):
         x, y, _, y_mel = batch
         y = y.unsqueeze(1)
-        # TODO: log time series data properly
         # x.size() & y_mel.size() = [batch_size, n_mels=80, n_frames=32]
         # y.size() = [batch_size, segment_size=8192]
         # train generator
@@ -850,20 +862,20 @@ class HiFiGAN(pl.LightningModule):
         if self.global_step == 0:
             # Log ground truth audio and spec
             self.logger.experiment.add_audio(
-                f"gt/y_{current_step}_{bn[0]}",
+                f"gt/y_{bn[0]}",
                 y[0],
                 current_step,
                 self.config["preprocessing"]["audio"]["output_sampling_rate"],
             )
             self.logger.experiment.add_figure(
-                f"gt/y_spec_{current_step}_{bn[0]}",
+                f"gt/y_spec_{bn[0]}",
                 plot_spectrogram(x[0].cpu().numpy()),
                 current_step,
             )
         #
         if batch_idx == 0:
             self.logger.experiment.add_audio(
-                f"generated/y_hat_{current_step}_{bn[0]}",
+                f"generated/y_hat_{bn[0]}",
                 self.generated_wav[0],
                 current_step,
                 self.config["preprocessing"]["audio"]["output_sampling_rate"],
@@ -873,7 +885,7 @@ class HiFiGAN(pl.LightningModule):
                 self.spectral_transform(self.generated_wav[0]).squeeze(1)[:, :, 1:]
             )
             self.logger.experiment.add_figure(
-                f"generated/y_hat_spec_{current_step}_{bn[0]}",
+                f"generated/y_hat_spec_{bn[0]}",
                 plot_spectrogram(y_hat_spec.squeeze(0).cpu().numpy()),
                 current_step,
             )

@@ -24,7 +24,6 @@ class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
         num_samples: int = None,
         callback_get_label: Callable = None,
     ):
-        # TODO: confirm this is actually doing what we want it to...
         # if indices is not provided, all elements in the dataset will be considered
         self.indices = list(range(len(dataset))) if indices is None else indices
 
