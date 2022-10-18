@@ -1,4 +1,6 @@
+import json
 import math
+from pathlib import Path
 from unittest import TestCase
 
 from smts.config import CONFIGS
@@ -8,13 +10,47 @@ from smts.config.base_config import (
     BASE_TRAINING_HPARAMS,
     BaseConfig,
 )
+from smts.utils import expand_config_string_syntax, update_config
 
 
 class ConfigTest(TestCase):
     """Basic test for hyperparameter configuration"""
 
+    data_dir = Path(__file__).parent / "data"
+
     def setUp(self) -> None:
         pass
+
+    def test_json_update(self):
+        """Test that updating the config from json works"""
+        base_config = BaseConfig()
+        with (self.data_dir / "json_config.json").open(encoding="UTF-8") as f:
+            json_config = json.load(f)
+        self.assertEqual(base_config["training"]["vocoder"]["gan_type"], "original")
+        self.assertEqual(
+            base_config["model"]["vocoder"]["upsample_rates"], [8, 8, 2, 2]
+        )
+        updated_config = update_config(base_config, json_config)
+        self.assertEqual(updated_config["training"]["vocoder"]["gan_type"], "wgan")
+        self.assertEqual(updated_config["model"]["vocoder"]["upsample_rates"], [8, 8])
+
+    def test_string_to_dict(self):
+        base_config = BaseConfig()
+        test_string = "training.vocoder.gan_type=wgan"
+        test_bad_strings = [
+            "training.vocoder.gan_type==wgan",
+            "training.vocoder.gan_typewgan",
+        ]
+        # test_missing = ["training.foobar.gan_type=original"]
+        test_dict = expand_config_string_syntax(test_string)
+        self.assertEqual(test_dict, {"training": {"vocoder": {"gan_type": "wgan"}}})
+        for bs in test_bad_strings:
+            with self.assertRaises(ValueError):
+                expand_config_string_syntax(bs)
+
+        self.assertEqual(base_config["training"]["vocoder"]["gan_type"], "original")
+        config = update_config(base_config, test_dict)
+        self.assertEqual(config["training"]["vocoder"]["gan_type"], "wgan")
 
     def test_is_dict(self):
         base_config = BaseConfig()

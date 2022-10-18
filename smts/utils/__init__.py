@@ -1,5 +1,6 @@
 import csv
 import re
+from collections.abc import Mapping
 from os.path import dirname, isabs, isfile, splitext
 from pathlib import Path
 from unicodedata import normalize
@@ -15,6 +16,33 @@ import smts
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
+
+
+def update_config(orig_dict, new_dict):
+    """See https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth"""
+    for key, val in new_dict.items():
+        if isinstance(val, Mapping):
+            tmp = update_config(orig_dict.get(key, {}), val)
+            orig_dict[key] = tmp
+        else:
+            orig_dict[key] = new_dict[key]
+    return orig_dict
+
+
+def expand_config_string_syntax(config_arg: str) -> dict:
+    """Expand a string of the form "key1=value1,key2=value2" into a dict."""
+    config_dict = {}
+    try:
+        key, value = config_arg.split("=")
+    except ValueError:
+        raise ValueError(f"Invalid config string: {config_arg} - missing '='")
+    current_dict = config_dict
+    keys = key.split(".")
+    for key in keys[:-1]:
+        current_dict[key] = {}
+        current_dict = current_dict[key]
+    current_dict[keys[-1]] = value
+    return config_dict
 
 
 def dynamic_range_compression_torch(x, C=1, clip_val=1e-5):

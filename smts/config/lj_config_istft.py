@@ -5,7 +5,6 @@
    TODO: Give examples of changing hyperparameters in CLI
 """
 
-from collections.abc import Mapping
 from copy import deepcopy
 from datetime import datetime
 from string import ascii_lowercase, ascii_uppercase
@@ -18,6 +17,7 @@ from smts.utils import (
     nfc_normalize,
     original_hifigan_leaky_relu,
     rel_path_to_abs_path,
+    update_config,
 )
 
 #########################
@@ -228,26 +228,13 @@ class BaseConfig(dict):
             "text": {"symbols": deepcopy(SYMBOLS), "cleaners": CLEANERS},
         }
         # update from kwargs
-        config = update(base, kwargs)
+        config = update_config(base, kwargs)
         # then iter through and update from each arg
         for arg in args:
             if isinstance(arg, dict):
-                config = update(config, arg)
+                config = update_config(config, arg)
             else:
                 raise ValueError(
                     "Hm, you tried to update the config with an argument that was not a dictionary, please re-formulate"
                 )
         super().__init__(*args, **config)
-
-
-def update(orig_dict, new_dict):
-    """See https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth"""
-    for key, val in new_dict.items():
-        if isinstance(val, Mapping):
-            tmp = update(orig_dict.get(key, {}), val)
-            orig_dict[key] = tmp
-        elif isinstance(val, list):
-            orig_dict[key] = orig_dict.get(key, []) + val
-        else:
-            orig_dict[key] = new_dict[key]
-    return orig_dict

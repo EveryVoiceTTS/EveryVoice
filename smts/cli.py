@@ -1,4 +1,6 @@
+import json
 import os
+from collections import ChainMap
 from enum import Enum
 from pathlib import Path
 from typing import List, Optional
@@ -14,6 +16,7 @@ from smts.dataloader import HiFiGANDataModule
 from smts.model.vocoder.hifigan import HiFiGAN
 from smts.preprocessor import Preprocessor
 from smts.run_tests import run_tests
+from smts.utils import expand_config_string_syntax, update_config
 
 app = typer.Typer()
 
@@ -102,8 +105,19 @@ def train(
     devices: str = typer.Option("auto"),
     model: Model = typer.Option(Model.hifigan),
     strategy: str = typer.Option(None),
+    config: List[str] = typer.Option(None),
+    config_path: Path = typer.Option(None, exists=True, dir_okay=False, file_okay=True),
 ):
-    config = CONFIGS[name.value]
+    original_config = CONFIGS[name.value]
+    if config is not None:
+        config_override = ChainMap(*[expand_config_string_syntax(x) for x in config])
+        config = update_config(original_config, config_override)
+    else:
+        config = original_config
+
+    if config_path is not None:
+        config_override = json.load(config_path)
+        config = update_config(config, config_override)
     if model.value == "hifigan":
         tensorboard_logger = TensorBoardLogger(**config["training"]["logger"])
         logger.info("Starting training for HiFiGAN model.")

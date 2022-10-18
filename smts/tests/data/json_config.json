@@ -1,0 +1,15 @@
+{
+    "training": {
+        "vocoder": {
+            "gan_type": "wgan"
+        }
+    },
+    "model": {
+        "vocoder": {
+            "upsample_rates": [
+                8,
+                8
+            ]
+        }
+    }
+}
