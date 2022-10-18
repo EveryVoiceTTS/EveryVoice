@@ -57,7 +57,6 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
 def preprocess(
     name: CONFIGS_ENUM,
     data: Optional[List[PreprocessCategories]] = typer.Option(None, "-d", "--data"),
-    filelist: Optional[Path] = typer.Option(None, "-f", "--filelist"),
     output_path: Optional[Path] = typer.Option(
         "processed_filelist.psv", "-o", "--output"
     ),
@@ -72,7 +71,6 @@ def preprocess(
         )
     else:
         preprocessor.preprocess(
-            filelist=filelist,
             output_path=output_path,
             process_audio=to_preprocess["audio"],
             process_sox_audio=to_preprocess["sox_audio"],

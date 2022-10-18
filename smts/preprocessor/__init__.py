@@ -35,6 +35,9 @@ from smts.utils import (
 class Preprocessor:
     def __init__(self, config):
         self.config = config
+        self.datasets = config["preprocessing"]["source_data"]
+        self.save_dir = Path(config["preprocessing"]["save_dir"])
+        self.save_dir.mkdir(parents=True, exist_ok=True)
         self.missing_files: List[str] = []
         self.skipped_processes = 0
         self.audio_too_short = []
@@ -44,12 +47,6 @@ class Preprocessor:
         self.audio_config = config["preprocessing"]["audio"]
         self.sep = config["preprocessing"]["value_separator"]
         self.text_processor = TextProcessor(config)
-        self.data_dir = Path(self.config["preprocessing"]["data_dir"])
-        self.save_dir = Path(self.config["preprocessing"]["save_dir"])
-        self.save_dir.mkdir(parents=True, exist_ok=True)
-        self.filelist = self.config["preprocessing"]["filelist_loader"](
-            self.config["preprocessing"]["filelist"]
-        )
         self.input_sampling_rate = self.audio_config["input_sampling_rate"]
         self.output_sampling_rate = self.audio_config["output_sampling_rate"]
         self.sampling_rate_change = (
@@ -100,7 +97,12 @@ class Preprocessor:
             exit()
 
     def process_audio(
-        self, wav_path: str, normalize=True, use_effects=False, resample_rate=None
+        self,
+        wav_path: str,
+        normalize=True,
+        use_effects=False,
+        resample_rate=None,
+        sox_effects=None,
     ) -> Union[Tuple[Tensor, int], Tuple[None, None]]:
         """Process audio
 
@@ -112,11 +114,11 @@ class Preprocessor:
         """
 
         audio, sr = load_audio(wav_path, normalize=normalize)
-        if use_effects and self.config["preprocessing"]["audio"]["sox_effects"]:
+        if use_effects and sox_effects:
             audio, sr = apply_effects_tensor(
                 audio,
                 sr,
-                self.config["preprocessing"]["audio"]["sox_effects"],
+                sox_effects,
             )
         if resample_rate is not None and resample_rate != sr:
             audio = resample(audio, sr, resample_rate)
@@ -282,11 +284,11 @@ class Preprocessor:
         else:
             return self.text_processor.text_to_sequence(text)
 
-    def collect_files(self, filelist):
+    def collect_files(self, filelist, data_dir):
         for f in filelist:
-            audio_path = self.data_dir / (f["basename"] + ".wav")
+            audio_path = data_dir / (f["basename"] + ".wav")
             if not audio_path.exists():
-                logger.warning(f"File '{f}' if missing and will not be processed.")
+                logger.warning(f"File '{f}' is missing and will not be processed.")
                 self.missing_files.append(f)
             else:
                 yield f
@@ -318,6 +320,7 @@ class Preprocessor:
     def _preprocess_item(  # noqa: C901
         self,
         item,
+        dataset_info,
         process_audio=False,
         process_sox_audio=False,
         process_spec=False,
@@ -381,7 +384,9 @@ class Preprocessor:
                 save_audio(
                     save_path,
                     self.process_audio(
-                        self.data_dir / (item["basename"] + ".wav"), use_effects=True
+                        dataset_info["data_dir"] / (item["basename"] + ".wav"),
+                        use_effects=True,
+                        sox_effects=dataset_info["sox_effects"],
                     ),
                     self.config["preprocessing"]["audio"]["alignment_sampling_rate"],
                     encoding="PCM_S",
@@ -398,7 +403,7 @@ class Preprocessor:
                 or not output_audio_save_path.exists()
             ):
                 audio, _ = self.process_audio(
-                    self.data_dir / (item["basename"] + ".wav"),
+                    dataset_info["data_dir"] / (item["basename"] + ".wav"),
                     resample_rate=self.input_sampling_rate,
                 )
                 if (
@@ -416,7 +421,7 @@ class Preprocessor:
                 torch.save(audio, input_audio_save_path)
                 if self.input_sampling_rate != self.output_sampling_rate:
                     output_audio, _ = self.process_audio(
-                        self.data_dir / (item["basename"] + ".wav"),
+                        dataset_info["data_dir"] / (item["basename"] + ".wav"),
                         resample_rate=self.output_sampling_rate,
                     )
 
@@ -513,10 +518,10 @@ class Preprocessor:
             save_path = self.save_dir / self.sep.join(
                 [item["basename"], speaker, language, "duration.npy"]
             )
-            dur_path = self.data_dir / item["basename"] + ".TextGrid"
+            dur_path = dataset_info["data_dir"] / item["basename"] + ".TextGrid"
             if not dur_path.exists():
                 logger.warning(
-                    f"File '{item['basename']}' if missing and will not be processed."
+                    f"File '{item['basename']}' is missing and will not be processed."
                 )
                 self.missing_files.append(item)
                 return None
@@ -528,29 +533,52 @@ class Preprocessor:
 
     def preprocess(  # noqa: C901
         self,
-        filelist=None,
         output_path="processed_filelist.psv",
         **kwargs,
     ):
-        # TODO: use multiprocessing
         write_path = self.save_dir / output_path
         if write_path.exists() and not kwargs["overwrite"]:
             logger.error(
                 f"Preprocessed filelist at '{write_path}' already exists. Please either set overwrite=True or choose a new path"
             )
             exit()
+        # TODO: use multiprocessing
         processed = 0
         files = []
-        if filelist is None:
-            filelist = self.filelist
-        for item in tqdm(
-            self.collect_files(filelist),
-            total=len(filelist),
-        ):
-            item = self._preprocess_item(item, **kwargs)
-            if item is not None:
-                files.append(item)
-                processed += 1
+        # Sanity check
+        for dataset in self.datasets:
+            data_dir = Path(dataset["data_dir"])
+            if not data_dir.exists():
+                logger.error(
+                    f"Data directory '{data_dir}' does not exist. Please check your config file."
+                )
+                exit()
+            # TODO: more sanity checks
+        # Actual processing
+        for dataset in tqdm(self.datasets, total=len(self.datasets)):
+            data_dir = Path(dataset["data_dir"])
+            filelist = dataset["filelist_loader"](dataset["filelist"])
+            for item in tqdm(
+                self.collect_files(filelist, data_dir=data_dir),
+                total=len(filelist),
+            ):
+                item = self._preprocess_item(
+                    item,
+                    dataset,
+                    **kwargs,
+                )
+                if item is not None:
+                    # Add Label
+                    if isinstance(dataset["label"], str):
+                        item["label"] = dataset["label"]
+                    elif callable(dataset["label"]):
+                        item["label"] = dataset["label"](item)
+                    else:
+                        raise ValueError(
+                            f"Label for dataset '{dataset['name']}' is neither a string nor a callable."
+                        )
+                    files.append(item)
+                    processed += 1
 
         logger.info(self.report(processed))
         write_filelist(files, self.save_dir / output_path)

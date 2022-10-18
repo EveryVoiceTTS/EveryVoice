@@ -130,6 +130,7 @@ BASE_TRAINING_HPARAMS = {
         "gan_type": "original",  # original, wgan, wgan-gp
         "gan_optimizer": "adam",  # adam, rmsprop
         "wgan_clip_value": 0.01,
+        "use_weighted_sampler": False,
     },
 }
 
@@ -157,13 +158,19 @@ SOX_EFFECTS = [
 ]
 
 BASE_PREPROCESSING_HPARAMS = {
-    "dataset": "OpenSLR-xh",
-    "data_dir": rel_path_to_abs_path("./data/OpenSLR/xh_za/za/xho/wavs"),
-    "save_dir": rel_path_to_abs_path("./preprocessed/OpenSLR/xh"),
+    "dataset": "OpenSLR",
+    "source_data": [
+        {
+            "label": "xho",  # can be string or callable that takes item in filelist as input and returns string
+            "data_dir": rel_path_to_abs_path("./data/OpenSLR/xh_za/za/xho/wavs"),
+            "filelist_loader": load_lj_metadata_hifigan,
+            "filelist": rel_path_to_abs_path("./filelists/xh_full.psv"),
+            "sox_effects": SOX_EFFECTS,
+        }
+    ],
+    "save_dir": rel_path_to_abs_path("./preprocessed/OpenSLR"),
     "f0_phone_averaging": True,
     "energy_phone_averaging": True,
-    "filelist_loader": load_lj_metadata_hifigan,
-    "filelist": rel_path_to_abs_path("./filelists/xh_full.psv"),
     "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {
@@ -185,7 +192,6 @@ BASE_PREPROCESSING_HPARAMS = {
         "n_fft": 1024,  # set this to the input sampling rate
         "n_mels": 80,
         "spec_type": "mel-librosa",  # mel-torch or mel-librosa (real) | linear (real) | raw (complex) see https://pytorch.org/audio/stable/tutorials/audio_feature_extractions_tutorial.html#overview-of-audio-features
-        "sox_effects": SOX_EFFECTS,
         "vocoder_segment_size": 16384,  # this is the size of the segments taken for training HiFI-GAN. set proportional to output sampling rate; 8192 is for output of 22050Hz. This should be a multiple of the upsample hop size which itself is equal to the product of the upsample rates.
     },
 }

@@ -9,12 +9,14 @@ import torch
 from torch.utils.data import DataLoader, Dataset, random_split
 
 from smts.config.base_config import BaseConfig
+from smts.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
 
 
 class BaseDataModule(pl.LightningDataModule):
     def __init__(self, config: BaseConfig):
         super().__init__()
         self.config = config
+        self.use_weighted_sampler = False
         self.train_path = os.path.join(
             self.config["training"]["logger"]["save_dir"],
             self.config["training"]["logger"]["name"],
@@ -48,21 +50,33 @@ class BaseDataModule(pl.LightningDataModule):
         self.val_dataset = torch.load(self.val_path)
 
     def train_dataloader(self):
+        sampler = (
+            ImbalancedDatasetSampler(self.train_dataset)
+            if self.use_weighted_sampler
+            else None
+        )
         return DataLoader(
             self.train_dataset,
             batch_size=self.config["training"]["batch_size"],
             num_workers=self.config["training"]["train_data_workers"],
             pin_memory=True,
             drop_last=True,
+            sampler=sampler,
         )
 
     def val_dataloader(self):
+        sampler = (
+            ImbalancedDatasetSampler(self.val_dataset)
+            if self.use_weighted_sampler
+            else None
+        )
         return DataLoader(
             self.val_dataset,
             batch_size=1,
             num_workers=1,
             pin_memory=True,
             drop_last=True,
+            sampler=sampler,
         )
 
     def load_dataset(self):
@@ -184,8 +198,17 @@ class SpecDataset(Dataset):
     def __len__(self):
         return len(self.audio_files)
 
+    def get_labels(self):
+        return [x["label"] for x in self.audio_files]
+
 
 class HiFiGANDataModule(BaseDataModule):
+    def __init__(self, config: BaseConfig):
+        super().__init__(config=config)
+        self.use_weighted_sampler = config["training"]["vocoder"][
+            "use_weighted_sampler"
+        ]
+
     def load_dataset(self):
         self.dataset = self.config["training"]["vocoder"]["filelist_loader"](
             self.config["training"]["vocoder"]["filelist"]

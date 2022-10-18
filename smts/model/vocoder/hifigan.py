@@ -736,6 +736,7 @@ class HiFiGAN(pl.LightningModule):
     def training_step(self, batch, batch_idx, optimizer_idx):
         x, y, _, y_mel = batch
         y = y.unsqueeze(1)
+        # TODO: log time series data properly
         # x.size() & y_mel.size() = [batch_size, n_mels=80, n_frames=32]
         # y.size() = [batch_size, segment_size=8192]
         # train generator
