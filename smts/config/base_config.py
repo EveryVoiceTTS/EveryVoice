@@ -28,14 +28,82 @@ from smts.utils import (
 #########################
 
 BASE_MODEL_HPARAMS = {
-    "encoder": {
-        "encoder_layer": 4,
-        "num_phon_feats": 37
+    "aligner": {
+        "lstm_dim": 512,
+        "conv_dim": 512,
+    },
+    "transformer": {
+        "encoder_layers": 4,
+        "encoder_head": 2,
+        "encoder_hidden": 256,
+        "encoder_dim_feedforward": 1024,
+        "encoder_conv_filter_size": 1024,
+        "encoder_conv_kernel_sizes": [9, 1],
+        "encoder_dropout": 0.2,
+        "encoder_depthwise": True,
+        "decoder_layers": 6,
+        "decoder_head": 2,
+        "decoder_hidden": 256,
+        "decoder_dim_feedforward": 1024,
+        "decoder_conv_filter_size": 1024,
+        "decoder_conv_kernel_sizes": [9, 1],
+        "decoder_dropout": 0.2,
+        "decoder_depthwise": True,
+        "num_phon_feats": 37,
+        "use_phon_feats": False,
+        "use_conformer": {
+            "encoder": True,
+            "decoder": True,
+        }
         # etc...
     },
-    "decoder": {},
-    "variance_predictor": {
+    "variance_adaptor": {
+        "variances": ["pitch", "energy"],
+        "variance_levels": ["phone", "phone"],  # frame or phone
+        "variance_transforms": ["none", "none"],  # "cwt", "log", "none"
+        "variance_losses": ["mse", "mse"],
+        "variance_nlayers": [5, 5, 5, 5],
+        "variance_loss_weights": [5e-2, 5e-2, 5e-2, 5e-2],
+        "variance_kernel_size": [3, 3, 3, 3],
+        "variance_dropout": [0.5, 0.5, 0.5, 0.5],
+        "variance_filter_size": 256,
+        "variance_nbins": 256,
+        "variance_depthwise_conv": True,
+        "filter_size": 256,
+        "kernel_size": 3,
+        "dropout": 0.5,
+        "duration_nlayers": 2,
+        "duration_stochastic": False,
+        "duration_kernel_size": 3,
+        "duration_dropout": 0.5,
+        "duration_filter_size": 256,
+        "duration_depthwise_conv": True,
+        "soft_dtw_gamma": 0.1,
+        "soft_dtw_chunk_size": 256
         # etc..
+    },
+    "feature_prediction": {
+        "learn_alignment": True,  # True for Badlani et. al. 2021 Attention, False for Aligner-extracted durations
+        "max_length": 1000,
+    },
+    "feature_prediction_loss": {
+        "mel_loss": "mse",
+        "mel_loss_weight": 1,
+        "duration_loss": "mse",
+        "duration_loss_weight": 5e-1,
+    },
+    "priors": {
+        "prior_types": [
+            "pitch",
+            "energy",
+            "duration",
+        ],  # ["pitch", "energy", "duration"]
+        "gmm": False,
+        "gmm_max_components": 5,
+        "gmm_min_samples_per_component": 20,
+        "gmm_reg_covar": 1e-3,
+        "gmm_logs": [0, 1, 2, 3],
+        "every_layer": False,
     },
     "vocoder": {
         "resblock": "1",
@@ -61,10 +129,11 @@ BASE_MODEL_HPARAMS = {
         "istft_layer": False,  # Uses C8C8I model https://arxiv.org/pdf/2203.02395.pdf - must change upsample rates and upsample_kernel_sizes appropriately.
     },
     "use_postnet": True,
-    "max_seq_len": 1000,
     "multilingual": True,
     "multispeaker": {
-        # etc...
+        "embedding_type": "id",  # "id", "dvector", None
+        "every_layer": False,
+        "dvector_gmm": False,
     },
 }
 
@@ -76,29 +145,44 @@ BASE_MODEL_HPARAMS = {
 #########################
 
 BASE_TRAINING_HPARAMS = {
-    "strategy": "vocoder",  # feature_prediction (FS2), vocoder (HiFiGAN), e2e (FS2 + HiFiGAN)
-    "train_split": 0.9,  # the rest is val
-    "batch_size": 16,
-    "train_data_workers": 4,
-    "val_data_workers": 1,
+    "aligner": {
+        "learning_rate": 0.001,
+        "batch_size": 32,
+        "train_split": 0.99,
+        "save_top_k_ckpts": 3,
+        "binned_sampler": True,
+        "seed": 1234,
+        "max_epochs": 1000,
+        "plot_steps": 1000,
+        "ckpt_steps": None,
+        "ckpt_epochs": 1,
+        "finetune_checkpoint": "",
+    },
+    "training_strategy": "feat",  # "feat", "variance", "vocoder", "e2e"
+    "train_data_workers": 0,
+    "val_data_workers": 0,
     "logger": {  # Uses Tensorboard
         "name": "Base Experiment",
         "save_dir": rel_path_to_abs_path("./logs"),
         "sub_dir": str(int(datetime.today().timestamp())),
-        "version": "sanity",
+        "version": "alignment-sanity",
     },
     "feature_prediction": {
-        "filelist": rel_path_to_abs_path(
-            "./preprocessed/YourDataSet/processed_filelist.psv"
-        ),
+        "batch_size": 2,
+        "train_split": 0.9,  # the rest is val
+        "seed": 1234,
+        # "filelist": rel_path_to_abs_path(
+        #     "./preprocessed/YourDataSet/processed_filelist.psv"
+        # ),
+        "filelist": rel_path_to_abs_path("./preprocessed/LJ/processed_filelist.psv"),
         "filelist_loader": generic_dict_loader,
-        "steps": {
-            "total": 300000,
-            "log": 100,
-            "val": 1000,
-            "save": 100000,
-        },
+        "finetune_checkpoint": "",
         "optimizer": {
+            "lr": 1e-4,
+            "betas": (0.9, 0.98),
+            "eps": 1e-8,
+            "weight_decay": 0.01,
+            "warmup_steps": 4000,
             # etc....
         },
         "freeze_layers": {
@@ -107,15 +191,33 @@ BASE_TRAINING_HPARAMS = {
             "postnet": False,
             "variance": {"energy": False, "duration": False, "pitch": False},
         },
+        "early_stopping": {
+            "metric": "none",  # "none", "mae", or "js"
+            "patience": 4,
+        },
+        "tf": {
+            "ratio": 1.0,
+            "linear_schedule": False,
+            "linear_schedule_start": 0,
+            "linear_schedule_end": 20,
+            "linear_schedule_end_ratio": 0.0,
+        },
+        "max_epochs": 1000,
+        "save_top_k_ckpts": 5,
+        "ckpt_steps": None,
+        "ckpt_epochs": 1,
+        "use_weighted_sampler": False,
     },
     "vocoder": {
+        "batch_size": 16,
+        "train_split": 0.9,  # the rest is val
         "filelist": rel_path_to_abs_path(
             "./preprocessed/YourDataSet/processed_filelist.psv"
         ),
+        "filelist_loader": generic_dict_loader,
         "finetune_checkpoint": rel_path_to_abs_path(
             "./logs/Base Experiment/sanity/checkpoints/last.ckpt"
         ),
-        "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "learning_rate": 0.0002,
         "adam_b1": 0.8,
@@ -162,17 +264,28 @@ BASE_PREPROCESSING_HPARAMS = {
     "dataset": "YourDataSet",
     "source_data": [
         {
-            "label": "LJ_TEST",
-            "data_dir": rel_path_to_abs_path("./tests/data/lj/wavs"),
+            "label": "LJ",
+            "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
             "filelist_loader": load_lj_metadata_hifigan,
-            "filelist": rel_path_to_abs_path("./filelists/lj_test.psv"),
+            "filelist": rel_path_to_abs_path("./filelists/lj_full.psv"),
             "sox_effects": SOX_EFFECTS,
         }
     ],
-    "save_dir": rel_path_to_abs_path("./preprocessed/YourDataSet"),
-    "f0_phone_averaging": True,
+    "save_dir": rel_path_to_abs_path("./preprocessed/LJ"),
+    # "source_data": [
+    #     {
+    #         "label": "LJ_TEST",
+    #         "data_dir": rel_path_to_abs_path("./tests/data/lj/wavs"),
+    #         "textgrid_dir": rel_path_to_abs_path("./tests/data/lj/textgrids"),
+    #         "filelist_loader": load_lj_metadata_hifigan,
+    #         "filelist": rel_path_to_abs_path("./filelists/lj_full.psv"),
+    #         "sox_effects": SOX_EFFECTS,
+    #     }
+    # ],
+    # "save_dir": rel_path_to_abs_path("./preprocessed/YourDataSet"),
+    "pitch_phone_averaging": True,
     "energy_phone_averaging": True,
-    "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
+    "pitch_type": "pyworld",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {
         "min_audio_length": 0.25,  # seconds
@@ -213,7 +326,7 @@ BASE_PREPROCESSING_HPARAMS = {
 SYMBOLS = {
     "silence": ["<SIL>"],
     "pad": "_",
-    "punctuation": ';:,.!?¡¿—…"«»“” ',
+    "punctuation": "-';:,.!?¡¿—…\"«»“” ",
     "lowercase_letters": list(ascii_lowercase),
     "uppercase_letters": list(ascii_uppercase),
 }

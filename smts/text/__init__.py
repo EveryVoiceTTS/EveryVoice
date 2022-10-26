@@ -15,13 +15,20 @@ class TextProcessor:
     def __init__(self, config: BaseConfig):
         self.config = config
         self._all_symbols = self.config["text"]["symbols"]
-
+        if "pad" in self._all_symbols:
+            assert isinstance(self._all_symbols["pad"], str)
+        self._pad_symbol = self._all_symbols["pad"]
         # apply longest characters first to apply multigraph symbols first
         self.symbols = sorted(
-            list(chain.from_iterable(list(v) for v in self._all_symbols.values())),
+            list(
+                chain.from_iterable(
+                    list(v) for k, v in self._all_symbols.items() if k != "pad"
+                )
+            ),
             key=len,
             reverse=True,
         )
+        self.symbols.insert(0, self._pad_symbol)
 
         self.missing_symbols: Counter[str] = Counter()
         self.duplicate_symbols: Counter[str] = Counter()
