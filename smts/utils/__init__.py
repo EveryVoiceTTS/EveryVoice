@@ -5,6 +5,8 @@ from os.path import dirname, isabs, isfile, splitext
 from pathlib import Path
 from unicodedata import normalize
 
+import numpy as np
+from torch.nn.utils.rnn import pad_sequence
 import matplotlib.pylab as plt
 import torch
 import torch.nn.functional as F
@@ -16,6 +18,45 @@ import smts
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
+
+
+def _flatten(structure, key="", path="", flattened=None):
+    if flattened is None:
+        flattened = {}
+    if not isinstance(structure, dict):
+        flattened[(f"{path}_" if path else "") + key] = structure
+    else:
+        for new_key, value in structure.items():
+            _flatten(value, new_key, (f"{path}_" if path else "") + key, flattened)
+    return flattened
+
+
+def expand(values, durations):
+    out = []
+    for value, d in zip(values, durations):
+        out += [value] * max(0, int(d))
+    if isinstance(values, list):
+        return np.array(out)
+    elif isinstance(values, torch.Tensor):
+        return torch.stack(out)
+    elif isinstance(values, np.ndarray):
+        return np.array(out)
+
+
+def collate_fn(data):
+    # list-of-dict -> dict-of-lists
+    # (see https://stackoverflow.com/a/33046935)
+    data = [_flatten(x) for x in data]
+    data = {k: [dic[k] for dic in data] for k in data[0]}
+    for key in data:
+        if isinstance(data[key][0], np.ndarray):
+            data[key] = [torch.tensor(x) for x in data[key]]
+        if torch.is_tensor(data[key][0]):
+            pad_val = 1 if "silence_mask" in key else 0
+            data[key] = pad_sequence(data[key], batch_first=True, padding_value=pad_val)
+        if isinstance(data[key][0], int):
+            data[key] = torch.tensor(data[key]).long()
+    return data
 
 
 def update_config(orig_dict, new_dict):
@@ -180,7 +221,7 @@ def load_lj_metadata_hifigan(path):
     ) as f:
         reader = csv.DictReader(
             f,
-            fieldnames=["basename", "raw_text", "norm_text"],
+            fieldnames=["basename", "raw_text", "text"],
             delimiter="|",
             quoting=csv.QUOTE_NONE,
             escapechar="\\",
