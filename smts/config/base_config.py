@@ -94,9 +94,9 @@ BASE_MODEL_HPARAMS = {
     },
     "priors": {
         "prior_types": [
-            "pitch",
-            "energy",
-            "duration",
+            # "pitch",
+            # "energy",
+            # "duration",
         ],  # ["pitch", "energy", "duration"]
         "gmm": False,
         "gmm_max_components": 5,
@@ -147,7 +147,7 @@ BASE_MODEL_HPARAMS = {
 BASE_TRAINING_HPARAMS = {
     "aligner": {
         "learning_rate": 0.001,
-        "batch_size": 32,
+        "batch_size": 1,
         "train_split": 0.99,
         "save_top_k_ckpts": 3,
         "binned_sampler": True,
@@ -157,6 +157,7 @@ BASE_TRAINING_HPARAMS = {
         "ckpt_steps": None,
         "ckpt_epochs": 1,
         "finetune_checkpoint": "",
+        "extraction_method": "beam",  # 'beam' or 'dijkstra'
     },
     "training_strategy": "feat",  # "feat", "variance", "vocoder", "e2e"
     "train_data_workers": 0,
@@ -171,10 +172,10 @@ BASE_TRAINING_HPARAMS = {
         "batch_size": 2,
         "train_split": 0.9,  # the rest is val
         "seed": 1234,
-        # "filelist": rel_path_to_abs_path(
-        #     "./preprocessed/YourDataSet/processed_filelist.psv"
-        # ),
-        "filelist": rel_path_to_abs_path("./preprocessed/LJ/processed_filelist.psv"),
+        "filelist": rel_path_to_abs_path(
+            "./preprocessed/YourDataSet/processed_filelist.psv"
+        ),
+        # "filelist": rel_path_to_abs_path("./preprocessed/LJ/processed_filelist.psv"),
         "filelist_loader": generic_dict_loader,
         "finetune_checkpoint": "",
         "optimizer": {
@@ -262,27 +263,27 @@ SOX_EFFECTS = [
 
 BASE_PREPROCESSING_HPARAMS = {
     "dataset": "YourDataSet",
-    "source_data": [
-        {
-            "label": "LJ",
-            "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
-            "filelist_loader": load_lj_metadata_hifigan,
-            "filelist": rel_path_to_abs_path("./filelists/lj_full.psv"),
-            "sox_effects": SOX_EFFECTS,
-        }
-    ],
-    "save_dir": rel_path_to_abs_path("./preprocessed/LJ"),
     # "source_data": [
     #     {
-    #         "label": "LJ_TEST",
-    #         "data_dir": rel_path_to_abs_path("./tests/data/lj/wavs"),
-    #         "textgrid_dir": rel_path_to_abs_path("./tests/data/lj/textgrids"),
+    #         "label": "LJ",
+    #         "data_dir": "/home/aip000/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1/wavs",
     #         "filelist_loader": load_lj_metadata_hifigan,
     #         "filelist": rel_path_to_abs_path("./filelists/lj_full.psv"),
     #         "sox_effects": SOX_EFFECTS,
     #     }
     # ],
-    # "save_dir": rel_path_to_abs_path("./preprocessed/YourDataSet"),
+    # "save_dir": rel_path_to_abs_path("./preprocessed/LJ"),
+    "source_data": [
+        {
+            "label": "LJ_TEST",
+            "data_dir": rel_path_to_abs_path("./tests/data/lj/wavs"),
+            "textgrid_dir": rel_path_to_abs_path("./tests/data/lj/textgrids"),
+            "filelist_loader": load_lj_metadata_hifigan,
+            "filelist": rel_path_to_abs_path("./filelists/lj_full.psv"),
+            "sox_effects": SOX_EFFECTS,
+        }
+    ],
+    "save_dir": rel_path_to_abs_path("./preprocessed/YourDataSet"),
     "pitch_phone_averaging": True,
     "energy_phone_averaging": True,
     "pitch_type": "pyworld",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)

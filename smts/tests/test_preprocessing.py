@@ -35,6 +35,22 @@ class PreprocessingTest(TestCase):
         if not self.keep_temp_dir_after_running:
             self.tempdirobj.cleanup()
 
+    def test_compute_priors(self):
+        self.preprocessor.compute_priors()
+
+    def test_compute_stats(self):
+        self.preprocessor.compute_stats()
+        # self.assertEqual(
+        #     self.preprocessor.config["preprocessing"]["audio"]["mel_mean"],
+        #     -4.018,
+        #     places=3,
+        # )
+        # self.assertEqual(
+        #     self.preprocessor.config["preprocessing"]["audio"]["mel_std"],
+        #     4.017,
+        #     places=3,
+        # )
+
     def test_read_filelist(self):
         self.assertEqual(self.filelist[0]["filename"], "LJ010-0008")
         self.assertNotIn("speaker", self.filelist[0].keys())
@@ -99,15 +115,25 @@ class PreprocessingTest(TestCase):
             # check all same length
             self.assertEqual(complex_feats.size(1), linear_feats.size(1))
 
-    def test_f0(self):
+    def test_pitch(self):
         preprocessor_kaldi = Preprocessor(
             BaseConfig(
-                {"preprocessing": {"f0_phone_averaging": False, "f0_type": "kaldi"}}
+                {
+                    "preprocessing": {
+                        "pitch_phone_averaging": False,
+                        "pitch_type": "kaldi",
+                    }
+                }
             )
         )
         preprocessor_pyworld = Preprocessor(
             BaseConfig(
-                {"preprocessing": {"f0_phone_averaging": False, "f0_type": "pyworld"}}
+                {
+                    "preprocessing": {
+                        "pitch_phone_averaging": False,
+                        "pitch_type": "pyworld",
+                    }
+                }
             )
         )
 
@@ -121,29 +147,29 @@ class PreprocessingTest(TestCase):
             feats = self.preprocessor.extract_spectral_features(
                 audio, self.preprocessor.input_spectral_transform
             )
-            # ming024_f0 = np.load(
+            # ming024_pitch = np.load(
             #     self.data_dir
             #     / "ming024"
             #     / ("eng-LJSpeech-pitch-" + entry["filename"] + ".npy")
             # )
-            frame_f0_kaldi = preprocessor_kaldi.extract_f0(audio.unsqueeze(0))
+            frame_pitch_kaldi = preprocessor_kaldi.extract_pitch(audio.unsqueeze(0))
             kaldi_phone_avg_energy = preprocessor_kaldi.average_data_by_durations(
-                frame_f0_kaldi, durs
+                frame_pitch_kaldi, durs
             )
             # Ensure same number of frames
             self.assertEqual(
-                frame_f0_kaldi.size(0) - 1, feats.size(1)
+                frame_pitch_kaldi.size(0) - 1, feats.size(1)
             )  # TODO: Why is this -1?
-            # Ensure avg f0 for each phone
+            # Ensure avg pitch for each phone
             self.assertEqual(len(durs), kaldi_phone_avg_energy.size(0))
-            frame_f0_pyworld = preprocessor_pyworld.extract_f0(audio)
+            frame_pitch_pyworld = preprocessor_pyworld.extract_pitch(audio)
             pyworld_phone_avg_energy = preprocessor_pyworld.average_data_by_durations(
-                frame_f0_pyworld, durs
+                frame_pitch_pyworld, durs
             )  # TODO: definitely need to interpolate for averaging
-            # Ensure avg f0 for each phone
+            # Ensure avg pitch for each phone
             self.assertEqual(len(durs), pyworld_phone_avg_energy.size(0))
             # Ensure same number of frames
-            self.assertEqual(frame_f0_pyworld.size(0), feats.size(1))
+            self.assertEqual(frame_pitch_pyworld.size(0), feats.size(1))
 
     # TODO: test nans: torch.any(torch.Tensor([[torch.nan, 2]]).isnan())
 

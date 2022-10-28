@@ -5,14 +5,14 @@ from os.path import dirname, isabs, isfile, splitext
 from pathlib import Path
 from unicodedata import normalize
 
-import numpy as np
-from torch.nn.utils.rnn import pad_sequence
 import matplotlib.pylab as plt
+import numpy as np
 import torch
 import torch.nn.functional as F
 import torchaudio.transforms as T
 from librosa.filters import mel as librosa_mel
 from pympi.Praat import TextGrid
+from torch.nn.utils.rnn import pad_sequence
 
 import smts
 

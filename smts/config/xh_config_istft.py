@@ -169,9 +169,9 @@ BASE_PREPROCESSING_HPARAMS = {
         }
     ],
     "save_dir": rel_path_to_abs_path("./preprocessed/OpenSLR"),
-    "f0_phone_averaging": True,
+    "pitch_phone_averaging": True,
     "energy_phone_averaging": True,
-    "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
+    "pitch_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {
         "min_audio_length": 0.25,  # seconds

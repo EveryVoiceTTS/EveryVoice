@@ -110,10 +110,10 @@ BASE_TRAINING_HPARAMS = {
         "filelist": rel_path_to_abs_path(
             "./preprocessed/OpenSLR/processed_filelist.psv"
         ),
-        "finetune_checkpoint": "",
-        # "finetune_checkpoint": rel_path_to_abs_path(
-        #     "./logs/LJ/istft/checkpoints/last.ckpt"
-        # ),
+        # "finetune_checkpoint": "",
+        "finetune_checkpoint": rel_path_to_abs_path(
+            "./logs/OpenSLR/istft/checkpoints/last.ckpt"
+        ),
         "filelist_loader": generic_dict_loader,
         "resblock": "1",
         "learning_rate": 0.0002,
@@ -190,9 +190,9 @@ BASE_PREPROCESSING_HPARAMS = {
         },
     ],
     "save_dir": rel_path_to_abs_path("./preprocessed/OpenSLR"),
-    "f0_phone_averaging": True,
+    "pitch_phone_averaging": True,
     "energy_phone_averaging": True,
-    "f0_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
+    "pitch_type": "torch",  # pyworld | kaldi (torchaudio) | cwt (continuous wavelet transform)
     "value_separator": "--",  # used to separate basename from speaker, language, type etc in preprocessed filename
     "audio": {
         "min_audio_length": 0.25,  # seconds

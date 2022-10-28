@@ -61,30 +61,36 @@ def get_punctuation_features(text):
     bb = [".", ":", ";", "…"]
     sb = [","]
     qm = ['"', "'", "“", "”", "«", "»"]
+    wb = [" "]
     punctuation_features = []
     for char in text:
         char = normalize("NFC", char)
         if char in excl:
-            punctuation_features.append([1, 0, 0, 0, 0, 0])
+            punctuation_features.append([1, 0, 0, 0, 0, 0, 0])
         elif char in quest:
-            punctuation_features.append([0, 1, 0, 0, 0, 0])
+            punctuation_features.append([0, 1, 0, 0, 0, 0, 0])
         elif char in bb:
-            punctuation_features.append([0, 0, 1, 0, 0, 0])
+            punctuation_features.append([0, 0, 1, 0, 0, 0, 0])
         elif char in sb:
-            punctuation_features.append([0, 0, 0, 1, 0, 0])
+            punctuation_features.append([0, 0, 0, 1, 0, 0, 0])
         elif char in qm:
-            punctuation_features.append([0, 0, 0, 0, 1, 0])
+            punctuation_features.append([0, 0, 0, 0, 1, 0, 0])
         elif char in silence:
-            punctuation_features.append([0, 0, 0, 0, 0, 1])
+            punctuation_features.append([0, 0, 0, 0, 0, 1, 0])
+        elif char in wb:
+            punctuation_features.append([0, 0, 0, 0, 0, 0, 1])
         else:
-            punctuation_features.append([0, 0, 0, 0, 0, 0])
+            punctuation_features.append([0, 0, 0, 0, 0, 0, 0])
     return punctuation_features
 
 
 def char_to_vector_list(char):
     vec = FT.word_to_vector_list(char, numeric=True)
     assert len(vec) < 2
-    return vec[0]
+    try:
+        return vec[0]
+    except IndexError:
+        breakpoint()
 
 
 def get_features(tokens):

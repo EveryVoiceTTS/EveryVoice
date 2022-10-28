@@ -1,21 +1,26 @@
 """ Preprocessor Module that given a filelist containing text, wav, textgrid:
     - extracts log Mel spectral features
-    - extracts f0 (phone-level or frame-level)
+    - extracts pitch (phone-level or frame-level)
     - extracts durations
     - extracts energy
     - extracts inputs (ex. phonological feats)
 """
+import json
+import multiprocessing
 import os
+from copy import copy
 from pathlib import Path
 from typing import List, Tuple, Union
 
 import numpy as np
 
 # import pyworld as pw
+import pandas as pd
 import torch  # fix torch imports
 from loguru import logger
 from tabulate import tabulate
 from torch import Tensor, linalg, mean, tensor
+from torch.utils.data import DataLoader
 from torchaudio import load as load_audio
 from torchaudio import save as save_audio
 from torchaudio.functional import compute_kaldi_pitch, resample
@@ -23,8 +28,10 @@ from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
 from smts.config import ConfigError
+from smts.dataloader import FastSpeechDataset, FeaturePredictionDataModule
 from smts.text import TextProcessor
 from smts.utils import (
+    collate_fn,
     dynamic_range_compression_torch,
     get_spectral_transform,
     read_textgrid,
@@ -108,7 +115,7 @@ class Preprocessor:
 
         Args:
             wav_path (str): path to wav file
-            normalize (bool): normalizes to float32, NOT volume normalization
+            normalize (bool): volume normalization
         Returns:
             [Tensor, int]: audio Tensor, sampling rate
         """
@@ -154,8 +161,8 @@ class Preprocessor:
             mel = dynamic_range_compression_torch(mel)
         return mel
 
-    def extract_f0(self, audio_tensor: Tensor):
-        """Given an audio tensor, extract the f0
+    def extract_pitch(self, audio_tensor: Tensor):
+        """Given an audio tensor, extract the pitch
 
         TODO: consider CWT and Parselmouth
 
@@ -167,7 +174,7 @@ class Preprocessor:
         Args:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
         """
-        if self.config["preprocessing"]["f0_type"] == "pyworld":
+        if self.config["preprocessing"]["pitch_type"] == "pyworld":
             import pyworld as pw  # This isn't a very good place for an import,
 
             # but also pyworld is very annoying to install so this is a compromise
@@ -191,7 +198,7 @@ class Preprocessor:
             )
             pitch = tensor(pitch)
             # TODO: consider interpolating by default when using PyWorld pitch detection
-        elif self.config["preprocessing"]["f0_type"] == "kaldi":
+        elif self.config["preprocessing"]["pitch_type"] == "kaldi":
             pitch = compute_kaldi_pitch(
                 waveform=audio_tensor,
                 sample_rate=self.input_sampling_rate,
@@ -201,20 +208,20 @@ class Preprocessor:
                 frame_shift=self.audio_config["fft_hop_frames"]
                 / self.input_sampling_rate
                 * 1000,
-                min_f0=50,
-                max_f0=400,
+                min_pitch=50,
+                max_pitch=400,
             )[0][
                 ..., 1
             ]  # TODO: the docs and C Minxhoffer implementation take [..., 0] but this doesn't appear to be the pitch, at least for this version of torchaudio.
         else:
             raise ConfigError(
-                f"Sorry, the f0 estimation type '{self.config['preprocessing']['f0_type']}' is not supported. Please edit your config file."
+                f"Sorry, the pitch estimation type '{self.config['preprocessing']['pitch_type']}' is not supported. Please edit your config file."
             )
         return pitch
 
     def extract_durations(self, textgrid_path: str):
         """Extract durations from a textgrid path
-           Don't use tgt package because it ignores silence
+           Don't use tgt package because it ignores silence.
 
         Args:
             textgrid_path (str): path to a textgrid file
@@ -273,16 +280,18 @@ class Preprocessor:
         energy = linalg.norm(spectral_feature_tensor, dim=0)
         return energy
 
-    def extract_text_inputs(self, text, use_pfs=False):
+    def extract_text_inputs(self, text, use_pfs=False) -> Tensor:
         """Given some text, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
 
         Args:
             text (str): text
         """
         if use_pfs:
-            return self.text_processor.text_to_phonological_features(text)
+            return torch.Tensor(
+                self.text_processor.text_to_phonological_features(text)
+            ).long()
         else:
-            return self.text_processor.text_to_sequence(text)
+            return torch.Tensor(self.text_processor.text_to_sequence(text)).long()
 
     def collect_files(self, filelist, data_dir):
         for f in filelist:
@@ -325,7 +334,7 @@ class Preprocessor:
         process_sox_audio=False,
         process_spec=False,
         process_energy=False,
-        process_f0=False,
+        process_pitch=False,
         process_duration=False,
         process_pfs=False,
         process_text=False,
@@ -334,6 +343,7 @@ class Preprocessor:
         speaker = "default" if "speaker" not in item else item["speaker"]
         language = "default" if "language" not in item else item["language"]
         item = {**item, **{"speaker": speaker, "language": language}}
+        dataset_info["data_dir"] = Path(dataset_info["data_dir"])
         audio = None
         output_audio = None
         spec = None
@@ -453,9 +463,15 @@ class Preprocessor:
                 or not output_spec_save_path.exists()
             ):
                 if audio is None:
-                    audio = self.load_audio_tensor(input_audio_save_path)
+                    audio, _ = self.process_audio(
+                        dataset_info["data_dir"] / (item["basename"] + ".wav"),
+                        resample_rate=self.input_sampling_rate,
+                    )
                 if output_audio is None:
-                    output_audio = self.load_audio_tensor(output_audio_save_path)
+                    output_audio, _ = self.process_audio(
+                        dataset_info["data_dir"] / (item["basename"] + ".wav"),
+                        resample_rate=self.output_sampling_rate,
+                    )
                 spec = self.extract_spectral_features(
                     audio, self.input_spectral_transform
                 )
@@ -485,15 +501,15 @@ class Preprocessor:
                 torch.save(output_spec, output_spec_save_path)
             else:
                 self.skipped_processes += 1
-        if process_f0:
+        if process_pitch:
             save_path = self.save_dir / self.sep.join(
-                [item["basename"], speaker, language, "f0.npy"]
+                [item["basename"], speaker, language, "pitch.npy"]
             )
             if overwrite or not save_path.exists():
                 if audio is None:
                     audio = self.load_audio_tensor(input_audio_save_path)
                 torch.save(
-                    self.extract_f0(audio),
+                    self.extract_pitch(audio),
                     save_path,
                 )
             else:
@@ -518,7 +534,7 @@ class Preprocessor:
             save_path = self.save_dir / self.sep.join(
                 [item["basename"], speaker, language, "duration.npy"]
             )
-            dur_path = dataset_info["data_dir"] / item["basename"] + ".TextGrid"
+            dur_path = dataset_info["textgrid_dir"] / (item["basename"] + ".TextGrid")
             if not dur_path.exists():
                 logger.warning(
                     f"File '{item['basename']}' is missing and will not be processed."
@@ -530,6 +546,195 @@ class Preprocessor:
             else:
                 self.skipped_processes += 1
         return item
+
+    def compute_priors(self, overwrite=True):
+        logger.info("Computing priors...")
+        prior_path = self.save_dir / "priors"
+        prior_path.mkdir(exist_ok=True)
+        filelist = self.config["training"]["feature_prediction"]["filelist_loader"](
+            self.config["training"]["feature_prediction"]["filelist"]
+        )
+        df = pd.DataFrame(filelist)
+        ds = FastSpeechDataset(filelist, self.config)
+        self._create_priors(df, ds, prior_path)
+
+    def _create_priors(self, data_frame, dataset, prior_path):
+        temp_df = copy(data_frame.sort_values("speaker"))
+        orig_data = copy(data_frame)
+        # check if prior values are already computed
+        compute_speakers = []
+        for speaker_path in temp_df["speaker"].unique():
+            for prior in self.config["model"]["priors"]["prior_types"]:
+                if not (prior_path / speaker_path / f"{prior}_prior.npy").exists():
+                    compute_speakers.append(speaker_path)
+        temp_df = temp_df[temp_df["speaker"].isin(compute_speakers)]
+
+        dl = DataLoader(
+            dataset,
+            batch_size=10,
+            collate_fn=collate_fn,
+            num_workers=0,
+        )
+        speaker_priors = {
+            s: {k: [] for k in self.config["model"]["priors"]["prior_types"]}
+            for s in temp_df["speaker"].unique()
+        }
+        pbar = tqdm(
+            dl,
+            total=len(speaker_priors.keys()),
+            maxinterval=1,
+            desc="creating prior files (this only runs once)",
+        )
+        prev_speaker = None
+        for item in dl:
+            # check if all speakers are the same
+            if prev_speaker is None:
+                prev_speaker = item["speaker_id"][0]
+                prev_path = item["speaker"][0]
+            speaker = item["speaker"][0]
+            if len(set(item["speaker"])) == 1:
+                for prior in self.config["model"]["priors"]["prior_types"]:
+                    speaker_priors[speaker][prior] += list(item[f"priors_{prior}"])
+            else:
+                for i, i_speaker in enumerate(item["speaker"]):
+                    for prior in self.config["model"]["priors"]["prior_types"]:
+                        speaker_priors[i_speaker][prior].append(
+                            item[f"priors_{prior}"][i]
+                        )
+            if prev_speaker != speaker:
+                for prior in self.config["model"]["priors"]["prior_types"]:
+                    # save prior to file
+                    np.save(
+                        prev_path / f"{prior}_prior.npy",
+                        speaker_priors[prev_speaker][prior],
+                    )
+                del speaker_priors[prev_speaker]
+                pbar.update(1)
+                prev_speaker = speaker
+                prev_path = item["speaker_path"][0]
+        for speaker in list(speaker_priors.keys()):
+            for prior in self.config["model"]["priors"]["prior_types"]:
+                np.save(
+                    prev_path.parent / speaker / f"{prior}_prior.npy",
+                    speaker_priors[speaker][prior],
+                )
+            del speaker_priors[speaker]
+            pbar.update(1)
+        pbar.close()
+        speaker_priors = {
+            s.name: {k: [] for k in self.config["model"]["priors"]["prior_types"]}
+            for s in orig_data["speaker"].unique()
+        }
+        for speaker in tqdm(orig_data["speaker"].unique(), desc="loading priors"):
+            for prior in self.config["model"]["priors"]["prior_types"]:
+                speaker_priors[speaker.name][prior] = np.load(
+                    speaker / f"{prior}_prior.npy"
+                )
+        return speaker_priors
+
+    def _create_stats_batch(self, x):
+        result = {}
+        mel_val = x["mel"]
+        mel_val[x["silence_mask"]] = np.nan
+        result["mel"] = {}
+        result["mel"]["mean"] = torch.nanmean(mel_val)
+        result["mel"]["std"] = torch.std(mel_val[~torch.isnan(mel_val)])
+        for i, var in enumerate(self.config["model"]["variance_adaptor"]["variances"]):
+            if (
+                self.config["model"]["variance_adaptor"]["variance_transforms"][i]
+                == "cwt"
+            ):
+                var_val = x[f"variances_{var}_original_signal"].float()
+            else:
+                var_val = x[f"variances_{var}"].float()
+            var_val[x["silence_mask"]] = np.nan
+            result[var] = {}
+            result[var]["min"] = torch.min(var_val[~torch.isnan(var_val)])
+            result[var]["max"] = torch.max(var_val[~torch.isnan(var_val)])
+            result[var]["mean"] = torch.nanmean(var_val)
+            result[var]["std"] = torch.std(var_val[~torch.isnan(var_val)])
+            if var in self.config["model"]["priors"]["prior_types"]:
+                result[var + "_prior"] = {}
+                result[var + "_prior"]["min"] = torch.min(
+                    torch.nanmean(var_val, axis=1)
+                )
+                result[var + "_prior"]["max"] = torch.max(
+                    torch.nanmean(var_val, axis=1)
+                )
+                result[var + "_prior"]["mean"] = torch.mean(
+                    torch.nanmean(var_val, axis=1)
+                )
+                result[var + "_prior"]["std"] = torch.std(
+                    torch.nanmean(var_val, axis=1)
+                )
+        for var in self.config["model"]["priors"]["prior_types"]:
+            if var not in self.config["model"]["variance_adaptor"]["variances"]:
+                var_val = x[var].float()
+                var_val[x["unexpanded_silence_mask"]] = np.nan
+                result[var + "_prior"] = {}
+                result[var + "_prior"]["min"] = torch.min(
+                    torch.nanmean(var_val, axis=1)
+                )
+                result[var + "_prior"]["max"] = torch.max(
+                    torch.nanmean(var_val, axis=1)
+                )
+                result[var + "_prior"]["mean"] = torch.mean(
+                    torch.nanmean(var_val, axis=1)
+                )
+                result[var + "_prior"]["std"] = torch.std(
+                    torch.nanmean(var_val, axis=1)
+                )
+                del var_val
+        return result
+
+    def compute_stats(self, overwrite=True):
+        """Compute the mean and standard deviation of the dataset."""
+        logger.info("Computing dataset statistics...")
+        stat_path = self.save_dir / "stats.json"
+        if stat_path.exists() and not overwrite:
+            logger.error("Stats already computed. Please re-run with --overwrite=True")
+            exit()
+        stats = {}
+        stat_list = []
+        filelist = self.config["training"]["feature_prediction"]["filelist_loader"](
+            self.config["training"]["feature_prediction"]["filelist"]
+        )
+        stats["sample_size"] = len(filelist)
+        ds = FastSpeechDataset(filelist, self.config)
+        for entry in tqdm(
+            DataLoader(
+                ds,
+                num_workers=0,
+                # num_workers=multiprocessing.cpu_count(),
+                batch_size=4,
+                collate_fn=collate_fn,
+                drop_last=True,
+            ),
+            total=stats["sample_size"] // 4,
+            desc="Computing stats",
+        ):
+            stat_list.append(self._create_stats_batch(entry))
+        for key in stat_list[0].keys():
+            stats[key] = {}
+            for np_stat in stat_list[0][key].keys():
+                if np_stat == "std":
+                    std_sq = np.array([s[key][np_stat] for s in stat_list]) ** 2
+                    stats[key][np_stat] = float(np.sqrt(np.sum(std_sq) / len(std_sq)))
+                if np_stat == "mean":
+                    stats[key][np_stat] = float(
+                        np.mean([s[key]["mean"] for s in stat_list])
+                    )
+                if np_stat == "min":
+                    stats[key][np_stat] = float(
+                        np.min([s[key]["min"] for s in stat_list])
+                    )
+                if np_stat == "max":
+                    stats[key][np_stat] = float(
+                        np.max([s[key]["max"] for s in stat_list])
+                    )
+        json.dump(stats, open(stat_path, "w"), indent=4)
+        self.stats = stats
+        return self.stats
 
     def preprocess(  # noqa: C901
         self,

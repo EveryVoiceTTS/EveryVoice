@@ -4,21 +4,20 @@ from enum import Enum
 from pathlib import Path
 from typing import List, Optional
 
+import numpy as np
 import torch
 import typer
 from loguru import logger
-from multiprocessing import Pool
-import numpy as np
 from pytorch_lightning import Trainer
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 from pytorch_lightning.loggers import TensorBoardLogger
 from tqdm import tqdm
 
 from smts.config import CONFIGS
-from smts.DeepForcedAligner.dfa.model import Aligner
-from smts.DeepForcedAligner.dfa.dataset import AlignerDataModule
-from smts.DeepForcedAligner.dfa.utils import extract_durations_for_item
 from smts.dataloader import FeaturePredictionDataModule, HiFiGANDataModule
+from smts.DeepForcedAligner.dfa.dataset import AlignerDataModule
+from smts.DeepForcedAligner.dfa.model import Aligner
+from smts.DeepForcedAligner.dfa.utils import extract_durations_for_item
 from smts.model.feature_prediction.fastspeech2 import FastSpeech2
 from smts.model.vocoder.hifigan import HiFiGAN
 from smts.preprocessor import Preprocessor
@@ -145,9 +144,12 @@ def extract_alignments(
     )
     if model_path:
         model = Aligner.load_from_checkpoint(model_path)
-        predictions = trainer.predict(model, dataloaders=data)
+        # TODO: check into the best way to update config from re-loaded model
+        # model.update_config(config)
+        model.config = config
+        trainer.predict(model, dataloaders=data)
     else:
-        predictions = trainer.predict(dataloaders=data)
+        trainer.predict(dataloaders=data)
     sep = config["preprocessing"]["value_separator"]
     save_dir = Path(config["preprocessing"]["save_dir"])
     for item in tqdm(

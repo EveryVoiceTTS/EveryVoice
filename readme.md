@@ -56,6 +56,17 @@ You can then interactively install the package by running the following command 
 pip install -e .
 ```
 
+## Acknowledgements
+
+This repo draws on many other wonderful code bases. Many thanks to:
+
+https://github.com/nocotan/pytorch-lightning-gans
+https://github.com/rishikksh20/iSTFTNet-pytorch
+https://github.com/jik876/hifi-gan
+https://github.com/ming024/FastSpeech2
+https://github.com/MiniXC/LightningFastSpeech2
+https://github.com/DigitalPhonetics/IMS-Toucan
+
 ## Tests
 
 Run unit tests by `python3 -m unittest tests/test_configs.py` or suites of tests by running `smts test dev` if you have the package installed interactively.

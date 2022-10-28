@@ -556,7 +556,7 @@ class HiFiGAN(pl.LightningModule):
         self.mpd = MultiPeriodDiscriminator(config)
         self.msd = MultiScaleDiscriminator(config)
         self.generator = Generator(config)
-        self.batch_size = self.config["training"][
+        self.batch_size = self.config["training"]["vocoder"][
             "batch_size"
         ]  # this is declared explicitly so that auto_scale_batch_size works: https://pytorch-lightning.readthedocs.io/en/stable/advanced/training_tricks.html
         self.save_hyperparameters()  # TODO: ignore=['specific keys'] - I should ignore some unnecessary/problem values
