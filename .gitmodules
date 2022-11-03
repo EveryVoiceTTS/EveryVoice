@@ -1,3 +1,6 @@
 [submodule "smts/DeepForcedAligner"]
 	path = smts/DeepForcedAligner
 	url = https://github.com/roedoejet/DeepForcedAligner
+[submodule "smts/model/vocoder/HiFiGAN_iSTFT_lightning"]
+	path = smts/model/vocoder/HiFiGAN_iSTFT_lightning
+	url = https://github.com/roedoejet/HiFiGAN_iSTFT_lightning
