@@ -9,6 +9,17 @@ It is largely based off the FastSpeech2/Fastpitch models.
 
 ## Quickstart
 
+### Install
+
+Clone clone the repo and pip install it locally:
+
+```sh
+$ git clone https://github.com/roedoejet/SmallTeamSpeech.git
+$ cd SmallTeamSpeech
+$ git submodule update --init
+$ pip install -e .
+```
+
 ### Dependencies
 
 I recommend using Conda and Python 3.9. To do that, create a new environment:

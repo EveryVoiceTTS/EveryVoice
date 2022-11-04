@@ -1,13 +1,13 @@
 import pandas as pd
 
-from smts.config.base_config import BaseConfig
+from smts.config.base_config import FeaturePredictionConfig
 
 
 class LookupTables:
-    def __init__(self, config: BaseConfig):
+    def __init__(self, config: FeaturePredictionConfig):
         self.config = config
-        self.dataset = self.config["training"]["feature_prediction"]["filelist_loader"](
-            self.config["training"]["feature_prediction"]["filelist"]
+        self.dataset = self.config.training.filelist_loader(
+            self.config.training.filelist
         )
         data_frame = pd.DataFrame(self.dataset)
         speakers = data_frame["speaker"].unique()

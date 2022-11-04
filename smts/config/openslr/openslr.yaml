@@ -1,0 +1,21 @@
+aligner:
+  extend_from: "./config/default/aligner.yaml"
+  override_with:
+    training:
+      filelist: "./preprocessed/OpenSLR/processed_filelist.psv"
+    preprocessing: "./config/openslr/preprocessing.yaml"
+feature_prediction:
+  extend_from: "./config/default/fastspeech2.yaml"
+  override_with:
+    training:
+      filelist: "./preprocessed/OpenSLR/processed_filelist.psv"
+    preprocessing: "./config/openslr/preprocessing.yaml"
+vocoder:
+  extend_from: "./config/default/istft.yaml"
+  override_with:
+    model:
+      upsample_rates: [8, 8, 2] # because takes 24k inputs and 48k outputs we have to add another upsample layer
+      upsample_kernel_sizes: [16, 16, 4]
+    training:
+      filelist: "./preprocessed/OpenSLR/processed_filelist.psv"
+    preprocessing: "./config/openslr/preprocessing.yaml"

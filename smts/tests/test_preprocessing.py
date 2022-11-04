@@ -1,10 +1,10 @@
 import tempfile
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, main
 
 from torch import float32
 
-from smts.config.base_config import SOX_EFFECTS, BaseConfig
+from smts.config.base_config import SMTSConfig
 from smts.preprocessor import Preprocessor
 from smts.utils import read_filelist
 
@@ -28,18 +28,17 @@ class PreprocessingTest(TestCase):
             print(f"tmpdir={self.tempdir}")
         self.tempdir = Path(self.tempdir)  # type: ignore
         self.filelist = read_filelist(self.data_dir / "metadata.csv")  # type: ignore
-        self.preprocessor = Preprocessor(BaseConfig())
+        self.preprocessor = Preprocessor(SMTSConfig.load_config_from_path().vocoder)
 
     def tearDown(self):
         """Clean up the temporary directory"""
         if not self.keep_temp_dir_after_running:
             self.tempdirobj.cleanup()
 
-    def test_compute_priors(self):
-        self.preprocessor.compute_priors()
-
     def test_compute_stats(self):
-        self.preprocessor.compute_stats()
+        feat_prediction_config = SMTSConfig.load_config_from_path().feature_prediction
+        preprocessor = Preprocessor(feat_prediction_config)
+        preprocessor.compute_stats()
         # self.assertEqual(
         #     self.preprocessor.config["preprocessing"]["audio"]["mel_mean"],
         #     -4.018,
@@ -56,12 +55,15 @@ class PreprocessingTest(TestCase):
         self.assertNotIn("speaker", self.filelist[0].keys())
 
     def test_process_audio_for_alignment(self):
+        self.config = SMTSConfig.load_config_from_path()
         for entry in self.filelist:
             # This just applies the SOX effects
             audio, sr = self.preprocessor.process_audio(
                 self.data_dir / (entry["filename"] + ".wav"),
                 use_effects=True,
-                sox_effects=SOX_EFFECTS,
+                sox_effects=self.config.aligner.preprocessing.source_data[
+                    0
+                ].sox_effects,
             )
             self.assertEqual(sr, 16000)
             self.assertEqual(audio.dtype, float32)
@@ -75,12 +77,18 @@ class PreprocessingTest(TestCase):
             self.assertEqual(audio.dtype, float32)
 
     def test_spectral_feats(self):
-        linear_preprocessor = Preprocessor(
-            BaseConfig({"preprocessing": {"audio": {"spec_type": "linear"}}})
+        linear_vocoder_config = (
+            SMTSConfig.load_config_from_path().vocoder.update_config(
+                {"preprocessing": {"audio": {"spec_type": "linear"}}}
+            )
         )
-        complex_preprocessor = Preprocessor(
-            BaseConfig({"preprocessing": {"audio": {"spec_type": "raw"}}})
+        complex_vocoder_config = (
+            SMTSConfig.load_config_from_path().vocoder.update_config(
+                {"preprocessing": {"audio": {"spec_type": "raw"}}}
+            )
         )
+        linear_preprocessor = Preprocessor(linear_vocoder_config)
+        complex_preprocessor = Preprocessor(complex_vocoder_config)
 
         for entry in self.filelist:
             audio, _ = self.preprocessor.process_audio(
@@ -103,12 +111,12 @@ class PreprocessingTest(TestCase):
             # check data is same number of mels
             self.assertEqual(
                 feats.size(0),
-                self.preprocessor.config["preprocessing"]["audio"]["n_mels"],
+                self.preprocessor.config.preprocessing.audio.n_mels,
             )
             # Check linear spec has right number of fft bins
             self.assertEqual(
                 linear_feats.size(0),
-                linear_preprocessor.config["preprocessing"]["audio"]["n_fft"] // 2 + 1,
+                linear_preprocessor.config.preprocessing.audio.n_fft // 2 + 1,
             )
             # check all same length
             self.assertEqual(feats.size(1), linear_feats.size(1))
@@ -116,26 +124,24 @@ class PreprocessingTest(TestCase):
             self.assertEqual(complex_feats.size(1), linear_feats.size(1))
 
     def test_pitch(self):
-        preprocessor_kaldi = Preprocessor(
-            BaseConfig(
-                {
-                    "preprocessing": {
-                        "pitch_phone_averaging": False,
-                        "pitch_type": "kaldi",
-                    }
+        kaldi_config = SMTSConfig.load_config_from_path().vocoder.update_config(
+            {
+                "preprocessing": {
+                    "pitch_phone_averaging": False,
+                    "pitch_type": "kaldi",
                 }
-            )
+            }
         )
-        preprocessor_pyworld = Preprocessor(
-            BaseConfig(
-                {
-                    "preprocessing": {
-                        "pitch_phone_averaging": False,
-                        "pitch_type": "pyworld",
-                    }
+        pyworld_config = SMTSConfig.load_config_from_path().vocoder.update_config(
+            {
+                "preprocessing": {
+                    "pitch_phone_averaging": False,
+                    "pitch_type": "pyworld",
                 }
-            )
+            }
         )
+        preprocessor_kaldi = Preprocessor(kaldi_config)
+        preprocessor_pyworld = Preprocessor(pyworld_config)
 
         for entry in self.filelist:
             audio, _ = self.preprocessor.process_audio(
@@ -193,9 +199,10 @@ class PreprocessingTest(TestCase):
             self.assertEqual(feats.size(1), sum(x["dur_frames"] for x in durs))
 
     def test_energy(self):
-        preprocessor = Preprocessor(
-            BaseConfig({"preprocessing": {"energy_phone_averaging": False}})
+        frame_energy_config = SMTSConfig.load_config_from_path().vocoder.update_config(
+            {"preprocessing": {"energy_phone_averaging": False}}
         )
+        preprocessor = Preprocessor(frame_energy_config)
         for entry in self.filelist:
             audio, _ = self.preprocessor.process_audio(
                 self.data_dir / (entry["filename"] + ".wav")
@@ -224,3 +231,7 @@ class PreprocessingTest(TestCase):
     def test_sanity(self):
         """TODO: make sanity checking code for each type of data, maybe also data analysis tooling"""
         pass
+
+
+if __name__ == "__main__":
+    main()

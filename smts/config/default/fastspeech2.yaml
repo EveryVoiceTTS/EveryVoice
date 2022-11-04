@@ -1,0 +1,114 @@
+model:
+  encoder:
+    layers: 4
+    heads: 2
+    hidden_dim: 256
+    feedforward_dim: 1024
+    conv_filter_size: 1024
+    conv_kernel_sizes: [9, 1]
+    dropout: 0.2
+    depthwise: True
+    conformer: True
+  decoder:
+    layers: 6
+    heads: 2
+    hidden_dim: 256
+    feedforward_dim: 1024
+    conv_filter_size: 1024
+    conv_kernel_sizes: [9, 1]
+    dropout: 0.2
+    depthwise: True
+    conformer: True
+  variance_adaptor:
+    variance_predictors:
+      - variance_type: "pitch" # TODO: this is redundant
+        level: "phone"  # TODO: also redundant
+        transform: "none"
+        loss: "mse"
+        n_layers: 5
+        loss_weights: 5e-2
+        kernel_size: 3
+        dropout: 0.5
+        filter_size: 256
+        n_bins: 256
+        depthwise: True
+      - variance_type: "energy" # TODO: this is redundant
+        level: "phone"  # TODO: also redundant
+        transform: "none"
+        loss: "mse"
+        n_layers: 5
+        loss_weights: 5e-2
+        kernel_size: 3
+        dropout: 0.5
+        filter_size: 256
+        n_bins: 256
+        depthwise: True
+    duration_predictor:
+      variance_type: "duration" # TODO: this is redundant
+      level: "phone"  # TODO: also redundant
+      transform: "none"
+      loss: "mse"
+      n_layers: 5
+      loss_weights: 5e-2
+      kernel_size: 3
+      dropout: 0.5
+      filter_size: 256
+      n_bins: 256
+      depthwise: True
+      stochastic: False
+  learn_alignment: False
+  max_length: 1000
+  mel_loss: "mse"
+  mel_loss_weight: 5e-1
+  phonological_feats_size: 38
+  use_phonological_feats: False
+  use_postnet: True
+  multilingual: True
+  multispeaker:
+    embedding_type: "id"
+    every_layer: False
+    dvector_gmm: False
+training:
+  use_weighted_sampler: False
+  freeze_layers:
+    encoder: False
+    decoder: False
+    postnet: False
+    variance:
+      energy: False
+      duration: False
+      pitch: False
+  optimizer:
+    learning_rate: 1e-4
+    eps: 1e-8
+    weight_decay: 0.01
+    betas: [0.9, 0.98]
+    warmup_steps: 4000
+  early_stopping:
+    metric: "none"
+    patience: 4
+  tf:
+    ratio: 1.0
+    linear_schedule: False
+    linear_schedule_start: 0
+    linear_schedule_end: 20
+    linear_schedule_end_ratio: 0.0
+  batch_size: 16
+  train_split: 0.9
+  save_top_k_ckpts: 5
+  ckpt_steps: null
+  ckpt_epochs: 1
+  max_epochs: 1000
+  seed: 1234
+  finetune_checkpoint: null
+  filelist: "./preprocessed/YourDataSet/processed_filelist.psv"
+  filelist_loader: "smts.utils.generic_dict_loader"
+  logger:
+    name: "Base Experiment"
+    save_dir: "./logs"
+    sub_dir: "smts.utils.get_current_time"
+    version: "base"
+  val_data_workers: 0
+  train_data_workers: 0
+preprocessing: "./config/default/preprocessing.yaml"
+text: "./config/default/text_eng.yaml"

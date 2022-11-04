@@ -1,0 +1,16 @@
+aligner:
+  extend_from: "./config/default/aligner.yaml"
+  override_with:
+    training:
+      filelist: "./preprocessed/LJ/processed_filelist.psv"
+    preprocessing: "./config/lj/preprocessing.yaml"
+feature_prediction:
+  extend_from: "./config/default/fastspeech2.yaml"
+  override_with:
+    training:
+      filelist: "./preprocessed/LJ/processed_filelist.psv"
+vocoder:
+  extend_from: "./config/default/istft.yaml"
+  override_with:
+    training:
+      filelist: "./preprocessed/LJ/processed_filelist.psv"

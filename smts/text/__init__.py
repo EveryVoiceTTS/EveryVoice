@@ -1,20 +1,20 @@
 import re
 from collections import Counter
 from itertools import chain
-from typing import Dict
+from typing import Dict, Union
 
 from loguru import logger
 from nltk.tokenize import RegexpTokenizer
 
 from smts.config import ConfigError
-from smts.config.base_config import BaseConfig
+from smts.config.base_config import AlignerConfig, FeaturePredictionConfig
 from smts.text.features import get_features
 
 
 class TextProcessor:
-    def __init__(self, config: BaseConfig):
+    def __init__(self, config: Union[AlignerConfig, FeaturePredictionConfig]):
         self.config = config
-        self._all_symbols = self.config["text"]["symbols"]
+        self._all_symbols = self.config.text.symbols.dict()
         if "pad" in self._all_symbols:
             assert isinstance(self._all_symbols["pad"], str)
         self._pad_symbol = self._all_symbols["pad"]
@@ -83,7 +83,7 @@ class TextProcessor:
 
     def clean_text(self, text):
         """Converts some text to cleaned text"""
-        for cleaner_fn in self.config["text"]["cleaners"]:
+        for cleaner_fn in self.config.text.cleaners:
             try:
                 text = cleaner_fn(text)
             except Exception as e:

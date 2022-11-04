@@ -39,6 +39,14 @@ def _flatten(structure, key="", path="", flattened=None):
     return flattened
 
 
+def load_config_from_json_or_yaml_path(path: Path):
+    if not path.exists():
+        raise ValueError(f"Config file '{path}' does not exist")
+    with open(path, "r") as f:
+        config = json.load(f) if path.suffix == ".json" else yaml.safe_load(f)
+    return config
+
+
 def expand(values, durations):
     out = []
     for value, d in zip(values, durations):
@@ -99,10 +107,7 @@ def update_config_from_path(config_path: Path, original_config):
     if config_path is None:
         return original_config
     logger.info(f"Loading and updating config from '{config_path}'")
-    with open(config_path, "r") as f:
-        config_override = (
-            json.load(f) if config_path.suffix == ".json" else yaml.safe_load(f)
-        )
+    config_override = load_config_from_json_or_yaml_path(config_path)
     return original_config.update_config(config_override)
 
 
