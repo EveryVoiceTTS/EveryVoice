@@ -15,6 +15,7 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@v3
         with:
+          token: ${{ secrets.SGILE_PAT }}
           submodules: recursive
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v2
