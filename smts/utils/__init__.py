@@ -1,8 +1,10 @@
 import csv
+import json
 import re
-from collections.abc import Mapping
+from datetime import datetime
 from os.path import dirname, isabs, isfile, splitext
 from pathlib import Path
+from typing import Any, List, Union
 from unicodedata import normalize
 
 import matplotlib.pylab as plt
@@ -10,7 +12,9 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchaudio.transforms as T
+import yaml
 from librosa.filters import mel as librosa_mel
+from loguru import logger
 from pympi.Praat import TextGrid
 from torch.nn.utils.rnn import pad_sequence
 
@@ -18,6 +22,10 @@ import smts
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
+
+
+def get_current_time():
+    return str(int(datetime.now().timestamp()))
 
 
 def _flatten(structure, key="", path="", flattened=None):
@@ -59,24 +67,13 @@ def collate_fn(data):
     return data
 
 
-def update_config(orig_dict, new_dict):
-    """See https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth"""
-    for key, val in new_dict.items():
-        if isinstance(val, Mapping):
-            tmp = update_config(orig_dict.get(key, {}), val)
-            orig_dict[key] = tmp
-        else:
-            orig_dict[key] = new_dict[key]
-    return orig_dict
-
-
 def expand_config_string_syntax(config_arg: str) -> dict:
-    """Expand a string of the form "key1=value1,key2=value2" into a dict."""
-    config_dict = {}
+    """Expand a string of the form "key1=value1" into a dict."""
+    config_dict: Any = {}
     try:
         key, value = config_arg.split("=")
-    except ValueError:
-        raise ValueError(f"Invalid config string: {config_arg} - missing '='")
+    except ValueError as e:
+        raise ValueError(f"Invalid config string: {config_arg} - missing '='") from e
     current_dict = config_dict
     keys = key.split(".")
     for key in keys[:-1]:
@@ -84,6 +81,29 @@ def expand_config_string_syntax(config_arg: str) -> dict:
         current_dict = current_dict[key]
     current_dict[keys[-1]] = value
     return config_dict
+
+
+def update_config_from_cli_args(arg_list: List[str], original_config):
+    if arg_list is None or not arg_list:
+        return original_config
+    for arg in arg_list:
+        key, value = arg.split("=")
+        logger.info(f"Updating config '{key}' to value '{value}'")
+        original_config = original_config.update_config(
+            expand_config_string_syntax(arg)
+        )
+    return original_config
+
+
+def update_config_from_path(config_path: Path, original_config):
+    if config_path is None:
+        return original_config
+    logger.info(f"Loading and updating config from '{config_path}'")
+    with open(config_path, "r") as f:
+        config_override = (
+            json.load(f) if config_path.suffix == ".json" else yaml.safe_load(f)
+        )
+    return original_config.update_config(config_override)
 
 
 def dynamic_range_compression_torch(x, C=1, clip_val=1e-5):
@@ -94,7 +114,11 @@ def dynamic_range_decompression_torch(x, C=1):
     return torch.exp(x) / C
 
 
-def rel_path_to_abs_path(path: str, base_path: str = dirname(smts.__file__)):
+def rel_path_to_abs_path(
+    path: Union[None, str], base_path: str = dirname(smts.__file__)
+):
+    if path is None:
+        return None
     if isabs(path):
         return Path(path)
     base_path = Path(base_path)  # type: ignore

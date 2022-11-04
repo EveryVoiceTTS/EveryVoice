@@ -6,17 +6,12 @@
     - extracts inputs (ex. phonological feats)
 """
 import json
-import multiprocessing
 import os
-from copy import copy
 from pathlib import Path
 from typing import List, Tuple, Union
 
 import numpy as np
-
-# import pyworld as pw
-import pandas as pd
-import torch  # fix torch imports
+import torch
 from loguru import logger
 from tabulate import tabulate
 from torch import Tensor, linalg, mean, tensor
@@ -28,7 +23,14 @@ from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
 from smts.config import ConfigError
-from smts.dataloader import FastSpeechDataset, FeaturePredictionDataModule
+from smts.config.base_config import (  # type: ignore
+    AlignerConfig,
+    FeaturePredictionConfig,
+    VocoderConfig,
+)
+from smts.model.feature_prediction.FastSpeech2_lightning.fs2.dataset import (
+    FastSpeechDataset,
+)
 from smts.text import TextProcessor
 from smts.utils import (
     collate_fn,
@@ -40,22 +42,24 @@ from smts.utils import (
 
 
 class Preprocessor:
-    def __init__(self, config):
+    def __init__(
+        self, config: Union[AlignerConfig, FeaturePredictionConfig, VocoderConfig]
+    ):
         self.config = config
-        self.datasets = config["preprocessing"]["source_data"]
-        self.save_dir = Path(config["preprocessing"]["save_dir"])
+        self.datasets = config.preprocessing.source_data
+        self.save_dir = Path(config.preprocessing.save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
         self.missing_files: List[str] = []
         self.skipped_processes = 0
-        self.audio_too_short = []
-        self.audio_too_long = []
-        self.nans = []
+        self.audio_too_short: List[str] = []
+        self.audio_too_long: List[str] = []
+        self.nans: List[str] = []
         self.duration = 0
-        self.audio_config = config["preprocessing"]["audio"]
-        self.sep = config["preprocessing"]["value_separator"]
-        self.text_processor = TextProcessor(config)
-        self.input_sampling_rate = self.audio_config["input_sampling_rate"]
-        self.output_sampling_rate = self.audio_config["output_sampling_rate"]
+        self.audio_config = config.preprocessing.audio
+        self.sep = config.preprocessing.value_separator
+        self.text_processor = TextProcessor(config) if "text" in config else None
+        self.input_sampling_rate = self.audio_config.input_sampling_rate
+        self.output_sampling_rate = self.audio_config.output_sampling_rate
         self.sampling_rate_change = (
             self.output_sampling_rate // self.input_sampling_rate
         )
@@ -63,24 +67,24 @@ class Preprocessor:
         # Gah, so many ways to do this: https://github.com/CookiePPP/VocoderComparisons/issues/3
 
         self.input_spectral_transform = get_spectral_transform(
-            self.audio_config["spec_type"],
-            self.audio_config["n_fft"],
-            self.audio_config["fft_window_frames"],
-            self.audio_config["fft_hop_frames"],
+            self.audio_config.spec_type,
+            self.audio_config.n_fft,
+            self.audio_config.fft_window_frames,
+            self.audio_config.fft_hop_frames,
             sample_rate=self.input_sampling_rate,
-            n_mels=self.audio_config["n_mels"],
-            f_min=self.audio_config["f_min"],
-            f_max=self.audio_config["f_max"],
+            n_mels=self.audio_config.n_mels,
+            f_min=self.audio_config.f_min,
+            f_max=self.audio_config.f_max,
         )
         self.output_spectral_transform = get_spectral_transform(
-            self.audio_config["spec_type"],
-            self.audio_config["n_fft"] * self.sampling_rate_change,
-            self.audio_config["fft_window_frames"] * self.sampling_rate_change,
-            self.audio_config["fft_hop_frames"] * self.sampling_rate_change,
-            sample_rate=self.output_sampling_rate,
-            n_mels=self.audio_config["n_mels"],
-            f_min=self.audio_config["f_min"],
-            f_max=self.audio_config["f_max"],
+            self.audio_config.spec_type,
+            self.audio_config.n_fft * self.sampling_rate_change,
+            self.audio_config.fft_window_frames * self.sampling_rate_change,
+            self.audio_config.fft_hop_frames * self.sampling_rate_change,
+            sample_rate=self.input_sampling_rate,
+            n_mels=self.audio_config.n_mels,
+            f_min=self.audio_config.f_min,
+            f_max=self.audio_config.f_max,
         )
 
         if (
@@ -88,7 +92,7 @@ class Preprocessor:
             or self.output_spectral_transform is None
         ):
             raise ConfigError(
-                f"Spectral feature specification {self.audio_config['spec_type']} is not supported. Please edit your config file."
+                f"Spectral feature specification {self.audio_config.spec_type} is not supported. Please edit your config file."
             )
 
     def load_audio_tensor(self, audio_path: str):
@@ -134,13 +138,13 @@ class Preprocessor:
             audio /= torch.max(torch.abs(audio))
             audio *= 0.95
         seconds = len(audio[0]) / sr
-        if seconds > self.config["preprocessing"]["audio"]["max_audio_length"]:
+        if seconds > self.audio_config.max_audio_length:
             logger.warning(f"Audio too long: {wav_path} ({seconds} seconds)")
             self.audio_too_long.append(os.path.basename(wav_path))
             return None, None
-        if seconds < self.config["preprocessing"]["audio"]["min_audio_length"]:
+        if seconds < self.audio_config.min_audio_length:
             logger.warning(f"Audio too short: {wav_path} ({seconds} seconds)")
-            self.audio_too_long.append(os.path.basename(wav_path))
+            self.audio_too_short.append(os.path.basename(wav_path))
             return None, None
         self.duration += seconds
         audio = audio.squeeze()  # get rid of channels dimension
@@ -174,7 +178,7 @@ class Preprocessor:
         Args:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
         """
-        if self.config["preprocessing"]["pitch_type"] == "pyworld":
+        if self.config.preprocessing.pitch_type == "pyworld":
             import pyworld as pw  # This isn't a very good place for an import,
 
             # but also pyworld is very annoying to install so this is a compromise
@@ -185,7 +189,7 @@ class Preprocessor:
                     np.float64
                 ),  # TODO: why are these np.float64, maybe it's just what pw expects?
                 self.input_sampling_rate,
-                frame_period=self.audio_config["fft_hop_frames"]
+                frame_period=self.audio_config.fft_hop_frames
                 / self.input_sampling_rate
                 * 1000,
                 speed=4,
@@ -198,24 +202,24 @@ class Preprocessor:
             )
             pitch = tensor(pitch)
             # TODO: consider interpolating by default when using PyWorld pitch detection
-        elif self.config["preprocessing"]["pitch_type"] == "kaldi":
+        elif self.config.preprocessing.pitch_type == "kaldi":
             pitch = compute_kaldi_pitch(
                 waveform=audio_tensor,
                 sample_rate=self.input_sampling_rate,
-                frame_length=self.audio_config["fft_window_frames"]
+                frame_length=self.audio_config.fft_window_frames
                 / self.input_sampling_rate
                 * 1000,
-                frame_shift=self.audio_config["fft_hop_frames"]
+                frame_shift=self.audio_config.fft_hop_frames
                 / self.input_sampling_rate
                 * 1000,
-                min_pitch=50,
-                max_pitch=400,
+                min_f0=50,
+                max_f0=400,
             )[0][
                 ..., 1
             ]  # TODO: the docs and C Minxhoffer implementation take [..., 0] but this doesn't appear to be the pitch, at least for this version of torchaudio.
         else:
             raise ConfigError(
-                f"Sorry, the pitch estimation type '{self.config['preprocessing']['pitch_type']}' is not supported. Please edit your config file."
+                f"Sorry, the pitch estimation type '{self.config.preprocessing.pitch_type}' is not supported. Please edit your config file."
             )
         return pitch
 
@@ -238,12 +242,12 @@ class Preprocessor:
                         np.round(
                             x[1]
                             * self.input_sampling_rate
-                            / self.audio_config["fft_hop_frames"]
+                            / self.audio_config.fft_hop_frames
                         )
                         - np.round(
                             x[0]
                             * self.input_sampling_rate
-                            / self.audio_config["fft_hop_frames"]
+                            / self.audio_config.fft_hop_frames
                         )
                     )
                 ),
@@ -277,8 +281,7 @@ class Preprocessor:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
             durations (_type_): _descriptiont    #TODO
         """
-        energy = linalg.norm(spectral_feature_tensor, dim=0)
-        return energy
+        return linalg.norm(spectral_feature_tensor, dim=0)
 
     def extract_text_inputs(self, text, use_pfs=False) -> Tensor:
         """Given some text, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
@@ -286,6 +289,8 @@ class Preprocessor:
         Args:
             text (str): text
         """
+        if self.text_processor is None:
+            raise ValueError("Text processor not initialized")
         if use_pfs:
             return torch.Tensor(
                 self.text_processor.text_to_phonological_features(text)
@@ -398,11 +403,9 @@ class Preprocessor:
                         use_effects=True,
                         sox_effects=dataset_info["sox_effects"],
                     ),
-                    self.config["preprocessing"]["audio"]["alignment_sampling_rate"],
+                    self.audio_config.alignment_sampling_rate,
                     encoding="PCM_S",
-                    bits_per_sample=self.config["preprocessing"]["audio"][
-                        "alignment_bit_depth"
-                    ],
+                    bits_per_sample=self.audio_config.alignment_bit_depth,
                 )
             else:
                 self.skipped_processes += 1
@@ -446,7 +449,7 @@ class Preprocessor:
                     item["basename"],
                     speaker,
                     language,
-                    f"spec-{self.input_sampling_rate}-{self.audio_config['spec_type']}.npy",
+                    f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.npy",
                 ]
             )
             output_spec_save_path = self.save_dir / self.sep.join(
@@ -454,7 +457,7 @@ class Preprocessor:
                     item["basename"],
                     speaker,
                     language,
-                    f"spec-{self.output_sampling_rate}-{self.audio_config['spec_type']}.npy",
+                    f"spec-{self.output_sampling_rate}-{self.audio_config.spec_type}.npy",
                 ]
             )
             if (
@@ -547,144 +550,22 @@ class Preprocessor:
                 self.skipped_processes += 1
         return item
 
-    def compute_priors(self, overwrite=True):
-        logger.info("Computing priors...")
-        prior_path = self.save_dir / "priors"
-        prior_path.mkdir(exist_ok=True)
-        filelist = self.config["training"]["feature_prediction"]["filelist_loader"](
-            self.config["training"]["feature_prediction"]["filelist"]
-        )
-        df = pd.DataFrame(filelist)
-        ds = FastSpeechDataset(filelist, self.config)
-        self._create_priors(df, ds, prior_path)
-
-    def _create_priors(self, data_frame, dataset, prior_path):
-        temp_df = copy(data_frame.sort_values("speaker"))
-        orig_data = copy(data_frame)
-        # check if prior values are already computed
-        compute_speakers = []
-        for speaker_path in temp_df["speaker"].unique():
-            for prior in self.config["model"]["priors"]["prior_types"]:
-                if not (prior_path / speaker_path / f"{prior}_prior.npy").exists():
-                    compute_speakers.append(speaker_path)
-        temp_df = temp_df[temp_df["speaker"].isin(compute_speakers)]
-
-        dl = DataLoader(
-            dataset,
-            batch_size=10,
-            collate_fn=collate_fn,
-            num_workers=0,
-        )
-        speaker_priors = {
-            s: {k: [] for k in self.config["model"]["priors"]["prior_types"]}
-            for s in temp_df["speaker"].unique()
-        }
-        pbar = tqdm(
-            dl,
-            total=len(speaker_priors.keys()),
-            maxinterval=1,
-            desc="creating prior files (this only runs once)",
-        )
-        prev_speaker = None
-        for item in dl:
-            # check if all speakers are the same
-            if prev_speaker is None:
-                prev_speaker = item["speaker_id"][0]
-                prev_path = item["speaker"][0]
-            speaker = item["speaker"][0]
-            if len(set(item["speaker"])) == 1:
-                for prior in self.config["model"]["priors"]["prior_types"]:
-                    speaker_priors[speaker][prior] += list(item[f"priors_{prior}"])
-            else:
-                for i, i_speaker in enumerate(item["speaker"]):
-                    for prior in self.config["model"]["priors"]["prior_types"]:
-                        speaker_priors[i_speaker][prior].append(
-                            item[f"priors_{prior}"][i]
-                        )
-            if prev_speaker != speaker:
-                for prior in self.config["model"]["priors"]["prior_types"]:
-                    # save prior to file
-                    np.save(
-                        prev_path / f"{prior}_prior.npy",
-                        speaker_priors[prev_speaker][prior],
-                    )
-                del speaker_priors[prev_speaker]
-                pbar.update(1)
-                prev_speaker = speaker
-                prev_path = item["speaker_path"][0]
-        for speaker in list(speaker_priors.keys()):
-            for prior in self.config["model"]["priors"]["prior_types"]:
-                np.save(
-                    prev_path.parent / speaker / f"{prior}_prior.npy",
-                    speaker_priors[speaker][prior],
-                )
-            del speaker_priors[speaker]
-            pbar.update(1)
-        pbar.close()
-        speaker_priors = {
-            s.name: {k: [] for k in self.config["model"]["priors"]["prior_types"]}
-            for s in orig_data["speaker"].unique()
-        }
-        for speaker in tqdm(orig_data["speaker"].unique(), desc="loading priors"):
-            for prior in self.config["model"]["priors"]["prior_types"]:
-                speaker_priors[speaker.name][prior] = np.load(
-                    speaker / f"{prior}_prior.npy"
-                )
-        return speaker_priors
-
     def _create_stats_batch(self, x):
-        result = {}
         mel_val = x["mel"]
         mel_val[x["silence_mask"]] = np.nan
-        result["mel"] = {}
-        result["mel"]["mean"] = torch.nanmean(mel_val)
+        result = {"mel": {"mean": torch.nanmean(mel_val)}}
         result["mel"]["std"] = torch.std(mel_val[~torch.isnan(mel_val)])
-        for i, var in enumerate(self.config["model"]["variance_adaptor"]["variances"]):
-            if (
-                self.config["model"]["variance_adaptor"]["variance_transforms"][i]
-                == "cwt"
-            ):
-                var_val = x[f"variances_{var}_original_signal"].float()
+        for vp in self.config.model.variance_adaptor.variance_predictors:
+            if vp.transform == "cwt":
+                var_val = x[f"variances_{vp.variance_type}_original_signal"].float()
             else:
-                var_val = x[f"variances_{var}"].float()
+                var_val = x[f"variances_{vp.variance_type}"].float()
             var_val[x["silence_mask"]] = np.nan
-            result[var] = {}
-            result[var]["min"] = torch.min(var_val[~torch.isnan(var_val)])
-            result[var]["max"] = torch.max(var_val[~torch.isnan(var_val)])
-            result[var]["mean"] = torch.nanmean(var_val)
-            result[var]["std"] = torch.std(var_val[~torch.isnan(var_val)])
-            if var in self.config["model"]["priors"]["prior_types"]:
-                result[var + "_prior"] = {}
-                result[var + "_prior"]["min"] = torch.min(
-                    torch.nanmean(var_val, axis=1)
-                )
-                result[var + "_prior"]["max"] = torch.max(
-                    torch.nanmean(var_val, axis=1)
-                )
-                result[var + "_prior"]["mean"] = torch.mean(
-                    torch.nanmean(var_val, axis=1)
-                )
-                result[var + "_prior"]["std"] = torch.std(
-                    torch.nanmean(var_val, axis=1)
-                )
-        for var in self.config["model"]["priors"]["prior_types"]:
-            if var not in self.config["model"]["variance_adaptor"]["variances"]:
-                var_val = x[var].float()
-                var_val[x["unexpanded_silence_mask"]] = np.nan
-                result[var + "_prior"] = {}
-                result[var + "_prior"]["min"] = torch.min(
-                    torch.nanmean(var_val, axis=1)
-                )
-                result[var + "_prior"]["max"] = torch.max(
-                    torch.nanmean(var_val, axis=1)
-                )
-                result[var + "_prior"]["mean"] = torch.mean(
-                    torch.nanmean(var_val, axis=1)
-                )
-                result[var + "_prior"]["std"] = torch.std(
-                    torch.nanmean(var_val, axis=1)
-                )
-                del var_val
+            result[vp.variance_type] = {}
+            result[vp.variance_type]["min"] = torch.min(var_val[~torch.isnan(var_val)])
+            result[vp.variance_type]["max"] = torch.max(var_val[~torch.isnan(var_val)])
+            result[vp.variance_type]["mean"] = torch.nanmean(var_val)
+            result[vp.variance_type]["std"] = torch.std(var_val[~torch.isnan(var_val)])
         return result
 
     def compute_stats(self, overwrite=True):
@@ -696,9 +577,7 @@ class Preprocessor:
             exit()
         stats = {}
         stat_list = []
-        filelist = self.config["training"]["feature_prediction"]["filelist_loader"](
-            self.config["training"]["feature_prediction"]["filelist"]
-        )
+        filelist = self.config.training.filelist_loader(self.config.training.filelist)
         stats["sample_size"] = len(filelist)
         ds = FastSpeechDataset(filelist, self.config)
         for entry in tqdm(
@@ -732,7 +611,8 @@ class Preprocessor:
                     stats[key][np_stat] = float(
                         np.max([s[key]["max"] for s in stat_list])
                     )
-        json.dump(stats, open(stat_path, "w"), indent=4)
+        with open(stat_path, "w") as f:
+            json.dump(stats, f, indent=4)
         self.stats = stats
         return self.stats
 
