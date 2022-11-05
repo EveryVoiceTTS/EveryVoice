@@ -1,20 +1,13 @@
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict
 
-from smts.config.base_config import SMTSConfig
 from smts.config.base_config import __file__ as smts_file
 
-CONFIGS: Dict[str, Any] = {
-    "base": SMTSConfig.load_config_from_path(
-        Path(smts_file).parent / "base" / "base.yaml"
-    ),
-    "lj": SMTSConfig.load_config_from_path(Path(smts_file).parent / "lj" / "lj.yaml"),
-    "istft": SMTSConfig.load_config_from_path(
-        Path(smts_file).parent / "lj" / "lj_istft.yaml"
-    ),
-    "openslr": SMTSConfig.load_config_from_path(
-        Path(smts_file).parent / "openslr" / "openslr.yaml"
-    ),
+CONFIGS: Dict[str, Path] = {
+    "base": Path(smts_file).parent / "base" / "base.yaml",
+    "lj": Path(smts_file).parent / "lj" / "lj.yaml",
+    "istft": Path(smts_file).parent / "lj" / "lj_istft.yaml",
+    "openslr": Path(smts_file).parent / "openslr" / "openslr.yaml",
 }
 
 

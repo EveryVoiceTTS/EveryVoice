@@ -63,8 +63,8 @@ def preprocess(
     compute_stats: bool = typer.Option(False, "-s", "--stats"),
     overwrite: bool = typer.Option(False, "-O", "--overwrite"),
 ):
-    config: SMTSConfig = CONFIGS[name.value]
-    preprocessor = Preprocessor(config)
+    config: SMTSConfig = SMTSConfig.load_config_from_path(CONFIGS[name.value])
+    preprocessor = Preprocessor(config) # TODO: which preprocessing config to use?
     to_preprocess = {k: k in data for k in PreprocessCategories.__members__.keys()}  # type: ignore
     if not data:
         logger.info(

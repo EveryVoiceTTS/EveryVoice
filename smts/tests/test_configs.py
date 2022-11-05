@@ -63,7 +63,7 @@ class ConfigTest(TestCase):
 
     def test_shared_sox(self):
         """Test that the shared sox config is correct"""
-        config: SMTSConfig = CONFIGS["openslr"]
+        config: SMTSConfig = SMTSConfig.load_config_from_path(CONFIGS["openslr"])
         sox_effects = config.vocoder.preprocessing.source_data[0].sox_effects
         self.assertEqual(len(config.vocoder.preprocessing.source_data), 4)
         for d_other in config.vocoder.preprocessing.source_data[1:]:
