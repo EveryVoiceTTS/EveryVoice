@@ -77,6 +77,9 @@ class LoggerConfig(ConfigModel):
     @convert_paths(kwargs_to_convert=["save_dir"])
     def __init__(self, **data) -> None:
         """Custom init to process file paths"""
+        if not data["save_dir"].exists():
+            logger.info(f"Directory at {data['save_dir']} does not exist. Creating...")
+            data["save_dir"].mkdir(parents=True, exist_ok=True)
         super().__init__(**data)
 
 
