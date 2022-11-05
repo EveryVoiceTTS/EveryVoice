@@ -2,6 +2,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Callable, Tuple, Union
 
+from loguru import logger
 from pydantic import BaseModel, DirectoryPath, Extra, FilePath
 
 from smts.config.utils import convert_callables, convert_paths
@@ -88,7 +89,7 @@ class BaseTrainingConfig(ConfigModel):
     max_epochs: int
     seed: int
     finetune_checkpoint: Union[FilePath, None]
-    filelist: FilePath
+    filelist: Union[Path, FilePath]
     filelist_loader: Callable
     logger: LoggerConfig
     val_data_workers: int
@@ -101,6 +102,10 @@ class BaseTrainingConfig(ConfigModel):
         **data,
     ) -> None:
         """Custom init to process file paths"""
+        if not data["filelist"].exists():
+            logger.warning(
+                f"Filelist {data['filelist']} does not exist. If you're just preprocessing, that's fine, otherwise this will cause an error"
+            )
         super().__init__(
             **data,
         )

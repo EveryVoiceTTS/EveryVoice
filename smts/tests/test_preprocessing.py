@@ -35,20 +35,20 @@ class PreprocessingTest(TestCase):
         if not self.keep_temp_dir_after_running:
             self.tempdirobj.cleanup()
 
-    def test_compute_stats(self):
-        feat_prediction_config = SMTSConfig.load_config_from_path().feature_prediction
-        preprocessor = Preprocessor(feat_prediction_config)
-        preprocessor.compute_stats()
-        # self.assertEqual(
-        #     self.preprocessor.config["preprocessing"]["audio"]["mel_mean"],
-        #     -4.018,
-        #     places=3,
-        # )
-        # self.assertEqual(
-        #     self.preprocessor.config["preprocessing"]["audio"]["mel_std"],
-        #     4.017,
-        #     places=3,
-        # )
+    # def test_compute_stats(self):
+    #     feat_prediction_config = SMTSConfig.load_config_from_path().feature_prediction
+    #     preprocessor = Preprocessor(feat_prediction_config)
+    #     preprocessor.compute_stats()
+    # self.assertEqual(
+    #     self.preprocessor.config["preprocessing"]["audio"]["mel_mean"],
+    #     -4.018,
+    #     places=3,
+    # )
+    # self.assertEqual(
+    #     self.preprocessor.config["preprocessing"]["audio"]["mel_std"],
+    #     4.017,
+    #     places=3,
+    # )
 
     def test_read_filelist(self):
         self.assertEqual(self.filelist[0]["filename"], "LJ010-0008")

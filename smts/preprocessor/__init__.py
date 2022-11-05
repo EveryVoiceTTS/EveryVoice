@@ -28,6 +28,7 @@ from smts.config.base_config import (  # type: ignore
     FeaturePredictionConfig,
     VocoderConfig,
 )
+from smts.config.preprocessing_config import Dataset
 from smts.model.feature_prediction.FastSpeech2_lightning.fs2.dataset import (
     FastSpeechDataset,
 )
@@ -95,7 +96,7 @@ class Preprocessor:
                 f"Spectral feature specification {self.audio_config.spec_type} is not supported. Please edit your config file."
             )
 
-    def load_audio_tensor(self, audio_path: str):
+    def load_audio_tensor(self, audio_path: Union[Path, str]):
         """Load audio tensor from file
 
         Args:
@@ -321,8 +322,16 @@ class Preprocessor:
         headers = ["type", "quantity"]
         table = [
             ["missing files", len(self.missing_files)],
-            ["missing symbols", len(self.text_processor.missing_symbols)],
-            ["duplicate symbols", len(self.text_processor.duplicate_symbols)],
+            [
+                "missing symbols",
+                len(self.text_processor.missing_symbols) if self.text_processor else 0,
+            ],
+            [
+                "duplicate symbols",
+                len(self.text_processor.duplicate_symbols)
+                if self.text_processor
+                else 0,
+            ],
             ["skipped processes", self.skipped_processes],
             ["nans", self.nans],
             ["audio_too_short", len(self.audio_too_short)],
@@ -334,7 +343,7 @@ class Preprocessor:
     def _preprocess_item(  # noqa: C901
         self,
         item,
-        dataset_info,
+        dataset_info: Dataset,
         process_audio=False,
         process_sox_audio=False,
         process_spec=False,
@@ -348,7 +357,7 @@ class Preprocessor:
         speaker = "default" if "speaker" not in item else item["speaker"]
         language = "default" if "language" not in item else item["language"]
         item = {**item, **{"speaker": speaker, "language": language}}
-        dataset_info["data_dir"] = Path(dataset_info["data_dir"])
+        dataset_info.data_dir = Path(dataset_info.data_dir)
         audio = None
         output_audio = None
         spec = None
@@ -378,7 +387,12 @@ class Preprocessor:
                     save_path,
                 )
                 item["raw_text"] = item["text"]
-                item["clean_text"] = self.text_processor.clean_text(item["text"])
+                if self.text_processor is not None:
+                    item["clean_text"] = self.text_processor.clean_text(item["text"])
+                else:
+                    logger.warning(
+                        "Text processor not initialized, skipping text cleaning"
+                    )
             else:
                 self.skipped_processes += 1
         if process_pfs:
@@ -399,9 +413,9 @@ class Preprocessor:
                 save_audio(
                     save_path,
                     self.process_audio(
-                        dataset_info["data_dir"] / (item["basename"] + ".wav"),
+                        dataset_info.data_dir / (item["basename"] + ".wav"),
                         use_effects=True,
-                        sox_effects=dataset_info["sox_effects"],
+                        sox_effects=dataset_info.sox_effects,
                     ),
                     self.audio_config.alignment_sampling_rate,
                     encoding="PCM_S",
@@ -416,7 +430,7 @@ class Preprocessor:
                 or not output_audio_save_path.exists()
             ):
                 audio, _ = self.process_audio(
-                    dataset_info["data_dir"] / (item["basename"] + ".wav"),
+                    dataset_info.data_dir / (item["basename"] + ".wav"),
                     resample_rate=self.input_sampling_rate,
                 )
                 if (
@@ -434,7 +448,7 @@ class Preprocessor:
                 torch.save(audio, input_audio_save_path)
                 if self.input_sampling_rate != self.output_sampling_rate:
                     output_audio, _ = self.process_audio(
-                        dataset_info["data_dir"] / (item["basename"] + ".wav"),
+                        dataset_info.data_dir / (item["basename"] + ".wav"),
                         resample_rate=self.output_sampling_rate,
                     )
 
@@ -467,14 +481,19 @@ class Preprocessor:
             ):
                 if audio is None:
                     audio, _ = self.process_audio(
-                        dataset_info["data_dir"] / (item["basename"] + ".wav"),
+                        dataset_info.data_dir / (item["basename"] + ".wav"),
                         resample_rate=self.input_sampling_rate,
                     )
                 if output_audio is None:
                     output_audio, _ = self.process_audio(
-                        dataset_info["data_dir"] / (item["basename"] + ".wav"),
+                        dataset_info.data_dir / (item["basename"] + ".wav"),
                         resample_rate=self.output_sampling_rate,
                     )
+                if audio is None:
+                    logger.warning(
+                        f"Audio for file '{item['basename']}' didn't pass validation. Skipping."
+                    )
+                    return None
                 spec = self.extract_spectral_features(
                     audio, self.input_spectral_transform
                 )
@@ -537,7 +556,7 @@ class Preprocessor:
             save_path = self.save_dir / self.sep.join(
                 [item["basename"], speaker, language, "duration.npy"]
             )
-            dur_path = dataset_info["textgrid_dir"] / (item["basename"] + ".TextGrid")
+            dur_path = dataset_info.textgrid_dir / (item["basename"] + ".TextGrid")
             if not dur_path.exists():
                 logger.warning(
                     f"File '{item['basename']}' is missing and will not be processed."
@@ -632,7 +651,7 @@ class Preprocessor:
         files = []
         # Sanity check
         for dataset in self.datasets:
-            data_dir = Path(dataset["data_dir"])
+            data_dir = Path(dataset.data_dir)
             if not data_dir.exists():
                 logger.error(
                     f"Data directory '{data_dir}' does not exist. Please check your config file."
@@ -640,9 +659,10 @@ class Preprocessor:
                 exit()
             # TODO: more sanity checks
         # Actual processing
+        dataset: Dataset
         for dataset in tqdm(self.datasets, total=len(self.datasets)):
-            data_dir = Path(dataset["data_dir"])
-            filelist = dataset["filelist_loader"](dataset["filelist"])
+            data_dir = Path(dataset.data_dir)
+            filelist = dataset.filelist_loader(dataset.filelist)
             for item in tqdm(
                 self.collect_files(filelist, data_dir=data_dir),
                 total=len(filelist),
@@ -654,13 +674,13 @@ class Preprocessor:
                 )
                 if item is not None:
                     # Add Label
-                    if isinstance(dataset["label"], str):
-                        item["label"] = dataset["label"]
+                    if isinstance(dataset.label, str):
+                        item["label"] = dataset.label
                     elif callable(dataset["label"]):
-                        item["label"] = dataset["label"](item)
+                        item["label"] = dataset.label(item)
                     else:
                         raise ValueError(
-                            f"Label for dataset '{dataset['name']}' is neither a string nor a callable."
+                            f"Label for dataset '{dataset.label}' is neither a string nor a callable."
                         )
                     files.append(item)
                     processed += 1
