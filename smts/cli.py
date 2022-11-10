@@ -9,8 +9,6 @@ from smts.config import CONFIGS
 from smts.config.base_config import SMTSConfig  # type: ignore
 from smts.model.aligner.DeepForcedAligner.dfaligner.cli import app as dfaligner_app
 from smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import app as hfgl_app
-from smts.preprocessor import Preprocessor
-from smts.run_tests import run_tests
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
 app.add_typer(dfaligner_app, name="dfa")
@@ -50,6 +48,8 @@ class Model(str, Enum):
 @app.command()
 def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
     """This command will run the test suite specified by the user"""
+    from smts.run_tests import run_tests
+
     run_tests(suite)
 
 
@@ -63,8 +63,10 @@ def preprocess(
     compute_stats: bool = typer.Option(False, "-s", "--stats"),
     overwrite: bool = typer.Option(False, "-O", "--overwrite"),
 ):
+    from smts.preprocessor import Preprocessor
+
     config: SMTSConfig = SMTSConfig.load_config_from_path(CONFIGS[name.value])
-    preprocessor = Preprocessor(config) # TODO: which preprocessing config to use?
+    preprocessor = Preprocessor(config)  # TODO: which preprocessing config to use?
     to_preprocess = {k: k in data for k in PreprocessCategories.__members__.keys()}  # type: ignore
     if not data:
         logger.info(

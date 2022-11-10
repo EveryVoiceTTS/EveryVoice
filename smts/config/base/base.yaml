@@ -93,7 +93,7 @@ feature_prediction:
       hidden_dim: 256
       feedforward_dim: 1024
       conv_filter_size: 1024
-      conv_kernel_sizes: [9, 1]
+      conv_kernel_size: 9
       dropout: 0.2
       depthwise: True
       conformer: True
@@ -103,52 +103,49 @@ feature_prediction:
       hidden_dim: 256
       feedforward_dim: 1024
       conv_filter_size: 1024
-      conv_kernel_sizes: [9, 1]
+      conv_kernel_size: 9
       dropout: 0.2
       depthwise: True
       conformer: True
     variance_adaptor:
       variance_predictors:
-        - variance_type: "pitch" # TODO: this is redundant
-          level: "phone"  # TODO: also redundant
+        pitch:
+          level: "phone"
           transform: "none"
           loss: "mse"
           n_layers: 5
           loss_weights: 5e-2
           kernel_size: 3
           dropout: 0.5
-          filter_size: 256
+          hidden_dim: 256
           n_bins: 256
           depthwise: True
-        - variance_type: "energy" # TODO: this is redundant
-          level: "phone"  # TODO: also redundant
+        energy:
+          level: "phone"
           transform: "none"
           loss: "mse"
           n_layers: 5
           loss_weights: 5e-2
           kernel_size: 3
           dropout: 0.5
-          filter_size: 256
+          hidden_dim: 256
           n_bins: 256
           depthwise: True
-      duration_predictor:
-        variance_type: "duration" # TODO: this is redundant
-        level: "phone"  # TODO: also redundant
-        transform: "none"
-        loss: "mse"
-        n_layers: 5
-        loss_weights: 5e-2
-        kernel_size: 3
-        dropout: 0.5
-        filter_size: 256
-        n_bins: 256
-        depthwise: True
-        stochastic: False
+        duration:
+          transform: "none"
+          loss: "mse"
+          n_layers: 5
+          loss_weights: 5e-2
+          kernel_size: 3
+          dropout: 0.5
+          hidden_dim: 256
+          n_bins: 256
+          depthwise: True
     learn_alignment: False
     max_length: 1000
     mel_loss: "mse"
     mel_loss_weight: 5e-1
-    phonological_feats_size: 37
+    phonological_feats_size: 38
     use_phonological_feats: False
     use_postnet: True
     multilingual: True

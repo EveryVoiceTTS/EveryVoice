@@ -33,12 +33,11 @@ from smts.model.feature_prediction.FastSpeech2_lightning.fs2.dataset import (
     FastSpeechDataset,
 )
 from smts.text import TextProcessor
-from smts.utils import (
+from smts.utils import read_textgrid, write_filelist
+from smts.utils.heavy import (
     collate_fn,
     dynamic_range_compression_torch,
     get_spectral_transform,
-    read_textgrid,
-    write_filelist,
 )
 
 
@@ -58,7 +57,9 @@ class Preprocessor:
         self.duration = 0
         self.audio_config = config.preprocessing.audio
         self.sep = config.preprocessing.value_separator
-        self.text_processor = TextProcessor(config) if "text" in config else None
+        self.text_processor = (
+            None if isinstance(config, VocoderConfig) else TextProcessor(config)
+        )
         self.input_sampling_rate = self.audio_config.input_sampling_rate
         self.output_sampling_rate = self.audio_config.output_sampling_rate
         self.sampling_rate_change = (
@@ -509,18 +510,21 @@ class Preprocessor:
                     spec,
                     input_spec_save_path,
                 )
-                output_spec = self.extract_spectral_features(
-                    output_audio, self.output_spectral_transform
-                )
-                try:
-                    assert torch.any(output_spec.isnan()).item() is False
-                except AssertionError:
-                    logger.error(
-                        f"Spectrogram for file '{item['basename']}' contains NaNs. Skipping."
+                if output_audio is not None:
+                    output_spec = self.extract_spectral_features(
+                        output_audio, self.output_spectral_transform
                     )
-                    self.nans.append(item["basename"])
-                    return None
-                torch.save(output_spec, output_spec_save_path)
+                    try:
+                        assert torch.any(output_spec.isnan()).item() is False
+                    except AssertionError:
+                        logger.error(
+                            f"Spectrogram for file '{item['basename']}' contains NaNs. Skipping."
+                        )
+                        self.nans.append(item["basename"])
+                        return None
+                    torch.save(output_spec, output_spec_save_path)
+                else:
+                    self.skipped_processes += 1
             else:
                 self.skipped_processes += 1
         if process_pitch:
@@ -549,7 +553,7 @@ class Preprocessor:
                             f"Could not find spec file at '{input_spec_save_path}'. Please process the spec first."
                         )
                         exit()
-                torch.save(self.extract_energy(spec), save_path),
+                torch.save(self.extract_energy(spec), save_path)
             else:
                 self.skipped_processes += 1
         if process_duration:
