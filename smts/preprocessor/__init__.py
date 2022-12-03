@@ -1,11 +1,11 @@
 """ Preprocessor Module that given a filelist containing text, wav, textgrid:
     - extracts log Mel spectral features
     - extracts pitch (phone-level or frame-level)
-    - extracts durations
     - extracts energy
     - extracts inputs (ex. phonological feats)
 """
 import json
+import multiprocessing as mp
 import os
 from pathlib import Path
 from typing import List, Tuple, Union
@@ -13,9 +13,10 @@ from typing import List, Tuple, Union
 import numpy as np
 import torch
 from loguru import logger
+from pathos.multiprocessing import ProcessingPool as Pool
+from pydantic import BaseModel
 from tabulate import tabulate
 from torch import Tensor, linalg, mean, tensor
-from torch.utils.data import DataLoader
 from torchaudio import load as load_audio
 from torchaudio import save as save_audio
 from torchaudio.functional import compute_kaldi_pitch, resample
@@ -23,22 +24,100 @@ from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
 from smts.config import ConfigError
-from smts.config.base_config import (  # type: ignore
-    AlignerConfig,
-    FeaturePredictionConfig,
-    VocoderConfig,
-)
 from smts.config.preprocessing_config import Dataset
-from smts.model.feature_prediction.FastSpeech2_lightning.fs2.dataset import (
-    FastSpeechDataset,
-)
+from smts.model.aligner.config import AlignerConfig
+from smts.model.feature_prediction.config import FeaturePredictionConfig
+from smts.model.vocoder.config import VocoderConfig
 from smts.text import TextProcessor
-from smts.utils import read_textgrid, write_filelist
-from smts.utils.heavy import (
-    collate_fn,
-    dynamic_range_compression_torch,
-    get_spectral_transform,
-)
+from smts.utils import write_filelist
+from smts.utils.heavy import dynamic_range_compression_torch, get_spectral_transform
+
+
+class ProgressBar:
+    def __init__(self, max_value, disable=False):
+        self.max_value = max_value
+        self.disable = disable
+        self.p = self.pbar()
+
+    def pbar(self):
+        return tqdm(total=self.max_value, desc="Loading: ", disable=self.disable)
+
+    def update(self, update_value):
+        self.p.update(update_value)
+
+    def close(self):
+        self.p.close()
+
+
+class Scaler:
+    def __init__(self):
+        self._data = []
+        self._tensor_data = None
+        self.min = None
+        self.max = None
+        self.std = None
+        self.mean = None
+        self.norm_min = None
+        self.norm_max = None
+
+    def __len__(self):
+        return len(self.data)
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, value):
+        raise ValueError(
+            f"Sorry, you tried to change the data to {value} but it cannot be changed directly. Either Scaler.append(data), or Scaler.clear_data()"
+        )
+
+    def append(self, value):
+        self._data += value
+
+    def clear_data(self):
+        """Clear data"""
+        self.__init__()
+
+    def normalize(self, data):
+        """Remove mean and normalize to unit variance"""
+        return (data - self.mean) / self.std
+
+    def denormalize(self, data):
+        """Get de-normalized value"""
+        return (data * self.std) + self.mean
+
+    def calculate_stats(self):
+        if not len(self):
+            return
+        if self._tensor_data is None:
+            self._tensor_data = torch.cat(self.data)
+        non_nan_data = self._tensor_data[~torch.isnan(self._tensor_data)]
+        self.min = torch.min(non_nan_data)
+        self.max = torch.max(non_nan_data)
+        self.mean = torch.nanmean(self._tensor_data)
+        self.std = torch.std(non_nan_data)
+        self.norm_max = self.normalize(self.max)
+        self.norm_min = self.normalize(self.min)
+        return {
+            "sample_size": len(self),
+            "norm_min": float(self.norm_min),
+            "norm_max": float(self.norm_max),
+            "min": float(self.min),
+            "max": float(self.max),
+            "mean": float(self.mean),
+            "std": float(self.std),
+        }
+
+
+class Counters(BaseModel):
+    duration: float = 0.0
+    nans: List[str] = []
+    audio_too_long: List[str] = []
+    audio_too_short: List[str] = []
+    skipped_processes: int = 0
+    missing_files: List[str] = []
 
 
 class Preprocessor:
@@ -46,15 +125,12 @@ class Preprocessor:
         self, config: Union[AlignerConfig, FeaturePredictionConfig, VocoderConfig]
     ):
         self.config = config
+        self.pitch_scaler = Scaler()
+        self.energy_scaler = Scaler()
         self.datasets = config.preprocessing.source_data
         self.save_dir = Path(config.preprocessing.save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
-        self.missing_files: List[str] = []
-        self.skipped_processes = 0
-        self.audio_too_short: List[str] = []
-        self.audio_too_long: List[str] = []
-        self.nans: List[str] = []
-        self.duration = 0
+        self.counters = Counters()
         self.audio_config = config.preprocessing.audio
         self.sep = config.preprocessing.value_separator
         self.text_processor = (
@@ -142,13 +218,13 @@ class Preprocessor:
         seconds = len(audio[0]) / sr
         if seconds > self.audio_config.max_audio_length:
             logger.warning(f"Audio too long: {wav_path} ({seconds} seconds)")
-            self.audio_too_long.append(os.path.basename(wav_path))
+            self.counters.audio_too_long.append(os.path.basename(wav_path))
             return None, None
         if seconds < self.audio_config.min_audio_length:
             logger.warning(f"Audio too short: {wav_path} ({seconds} seconds)")
-            self.audio_too_short.append(os.path.basename(wav_path))
+            self.counters.audio_too_short.append(os.path.basename(wav_path))
             return None, None
-        self.duration += seconds
+        self.counters.duration += seconds
         audio = audio.squeeze()  # get rid of channels dimension
         return (audio, sr)
 
@@ -166,6 +242,15 @@ class Preprocessor:
         if normalize:
             mel = dynamic_range_compression_torch(mel)
         return mel
+
+    @staticmethod
+    def _interpolate(x):
+        def nan_helper(y):
+            return np.isnan(y), lambda z: z.nonzero()[0]
+
+        nans, y = nan_helper(x)
+        x[nans] = np.interp(y(nans), y(~nans), x[~nans])
+        return x
 
     def extract_pitch(self, audio_tensor: Tensor):
         """Given an audio tensor, extract the pitch
@@ -202,8 +287,9 @@ class Preprocessor:
                 t,
                 self.input_sampling_rate,
             )
-            pitch = tensor(pitch)
-            # TODO: consider interpolating by default when using PyWorld pitch detection
+            pitch[pitch == 0] = np.nan
+            pitch = self._interpolate(pitch)
+            pitch = tensor(pitch).float()
         elif self.config.preprocessing.pitch_type == "kaldi":
             pitch = compute_kaldi_pitch(
                 waveform=audio_tensor,
@@ -225,55 +311,19 @@ class Preprocessor:
             )
         return pitch
 
-    def extract_durations(self, textgrid_path: str):
-        """Extract durations from a textgrid path
-           Don't use tgt package because it ignores silence.
-
-        Args:
-            textgrid_path (str): path to a textgrid file
-        """
-        tg = read_textgrid(textgrid_path)
-        phones = tg.get_tier("phones")
-        return [
-            {
-                "start": x[0],
-                "end": x[1],
-                "dur_ms": (x[1] - x[0]) * 1000,
-                "dur_frames": int(
-                    (
-                        np.round(
-                            x[1]
-                            * self.input_sampling_rate
-                            / self.audio_config.fft_hop_frames
-                        )
-                        - np.round(
-                            x[0]
-                            * self.input_sampling_rate
-                            / self.audio_config.fft_hop_frames
-                        )
-                    )
-                ),
-                "phone": x[2],
-            }
-            for x in phones.get_all_intervals()
-        ]
-
     def average_data_by_durations(self, data, durations):
         current_frame_position = 0
         new_data = []
-        for duration in durations:
-            if duration["dur_frames"] > 0:
+        for duration in durations.numpy().tolist():
+            if duration > 0:
                 new_data.append(
                     mean(
-                        data[
-                            current_frame_position : current_frame_position
-                            + duration["dur_frames"]
-                        ]
+                        data[current_frame_position : current_frame_position + duration]
                     )
                 )
             else:
                 new_data.append(1e-7)
-            current_frame_position += duration["dur_frames"]
+            current_frame_position += duration
         return tensor(new_data)
 
     def extract_energy(self, spectral_feature_tensor: Tensor):
@@ -300,18 +350,9 @@ class Preprocessor:
         else:
             return torch.Tensor(self.text_processor.text_to_sequence(text)).long()
 
-    def collect_files(self, filelist, data_dir):
-        for f in filelist:
-            audio_path = data_dir / (f["basename"] + ".wav")
-            if not audio_path.exists():
-                logger.warning(f"File '{f}' is missing and will not be processed.")
-                self.missing_files.append(f)
-            else:
-                yield f
-
     def print_duration(self):
         """Convert seconds to a human readable format"""
-        seconds = int(self.duration)
+        seconds = int(self.counters.duration)
         hours = seconds // 3600
         seconds %= 3600
         minutes = seconds // 60
@@ -322,7 +363,7 @@ class Preprocessor:
         """Print a report of the dataset processing"""
         headers = ["type", "quantity"]
         table = [
-            ["missing files", len(self.missing_files)],
+            ["missing files", len(self.counters.missing_files)],
             [
                 "missing symbols",
                 len(self.text_processor.missing_symbols) if self.text_processor else 0,
@@ -333,324 +374,352 @@ class Preprocessor:
                 if self.text_processor
                 else 0,
             ],
-            ["skipped processes", self.skipped_processes],
-            ["nans", self.nans],
-            ["audio_too_short", len(self.audio_too_short)],
-            ["audio_too_long", len(self.audio_too_long)],
+            ["skipped processes", self.counters.skipped_processes],
+            ["nans", self.counters.nans],
+            ["audio_too_short", len(self.counters.audio_too_short)],
+            ["audio_too_long", len(self.counters.audio_too_long)],
             ["duration", self.print_duration()],
         ]
         return tabulate(table, headers, tablefmt=tablefmt)
 
-    def _preprocess_item(  # noqa: C901
+    def _preprocess_audio_or_dependent(
         self,
+        dataset_info,
         item,
-        dataset_info: Dataset,
-        process_audio=False,
-        process_sox_audio=False,
-        process_spec=False,
-        process_energy=False,
-        process_pitch=False,
-        process_duration=False,
-        process_pfs=False,
-        process_text=False,
-        overwrite=False,
+        speaker,
+        language,
+        overwrite,
+        process_audio,
+        process_energy,
+        process_pitch,
+        process_spec,
     ):
+        """Process Audio or Dependents (Spectral Features, Pitch, and Energy)"""
+        input_audio_save_path = (
+            self.save_dir
+            / "audio"
+            / self.sep.join(
+                [
+                    item["basename"],
+                    speaker,
+                    language,
+                    f"audio-{self.input_sampling_rate}.pt",
+                ]
+            )
+        )
+        output_audio_save_path = (
+            self.save_dir
+            / "audio"
+            / self.sep.join(
+                [
+                    item["basename"],
+                    speaker,
+                    language,
+                    f"audio-{self.output_sampling_rate}.pt",
+                ]
+            )
+        )
+        audio_paths_exist = (
+            input_audio_save_path.exists() or output_audio_save_path.exists()
+        )
+        if not overwrite and audio_paths_exist:
+            self.counters.skipped_processes += 1
+        else:
+            audio, _ = self.process_audio(
+                dataset_info.data_dir / (item["basename"] + ".wav"),
+                resample_rate=self.input_sampling_rate,
+            )
+            if audio is None:
+                return None  # Skip processing audio and dependents if didn't pass process_audio
+            if process_audio:
+                torch.save(audio, input_audio_save_path)
+            if self.input_sampling_rate != self.output_sampling_rate:
+                output_audio, _ = self.process_audio(
+                    dataset_info.data_dir / (item["basename"] + ".wav"),
+                    resample_rate=self.output_sampling_rate,
+                )
+                if process_audio:
+                    torch.save(output_audio, output_audio_save_path)
+            else:
+                output_audio = audio
+        if process_pitch:
+            save_path = (
+                self.save_dir
+                / "pitch"
+                / self.sep.join([item["basename"], speaker, language, "pitch.pt"])
+            )
+            if not overwrite and save_path.exists():
+                self.counters.skipped_processes += 1
+            else:
+                pitch = self.extract_pitch(audio)
+                if (
+                    isinstance(self.config, FeaturePredictionConfig)
+                    and self.config.model.variance_adaptor.variance_predictors.pitch.level
+                    == "phone"
+                ):
+                    dur_path = (
+                        self.save_dir
+                        / "duration"
+                        / self.sep.join(
+                            [item["basename"], speaker, language, "duration.pt"]
+                        )
+                    )
+                    durs = torch.load(dur_path)
+                    pitch = self.average_data_by_durations(pitch, durs)
+                self.pitch_scaler.data.append(pitch)
+                torch.save(
+                    pitch,
+                    save_path,
+                )
+        if process_spec or process_energy:
+            self._preprocess_spec_or_dependent(
+                audio,
+                output_audio,
+                item,
+                speaker,
+                language,
+                overwrite,
+                process_energy,
+                process_spec,
+            )
+
+    def _preprocess_spec_or_dependent(
+        self,
+        audio,
+        output_audio,
+        item,
+        speaker,
+        language,
+        overwrite,
+        process_energy,
+        process_spec,
+    ):
+        """Process Spectral Features or Dependents (Energy)"""
+        input_spec_save_path = (
+            self.save_dir
+            / "spec"
+            / self.sep.join(
+                [
+                    item["basename"],
+                    speaker,
+                    language,
+                    f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.pt",
+                ]
+            )
+        )
+        output_spec_save_path = (
+            self.save_dir
+            / "spec"
+            / self.sep.join(
+                [
+                    item["basename"],
+                    speaker,
+                    language,
+                    f"spec-{self.output_sampling_rate}-{self.audio_config.spec_type}.pt",
+                ]
+            )
+        )
+        if not overwrite and (
+            input_spec_save_path.exists() or output_spec_save_path.exists()
+        ):
+            self.counters.skipped_processes += 1
+        else:
+            spec = self.extract_spectral_features(audio, self.input_spectral_transform)
+            if process_spec:
+                torch.save(spec, input_spec_save_path)
+                if self.input_sampling_rate != self.output_sampling_rate:
+                    output_spec = self.extract_spectral_features(
+                        output_audio, self.output_spectral_transform
+                    )
+                    torch.save(output_spec, output_spec_save_path)
+        if process_energy:
+            save_path = (
+                self.save_dir
+                / "energy"
+                / self.sep.join([item["basename"], speaker, language, "energy.pt"])
+            )
+            if not overwrite and save_path.exists():
+                self.counters.skipped_processes += 1
+            else:
+                energy = self.extract_energy(spec)
+                if (
+                    self.config.model.variance_adaptor.variance_predictors.energy.level
+                    == "phone"
+                ):
+                    dur_path = (
+                        self.save_dir
+                        / "duration"
+                        / self.sep.join(
+                            [item["basename"], speaker, language, "duration.pt"]
+                        )
+                    )
+                    durs = torch.load(dur_path)
+                    energy = self.average_data_by_durations(energy, durs)
+                self.energy_scaler.data.append(energy)
+                torch.save(energy, save_path)
+
+    def _preprocess_item(self, item, kwargs):  # noqa: C901
+        """Text, Phonological features, SoX Audio can all be processed independently, but Spectral features and Pitch
+        depend on Audio first being processed, and energy depends on Spectral features first being processed. So,
+        to simplify, processing is separated into stages."""
         speaker = "default" if "speaker" not in item else item["speaker"]
         language = "default" if "language" not in item else item["language"]
         item = {**item, **{"speaker": speaker, "language": language}}
-        dataset_info.data_dir = Path(dataset_info.data_dir)
-        audio = None
-        output_audio = None
-        spec = None
-        input_audio_save_path = self.save_dir / self.sep.join(
-            [
-                item["basename"],
-                speaker,
-                language,
-                f"audio-{self.input_sampling_rate}.npy",
-            ]
-        )
-        output_audio_save_path = self.save_dir / self.sep.join(
-            [
-                item["basename"],
-                speaker,
-                language,
-                f"audio-{self.output_sampling_rate}.npy",
-            ]
-        )
-        if process_text:
-            save_path = self.save_dir / self.sep.join(
-                [item["basename"], speaker, language, "text.npy"]
+        kwargs["dataset_info"].data_dir = Path(kwargs["dataset_info"].data_dir)
+        if kwargs.get("process_text"):
+            save_path = (
+                self.save_dir
+                / "text"
+                / self.sep.join([item["basename"], speaker, language, "text.pt"])
             )
-            if overwrite or not save_path.exists():
+            if not kwargs.get("overwrite") and save_path.exists():
+                self.counters.skipped_processes += 1
+            else:
                 torch.save(
                     self.extract_text_inputs(item["text"]),
                     save_path,
                 )
                 item["raw_text"] = item["text"]
-                if self.text_processor is not None:
-                    item["clean_text"] = self.text_processor.clean_text(item["text"])
-                else:
-                    logger.warning(
-                        "Text processor not initialized, skipping text cleaning"
-                    )
-            else:
-                self.skipped_processes += 1
-        if process_pfs:
-            save_path = self.save_dir / self.sep.join(
-                [item["basename"], speaker, language, "pfs.npy"]
+                item["clean_text"] = self.text_processor.clean_text(item["text"])
+        if kwargs.get("process_pfs"):
+            save_path = (
+                self.save_dir
+                / "text"
+                / self.sep.join([item["basename"], speaker, language, "pfs.pt"])
             )
-            if overwrite or not save_path.exists():
+            if not kwargs.get("overwrite") and save_path.exists():
+                self.counters.skipped_processes += 1
+            else:
                 torch.save(
                     self.extract_text_inputs(item["text"], use_pfs=True), save_path
                 )
-            else:
-                self.skipped_processes += 1
-        if process_sox_audio:
-            save_path = self.save_dir / self.sep.join(
-                [item["basename"], speaker, language, "processed.wav"]
+        if kwargs.get("process_sox_audio"):
+            save_path = (
+                self.save_dir
+                / "audio"
+                / self.sep.join([item["basename"], speaker, language, "processed.wav"])
             )
-            if overwrite or not save_path.exists():
+            if not kwargs.get("overwrite") and save_path.exists():
+                self.counters.skipped_processes += 1
+            else:
                 save_audio(
                     save_path,
                     self.process_audio(
-                        dataset_info.data_dir / (item["basename"] + ".wav"),
+                        kwargs["dataset_info"].data_dir / (item["basename"] + ".wav"),
                         use_effects=True,
-                        sox_effects=dataset_info.sox_effects,
+                        sox_effects=kwargs["dataset_info.sox_effects"],
                     ),
                     self.audio_config.alignment_sampling_rate,
                     encoding="PCM_S",
                     bits_per_sample=self.audio_config.alignment_bit_depth,
                 )
-            else:
-                self.skipped_processes += 1
-        if process_audio:
-            if (
-                overwrite
-                or not input_audio_save_path.exists()
-                or not output_audio_save_path.exists()
-            ):
-                audio, _ = self.process_audio(
-                    dataset_info.data_dir / (item["basename"] + ".wav"),
-                    resample_rate=self.input_sampling_rate,
-                )
-                if (
-                    audio is None
-                ):  # assumes that audio has been handled (ie too long if None)
-                    return None
-                try:
-                    assert torch.any(audio.isnan()).item() is False
-                except AssertionError:
-                    logger.error(
-                        f"Audio for file '{item['basename']}' contains NaNs. Skipping."
-                    )
-                    self.nans.append(item["basename"])
-                    return None
-                torch.save(audio, input_audio_save_path)
-                if self.input_sampling_rate != self.output_sampling_rate:
-                    output_audio, _ = self.process_audio(
-                        dataset_info.data_dir / (item["basename"] + ".wav"),
-                        resample_rate=self.output_sampling_rate,
-                    )
-
-                    torch.save(output_audio, output_audio_save_path)
-                else:
-                    output_audio = audio
-            else:
-                self.skipped_processes += 1
-        if process_spec:
-            input_spec_save_path = self.save_dir / self.sep.join(
-                [
-                    item["basename"],
-                    speaker,
-                    language,
-                    f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.npy",
-                ]
+        if any(
+            [
+                kwargs.get("process_audio"),
+                kwargs.get("process_energy"),
+                kwargs.get("process_pitch"),
+                kwargs.get("process_spec"),
+            ]
+        ):
+            self._preprocess_audio_or_dependent(
+                kwargs["dataset_info"],
+                item,
+                speaker,
+                language,
+                kwargs.get("overwrite", False),
+                kwargs.get("process_audio", False),
+                kwargs.get("process_energy", False),
+                kwargs.get("process_pitch", False),
+                kwargs.get("process_spec", False),
             )
-            output_spec_save_path = self.save_dir / self.sep.join(
-                [
-                    item["basename"],
-                    speaker,
-                    language,
-                    f"spec-{self.output_sampling_rate}-{self.audio_config.spec_type}.npy",
-                ]
+        if isinstance(kwargs["dataset_info"].label, str):
+            item["label"] = kwargs["dataset_info"].label
+        elif callable(kwargs["dataset_info"]["label"]):
+            item["label"] = kwargs["dataset_info"].label(item)
+        else:
+            raise ValueError(
+                f"Label for dataset '{kwargs['dataset_info'].label}' is neither a string nor a callable."
             )
-            if (
-                overwrite
-                or not input_spec_save_path.exists()
-                or not output_spec_save_path.exists()
-            ):
-                if audio is None:
-                    audio, _ = self.process_audio(
-                        dataset_info.data_dir / (item["basename"] + ".wav"),
-                        resample_rate=self.input_sampling_rate,
-                    )
-                if output_audio is None:
-                    output_audio, _ = self.process_audio(
-                        dataset_info.data_dir / (item["basename"] + ".wav"),
-                        resample_rate=self.output_sampling_rate,
-                    )
-                if audio is None:
-                    logger.warning(
-                        f"Audio for file '{item['basename']}' didn't pass validation. Skipping."
-                    )
-                    return None
-                spec = self.extract_spectral_features(
-                    audio, self.input_spectral_transform
-                )
-                try:
-                    assert torch.any(spec.isnan()).item() is False
-                except AssertionError:
-                    logger.error(
-                        f"Spectrogram for file '{item['basename']}' contains NaNs. Skipping."
-                    )
-                    self.nans.append(item["basename"])
-                    return None
-                torch.save(
-                    spec,
-                    input_spec_save_path,
-                )
-                if output_audio is not None:
-                    output_spec = self.extract_spectral_features(
-                        output_audio, self.output_spectral_transform
-                    )
-                    try:
-                        assert torch.any(output_spec.isnan()).item() is False
-                    except AssertionError:
-                        logger.error(
-                            f"Spectrogram for file '{item['basename']}' contains NaNs. Skipping."
-                        )
-                        self.nans.append(item["basename"])
-                        return None
-                    torch.save(output_spec, output_spec_save_path)
-                else:
-                    self.skipped_processes += 1
-            else:
-                self.skipped_processes += 1
-        if process_pitch:
-            save_path = self.save_dir / self.sep.join(
-                [item["basename"], speaker, language, "pitch.npy"]
-            )
-            if overwrite or not save_path.exists():
-                if audio is None:
-                    audio = self.load_audio_tensor(input_audio_save_path)
-                torch.save(
-                    self.extract_pitch(audio),
-                    save_path,
-                )
-            else:
-                self.skipped_processes += 1
-        if process_energy:
-            save_path = self.save_dir / self.sep.join(
-                [item["basename"], speaker, language, "energy.npy"]
-            )
-            if overwrite or not save_path.exists():
-                if spec is None:
-                    try:
-                        spec = torch.load(input_spec_save_path)
-                    except FileNotFoundError:
-                        logger.error(
-                            f"Could not find spec file at '{input_spec_save_path}'. Please process the spec first."
-                        )
-                        exit()
-                torch.save(self.extract_energy(spec), save_path)
-            else:
-                self.skipped_processes += 1
-        if process_duration:
-            save_path = self.save_dir / self.sep.join(
-                [item["basename"], speaker, language, "duration.npy"]
-            )
-            dur_path = dataset_info.textgrid_dir / (item["basename"] + ".TextGrid")
-            if not dur_path.exists():
-                logger.warning(
-                    f"File '{item['basename']}' is missing and will not be processed."
-                )
-                self.missing_files.append(item)
-                return None
-            if overwrite or not save_path.exists():
-                torch.save(self.extract_durations(dur_path), save_path)
-            else:
-                self.skipped_processes += 1
         return item
 
     def _create_stats_batch(self, x):
         mel_val = x["mel"]
-        mel_val[x["silence_mask"]] = np.nan
         result = {"mel": {"mean": torch.nanmean(mel_val)}}
         result["mel"]["std"] = torch.std(mel_val[~torch.isnan(mel_val)])
-        for vp in self.config.model.variance_adaptor.variance_predictors:
-            if vp.transform == "cwt":
-                var_val = x[f"variances_{vp.variance_type}_original_signal"].float()
-            else:
-                var_val = x[f"variances_{vp.variance_type}"].float()
-            var_val[x["silence_mask"]] = np.nan
-            result[vp.variance_type] = {}
-            result[vp.variance_type]["min"] = torch.min(var_val[~torch.isnan(var_val)])
-            result[vp.variance_type]["max"] = torch.max(var_val[~torch.isnan(var_val)])
-            result[vp.variance_type]["mean"] = torch.nanmean(var_val)
-            result[vp.variance_type]["std"] = torch.std(var_val[~torch.isnan(var_val)])
+        pitch = x["pitch"]
+        energy = x["energy"]
+        result["pitch"] = {
+            "min": torch.min(pitch[~torch.isnan(pitch)]),
+            "max": torch.max(pitch[~torch.isnan(pitch)]),
+            "mean": torch.nanmean(pitch),
+            "std": torch.std(pitch[~torch.isnan(pitch)]),
+        }
+        result["energy"] = {
+            "min": torch.min(energy[~torch.isnan(energy)]),
+            "max": torch.max(energy[~torch.isnan(energy)]),
+            "mean": torch.nanmean(energy),
+            "std": torch.std(energy[~torch.isnan(energy)]),
+        }
         return result
 
-    def compute_stats(self, overwrite=True):
-        """Compute the mean and standard deviation of the dataset."""
-        logger.info("Computing dataset statistics...")
-        stat_path = self.save_dir / "stats.json"
-        if stat_path.exists() and not overwrite:
-            logger.error("Stats already computed. Please re-run with --overwrite=True")
-            exit()
+    def normalize(self, energy=False, pitch=False, overwrite=True):
+        """Normalize pitch and energy to unit variance"""
+        logger.info("Scaling dataset statistics...")
         stats = {}
-        stat_list = []
-        filelist = self.config.training.filelist_loader(self.config.training.filelist)
-        stats["sample_size"] = len(filelist)
-        ds = FastSpeechDataset(filelist, self.config)
-        for entry in tqdm(
-            DataLoader(
-                ds,
-                num_workers=0,
-                # num_workers=multiprocessing.cpu_count(),
-                batch_size=4,
-                collate_fn=collate_fn,
-                drop_last=True,
-            ),
-            total=stats["sample_size"] // 4,
-            desc="Computing stats",
-        ):
-            stat_list.append(self._create_stats_batch(entry))
-        for key in stat_list[0].keys():
-            stats[key] = {}
-            for np_stat in stat_list[0][key].keys():
-                if np_stat == "std":
-                    std_sq = np.array([s[key][np_stat] for s in stat_list]) ** 2
-                    stats[key][np_stat] = float(np.sqrt(np.sum(std_sq) / len(std_sq)))
-                if np_stat == "mean":
-                    stats[key][np_stat] = float(
-                        np.mean([s[key]["mean"] for s in stat_list])
-                    )
-                if np_stat == "min":
-                    stats[key][np_stat] = float(
-                        np.min([s[key]["min"] for s in stat_list])
-                    )
-                if np_stat == "max":
-                    stats[key][np_stat] = float(
-                        np.max([s[key]["max"] for s in stat_list])
-                    )
-        with open(stat_path, "w") as f:
-            json.dump(stats, f, indent=4)
-        self.stats = stats
-        return self.stats
+        if energy:
+            energy_stats = self.energy_scaler.calculate_stats()
+            for path in tqdm(
+                (self.config.preprocessing.save_dir / "energy").glob("*energy*"),
+                desc="Normalizing energy values",
+            ):
+                energy = torch.load(path)
+                energy = self.energy_scaler.normalize(energy)
+                torch.save(energy, path)
+            stats["energy"] = energy_stats
+        if pitch:
+            pitch_stats = self.pitch_scaler.calculate_stats()
+            for path in tqdm(
+                (self.config.preprocessing.save_dir / "pitch").glob("*pitch*"),
+                desc="Normalizing pitch values",
+            ):
+                pitch = torch.load(path)
+                pitch = self.pitch_scaler.normalize(pitch)
+                torch.save(pitch, path)
+            stats["pitch"] = pitch_stats
+        return stats
+
+    def _collect_files_from_filelist(self, filelist, data_dir):
+        for f in filelist:
+            audio_path = data_dir / (f["basename"] + ".wav")
+            if not audio_path.exists():
+                logger.warning(f"File '{f}' is missing and will not be processed.")
+                self.counters.missing_files.append(f)
+            else:
+                yield f
 
     def preprocess(  # noqa: C901
         self,
         output_path="processed_filelist.psv",
+        compute_stats=False,
+        cpus=mp.cpu_count(),
         **kwargs,
     ):
+        if kwargs.get("process_audio"):
+            (self.save_dir / "audio").mkdir(parents=True, exist_ok=True)
+        if kwargs.get("process_energy"):
+            (self.save_dir / "energy").mkdir(parents=True, exist_ok=True)
+        if kwargs.get("process_pitch"):
+            (self.save_dir / "pitch").mkdir(parents=True, exist_ok=True)
+        if kwargs.get("process_spec"):
+            (self.save_dir / "spec").mkdir(parents=True, exist_ok=True)
+        if kwargs.get("process_text"):
+            (self.save_dir / "text").mkdir(parents=True, exist_ok=True)
         write_path = self.save_dir / output_path
         if write_path.exists() and not kwargs["overwrite"]:
             logger.error(
                 f"Preprocessed filelist at '{write_path}' already exists. Please either set overwrite=True or choose a new path"
             )
             exit()
-        # TODO: use multiprocessing
         processed = 0
         files = []
         # Sanity check
@@ -664,31 +733,91 @@ class Preprocessor:
             # TODO: more sanity checks
         # Actual processing
         dataset: Dataset
+        process_energy = kwargs.get("process_energy")
+        process_pitch = kwargs.get("process_pitch")
         for dataset in tqdm(self.datasets, total=len(self.datasets)):
             data_dir = Path(dataset.data_dir)
             filelist = dataset.filelist_loader(dataset.filelist)
-            for item in tqdm(
-                self.collect_files(filelist, data_dir=data_dir),
-                total=len(filelist),
-            ):
-                item = self._preprocess_item(
-                    item,
-                    dataset,
-                    **kwargs,
+            logger.info(f"Collecting files for {dataset.label}")
+
+            list_len = len(filelist)
+            all_valid_files = list(
+                self._collect_files_from_filelist(filelist, data_dir)
+            )
+            valid_len = len(all_valid_files)
+            chunk_size = int(valid_len / cpus)
+            if chunk_size == 0 or cpus < 2:
+                kwargs = {**{"dataset_info": dataset}, **kwargs}
+                for item in tqdm(all_valid_files):
+                    files.append(self._preprocess_item(item, kwargs))
+            else:
+                pool = Pool(nodes=cpus)
+                logger.info(
+                    f"Processing {list_len} files in {chunk_size} file chunks on {cpus} CPUs"
                 )
-                if item is not None:
-                    # Add Label
-                    if isinstance(dataset.label, str):
-                        item["label"] = dataset.label
-                    elif callable(dataset["label"]):
-                        item["label"] = dataset.label(item)
+                chunks = [
+                    all_valid_files[i : i + chunk_size]
+                    for i in range(0, valid_len, chunk_size)
+                ]
+                kwargs_iterable = [
+                    {
+                        **{
+                            "dataset_info": dataset,
+                            "pbar": i < min(5, cpus),
+                            "position": i + 1,
+                        },
+                        **kwargs,
+                    }
+                    for i, _ in enumerate(range(len(chunks)))
+                ]
+
+                def _preprocess_chunk(chunk, kwargs):
+                    items = []
+                    if kwargs["pbar"]:
+                        for item in tqdm(
+                            chunk,
+                            position=kwargs["position"],
+                            desc=f"Subprocess #{kwargs['position']} progress",
+                        ):
+                            items.append(self._preprocess_item(item, kwargs))
                     else:
-                        raise ValueError(
-                            f"Label for dataset '{dataset.label}' is neither a string nor a callable."
-                        )
-                    files.append(item)
-                    processed += 1
+                        for item in chunk:
+                            items.append(self._preprocess_item(item, kwargs))
+                    return items, self.counters, self.energy_scaler, self.pitch_scaler
+
+                for items, counters, e_scaler, p_scaler in tqdm(
+                    pool.uimap(_preprocess_chunk, chunks, kwargs_iterable),
+                    position=0,
+                    desc="Chunk processing progress",
+                    total=len(chunks),
+                ):
+                    files += items
+                    self.counters.duration += counters.duration
+                    self.counters.nans += counters.nans
+                    self.counters.audio_too_long += counters.audio_too_long
+                    self.counters.audio_too_short += counters.audio_too_short
+                    self.counters.skipped_processes += counters.skipped_processes
+                    if process_energy:
+                        self.energy_scaler.data.extend(e_scaler.data)
+                    if process_pitch:
+                        self.pitch_scaler.data.extend(p_scaler.data)
+                    processed += len(items)
 
         logger.info(self.report(processed))
         write_filelist(files, self.save_dir / output_path)
-        return files
+        if compute_stats:
+            logger.info(
+                "Normalizing pitch and energy to unit variance and calculating stats"
+            )
+            stat_path = self.save_dir / "stats.json"
+            stats = self.normalize(
+                energy=process_energy,
+                pitch=process_pitch,
+                overwrite=kwargs["overwrite"],
+            )
+            if stat_path.exists():
+                with open(stat_path, "r", encoding="utf8") as f:
+                    old_stats = json.load(f)
+                stats = {**old_stats, **stats}
+            with open(stat_path, "w", encoding="utf8") as f:
+                json.dump(stats, f)

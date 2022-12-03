@@ -8,9 +8,10 @@ panphon==0.20.0
 pydantic==1.10.2
 pympi-ling==1.70.2
 pysdtw==0.0.5
-pytorch_lightning==1.7.4
+pytorch_lightning==1.8.1
 pyworld == 0.2.10
 PyYAML>=5.1
 setuptools==59.5.0 # https://github.com/pytorch/pytorch/issues/69894
 tabulate==0.8.10
+torchaudio==0.13.0
 typer[all]==0.6.1

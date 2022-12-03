@@ -1,7 +1,7 @@
 from unicodedata import normalize
 from unittest import TestCase, main
 
-from smts.config.base_config import SMTSConfig
+from smts.model.e2e.config import SMTSConfig
 from smts.text import TextProcessor
 
 
@@ -16,9 +16,11 @@ class TextTest(TestCase):
     def test_text_to_sequence(self):
         text = "hello world"
         sequence = self.base_text_processor.text_to_sequence(text)
-        self.assertEqual(self.base_text_processor.sequence_to_text(sequence), text)
+        self.assertEqual(
+            self.base_text_processor.token_sequence_to_text(sequence), text
+        )
 
-    def test_sequence_to_text(self):
+    def test_token_sequence_to_text(self):
         sequence = [27, 24, 31, 31, 34, 19, 42, 34, 37, 31, 23]
         self.assertEqual(
             self.base_text_processor.text_to_sequence("hello world"), sequence
@@ -28,7 +30,9 @@ class TextTest(TestCase):
         text = "hello world"
         text_upper = "HELLO WORLD"
         sequence = self.base_text_processor.text_to_sequence(text_upper)
-        self.assertEqual(self.base_text_processor.sequence_to_text(sequence), text)
+        self.assertEqual(
+            self.base_text_processor.token_sequence_to_text(sequence), text
+        )
 
     def test_phonological_features(self):
         moh_config = (
@@ -133,15 +137,20 @@ class TextTest(TestCase):
         )
         text = "he\u0301llo world"
         sequence = accented_text_processor.text_to_sequence(text)
-        self.assertNotEqual(accented_text_processor.sequence_to_text(sequence), text)
+        self.assertNotEqual(
+            accented_text_processor.token_sequence_to_text(sequence), text
+        )
         self.assertEqual(
-            accented_text_processor.sequence_to_text(sequence), normalize("NFC", text)
+            accented_text_processor.token_sequence_to_text(sequence),
+            normalize("NFC", text),
         )
 
     def test_missing_symbol(self):
         text = "h3llo world"
         sequence = self.base_text_processor.text_to_sequence(text)
-        self.assertNotEqual(self.base_text_processor.sequence_to_text(sequence), text)
+        self.assertNotEqual(
+            self.base_text_processor.token_sequence_to_text(sequence), text
+        )
         self.assertIn("3", self.base_text_processor.missing_symbols)
         self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
 

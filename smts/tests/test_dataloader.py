@@ -1,7 +1,9 @@
 from unittest import TestCase, main
 
-from smts.config.base_config import SMTSConfig
+from tqdm import tqdm
+
 from smts.dataloader import BaseDataModule
+from smts.model.e2e.config import SMTSConfig
 from smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     HiFiGANDataModule,
     SpecDataset,
@@ -27,7 +29,7 @@ class DataLoaderTest(TestCase):
             self.config.vocoder,
             use_segments=True,
         )
-        for sample in dataset:
+        for sample in tqdm(dataset):
             spec, audio, basename, spec_from_audio = sample
             self.assertTrue(isinstance(basename, str))
             self.assertEqual(spec.size(), spec_from_audio.size())

@@ -2,9 +2,10 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase, main
 
+import torch
 from torch import float32
 
-from smts.config.base_config import SMTSConfig
+from smts.model.e2e.config import SMTSConfig
 from smts.preprocessor import Preprocessor
 from smts.utils import read_filelist
 
@@ -147,9 +148,19 @@ class PreprocessingTest(TestCase):
             audio, _ = self.preprocessor.process_audio(
                 self.data_dir / (entry["filename"] + ".wav")
             )
-            durs = self.preprocessor.extract_durations(
-                self.data_dir / (entry["filename"] + ".TextGrid")
+            dur_path = (
+                self.preprocessor.save_dir
+                / "duration"
+                / self.preprocessor.sep.join(
+                    [
+                        entry["filename"],
+                        entry.get("speaker", "default"),
+                        entry.get("language", "default"),
+                        "duration.pt",
+                    ]
+                )
             )
+            durs = torch.load(dur_path)
             feats = self.preprocessor.extract_spectral_features(
                 audio, self.preprocessor.input_spectral_transform
             )
@@ -184,9 +195,19 @@ class PreprocessingTest(TestCase):
             audio, _ = self.preprocessor.process_audio(
                 self.data_dir / (entry["filename"] + ".wav")
             )
-            durs = self.preprocessor.extract_durations(
-                self.data_dir / (entry["filename"] + ".TextGrid")
+            dur_path = (
+                self.preprocessor.save_dir
+                / "duration"
+                / self.preprocessor.sep.join(
+                    [
+                        entry["filename"],
+                        entry.get("speaker", "default"),
+                        entry.get("language", "default"),
+                        "duration.pt",
+                    ]
+                )
             )
+            durs = torch.load(dur_path)
             feats = self.preprocessor.extract_spectral_features(
                 audio, self.preprocessor.input_spectral_transform
             )
@@ -196,7 +217,7 @@ class PreprocessingTest(TestCase):
             #     / ("eng-LJSpeech-duration-" + entry["filename"] + ".npy")
             # )
             # Ensure durations same number of frames as spectral features
-            self.assertEqual(feats.size(1), sum(x["dur_frames"] for x in durs))
+            self.assertEqual(feats.size(1), sum(durs))
 
     def test_energy(self):
         frame_energy_config = SMTSConfig.load_config_from_path().vocoder.update_config(
@@ -207,9 +228,19 @@ class PreprocessingTest(TestCase):
             audio, _ = self.preprocessor.process_audio(
                 self.data_dir / (entry["filename"] + ".wav")
             )
-            durs = self.preprocessor.extract_durations(
-                self.data_dir / (entry["filename"] + ".TextGrid")
+            dur_path = (
+                self.preprocessor.save_dir
+                / "duration"
+                / self.preprocessor.sep.join(
+                    [
+                        entry["filename"],
+                        entry.get("speaker", "default"),
+                        entry.get("language", "default"),
+                        "duration.pt",
+                    ]
+                )
             )
+            durs = torch.load(dur_path)
             # ming024_energy = np.load(
             #     self.data_dir
             #     / "ming024"

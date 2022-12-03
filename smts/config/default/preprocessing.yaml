@@ -3,7 +3,7 @@ pitch_type: "pyworld"
 pitch_phone_averaging: True
 energy_phone_averaging: True
 value_separator: "--"
-save_dir: "./preprocessed/YourLanguageHere"
+save_dir: "./preprocessed/YourDataSet"
 audio:
   min_audio_length: 0.25
   max_audio_length: 11.0

@@ -1,6 +1,6 @@
 from unittest import TestCase, main
 
-from smts.config.base_config import SMTSConfig
+from smts.model.e2e.config import SMTSConfig
 from smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 
 
