@@ -1,13 +1,14 @@
 import re
 from collections import Counter
 from itertools import chain
-from typing import Dict, Union
+from typing import Dict, List, Union
 
 from loguru import logger
 from nltk.tokenize import RegexpTokenizer
 
 from smts.config import ConfigError
-from smts.config.base_config import AlignerConfig, FeaturePredictionConfig
+from smts.model.aligner.config import AlignerConfig
+from smts.model.feature_prediction.config import FeaturePredictionConfig
 from smts.text.features import get_features
 
 
@@ -119,6 +120,10 @@ class TextProcessor:
         cleaned_text = self._tokenizer.tokenize(cleaned_text)
         return [self._symbol_to_id[symbol] for symbol in cleaned_text]
 
-    def sequence_to_text(self, sequence):
+    def token_sequence_to_text_sequence(self, sequence) -> List[str]:
+        """Converts a sequence of IDs to a sequence of text characters"""
+        return [self._id_to_symbol[symbol_id] for symbol_id in sequence]
+
+    def token_sequence_to_text(self, sequence) -> str:
         """Converts a sequence of IDs back to a string"""
-        return "".join(self._id_to_symbol[symbol_id] for symbol_id in sequence)
+        return "".join(self.token_sequence_to_text_sequence(sequence))

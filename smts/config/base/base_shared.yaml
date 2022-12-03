@@ -102,6 +102,7 @@ feature_prediction:
   training:
     use_weighted_sampler: False
     freeze_layers:
+      all_layers: False
       encoder: False
       decoder: False
       postnet: False
@@ -184,3 +185,4 @@ vocoder:
     val_data_workers: 0
     train_data_workers: 0
   preprocessing: "./config/default/preprocessing.yaml"
+training: "./model/e2e/config/training.yaml"

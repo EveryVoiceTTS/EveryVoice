@@ -3,7 +3,7 @@ pitch_type: "pyworld"
 pitch_phone_averaging: True
 energy_phone_averaging: True
 value_separator: "--"
-save_dir: "./preprocessed/YourDataSet"
+save_dir: "./preprocessed/YourLanguageHere"
 audio:
   min_audio_length: 0.25
   max_audio_length: 11.0
@@ -26,10 +26,10 @@ audio:
   vocoder_segment_size: 8192
 source_data:
   - label: "LJ_TEST"
-    data_dir: "./tests/data/lj/wavs"
+    data_dir: "./data/lj/wavs"
     textgrid_dir: "./tests/data/lj/textgrids"
     filelist_loader: "smts.utils.load_lj_metadata_hifigan" # TODO: sort out callables
-    filelist: "./filelists/lj_full.psv"
+    filelist: "./filelists/lj_test.psv"
     sox_effects:
       - ["channels", "1"]  # convert to mono
       - ["rate", "16000"]  # resample

@@ -19,3 +19,4 @@ vocoder:
     training:
       filelist: "./preprocessed/OpenSLR/processed_filelist.psv"
     preprocessing: "./config/openslr/preprocessing.yaml"
+training: "./model/e2e/config/training.yaml"

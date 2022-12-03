@@ -17,7 +17,7 @@ class ConfigModel(BaseModel):
     def update_config(self, new_config: dict):
         """Update the config with new values"""
         new_data = self.combine_configs(dict(self), new_config)
-        self.__init__(**new_data)
+        self.__init__(**new_data)  # type: ignore
         return self
 
     @staticmethod
@@ -27,7 +27,7 @@ class ConfigModel(BaseModel):
         new_dict = dict(new_dict)
         for key, val in new_dict.items():
             if isinstance(val, Mapping):
-                tmp = ConfigModel.combine_configs(orig_dict.get(key, {}), val)
+                tmp = ConfigModel.combine_configs(orig_dict.get(key, {}), val)  # type: ignore
                 orig_dict[key] = tmp
             else:
                 orig_dict[key] = new_dict[key]
@@ -70,13 +70,15 @@ class PartialConfigModel(ConfigModel):
 class LoggerConfig(ConfigModel):
     name: str
     save_dir: DirectoryPath
-    sub_dir: Union[str, Callable]
+    sub_dir: str
     version: str
 
     @convert_callables(kwargs_to_convert=["sub_dir"])
     @convert_paths(kwargs_to_convert=["save_dir"])
     def __init__(self, **data) -> None:
         """Custom init to process file paths"""
+        if callable(data["sub_dir"]):
+            data["sub_dir"] = data["sub_dir"]()
         if not data["save_dir"].exists():
             logger.info(f"Directory at {data['save_dir']} does not exist. Creating...")
             data["save_dir"].mkdir(parents=True, exist_ok=True)

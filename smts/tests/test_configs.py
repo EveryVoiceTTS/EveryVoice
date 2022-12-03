@@ -5,8 +5,8 @@ from unittest import TestCase, main
 import yaml
 
 from smts.config import CONFIGS
-from smts.config.base_config import SMTSConfig
-from smts.config.base_config import __file__ as smts_file
+from smts.config import __file__ as smts_file
+from smts.model.e2e.config import SMTSConfig
 from smts.utils import expand_config_string_syntax, lower
 
 
@@ -16,7 +16,7 @@ class ConfigTest(TestCase):
     data_dir = Path(__file__).parent / "data"
 
     def setUp(self) -> None:
-        with open(Path(smts_file).parent / "base" / "base.yaml") as f:
+        with open(Path(smts_file).parent / "base" / "base_composed.yaml") as f:
             self.yaml_config = yaml.safe_load(f)
             self.config = SMTSConfig(**self.yaml_config)
 

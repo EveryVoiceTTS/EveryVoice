@@ -1,6 +1,6 @@
 import pandas as pd
 
-from smts.config.base_config import FeaturePredictionConfig
+from smts.model.feature_prediction.config import FeaturePredictionConfig
 
 
 class LookupTables:

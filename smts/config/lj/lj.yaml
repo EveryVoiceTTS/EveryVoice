@@ -14,3 +14,4 @@ vocoder:
   override_with:
     training:
       filelist: "./preprocessed/LJ/processed_filelist.psv"
+training: "./model/e2e/config/lj_training.yaml"
