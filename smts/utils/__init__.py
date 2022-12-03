@@ -1,10 +1,11 @@
 import csv
 import json
+import os
 import re
 from datetime import datetime
 from os.path import dirname, isabs, isfile, splitext
 from pathlib import Path
-from typing import Any, List, Union
+from typing import Any, Dict, List, Union
 from unicodedata import normalize
 
 import yaml
@@ -15,6 +16,10 @@ import smts
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
+
+
+def return_configs_from_dir(dir: Path) -> Dict[str, Path]:
+    return {os.path.basename(path)[:-5]: path for path in dir.glob("*.yaml")}
 
 
 def get_current_time():

@@ -1,3 +1,6 @@
+import random
+from typing import Tuple
+
 import numpy as np
 import torch
 import torchaudio.transforms as T
@@ -27,8 +30,7 @@ def collate_fn(data):
         if isinstance(data[key][0], np.ndarray):
             data[key] = [torch.tensor(x) for x in data[key]]
         if torch.is_tensor(data[key][0]):
-            pad_val = 1 if "silence_mask" in key else 0
-            data[key] = pad_sequence(data[key], batch_first=True, padding_value=pad_val)
+            data[key] = pad_sequence(data[key], batch_first=True, padding_value=0)
         if isinstance(data[key][0], int):
             data[key] = torch.tensor(data[key]).long()
     return data
@@ -115,3 +117,32 @@ def get_spectral_transform(
         )
     else:
         return None
+
+
+def get_segments(
+    t: torch.Tensor, segment_size: int, start=None
+) -> Tuple[torch.Tensor, int]:
+    """Randomly select a segment from a tensor, if the segment is too short, pad it with zeros
+
+    Args:
+        t (torch.Tensor): A tensor (time as second dimension)
+        segment_size (int): segment size (should be in frames if spectrogram input or samples if waveform input)
+        start (_type_, optional): start at specific input, otherwise random. Defaults to None.
+
+    Returns:
+        Tuple[torch.Tensor, int]: the segment plus the start index of the segment
+    """
+    t_len = t.size(1)
+    if t_len >= segment_size:
+        max_start = t_len - segment_size - 1
+        if start is not None:
+            assert (
+                start <= max_start
+            ), f"Segment start was set to be {start} but max is {max_start}"
+        else:
+            start = random.randint(0, max_start)
+        t = t[:, start : start + segment_size]
+    else:
+        start = 0
+        t = torch.nn.functional.pad(t, (0, segment_size - t_len), "constant")
+    return t, start

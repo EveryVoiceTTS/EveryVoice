@@ -1,16 +1,14 @@
 import os
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 import pytorch_lightning as pl
 import torch
 from torch.utils.data import DataLoader
 
-from smts.config.base_config import (  # type: ignore
-    AlignerConfig,
-    FeaturePredictionConfig,
-    VocoderConfig,
-)
 from smts.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
+from smts.model.aligner.config import AlignerConfig
+from smts.model.feature_prediction.config import FeaturePredictionConfig
+from smts.model.vocoder.config import VocoderConfig
 
 
 class BaseDataModule(pl.LightningDataModule):
@@ -19,7 +17,7 @@ class BaseDataModule(pl.LightningDataModule):
         config: Union[AlignerConfig, VocoderConfig, FeaturePredictionConfig],
     ):
         super().__init__()
-        self.collate_fn = None
+        self.collate_fn: Union[Callable, None] = None
         self.config = config
         self.use_weighted_sampler = False
         self.train_path = os.path.join(
@@ -54,6 +52,16 @@ class BaseDataModule(pl.LightningDataModule):
             sampler=sampler,
         )
 
+    def predict_dataloader(self):
+        return DataLoader(
+            self.train_dataset + self.val_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.config.training.train_data_workers,
+            pin_memory=True,
+            drop_last=False,
+            collate_fn=self.collate_fn,
+        )
+
     def val_dataloader(self):
         sampler = (
             ImbalancedDatasetSampler(self.val_dataset)
@@ -81,8 +89,3 @@ class BaseDataModule(pl.LightningDataModule):
         raise NotImplementedError(
             "The base data module does not have a method implemented for loading a dataset. Please use another Data Loader that inherits the BaseDataModule class."
         )
-
-
-class E2EDataModule(BaseDataModule):
-    def load_dataset(self):
-        pass

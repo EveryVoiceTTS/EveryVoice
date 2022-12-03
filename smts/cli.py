@@ -6,13 +6,17 @@ import typer
 from loguru import logger
 
 from smts.config import CONFIGS
-from smts.config.base_config import SMTSConfig  # type: ignore
 from smts.model.aligner.DeepForcedAligner.dfaligner.cli import app as dfaligner_app
+from smts.model.e2e.cli import app as e2e_app
+from smts.model.e2e.config import SMTSConfig  # type: ignore
+from smts.model.feature_prediction.FastSpeech2_lightning.fs2.cli import app as fs2_app
 from smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import app as hfgl_app
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
 app.add_typer(dfaligner_app, name="dfa")
+app.add_typer(e2e_app, name="e2e")
 app.add_typer(hfgl_app, name="hifigan")
+app.add_typer(fs2_app, name="fs2")
 
 _config_keys = {k: k for k in CONFIGS.keys()}
 
@@ -41,6 +45,7 @@ class TestSuites(str, Enum):
 
 class Model(str, Enum):
     aligner = "aligner"
+    e2e = "e2e"
     hifigan = "hifigan"
     feat = "feat"
 
