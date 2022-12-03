@@ -1,0 +1,19 @@
+batch_size: 16
+train_split: 0.99
+save_top_k_ckpts: 3
+ckpt_steps: null
+ckpt_epochs: 1
+max_epochs: 1000
+seed: 1234
+finetune_checkpoint: null
+vocoder_checkpoint: "./logs/LJ/base-vocoder/checkpoints/last.ckpt"
+feature_prediction_checkpoint: "./logs/LJ/fastspeech2-base/checkpoints/last.ckpt"
+filelist: "./preprocessed/LJ/processed_filelist.psv"
+filelist_loader: "smts.utils.generic_dict_loader"
+logger:
+  name: "Base Experiment"
+  save_dir: "./logs"
+  sub_dir: "smts.utils.get_current_time"
+  version: "e2e"
+val_data_workers: 0
+train_data_workers: 4

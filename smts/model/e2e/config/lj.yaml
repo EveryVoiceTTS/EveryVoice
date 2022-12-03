@@ -1,0 +1,13 @@
+aligner:
+  extend_from: "./config/default/aligner.yaml"
+  override_with:
+    training:
+      filelist: "./preprocessed/LJ/processed_filelist.psv"
+    preprocessing: "./config/lj/preprocessing.yaml"
+feature_prediction: "./model/feature_prediction/FastSpeech2_lightning/fs2/config/lj.yaml"
+vocoder:
+  extend_from: "./config/default/istft.yaml"
+  override_with:
+    training:
+      filelist: "./preprocessed/LJ/processed_filelist.psv"
+training: "./model/e2e/config/lj_training.yaml"

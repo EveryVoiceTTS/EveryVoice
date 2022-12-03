@@ -7,6 +7,7 @@ from torch.utils.data import DataLoader
 
 from smts.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
 from smts.model.aligner.config import AlignerConfig
+from smts.model.e2e.config import SMTSConfig
 from smts.model.feature_prediction.config import FeaturePredictionConfig
 from smts.model.vocoder.config import VocoderConfig
 
@@ -14,7 +15,9 @@ from smts.model.vocoder.config import VocoderConfig
 class BaseDataModule(pl.LightningDataModule):
     def __init__(
         self,
-        config: Union[AlignerConfig, VocoderConfig, FeaturePredictionConfig],
+        config: Union[
+            AlignerConfig, VocoderConfig, FeaturePredictionConfig, SMTSConfig
+        ],
     ):
         super().__init__()
         self.collate_fn: Union[Callable, None] = None
