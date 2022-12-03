@@ -11,7 +11,7 @@ feature_prediction_checkpoint: "./logs/LJ/fastspeech2-base/checkpoints/last.ckpt
 filelist: "./preprocessed/LJ/processed_filelist.psv"
 filelist_loader: "smts.utils.generic_dict_loader"
 logger:
-  name: "Base Experiment"
+  name: "LJ"
   save_dir: "./logs"
   sub_dir: "smts.utils.get_current_time"
   version: "e2e"
