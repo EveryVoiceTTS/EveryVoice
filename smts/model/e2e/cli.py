@@ -40,7 +40,7 @@ def train(
     lr_monitor = LearningRateMonitor(logging_interval="step")
     logger.info("Starting joint training of end-to-end model.")
     ckpt_callback = ModelCheckpoint(
-        monitor="training/total_loss",
+        monitor="validation/mel_spec_error",
         mode="min",
         save_last=True,
         save_top_k=config.training.save_top_k_ckpts,
