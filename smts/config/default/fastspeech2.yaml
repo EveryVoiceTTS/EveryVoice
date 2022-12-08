@@ -56,7 +56,7 @@ model:
   learn_alignment: False
   max_length: 1000
   mel_loss: "mse"
-  mel_loss_weight: 5e-1
+  mel_loss_weight: 1
   phonological_feats_size: 38
   use_phonological_feats: False
   use_postnet: True

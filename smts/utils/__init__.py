@@ -170,6 +170,31 @@ def generic_dict_loader(path, fieldnames=None):
     return files
 
 
+def generic_csv_loader(path):
+    with open(path, "r", newline="", encoding="utf8") as f:
+        reader = csv.reader(f, delimiter="|", quoting=csv.QUOTE_NONE, escapechar="\\")
+        return list(reader)
+
+
+def write_dict(path, data, fieldnames):
+    with open(
+        path,
+        "w",
+        newline="",
+        encoding="utf8",
+    ) as f:
+        writer = csv.DictWriter(
+            f,
+            fieldnames=fieldnames,
+            delimiter="|",
+            quoting=csv.QUOTE_NONE,
+            escapechar="\\",
+        )
+        writer.writeheader()
+        for line in data:
+            writer.writerow(line)
+
+
 def collapse_whitespace(text):
     return re.sub(_whitespace_re, " ", text)
 

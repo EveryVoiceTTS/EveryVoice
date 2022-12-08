@@ -1,18 +1,32 @@
+import contextlib
 from collections.abc import Mapping
 from pathlib import Path
+from types import FunctionType
 from typing import Callable, Tuple, Union
 
 from loguru import logger
-from pydantic import BaseModel, DirectoryPath, Extra, FilePath
+from pydantic import BaseModel, DirectoryPath, Extra, Field, FilePath
 
 from smts.config.utils import convert_callables, convert_paths
-from smts.utils import load_config_from_json_or_yaml_path, rel_path_to_abs_path
+from smts.utils import (
+    generic_dict_loader,
+    load_config_from_json_or_yaml_path,
+    rel_path_to_abs_path,
+)
 
 
 class ConfigModel(BaseModel):
     class Config:
         extra = Extra.forbid
         use_enum_values = True
+        json_encoders = {
+            Callable: lambda fn: ".".join(
+                [fn.__module__, fn.__name__]
+            ),  # This doesn't seem to work for some reason: https://github.com/pydantic/pydantic/issues/4151
+            FunctionType: lambda fn: ".".join(
+                [fn.__module__, fn.__name__]
+            ),  # But this does
+        }
 
     def update_config(self, new_config: dict):
         """Update the config with new values"""
@@ -68,37 +82,41 @@ class PartialConfigModel(ConfigModel):
 
 
 class LoggerConfig(ConfigModel):
-    name: str
-    save_dir: DirectoryPath
-    sub_dir: str
-    version: str
+    name: str = "Base Experiment"
+    save_dir: DirectoryPath = Path("./logs")
+    sub_dir: str = "smts.utils.get_current_time"
+    version: str = "base"
 
     @convert_callables(kwargs_to_convert=["sub_dir"])
     @convert_paths(kwargs_to_convert=["save_dir"])
     def __init__(self, **data) -> None:
         """Custom init to process file paths"""
-        if callable(data["sub_dir"]):
-            data["sub_dir"] = data["sub_dir"]()
-        if not data["save_dir"].exists():
-            logger.info(f"Directory at {data['save_dir']} does not exist. Creating...")
-            data["save_dir"].mkdir(parents=True, exist_ok=True)
+        # Supress keyerrors because defaults will be used if not supplied
+        with contextlib.suppress(KeyError):
+            if callable(data["sub_dir"]):
+                data["sub_dir"] = data["sub_dir"]()
+            if not data["save_dir"].exists():
+                logger.info(
+                    f"Directory at {data['save_dir']} does not exist. Creating..."
+                )
+                data["save_dir"].mkdir(parents=True, exist_ok=True)
         super().__init__(**data)
 
 
 class BaseTrainingConfig(ConfigModel):
-    batch_size: int
-    train_split: float
-    save_top_k_ckpts: int
-    ckpt_steps: Union[int, None]
-    ckpt_epochs: Union[int, None]
-    max_epochs: int
-    seed: int
-    finetune_checkpoint: Union[FilePath, None]
-    filelist: Union[Path, FilePath]
-    filelist_loader: Callable
-    logger: LoggerConfig
-    val_data_workers: int
-    train_data_workers: int
+    batch_size: int = 16
+    train_split: float = 0.9
+    save_top_k_ckpts: int = 5
+    ckpt_steps: Union[int, None] = None
+    ckpt_epochs: Union[int, None] = 1
+    max_epochs: int = 1000
+    seed: int = 1234
+    finetune_checkpoint: Union[FilePath, None] = None
+    filelist: Union[Path, FilePath] = Path("./path/to/your/preprocessed/filelist.psv")
+    filelist_loader: Callable = generic_dict_loader
+    logger: LoggerConfig = Field(default_factory=LoggerConfig)
+    val_data_workers: int = 0
+    train_data_workers: int = 0
 
     @convert_callables(kwargs_to_convert=["filelist_loader"])
     @convert_paths(kwargs_to_convert=["finetune_checkpoint", "filelist"])
@@ -107,36 +125,33 @@ class BaseTrainingConfig(ConfigModel):
         **data,
     ) -> None:
         """Custom init to process file paths"""
-        if not data["filelist"].exists():
-            logger.warning(
-                f"Filelist {data['filelist']} does not exist. If you're just preprocessing, that's fine, otherwise this will cause an error"
-            )
+        # Supress keyerrors because defaults will be used if not supplied
         super().__init__(
             **data,
         )
 
 
 class BaseOptimizer(ConfigModel):
-    learning_rate: float
-    eps: float
-    weight_decay: int
+    learning_rate: float = 1e-4
+    eps: float = 1e-8
+    weight_decay: float = 0.01
 
 
 class RMSOptimizer(BaseOptimizer):
-    alpha: float
+    alpha: float = 0.99
     name: str = "rms"
 
 
 class AdamOptimizer(BaseOptimizer):
-    betas: Tuple[float, float]
+    betas: Tuple[float, float] = (0.9, 0.98)
     name: str = "adam"
 
 
 class AdamWOptimizer(BaseOptimizer):
-    betas: Tuple[float, float]
+    betas: Tuple[float, float] = (0.9, 0.98)
     name: str = "adamw"
 
 
 class NoamOptimizer(AdamOptimizer):
-    warmup_steps: int
+    warmup_steps: int = 4000
     name: str = "noam"
