@@ -2,18 +2,150 @@
 #
 #
 import json
+import string
 import sys
 from collections import Counter
 from pathlib import Path
 from typing import Dict, List, Tuple, Union
+from unicodedata import normalize
 
 import simple_term_menu
 import yaml
+from g2p import make_g2p
+from g2p.exceptions import InvalidLanguageCode, NoPath
+from g2p.transducer import CompositeTransducer
 from loguru import logger
 from pydantic import BaseModel
+from readalongs.util import get_langs
 from rich import print
 from rich.panel import Panel
 from tqdm import tqdm
+
+from smts.utils import lower, nfc_normalize
+
+
+def get_single_lang_information(
+    supported_langs, unsupported_langs
+) -> Tuple[Union[None, Dict[str, str]], Union[None, Dict[str, str]]]:
+    """Get language information for the user's dataset through terminal prompts
+
+    Returns:
+        Tuple[Union[None, Dict[str, str]], Union[None, Dict[str, str]]]: A tuple containing the selected language or None
+    """
+    supported_langs_choices = ["[none]: my language isn't here"] + [
+        f"[{k}]: {v}" for k, v in supported_langs
+    ]
+    all_langs_choices = [f"[{lang.alpha_3}]: {lang.name}" for lang in unsupported_langs]
+    supported_langs_choice: int = get_menu_prompt(  # type: ignore
+        "Which of the following supported languages are in your dataset?",
+        supported_langs_choices,
+        multi=False,
+        search=True,
+    )
+    unsupported_langs_choice = None
+    if supported_langs_choice == 0:
+        unsupported_langs_choice: int = get_menu_prompt(  # type: ignore
+            "Please select all the languages in your dataset:",
+            all_langs_choices,
+            multi=False,
+            search=True,
+        )
+    return (
+        supported_langs[supported_langs_choice] if supported_langs_choice else None,
+        unsupported_langs[unsupported_langs_choice]
+        if unsupported_langs_choice
+        else None,
+    )
+
+
+def get_symbols_from_g2p_mapping(in_lang: str, out_lang: str) -> Dict[str, List[str]]:
+    try:
+        transducer = make_g2p(in_lang, out_lang)
+    except (InvalidLanguageCode, NoPath) as e:
+        logger.warning(e)
+        return {}
+    if isinstance(transducer, CompositeTransducer):
+        chars = transducer._transducers[-1].mapping.mapping
+    else:
+        chars = transducer.mapping.mapping
+    return {
+        f"{in_lang}_ipa": list({normalize("NFC", c["out"]) for c in chars}),
+        f"{in_lang}_char": list({normalize("NFC", c["in"]) for c in chars}),
+    }
+
+
+def get_lang_information() -> Tuple[Dict[str, str], Dict[str, str]]:
+    """Get language information for the user's dataset through terminal prompts
+
+    Returns:
+        Tuple[List[Dict[str, str]], List[Dict[str, str]]]: A tuple containing Supported Languages and Unsupported Languages - each are lists of dicts with iso code keys and language name values
+    """
+    logger.info("Getting supported languages...")
+    from pycountry import languages
+
+    supported_langs = get_langs()[1].items()
+    all_langs = list(languages)
+    supported_langs_choices = ["[none]: my language isn't here"] + [
+        f"[{k}]: {v}" for k, v in supported_langs
+    ]
+    all_langs_choices = [f"[{lang.alpha_3}]: {lang.name}" for lang in languages]
+    langs: List[int] = get_menu_prompt(  # type: ignore
+        "Which of the following supported languages are in your dataset?",
+        supported_langs_choices,
+        multi=True,
+        search=True,
+    )
+    unsupported_langs: List[int] = []
+    if 0 in langs:
+        unsupported_langs: List[int] = get_menu_prompt(  # type: ignore
+            "Please select all the languages in your dataset:",
+            all_langs_choices,
+            multi=True,
+            search=True,
+        )
+    langs = [x - 1 for x in langs if x]  # remove "none" index from count
+    supported_langs = list(supported_langs)
+    return {supported_langs[i][0]: supported_langs[i][1] for i in langs}, {
+        all_langs[i].alpha_3: all_langs[i].name for i in unsupported_langs
+    }
+
+
+def get_symbol_set(
+    filelist_data: List[Dict[str, str]],
+    supported_langs,
+    unsupported_langs,
+    to_filter="-';:,.!?¡¿—…\"«»“” ",
+):
+    symbols = {}
+    for lang in supported_langs.keys():
+        if lang == "eng":
+            symbols["eng"] = list(string.ascii_letters)
+        else:
+            symbols = {**symbols, **get_symbols_from_g2p_mapping(lang, f"{lang}-ipa")}
+    for iso, lang in unsupported_langs.items():
+        logger.info(
+            f"We don't support [{iso}] - {lang} so we will just guess. You can always update/change the symbol set in your configuration file later."
+        )
+        possible_values = [iso, lang, "default"]
+        possible_text_transformations = [lower, nfc_normalize]
+        text_transformations: List[int] = get_menu_prompt(  # type: ignore
+            f"Please select all the text transformations to apply to [{iso}] - {lang} before determining symbol set:",
+            ["Lowercase", "NFC Normalization"],
+            multi=True,
+        )
+        chars = set()
+        for row in tqdm(filelist_data):
+            row_lang = row["language"]
+            if row_lang in possible_values:
+                text = row["text"]
+                for t in text_transformations:
+                    text = possible_text_transformations[t](text)
+                for c in text:
+                    chars.add(c)
+        symbols[iso] = [
+            x for x in chars if x not in to_filter
+        ]  # filter default punctuation
+    return {k: sorted(v) for k, v in symbols.items()}
 
 
 def auto_check_audio(
@@ -38,10 +170,14 @@ def auto_check_audio(
             logger.warning(
                 f"File '{audio_path}' was not found. Please ensure the file exists and your filelist is created properly."
             )
+            continue
         srs_counter[samplerate] += 1
         lengths.append(data.shape[0] / samplerate)
     for k, v in srs_counter.items():
         logger.info(f"{v} audio files found at {k}Hz sampling rate")
+    if not srs_counter:
+        logger.error(f"Couldn't read any files at {wavs_dir}. Please check your path.")
+        exit()
     sr = min(srs_counter.keys())
     logger.info(f"Using {sr}Hz sampling rate")
     min_s = min(lengths)
@@ -54,7 +190,7 @@ def auto_check_audio(
     max_s = max(lengths)
     if max_s > 11:
         logger.warning(
-            f"Longest sample was {min_s} seconds long - this is probably too long, and may result in longer training times or force you to use a reduced batch size. Please remove all audio longer than 11 seconds."
+            f"Longest sample was {max_s} seconds long - this is probably too long, and may result in longer training times or force you to use a reduced batch size. Please remove all audio longer than 11 seconds."
         )
     else:
         logger.info(f"Longest sample was {max_s} seconds long")
@@ -62,7 +198,7 @@ def auto_check_audio(
 
 
 def get_menu_prompt(
-    prompt_text: str, choices: List[str], multi=False
+    prompt_text: str, choices: List[str], multi=False, search=False
 ) -> Union[int, List[int]]:
     """Given some prompt text and a list of choices, create a simple terminal window
        and return the index of the choice
@@ -76,7 +212,10 @@ def get_menu_prompt(
     """
     print(Panel(prompt_text))
     menu = simple_term_menu.TerminalMenu(
-        choices, multi_select=multi, show_multi_select_hint=multi
+        choices,
+        multi_select=multi,
+        show_multi_select_hint=multi,
+        show_search_hint=search,
     )
     index = menu.show()
     sys.stdout.write("\033[K")

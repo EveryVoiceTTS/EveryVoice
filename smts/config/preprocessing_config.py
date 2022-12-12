@@ -8,7 +8,7 @@ from pydantic import DirectoryPath, Field, FilePath, validator
 
 from smts.config.shared_types import ConfigModel, PartialConfigModel
 from smts.config.utils import convert_callables, convert_paths
-from smts.utils import generic_dict_loader
+from smts.utils import generic_dict_loader, load_config_from_json_or_yaml_path
 
 
 class AudioSpecTypeEnum(Enum):
@@ -96,3 +96,9 @@ class PreprocessingConfig(PartialConfigModel):
                 )
                 data["save_dir"].mkdir(parents=True, exist_ok=True)
         super().__init__(**data, expandable=["audio", "source_data"])
+
+    @staticmethod
+    def load_config_from_path(path: Path) -> "PreprocessingConfig":
+        """Load a config from a path"""
+        config = load_config_from_json_or_yaml_path(path)
+        return PreprocessingConfig(**config)

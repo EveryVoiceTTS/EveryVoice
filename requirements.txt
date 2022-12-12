@@ -6,7 +6,7 @@ nltk==3.7
 pandas==1.4.4
 panphon==0.20.0
 pydantic==1.10.2
-pympi-ling==1.70.2
+pympi-ling
 pysdtw==0.0.5
 pytorch_lightning==1.8.1
 pyworld == 0.2.10

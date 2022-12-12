@@ -5,7 +5,10 @@ from typing import List, Optional
 
 import typer
 from loguru import logger
+from rich import print
+from rich.panel import Panel
 from rich.prompt import Prompt
+from rich.style import Style
 from slugify import slugify
 
 from smts.config import CONFIGS
@@ -62,10 +65,26 @@ def output_callback(ctx: typer.Context, value: Path):
     return value
 
 
-@app.command()
+@app.command(
+    help="""This command will help you create all the configuration necessary for your using your dataset.
+
+In order to get started, please:
+ - have your audio data (in .wav format) together in a folder
+ - have a 'metadata' file that minimally has two columns, one for the text of the audio and one for the basename of the file
+
+Inside /path/to/wavs/ you should have wav audio files like test0001.wav, test0002.wav etc - they can be called anything you want. but the part of the file (minus the .wav portion) must be in your metadata file.
+
+Example wavs directory: "/path/to/wavs/"
+
+Example metadata: https://github.com/roedoejet/SmallTeamSpeech/blob/main/smts/filelists/lj_full.psv
+
+"""
+)
 def config_wizard(
     name: str = typer.Option(
-        "test", prompt="What would you like to call this dataset?"
+        ...,
+        prompt="What would you like to call this dataset?",
+        help="The name of your dataset.",
     ),
     output_dir: Path = typer.Option(
         ".",
@@ -73,20 +92,25 @@ def config_wizard(
         file_okay=False,
         prompt="Where should the wizard save your files?",
         callback=output_callback,
+        help="The directory to save your files to.",
     ),
     wavs_dir: Path = typer.Option(
-        "/home/aip000/tts/code/SmallTeamSpeech/smts/data/lj/wavs",
+        # ...,
+        "/home/aip000/tts/code/SmallTeamSpeech/smts/data/OpenSLR/xh_za/za/xho/wavs",
         exists=True,
         dir_okay=True,
         file_okay=False,
         prompt="What is the absolute path to your audio files?",
+        help="The directory where you audio files (in wav format) are located.",
     ),
     filelist_path: Path = typer.Option(
-        "/home/aip000/tts/code/SmallTeamSpeech/smts/filelists/lj_test.psv",
+        # ...,
+        "/home/aip000/tts/code/SmallTeamSpeech/smts/filelists/xh_full.psv",
         exists=True,
         dir_okay=False,
         file_okay=True,
         prompt="What is the absolute path to data filelist?",
+        help="The path to your metadata file (should be a pipe separated file).",
     ),
 ):
     from smts.config.preprocessing_config import (
@@ -95,7 +119,7 @@ def config_wizard(
         PreprocessingConfig,
     )
     from smts.config.shared_types import BaseTrainingConfig, LoggerConfig
-    from smts.config.text_config import TextConfig
+    from smts.config.text_config import Symbols, TextConfig
     from smts.model.aligner.config import AlignerConfig
     from smts.model.e2e.config import SMTSConfig
     from smts.model.feature_prediction.config import FeaturePredictionConfig
@@ -105,8 +129,11 @@ def config_wizard(
         auto_check_audio,
         create_default_filelist,
         create_sox_effects_list,
+        get_lang_information,
         get_menu_prompt,
         get_required_headers,
+        get_single_lang_information,
+        get_symbol_set,
         write_config_to_file,
         write_dict_to_config,
     )
@@ -140,7 +167,9 @@ def config_wizard(
         )
         if spkr_column != "no":
             headers[int(spkr_column)] = "speaker"
+            langs_inferred_from_data = set([x[int(spkr_column)] for x in filelist_data])
         else:
+            langs_inferred_from_data = None
             headers.append("speaker")
     if "language" not in headers:
         lang_column = Prompt.ask(
@@ -155,10 +184,63 @@ def config_wizard(
         )
         if lang_column != "no":
             headers[int(lang_column)] = "language"
-        else:
-            headers.append("language")
+    # TODO: test with multilingual and monolingual labelled (with recognized and unrecognized) and unlabelled datasets
+    if langs_inferred_from_data is None:
+        # No language selected
+        ds_supported_langs, ds_unsupported_langs = get_lang_information()
+        number_of_languages = len(ds_supported_langs) + len(ds_unsupported_langs)
+        if number_of_languages > 1:
+            logger.info(
+                "Sorry, if your dataset has more than one language in it, you will have to add this information to your filelist, because the wizard can't guess!"
+            )
+        headers.append("language")
+    else:
+        langs_to_convert = (
+            {}
+        )  # we might need to convert some of the names of languages to the recognized iso code
+        logger.info("Getting supported languages...")
+        from pycountry import languages
+        from readalongs.util import get_langs
+
+        supported_langs = get_langs()[1]
+        all_langs = list(languages)
+        ds_supported_langs = {}
+        ds_unsupported_langs = {}
+        for lang in langs_inferred_from_data:
+            if lang in supported_langs:
+                lang_correct = typer.confirm(
+                    f"Is the lang in your data labelled {lang} the same as the language {supported_langs[lang]} with the iso code {lang}?"
+                )
+                if lang_correct:
+                    ds_supported_langs[lang] = supported_langs[lang]
+                    continue
+            logger.info(
+                f"We couldn't recognize {lang}. Please choose it from our list:"
+            )
+            new_lang_sup, new_lang_unsup = get_single_lang_information(
+                supported_langs.items(), all_langs
+            )
+            if new_lang_sup:
+                ds_supported_langs = {**ds_supported_langs, **new_lang_sup}
+            if new_lang_unsup:
+                ds_unsupported_langs = {**ds_unsupported_langs, **new_lang_unsup}
+            langs_to_convert[lang] = (
+                supported_langs.keys()[new_lang_sup]
+                if new_lang_sup
+                else all_langs[new_lang_unsup].alpha_3  # type: ignore
+            )
+        if langs_to_convert:
+            # replace all unrecognized languages with recognized ones
+            for k, v in langs_to_convert.items():
+                for i, row in enumerate(filelist_data):
+                    if row[lang_column] == k:
+                        filelist_data[i][lang_column] = v
     filelist_data = create_default_filelist(filelist_data, headers)
-    write_dict(output_path / "filelist.psv", filelist_data, headers)
+    symbol_set = Symbols(
+        **get_symbol_set(filelist_data, ds_supported_langs, ds_unsupported_langs)
+    )
+    dataset_filelist = output_path / "filelist.psv"
+    write_dict(dataset_filelist, filelist_data, headers)
     # Check Audio
     auto_check = Prompt.ask(
         "Config Wizard can try to determine the appropriate settings for your audio automatically. Would you like to do that or manually specify information (like sample rates etc)?",
@@ -205,19 +287,18 @@ def config_wizard(
     log_dir = (output_path / "logs").absolute()
     log_dir.mkdir(parents=True, exist_ok=True)
     ## Create Preprocessing Config
-    preprocessed_filelist_path = (
-        output_path / "preprocessed" / "preprocessed_filelist.psv"
-    )
+    preprocessed_filelist_path = output_path / "preprocessed" / "processed_filelist.psv"
     audio_config = AudioConfig(
         min_audio_length=min_length,
         max_audio_length=max_length,
         input_sampling_rate=input_sr,
         output_sampling_rate=input_sr,
+        alignment_sampling_rate=input_sr,
     )
     dataset_config = Dataset(
         label=name,
         data_dir=wavs_dir.absolute(),
-        filelist=filelist_path.absolute(),
+        filelist=dataset_filelist.absolute(),
         sox_effects=sox_config,
     )
     preprocessing_config = PreprocessingConfig(
@@ -231,7 +312,7 @@ def config_wizard(
     ).absolute()
     write_config_to_file(preprocessing_config, preprocessing_config_path)
     ## Create Text Config
-    text_config = TextConfig()
+    text_config = TextConfig(symbols=symbol_set)
     text_config_path = (config_dir / f"text.{config_format}").absolute()
     write_config_to_file(text_config, text_config_path)
     ## Create Aligner Config
@@ -285,8 +366,14 @@ def config_wizard(
     e2e_config_json["vocoder"] = str(vocoder_config_path)
     e2e_config_path = (config_dir / f"e2e.{config_format}").absolute()
     write_dict_to_config(e2e_config_json, e2e_config_path)
-    # TODO: print next steps
-    print("TODO: print next steps")
+    print(
+        Panel(
+            f"You've finished configuring your dataset. Your files are located at {config_dir.absolute()}",
+            title="Congratulations 🎉",
+            subtitle="Next Steps Documentation: http://localhost:8000/guides/index.html",
+            border_style=Style(color="#0B4F19"),
+        )
+    )
 
 
 @app.command()
@@ -297,41 +384,55 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
     run_tests(suite)
 
 
-@app.command()
+@app.command(help="This command will preprocess your data for your before training.")
 def preprocess(
-    name: CONFIGS_ENUM,
+    name: CONFIGS_ENUM = typer.Option(None, "--name"),
+    config_path: Path = typer.Option(
+        None, "--config", "-c", exists=True, file_okay=True, dir_okay=False
+    ),
     data: Optional[List[PreprocessCategories]] = typer.Option(None, "-d", "--data"),
     output_path: Optional[Path] = typer.Option(
         "processed_filelist.psv", "-o", "--output"
     ),
-    compute_stats: bool = typer.Option(False, "-s", "--stats"),
+    compute_stats: bool = typer.Option(True, "-s", "--stats"),
     overwrite: bool = typer.Option(False, "-O", "--overwrite"),
 ):
     from smts.preprocessor import Preprocessor
 
-    config: SMTSConfig = SMTSConfig.load_config_from_path(CONFIGS[name.value])
-    # TODO: which preprocessing config to use?
-    preprocessor = Preprocessor(config)  # type: ignore
+    if config_path:
+        config: SMTSConfig = SMTSConfig.load_config_from_path(config_path)
+    elif name:
+        config = SMTSConfig.load_config_from_path(CONFIGS[name.value])
+        # TODO: which preprocessing config to use?
+    else:
+        logger.error(
+            "You must either choose a <NAME> of a preconfigured dataset, or provide a <CONFIG_PATH> to a preprocessing configuration file."
+        )
+        exit()
+    preprocessor = Preprocessor(config.feature_prediction)  # type: ignore
     to_preprocess = {k: k in data for k in PreprocessCategories.__members__.keys()}  # type: ignore
     if not data:
         logger.info(
             f"No specific preprocessing data requested, processing everything (pitch, mel, energy, durations, inputs) from dataset '{name}'"
         )
-    else:
-        preprocessor.preprocess(
-            output_path=output_path,
-            process_audio=to_preprocess["audio"],
-            process_sox_audio=to_preprocess["sox_audio"],
-            process_spec=to_preprocess["mel"],
-            process_energy=to_preprocess["energy"],
-            process_pitch=to_preprocess["pitch"],
-            process_duration=to_preprocess["dur"],
-            process_pfs=to_preprocess["feats"],
-            process_text=to_preprocess["text"],
-            compute_stats=compute_stats,
-            overwrite=overwrite,
-        )
+        to_preprocess = {k: True for k in to_preprocess}
+        to_preprocess["feats"] = config.feature_prediction.model.use_phonological_feats
+    preprocessor.preprocess(
+        output_path=output_path,
+        process_audio=to_preprocess["audio"],
+        process_sox_audio=to_preprocess["sox_audio"],
+        process_spec=to_preprocess["mel"],
+        process_energy=to_preprocess["energy"],
+        process_pitch=to_preprocess["pitch"],
+        process_duration=to_preprocess["dur"],
+        process_pfs=to_preprocess["feats"],
+        process_text=to_preprocess["text"],
+        compute_stats=compute_stats,
+        overwrite=overwrite,
+    )
 
+
+CLICK_APP = typer.main.get_group(app)
 
 if __name__ == "__main__":
     app()

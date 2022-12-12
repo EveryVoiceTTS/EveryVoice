@@ -424,6 +424,8 @@ class Preprocessor:
         )
         if not overwrite and audio_paths_exist:
             self.counters.skipped_processes += 1
+            audio = torch.load(input_audio_save_path)
+            output_audio = torch.load(output_audio_save_path)
         else:
             audio, _ = self.process_audio(
                 dataset_info.data_dir / (item["basename"] + ".wav"),
@@ -602,14 +604,15 @@ class Preprocessor:
             if not kwargs.get("overwrite") and save_path.exists():
                 self.counters.skipped_processes += 1
             else:
+                sox_audio, sox_sr = self.process_audio(
+                    kwargs["dataset_info"].data_dir / (item["basename"] + ".wav"),
+                    use_effects=True,
+                    sox_effects=kwargs["dataset_info"].sox_effects,
+                )
                 save_audio(
                     save_path,
-                    self.process_audio(
-                        kwargs["dataset_info"].data_dir / (item["basename"] + ".wav"),
-                        use_effects=True,
-                        sox_effects=kwargs["dataset_info.sox_effects"],
-                    ),
-                    self.audio_config.alignment_sampling_rate,
+                    sox_audio.unsqueeze(0),
+                    sox_sr,
                     encoding="PCM_S",
                     bits_per_sample=self.audio_config.alignment_bit_depth,
                 )
@@ -701,7 +704,7 @@ class Preprocessor:
         self,
         output_path="processed_filelist.psv",
         compute_stats=False,
-        cpus=mp.cpu_count(),
+        cpus=min(5, mp.cpu_count()),
         **kwargs,
     ):
         if kwargs.get("process_audio"):
