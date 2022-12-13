@@ -1,9 +1,9 @@
 [submodule "smts/DeepForcedAligner"]
 	path = smts/model/aligner/DeepForcedAligner
-	url = https://github.com/roedoejet/DeepForcedAligner
+	url = ../DeepForcedAligner
 [submodule "smts/model/vocoder/HiFiGAN_iSTFT_lightning"]
 	path = smts/model/vocoder/HiFiGAN_iSTFT_lightning
-	url = https://github.com/roedoejet/HiFiGAN_iSTFT_lightning
+	url = ../HiFiGAN_iSTFT_lightning
 [submodule "smts/model/feature_prediction/FastSpeech2_lightning"]
 	path = smts/model/feature_prediction/FastSpeech2_lightning
-	url = https://github.com/roedoejet/FastSpeech2_lightning.git
+	url = ../FastSpeech2_lightning.git
