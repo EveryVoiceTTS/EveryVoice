@@ -1,7 +1,7 @@
 import json
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 import typer
 from loguru import logger
@@ -14,7 +14,6 @@ from slugify import slugify
 from smts.config import CONFIGS
 from smts.model.aligner.DeepForcedAligner.dfaligner.cli import app as dfaligner_app
 from smts.model.e2e.cli import app as e2e_app
-from smts.model.e2e.config import SMTSConfig  # type: ignore
 from smts.model.feature_prediction.FastSpeech2_lightning.fs2.cli import app as fs2_app
 from smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import app as hfgl_app
 
@@ -382,54 +381,6 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
     from smts.run_tests import run_tests
 
     run_tests(suite)
-
-
-@app.command(help="This command will preprocess your data for your before training.")
-def preprocess(
-    name: CONFIGS_ENUM = typer.Option(None, "--name"),
-    config_path: Path = typer.Option(
-        None, "--config", "-c", exists=True, file_okay=True, dir_okay=False
-    ),
-    data: Optional[List[PreprocessCategories]] = typer.Option(None, "-d", "--data"),
-    output_path: Optional[Path] = typer.Option(
-        "processed_filelist.psv", "-o", "--output"
-    ),
-    compute_stats: bool = typer.Option(True, "-s", "--stats"),
-    overwrite: bool = typer.Option(False, "-O", "--overwrite"),
-):
-    from smts.preprocessor import Preprocessor
-
-    if config_path:
-        config: SMTSConfig = SMTSConfig.load_config_from_path(config_path)
-    elif name:
-        config = SMTSConfig.load_config_from_path(CONFIGS[name.value])
-        # TODO: which preprocessing config to use?
-    else:
-        logger.error(
-            "You must either choose a <NAME> of a preconfigured dataset, or provide a <CONFIG_PATH> to a preprocessing configuration file."
-        )
-        exit()
-    preprocessor = Preprocessor(config.feature_prediction)  # type: ignore
-    to_preprocess = {k: k in data for k in PreprocessCategories.__members__.keys()}  # type: ignore
-    if not data:
-        logger.info(
-            f"No specific preprocessing data requested, processing everything (pitch, mel, energy, durations, inputs) from dataset '{name}'"
-        )
-        to_preprocess = {k: True for k in to_preprocess}
-        to_preprocess["feats"] = config.feature_prediction.model.use_phonological_feats
-    preprocessor.preprocess(
-        output_path=output_path,
-        process_audio=to_preprocess["audio"],
-        process_sox_audio=to_preprocess["sox_audio"],
-        process_spec=to_preprocess["mel"],
-        process_energy=to_preprocess["energy"],
-        process_pitch=to_preprocess["pitch"],
-        process_duration=to_preprocess["dur"],
-        process_pfs=to_preprocess["feats"],
-        process_text=to_preprocess["text"],
-        compute_stats=compute_stats,
-        overwrite=overwrite,
-    )
 
 
 CLICK_APP = typer.main.get_group(app)

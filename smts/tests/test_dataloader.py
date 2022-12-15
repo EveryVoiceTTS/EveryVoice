@@ -1,3 +1,4 @@
+from pathlib import Path
 from unittest import TestCase, main
 
 from tqdm import tqdm
@@ -15,6 +16,11 @@ class DataLoaderTest(TestCase):
 
     def setUp(self) -> None:
         self.config = SMTSConfig.load_config_from_path()
+        self.lj_preprocessed = Path(__file__).parent / "data" / "lj" / "preprocessed"
+        self.config.vocoder.preprocessing.save_dir = self.lj_preprocessed
+        self.config.vocoder.training.filelist = (
+            self.lj_preprocessed / "preprocessed_filelist.psv"
+        )
 
     def test_base_data_loader(self):
         bdm = BaseDataModule(self.config.aligner)
