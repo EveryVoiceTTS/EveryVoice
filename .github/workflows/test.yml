@@ -33,7 +33,6 @@ jobs:
           pip3 install -e .
       - name: Run tests
         run: |
-          smts hifigan preprocess test -d mel -d audio -O
           cd smts && coverage run run_tests.py dev
           coverage xml
       - uses: codecov/codecov-action@v2
