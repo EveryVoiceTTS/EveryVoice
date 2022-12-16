@@ -26,7 +26,7 @@ def preprocess_base_command_interface(
     output_path: Optional[Path] = typer.Option(
         "processed_filelist.psv", "-o", "--output"
     ),
-    cpus: Optional[int] = typer.Option(mp.cpu_count(), "-C", "--cpus"),
+    cpus: Optional[int] = typer.Option(min(4, mp.cpu_count()), "-C", "--cpus"),
     overwrite: bool = typer.Option(False, "-O", "--overwrite"),
 ):
     pass

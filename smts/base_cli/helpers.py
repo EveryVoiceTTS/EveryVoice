@@ -64,31 +64,31 @@ def preprocess_base_command(
     output_path: Optional[Path],
     cpus: Optional[int],
     overwrite: bool,
-    compute_stats=True,
 ):
     from smts.preprocessor import Preprocessor
 
     config = load_config_base_command(
         name, model_config, configs, config_args, config_path
     )
-    to_preprocess = {
-        f"process_{k}": k in data for k in preprocess_categories.__members__.keys()
-    }
+    to_process = [x.name for x in data]
     preprocessor = Preprocessor(config)
     if not data:
         logger.info(
             f"No specific preprocessing data requested, processing everything from dataset '{name}'"
         )
-        to_preprocess = {k: True for k in to_preprocess}
-        if isinstance(config, FastSpeech2Config):
-            to_preprocess["process_pfs"] = config.model.use_phonological_feats
+        to_process = list(preprocess_categories.__members__.keys())
+        if (
+            isinstance(config, FastSpeech2Config)
+            and config.model.use_phonological_feats
+        ):
+            to_process.append("pfs")
     preprocessor.preprocess(
         output_path=output_path,
-        compute_stats=compute_stats,
         cpus=cpus,
         overwrite=overwrite,
-        **to_preprocess,
+        to_process=to_process,
     )
+    return preprocessor, config, to_process
 
 
 def train_base_command(
