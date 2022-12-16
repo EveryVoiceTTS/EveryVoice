@@ -9,3 +9,4 @@ preprocessed
 gpu_output
 slurm*
 smts/data
+docs/build

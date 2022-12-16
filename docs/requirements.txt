@@ -1,0 +1,6 @@
+myst-parser
+sphinx-book-theme
+pydata-sphinx-theme
+sphinx-autobuild
+sphinx-click
+autodoc-pydantic

@@ -31,6 +31,15 @@ jobs:
           pip3 install coverage
           pip3 install -r requirements.txt
           pip3 install -e .
+          cd docs && pip3 install -r requirements.txt
+      - name: Docs
+        run: |
+          cd docs && make html
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4.2.3
+        with:
+          branch: gh-pages # The branch the action should deploy to.
+          folder: docs/build/html # The folder the action should deploy.
       - name: Run tests
         run: |
           cd smts && coverage run run_tests.py dev
