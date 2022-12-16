@@ -127,10 +127,6 @@ For the phone-averaged pre-processing to work, you must have the durations from 
     smts fs2 train -p config/feature_prediction.yaml
 
 
-.. warning::
-
-    TODO: copy synthesis doesn't need to happen each time
-
 Step 10 (optional): Finetune your vocoder
 ----------------------------------------
 
