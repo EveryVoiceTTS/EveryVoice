@@ -1,0 +1,394 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Customize to your language &#8212; SmallTeamSpeech 0.0.0 documentation</title>
+    
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Background to Text-to-Speech" href="background.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+<a class="navbar-brand" href="../index.html">
+<p class="title">SmallTeamSpeech</p>
+</a>
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../start.html">
+  Getting Started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../install.html">
+  Installation
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../reference/index.html">
+  Reference
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="index.html">
+  Guides
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items">
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="background.html"
+                          title="previous chapter">Background to Text-to-Speech</a></p>
+  </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage mt-5 pt-1 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-1-make-sure-you-have-permission">
+   Step 1: Make sure you have Permission!
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-2-gather-your-data">
+   Step 2: Gather Your Data
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-3-install-project">
+   Step 3: Install SmallTeamSpeech
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-4-run-the-configuration-wizard">
+   Step 4: Run the Configuration Wizard 🧙
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-5-run-the-preprocessor">
+   Step 5: Run the Preprocessor
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-6-train-aligner">
+   Step 6: Train Aligner
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-6-export-alignments">
+   Step 6: Export Alignments
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-7-preprocess-the-pitch-and-energy-data-for-your-feature-prediction-network">
+   Step 7: Preprocess the pitch and energy data for your Feature Prediction Network
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-8-train-your-vocoder">
+   Step 8: Train your Vocoder
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-9-train-your-feature-prediction-network">
+   Step 9: Train your Feature Prediction Network
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-10-optional-finetune-your-vocoder">
+   Step 10 (optional): Finetune your vocoder
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#step-11-synthesize-speech">
+   Step 11: Synthesize Speech
+  </a>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <section id="customize-to-your-language">
+<span id="custom"></span><h1>Customize to your language<a class="headerlink" href="#customize-to-your-language" title="Permalink to this headline">#</a></h1>
+<section id="step-1-make-sure-you-have-permission">
+<h2>Step 1: Make sure you have Permission!<a class="headerlink" href="#step-1-make-sure-you-have-permission" title="Permalink to this headline">#</a></h2>
+<p>So, you want to build a text-to-speech system for a new language or dataset - cool! But, just because you <strong>can</strong> build a text-to-speech system, doesn’t mean you <strong>should</strong>. There are a lot of tricky ethical
+questions around text-to-speech. It’s not ethical to just use audio you find somewhere if it doesn’t have explicit permission to use it for the purposes of text-to-speech. The first step is to make sure you have
+permission to use the data in question and that whoever contributed their voice to the data you want to use is aware and supportive of your goal.</p>
+</section>
+<section id="step-2-gather-your-data">
+<h2>Step 2: Gather Your Data<a class="headerlink" href="#step-2-gather-your-data" title="Permalink to this headline">#</a></h2>
+<p>The first thing to do is to get all the data you have (in this case audio with text transcripts) together in one place. Your audio should be in ‘wav’ format. Ideally it would be 16bit, mono (one channel) audio sampled somewhere between 22.05kHz and 48kHz. If that doesn’t mean anything to you, don’t worry, we can ensure the right format in later steps.
+It’s best if your audio clips are somewhere between half a second and 10 seconds long. Any longer and it could be difficult to train. If your audio is longer than this, we suggest processing it into smaller chunks first.</p>
+<p>Your text should be consistently written and should be in a pipe-separated values spreadsheet, similar to this file: <a class="reference external" href="https://github.com/roedoejet/SmallTeamSpeech/blob/main/smts/filelists/lj_full.psv">https://github.com/roedoejet/SmallTeamSpeech/blob/main/smts/filelists/lj_full.psv</a>
+It should have a column that contains text and a column that contains the “basename” of your associated audio file. So if you have a recording of somebody saying “hello how are you?” and the corresponding audio is called mydata0001.wav
+then you should have a psv file that looks like this:</p>
+<div class="highlight-csv notranslate"><div class="highlight"><pre><span></span>basename|text
+<span class="hll">mydata0001|hello how are you?
+</span>mydata0002|some other sentence.
+...
+</pre></div>
+</div>
+<p>We also support comma and tab separated files, but find that using pipes (|) causes the least problems.</p>
+<p>You can also use the “festival” format which is like this (example from <a class="reference external" href="https://openslr.org/30/">Sinhala TTS</a>):</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>( sin_2241_0329430812 &quot; කෝකටත් මං වෙනදා තරම් කාලෙ ගන්නැතිව ඇඳ ගත්තා &quot; )
+( sin_2241_0598895166 &quot; ඇන්ජලීනා ජොලී කියන්නේ පසුගිය දිනවල බොහෝ සෙයින් කතා බහට ලක්වූ චරිතයක් &quot; )
+( sin_2241_0701577369 &quot; ආර්ථික චින්තනය හා සාමාජීය දියුණුව ඇති කළ හැකිවනුයේ පුද්ගල ආර්ථික දියුණුව සලසා දීමෙන්ය &quot; )
+( sin_2241_0715400935 &quot; ඉන් අදහස් වන්නේ විචාරාත්මක විනිවිද දැකීමෙන් තොර බැල්මයි &quot; )
+( sin_2241_0817100025 &quot; අප යුද්ධයේ පළමු පියවරේදීම පරාද වී අවසානය &quot; )
+</pre></div>
+</div>
+<p>In this format, there are corresponding wav files labelled sin_2241_0329430812.wav etc..</p>
+</section>
+<section id="step-3-install-project">
+<h2>Step 3: Install SmallTeamSpeech<a class="headerlink" href="#step-3-install-project" title="Permalink to this headline">#</a></h2>
+<p>Head over to the <a class="reference internal" href="../install.html#install"><span class="std std-ref">Installation</span></a> documentation and install SmallTeamSpeech</p>
+</section>
+<section id="step-4-run-the-configuration-wizard">
+<h2>Step 4: Run the Configuration Wizard 🧙<a class="headerlink" href="#step-4-run-the-configuration-wizard" title="Permalink to this headline">#</a></h2>
+<p>Once you have your data, the best thing to do is to run the Configuration Wizard 🧙. To do that run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts config-wizard
+</pre></div>
+</div>
+<p>After running the config-wizard, cd into your newly created directory. Let’s call it <cite>test</cite> for now.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> <span class="nb">test</span>
+</pre></div>
+</div>
+</section>
+<section id="step-5-run-the-preprocessor">
+<h2>Step 5: Run the Preprocessor<a class="headerlink" href="#step-5-run-the-preprocessor" title="Permalink to this headline">#</a></h2>
+<p>Your models need to do a number of preprocessing steps in order to prepare for training. To preprocess everything you need, run the following:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts dfa preprocess -p config/aligner.yaml
+</pre></div>
+</div>
+</section>
+<section id="step-6-train-aligner">
+<h2>Step 6: Train Aligner<a class="headerlink" href="#step-6-train-aligner" title="Permalink to this headline">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts dfa train -p config/aligner.yaml
+</pre></div>
+</div>
+<p>By default, we run our training with PyTorch Lightning's “auto” strategy. But, if you are on a machine where you know the hardware, you can specify it like:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts dfa train -p config/aligner.yaml -d <span class="m">1</span> -a gpu
+</pre></div>
+</div>
+<p>Which would use the GPU accelerator and specify 1 device/chip.</p>
+</section>
+<section id="step-6-export-alignments">
+<h2>Step 6: Export Alignments<a class="headerlink" href="#step-6-export-alignments" title="Permalink to this headline">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts dfa extract-alignments -p config/aligner.yaml -m logs/Aligner<span class="se">\ </span>Experiment/base/checkpoints/last.ckpt
+</pre></div>
+</div>
+<p>This will extract the alignments from your best model and put them in your preprocessing folder.</p>
+</section>
+<section id="step-7-preprocess-the-pitch-and-energy-data-for-your-feature-prediction-network">
+<h2>Step 7: Preprocess the pitch and energy data for your Feature Prediction Network<a class="headerlink" href="#step-7-preprocess-the-pitch-and-energy-data-for-your-feature-prediction-network" title="Permalink to this headline">#</a></h2>
+<p>For the phone-averaged pre-processing to work, you must have the durations from your aligner which is why we preprocess the data for the feature prediction network after training the aligner.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts fs2 preprocess -p config/feature_prediction.yaml -d pitch -d energy -O
+</pre></div>
+</div>
+</section>
+<section id="step-8-train-your-vocoder">
+<h2>Step 8: Train your Vocoder<a class="headerlink" href="#step-8-train-your-vocoder" title="Permalink to this headline">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts hifigan train -p config/vocoder.yaml
+</pre></div>
+</div>
+</section>
+<section id="step-9-train-your-feature-prediction-network">
+<h2>Step 9: Train your Feature Prediction Network<a class="headerlink" href="#step-9-train-your-feature-prediction-network" title="Permalink to this headline">#</a></h2>
+<p>For the phone-averaged pre-processing to work, you must have the durations from your aligner which is why we preprocess the data for the feature prediction network after training the aligner.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts fs2 train -p config/feature_prediction.yaml
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>TODO: copy synthesis doesn’t need to happen each time</p>
+</div>
+</section>
+<section id="step-10-optional-finetune-your-vocoder">
+<h2>Step 10 (optional): Finetune your vocoder<a class="headerlink" href="#step-10-optional-finetune-your-vocoder" title="Permalink to this headline">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts e2e train -p config/e2e.yaml
+</pre></div>
+</div>
+</section>
+<section id="step-11-synthesize-speech">
+<h2>Step 11: Synthesize Speech<a class="headerlink" href="#step-11-synthesize-speech" title="Permalink to this headline">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts e2e synthesize -t <span class="s2">&quot;hello world&quot;</span> -c config/e2e.yaml
+</pre></div>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>TODO: this doesn’t exist yet
+TODO: e2e needs checkpoint paths</p>
+</div>
+</section>
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="background.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Background to Text-to-Speech</p>
+        </div>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2022, Aidan Pine.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.5.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

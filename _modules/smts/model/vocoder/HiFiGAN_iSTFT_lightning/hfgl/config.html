@@ -1,0 +1,327 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config &#8212; SmallTeamSpeech 0.0.0 documentation</title>
+    
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/autodoc_pydantic.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/copybutton.css" />
+    
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+
+    <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../../_static/jquery.js"></script>
+    <script src="../../../../../../_static/underscore.js"></script>
+    <script src="../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../../_static/copybutton.js"></script>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+<a class="navbar-brand" href="../../../../../../index.html">
+<p class="title">SmallTeamSpeech</p>
+</a>
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../start.html">
+  Getting Started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../install.html">
+  Installation
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../reference/index.html">
+  Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../guides/index.html">
+  Guides
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items">
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">pydantic</span> <span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">root_validator</span>
+<span class="kn">from</span> <span class="nn">smts.config.preprocessing_config</span> <span class="kn">import</span> <span class="n">PreprocessingConfig</span>
+<span class="kn">from</span> <span class="nn">smts.config.shared_types</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AdamOptimizer</span><span class="p">,</span>
+    <span class="n">AdamWOptimizer</span><span class="p">,</span>
+    <span class="n">BaseTrainingConfig</span><span class="p">,</span>
+    <span class="n">ConfigModel</span><span class="p">,</span>
+    <span class="n">PartialConfigModel</span><span class="p">,</span>
+    <span class="n">RMSOptimizer</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">smts.config.utils</span> <span class="kn">import</span> <span class="n">convert_callables</span>
+<span class="kn">from</span> <span class="nn">smts.utils</span> <span class="kn">import</span> <span class="n">load_config_from_json_or_yaml_path</span><span class="p">,</span> <span class="n">return_configs_from_dir</span>
+
+
+<span class="k">class</span> <span class="nc">HiFiGANResblock</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">one</span> <span class="o">=</span> <span class="s2">&quot;1&quot;</span>
+    <span class="n">two</span> <span class="o">=</span> <span class="s2">&quot;2&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">HiFiGANDepthwiseBlocks</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Only currently implemented for the generator&quot;&quot;&quot;</span>
+
+    <span class="n">generator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<span class="k">class</span> <span class="nc">HiFiGANTrainTypes</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">original</span> <span class="o">=</span> <span class="s2">&quot;original&quot;</span>
+    <span class="n">wgan</span> <span class="o">=</span> <span class="s2">&quot;wgan&quot;</span>
+    <span class="n">wgan_gp</span> <span class="o">=</span> <span class="s2">&quot;wgan-gp&quot;</span>
+
+
+<div class="viewcode-block" id="HiFiGANModelConfig"><a class="viewcode-back" href="../../../../../../reference/vocoder.html#smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANModelConfig">[docs]</a><span class="k">class</span> <span class="nc">HiFiGANModelConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
+    <span class="n">resblock</span><span class="p">:</span> <span class="n">HiFiGANResblock</span> <span class="o">=</span> <span class="n">HiFiGANResblock</span><span class="o">.</span><span class="n">one</span>
+    <span class="n">upsample_rates</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+    <span class="n">upsample_kernel_sizes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">16</span><span class="p">,</span> <span class="mi">16</span><span class="p">]</span>
+    <span class="n">upsample_initial_channel</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">512</span>
+    <span class="n">resblock_kernel_sizes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">11</span><span class="p">]</span>
+    <span class="n">resblock_dilation_sizes</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]]</span>
+    <span class="n">depthwise_separable_convolutions</span><span class="p">:</span> <span class="n">HiFiGANDepthwiseBlocks</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="n">HiFiGANDepthwiseBlocks</span>
+    <span class="p">)</span>
+    <span class="n">activation_function</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="s2">&quot;smts.utils.original_hifigan_leaky_relu&quot;</span>  <span class="c1"># type: ignore</span>
+    <span class="n">istft_layer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="nd">@convert_callables</span><span class="p">(</span><span class="n">kwargs_to_convert</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;activation_function&quot;</span><span class="p">])</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">data</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Custom init to process activation function&quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span></div>
+
+
+<span class="k">class</span> <span class="nc">HiFiGANFreezingLayers</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
+    <span class="n">all_layers</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">msd</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">mpd</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">generator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="HiFiGANTrainingConfig"><a class="viewcode-back" href="../../../../../../reference/vocoder.html#smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANTrainingConfig">[docs]</a><span class="k">class</span> <span class="nc">HiFiGANTrainingConfig</span><span class="p">(</span><span class="n">BaseTrainingConfig</span><span class="p">):</span>
+    <span class="n">generator_warmup_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">gan_type</span><span class="p">:</span> <span class="n">HiFiGANTrainTypes</span> <span class="o">=</span> <span class="n">HiFiGANTrainTypes</span><span class="o">.</span><span class="n">original</span>
+    <span class="n">optimizer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">AdamOptimizer</span><span class="p">,</span> <span class="n">AdamWOptimizer</span><span class="p">,</span> <span class="n">RMSOptimizer</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="n">default_factory</span><span class="o">=</span><span class="n">AdamWOptimizer</span>
+    <span class="p">)</span>
+    <span class="n">wgan_clip_value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>
+    <span class="n">use_weighted_sampler</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">freeze_layers</span><span class="p">:</span> <span class="n">HiFiGANFreezingLayers</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">HiFiGANFreezingLayers</span><span class="p">)</span>
+    <span class="n">finetune</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="HiFiGANConfig"><a class="viewcode-back" href="../../../../../../reference/vocoder.html#smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig">[docs]</a><span class="k">class</span> <span class="nc">HiFiGANConfig</span><span class="p">(</span><span class="n">PartialConfigModel</span><span class="p">):</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">HiFiGANModelConfig</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">HiFiGANModelConfig</span><span class="p">)</span>
+    <span class="n">training</span><span class="p">:</span> <span class="n">HiFiGANTrainingConfig</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">HiFiGANTrainingConfig</span><span class="p">)</span>
+    <span class="n">preprocessing</span><span class="p">:</span> <span class="n">PreprocessingConfig</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">PreprocessingConfig</span><span class="p">)</span>
+
+<div class="viewcode-block" id="HiFiGANConfig.load_config_from_path"><a class="viewcode-back" href="../../../../../../reference/vocoder.html#smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig.load_config_from_path">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">load_config_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HiFiGANConfig&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Load a config from a path&quot;&quot;&quot;</span>
+        <span class="n">config</span> <span class="o">=</span> <span class="n">load_config_from_json_or_yaml_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">HiFiGANConfig</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="HiFiGANConfig.check_upsample_rate_consistency"><a class="viewcode-back" href="../../../../../../reference/vocoder.html#smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig.check_upsample_rate_consistency">[docs]</a>    <span class="nd">@root_validator</span>
+    <span class="k">def</span> <span class="nf">check_upsample_rate_consistency</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">values</span><span class="p">):</span>
+        <span class="c1"># helper variables</span>
+        <span class="n">preprocessing_config</span><span class="p">:</span> <span class="n">PreprocessingConfig</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s2">&quot;preprocessing&quot;</span><span class="p">]</span>
+        <span class="n">model_config</span><span class="p">:</span> <span class="n">HiFiGANModelConfig</span> <span class="o">=</span> <span class="n">values</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">]</span>
+        <span class="n">sampling_rate</span> <span class="o">=</span> <span class="n">preprocessing_config</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">input_sampling_rate</span>
+        <span class="n">upsampled_sampling_rate</span> <span class="o">=</span> <span class="n">preprocessing_config</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">output_sampling_rate</span>
+        <span class="n">upsample_rate</span> <span class="o">=</span> <span class="n">upsampled_sampling_rate</span> <span class="o">//</span> <span class="n">sampling_rate</span>
+        <span class="n">upsampled_hop_size</span> <span class="o">=</span> <span class="n">upsample_rate</span> <span class="o">*</span> <span class="n">preprocessing_config</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">fft_hop_frames</span>
+        <span class="n">upsample_rate_product</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">model_config</span><span class="o">.</span><span class="n">upsample_rates</span><span class="p">)</span>
+        <span class="c1"># check that same number of kernels and kernel sizes exist</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_config</span><span class="o">.</span><span class="n">upsample_kernel_sizes</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_config</span><span class="o">.</span><span class="n">upsample_rates</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Number of upsample kernel sizes must match number of upsample rates&quot;</span>
+            <span class="p">)</span>
+        <span class="c1"># Check that kernel sizes are not less than upsample rates and are evenly divisible</span>
+        <span class="k">for</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="n">upsample_rate</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span>
+            <span class="n">model_config</span><span class="o">.</span><span class="n">upsample_kernel_sizes</span><span class="p">,</span> <span class="n">model_config</span><span class="o">.</span><span class="n">upsample_rates</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">kernel_size</span> <span class="o">&lt;</span> <span class="n">upsample_rate</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Upsample kernel size: </span><span class="si">{</span><span class="n">kernel_size</span><span class="si">}</span><span class="s2"> must be greater than upsample rate: </span><span class="si">{</span><span class="n">upsample_rate</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="n">kernel_size</span> <span class="o">%</span> <span class="n">upsample_rate</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Upsample kernel size: </span><span class="si">{</span><span class="n">kernel_size</span><span class="si">}</span><span class="s2"> must be evenly divisible by upsample rate: </span><span class="si">{</span><span class="n">upsample_rate</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+        <span class="c1"># check that upsample rate is even multiple of target sampling rate</span>
+        <span class="k">if</span> <span class="n">upsampled_sampling_rate</span> <span class="o">%</span> <span class="n">sampling_rate</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Target sampling rate: </span><span class="si">{</span><span class="n">upsampled_sampling_rate</span><span class="si">}</span><span class="s2"> must be an even multiple of input sampling rate: </span><span class="si">{</span><span class="n">sampling_rate</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="c1"># check that the upsampling hop size is equal to product of upsample rates</span>
+        <span class="k">if</span> <span class="n">model_config</span><span class="o">.</span><span class="n">istft_layer</span><span class="p">:</span>
+            <span class="n">upsampled_hop_size</span> <span class="o">/=</span> <span class="mi">4</span>  <span class="c1"># istft upsamples the rest</span>
+        <span class="c1"># check that upsampled hop size is equal to product of upsampling rates</span>
+        <span class="k">if</span> <span class="n">upsampled_hop_size</span> <span class="o">!=</span> <span class="n">upsample_rate_product</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Upsampled hop size: </span><span class="si">{</span><span class="n">upsampled_hop_size</span><span class="si">}</span><span class="s2"> must be equal to product of upsample rates: </span><span class="si">{</span><span class="n">upsample_rate_product</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="c1"># check that the segment size is divisible by product of upsample rates</span>
+        <span class="k">if</span> <span class="n">preprocessing_config</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">vocoder_segment_size</span> <span class="o">%</span> <span class="n">upsample_rate_product</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Vocoder segment size: </span><span class="si">{</span><span class="n">preprocessing_config</span><span class="o">.</span><span class="n">audio</span><span class="o">.</span><span class="n">vocoder_segment_size</span><span class="si">}</span><span class="s2"> must be divisible by product of upsample rates: </span><span class="si">{</span><span class="n">upsample_rate_product</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">values</span></div></div>
+
+
+<span class="n">CONFIG_DIR</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span>
+<span class="n">CONFIGS</span> <span class="o">=</span> <span class="n">return_configs_from_dir</span><span class="p">(</span><span class="n">CONFIG_DIR</span><span class="p">)</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2022, Aidan Pine.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.5.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>
