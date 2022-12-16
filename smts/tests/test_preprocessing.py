@@ -27,17 +27,8 @@ class PreprocessingTest(TestCase):
     preprocessor.preprocess(
         output_path=lj_filelist,
         cpus=1,
-        compute_stats=True,
         overwrite=True,
-        **{
-            "process_audio": True,
-            "process_energy": True,
-            "process_pitch": True,
-            "process_spec": True,
-            "process_text": True,
-            "process_pfs": False,
-            "process_sox_audio": True,
-        },
+        to_process=["audio", "energy", "pitch", "text", "spec"],
     )
 
     def setUp(self) -> None:
