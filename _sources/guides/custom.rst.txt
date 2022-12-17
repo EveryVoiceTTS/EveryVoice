@@ -120,29 +120,44 @@ Step 8: Train your Vocoder
 Step 9: Train your Feature Prediction Network
 ---------------------------------------------------------------
 
-For the phone-averaged pre-processing to work, you must have the durations from your aligner which is why we preprocess the data for the feature prediction network after training the aligner.
+To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the config/feature_prediction.yaml
+
+At the bottom of that file you'll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be /path/to/test/logs/Vocoder Experiment/base/checkpoints/last.ckpt where /path/to would be the actual path to it on your computer.)
+
+Once you've replaced the vocoder_path key, you can train your feature prediction network:
 
 .. code-block:: bash
 
     smts fs2 train -p config/feature_prediction.yaml
 
 
-Step 10 (optional): Finetune your vocoder
-----------------------------------------
+Step 10: Synthesize Speech in Your Language!
+---------------------------------------------
+
+You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export to wav, npy, or pt files.
 
 .. code-block:: bash
 
-    smts e2e train -p config/e2e.yaml
+    smts fs2 synthesize logs/Feature\ Prediction\ Experiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1 -O wav
 
 
-Step 11: Synthesize Speech
---------------------------
 
-.. code-block:: bash
+.. Step 10 (optional): Finetune your vocoder
+.. ----------------------------------------
 
-    smts e2e synthesize -t "hello world" -c config/e2e.yaml
+.. .. code-block:: bash
 
-.. warning::
+..     smts e2e train -p config/e2e.yaml
 
-    TODO: this doesn't exist yet
-    TODO: e2e needs checkpoint paths
+
+.. Step 11: Synthesize Speech
+.. --------------------------
+
+.. .. code-block:: bash
+
+..     smts e2e synthesize -t "hello world" -c config/e2e.yaml
+
+.. .. warning::
+
+..     TODO: this doesn't exist yet
+..     TODO: e2e needs checkpoint paths

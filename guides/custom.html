@@ -205,13 +205,8 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#step-10-optional-finetune-your-vocoder">
-   Step 10 (optional): Finetune your vocoder
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#step-11-synthesize-speech">
-   Step 11: Synthesize Speech
+  <a class="reference internal nav-link" href="#step-10-synthesize-speech-in-your-language">
+   Step 10: Synthesize Speech in Your Language!
   </a>
  </li>
 </ul>
@@ -322,26 +317,18 @@ then you should have a psv file that looks like this:</p>
 </section>
 <section id="step-9-train-your-feature-prediction-network">
 <h2>Step 9: Train your Feature Prediction Network<a class="headerlink" href="#step-9-train-your-feature-prediction-network" title="Permalink to this headline">#</a></h2>
-<p>For the phone-averaged pre-processing to work, you must have the durations from your aligner which is why we preprocess the data for the feature prediction network after training the aligner.</p>
+<p>To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the config/feature_prediction.yaml</p>
+<p>At the bottom of that file you’ll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be /path/to/test/logs/Vocoder Experiment/base/checkpoints/last.ckpt where /path/to would be the actual path to it on your computer.)</p>
+<p>Once you’ve replaced the vocoder_path key, you can train your feature prediction network:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts fs2 train -p config/feature_prediction.yaml
 </pre></div>
 </div>
 </section>
-<section id="step-10-optional-finetune-your-vocoder">
-<h2>Step 10 (optional): Finetune your vocoder<a class="headerlink" href="#step-10-optional-finetune-your-vocoder" title="Permalink to this headline">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts e2e train -p config/e2e.yaml
+<section id="step-10-synthesize-speech-in-your-language">
+<h2>Step 10: Synthesize Speech in Your Language!<a class="headerlink" href="#step-10-synthesize-speech-in-your-language" title="Permalink to this headline">#</a></h2>
+<p>You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export to wav, npy, or pt files.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts fs2 synthesize logs/Feature<span class="se">\ </span>Prediction<span class="se">\ </span>Experiment/base/checkpoints/last.ckpt -t <span class="s2">&quot;මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ&quot;</span> -a gpu -d <span class="m">1</span> -O wav
 </pre></div>
-</div>
-</section>
-<section id="step-11-synthesize-speech">
-<h2>Step 11: Synthesize Speech<a class="headerlink" href="#step-11-synthesize-speech" title="Permalink to this headline">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts e2e synthesize -t <span class="s2">&quot;hello world&quot;</span> -c config/e2e.yaml
-</pre></div>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>TODO: this doesn’t exist yet
-TODO: e2e needs checkpoint paths</p>
 </div>
 </section>
 </section>

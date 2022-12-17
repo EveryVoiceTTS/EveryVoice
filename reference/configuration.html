@@ -275,39 +275,6 @@ when working with a configuration class.</p>
 <dd><p><strong>Required</strong> The name of your dataset.</p>
 </dd></dl>
 
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-config-wizard-output-dir">
-<span class="sig-name descname"><span class="pre">--output-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;output_dir&gt;</span></span><a class="headerlink" href="#cmdoption-smts-config-wizard-output-dir" title="Permalink to this definition">#</a></dt>
-<dd><p>The directory to save your files to.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Default</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">.</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-config-wizard-wavs-dir">
-<span class="sig-name descname"><span class="pre">--wavs-dir</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;wavs_dir&gt;</span></span><a class="headerlink" href="#cmdoption-smts-config-wizard-wavs-dir" title="Permalink to this definition">#</a></dt>
-<dd><p>The directory where you audio files (in wav format) are located.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Default</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">/home/aip000/tts/code/SmallTeamSpeech/smts/data/OpenSLR/xh_za/za/xho/wavs</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-config-wizard-filelist-path">
-<span class="sig-name descname"><span class="pre">--filelist-path</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;filelist_path&gt;</span></span><a class="headerlink" href="#cmdoption-smts-config-wizard-filelist-path" title="Permalink to this definition">#</a></dt>
-<dd><p>The path to your metadata file (should be a pipe separated file).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Default</dt>
-<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">/home/aip000/tts/code/SmallTeamSpeech/smts/filelists/xh_full.psv</span></code></p>
-</dd>
-</dl>
-</dd></dl>
-
 </section>
 </section>
 </section>
@@ -374,6 +341,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 <dd class="field-odd"><ul class="simple">
 <li><p><a class="reference internal" href="#smts.config.text_config.TextConfig.cleaners" title="smts.config.text_config.TextConfig.cleaners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cleaners</span> <span class="pre">(List[Callable])</span></code></a></p></li>
 <li><p><a class="reference internal" href="#smts.config.text_config.TextConfig.symbols" title="smts.config.text_config.TextConfig.symbols"><code class="xref py py-obj docutils literal notranslate"><span class="pre">symbols</span> <span class="pre">(smts.config.text_config.Symbols)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#smts.config.text_config.TextConfig.to_replace" title="smts.config.text_config.TextConfig.to_replace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_replace</span> <span class="pre">(Dict[str,</span> <span class="pre">str])</span></code></a></p></li>
 </ul>
 </dd>
 </dl>
@@ -385,6 +353,11 @@ for your data. You can share the TextConfig with any models that need it and onl
 <dl class="py attribute pydantic_field">
 <dt class="sig sig-object py" id="smts.config.text_config.TextConfig.symbols">
 <em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">symbols</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#smts.config.text_config.Symbols" title="smts.config.text_config.Symbols"><span class="pre">smts.config.text_config.Symbols</span></a></em><em class="property"> <span class="pre">[Optional]</span></em><a class="headerlink" href="#smts.config.text_config.TextConfig.symbols" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="smts.config.text_config.TextConfig.to_replace">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_replace</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#smts.config.text_config.TextConfig.to_replace" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
