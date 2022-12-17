@@ -3,6 +3,7 @@ from enum import Enum
 from pathlib import Path
 from typing import List
 
+import questionary
 import typer
 from loguru import logger
 from rich import print
@@ -64,6 +65,30 @@ def output_callback(ctx: typer.Context, value: Path):
     return value
 
 
+def questionary_callback(value: str, name: str):
+    path = Path(value)
+    if path.is_file():
+        return f"Sorry, the path at '{path.absolute()}' is a file. Please select a directory."
+    path = path / slugify(name)
+    if path.exists():
+        return f"Sorry, the path at '{path.absolute()}' already exists. Please choose another output directory."
+    return True
+
+
+def questionary_file(value: str):
+    path = Path(value)
+    if path.is_dir():
+        return f"Sorry, the path at '{path.absolute()}' is a directory. Please select a file."
+    return True
+
+
+def questionary_dir(value: str):
+    path = Path(value)
+    if path.is_file():
+        return f"Sorry, the path at '{path.absolute()}' is a file. Please select a directory."
+    return True
+
+
 @app.command(
     help="""This command will help you create all the configuration necessary for your using your dataset.
 
@@ -85,33 +110,22 @@ def config_wizard(
         prompt="What would you like to call this dataset?",
         help="The name of your dataset.",
     ),
-    output_dir: Path = typer.Option(
-        ".",
-        dir_okay=True,
-        file_okay=False,
-        prompt="Where should the wizard save your files?",
-        callback=output_callback,
-        help="The directory to save your files to.",
-    ),
-    wavs_dir: Path = typer.Option(
-        # ...,
-        "/home/aip000/tts/code/SmallTeamSpeech/smts/data/OpenSLR/xh_za/za/xho/wavs",
-        exists=True,
-        dir_okay=True,
-        file_okay=False,
-        prompt="What is the absolute path to your audio files?",
-        help="The directory where you audio files (in wav format) are located.",
-    ),
-    filelist_path: Path = typer.Option(
-        # ...,
-        "/home/aip000/tts/code/SmallTeamSpeech/smts/filelists/xh_full.psv",
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        prompt="What is the absolute path to data filelist?",
-        help="The path to your metadata file (should be a pipe separated file).",
-    ),
 ):
+    output_dir = Path(
+        questionary.path(
+            "Where should the wizard save your files?",
+            default=".",
+            validate=lambda x: questionary_callback(x, name),
+        ).ask()
+    )
+    wavs_dir = Path(
+        questionary.path("Where are your audio files?", validate=questionary_dir).ask()
+    )
+    filelist_path = Path(
+        questionary.path(
+            "Where is your data filelist?", validate=questionary_file
+        ).ask()
+    )
     from smts.config.preprocessing_config import (
         AudioConfig,
         Dataset,
@@ -123,7 +137,7 @@ def config_wizard(
     from smts.model.e2e.config import SMTSConfig
     from smts.model.feature_prediction.config import FeaturePredictionConfig
     from smts.model.vocoder.config import VocoderConfig
-    from smts.utils import generic_csv_loader, write_dict
+    from smts.utils import generic_csv_loader, read_festival, write_dict
     from smts.utils.cli_wizard import (
         auto_check_audio,
         create_default_filelist,
@@ -142,9 +156,30 @@ def config_wizard(
     )
     output_path = output_dir / name
     output_path.mkdir(parents=True, exist_ok=True)
-    # Check filelist headers
-    filelist_data = generic_csv_loader(filelist_path)
-    headers = [x for x in filelist_data[0]]
+    # Determine file type
+    file_type_choices = ["psv", "tsv", "csv", "festival"]
+    file_type_choice = get_menu_prompt(
+        "Select which format your filelist is in:",
+        choices=file_type_choices,
+        multi=False,
+        search=False,
+    )
+    file_type = file_type_choices[file_type_choice]
+    if file_type == "csv":
+        delimiter = ","
+    elif file_type == "psv":
+        delimiter = "|"
+    elif file_type == "tsv":
+        delimiter = "\t"
+    filelist_data_dict = None
+    if file_type == "festival":
+        filelist_data_dict = read_festival(filelist_path)
+        headers = list(filelist_data_dict[0].keys())
+        filelist_data = [list(row.values()) for row in filelist_data_dict]
+    else:
+        # Check filelist headers
+        filelist_data = generic_csv_loader(filelist_path, delimiter=delimiter)
+        headers = list(filelist_data[0])
     if "basename" not in headers or "text" not in headers:
         logger.info(
             "Your filelist must minimally contain a 'basename' and 'text' column, but yours does not."
@@ -166,7 +201,7 @@ def config_wizard(
         )
         if spkr_column != "no":
             headers[int(spkr_column)] = "speaker"
-            langs_inferred_from_data = set([x[int(spkr_column)] for x in filelist_data])
+            langs_inferred_from_data = {x[int(spkr_column)] for x in filelist_data}
         else:
             langs_inferred_from_data = None
             headers.append("speaker")
@@ -206,13 +241,11 @@ def config_wizard(
         ds_supported_langs = {}
         ds_unsupported_langs = {}
         for lang in langs_inferred_from_data:
-            if lang in supported_langs:
-                lang_correct = typer.confirm(
-                    f"Is the lang in your data labelled {lang} the same as the language {supported_langs[lang]} with the iso code {lang}?"
-                )
-                if lang_correct:
-                    ds_supported_langs[lang] = supported_langs[lang]
-                    continue
+            if lang in supported_langs and typer.confirm(
+                f"Is the lang in your data labelled {lang} the same as the language {supported_langs[lang]} with the iso code {lang}?"
+            ):
+                ds_supported_langs[lang] = supported_langs[lang]
+                continue
             logger.info(
                 f"We couldn't recognize {lang}. Please choose it from our list:"
             )

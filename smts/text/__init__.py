@@ -31,6 +31,7 @@ class TextProcessor:
         )
         self.symbols.insert(0, self._pad_symbol)
 
+        self.to_replace = config.text.dict().get("to_replace", {})
         self.missing_symbols: Counter[str] = Counter()
         self.duplicate_symbols: Counter[str] = Counter()
 
@@ -55,6 +56,18 @@ class TextProcessor:
             gaps=True,
             discard_empty=True,
         )
+
+    def replace_cleaner(self, text):
+        """Given some text and a list of replacement operations in the form of input/output key value pairs,
+           return the transformed text.
+        Args:
+            text (str): The text to be converted
+        Returns:
+            str: the replaced text
+        """
+        for k, v in self.to_replace.items():
+            text = re.sub(k, v, text)
+        return text
 
     def text_to_sequence(self, text):
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
@@ -84,6 +97,7 @@ class TextProcessor:
 
     def clean_text(self, text):
         """Converts some text to cleaned text"""
+        text = self.replace_cleaner(text)
         for cleaner_fn in self.config.text.cleaners:
             try:
                 text = cleaner_fn(text)

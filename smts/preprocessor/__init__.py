@@ -465,13 +465,18 @@ class Preprocessor:
             / self.sep.join([item["basename"], item["speaker"], item["language"], fn])
         )
 
-    def process_all_audio(self):
+    def process_all_audio(self, debug=False):
         """Process all audio across datasets, create a combined, filtered filelist and return it"""
         self.dataset_sanity_checks()
         filtered_filelist = []
         for dataset in tqdm(self.datasets, total=len(self.datasets)):
             data_dir = Path(dataset.data_dir)
             filelist = dataset.filelist_loader(dataset.filelist)
+            if debug:
+                filelist = filelist[:10]
+                logger.info(
+                    "Debug flag was set to true, only processing first 10 files"
+                )
             logger.info(f"Collecting files for {dataset.label}")
             non_missing_files = list(
                 self._collect_non_missing_files_from_filelist(filelist, data_dir)
@@ -612,6 +617,7 @@ class Preprocessor:
         cpus=min(5, mp.cpu_count()),
         to_process=List[str],
         overwrite=False,
+        debug=False,
     ):
         self.overwrite = overwrite
         processing_order = ["audio", "text", "pfs", "spec", "energy", "pitch"]
@@ -621,7 +627,7 @@ class Preprocessor:
                 continue
             (self.save_dir / process).mkdir(parents=True, exist_ok=True)
             if process == "audio":
-                if filelist := self.process_all_audio():
+                if filelist := self.process_all_audio(debug=debug):
                     write_filelist(filelist, self.save_dir / output_path)
                     report = self.report()
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
@@ -631,6 +637,11 @@ class Preprocessor:
                 # If audio has already been processed, then just read the processed_filelist
                 try:
                     filelist = generic_dict_loader(self.save_dir / output_path)
+                    if debug:
+                        logger.info(
+                            "Debug flag was set to true, only processing first 10 files"
+                        )
+                        filelist = filelist[:10]
                 except FileNotFoundError:
                     logger.error(
                         f"A filelist was not found at {self.save_dir / output_path}. Please try processing your audio again."

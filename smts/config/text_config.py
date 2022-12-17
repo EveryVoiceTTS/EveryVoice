@@ -1,5 +1,5 @@
 import contextlib
-from typing import Callable, List, Union
+from typing import Callable, Dict, List, Union
 
 from pydantic import BaseModel, Extra, Field
 
@@ -19,6 +19,7 @@ class Symbols(BaseModel):
 
 class TextConfig(ConfigModel):
     symbols: Symbols = Field(default_factory=Symbols)
+    to_replace: Dict[str, str] = {}  # Happens before cleaners
     cleaners: List[Callable] = [lower, collapse_whitespace, nfc_normalize]
 
     def __init__(self, **data) -> None:

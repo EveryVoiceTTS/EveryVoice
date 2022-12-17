@@ -10,6 +10,7 @@ from typing import Dict, List, Tuple, Union
 from unicodedata import normalize
 
 import simple_term_menu
+import typer
 import yaml
 from g2p import make_g2p
 from g2p.exceptions import InvalidLanguageCode, NoPath
@@ -130,7 +131,10 @@ def get_symbol_set(
         possible_text_transformations = [lower, nfc_normalize]
         text_transformations: List[int] = get_menu_prompt(  # type: ignore
             f"Please select all the text transformations to apply to [{iso}] - {lang} before determining symbol set:",
-            ["Lowercase", "NFC Normalization"],
+            [
+                "Lowercase",
+                "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
+            ],
             multi=True,
         )
         chars = set()
@@ -160,8 +164,12 @@ def auto_check_audio(
     srs_counter: Counter[int] = Counter()
     logger.info("🧙 is checking your audio. please wait...")
     lengths = []
+    from scipy import signal
     from scipy.io import wavfile
 
+    double_check = typer.confirm(
+        "The configuration wizard can double check that your declared sampling rate is correct by analyzing the spectrogram. Would you like to do this? It will mean that your processing takes longer."
+    )
     for d in tqdm(filelist_data):
         audio_path = wavs_dir / (d["basename"] + ".wav")
         try:
@@ -171,6 +179,19 @@ def auto_check_audio(
                 f"File '{audio_path}' was not found. Please ensure the file exists and your filelist is created properly."
             )
             continue
+        if double_check:
+            frequencies, _, spectrogram = signal.spectrogram(data, samplerate)
+            energy_threshold = None
+            n_empty_bands = 0
+            for i, band in enumerate(spectrogram):
+                if sum(band) < 0.1:
+                    if n_empty_bands == 0:
+                        energy_threshold = int(frequencies[i])
+                    n_empty_bands += 1
+                    if n_empty_bands > 4:
+                        logger.warning(
+                            f"File '{audio_path} was labelled as having a sampling rate of {samplerate}, but it appears to lose energy at around {energy_threshold}Hz. We'll skip this file."
+                        )
         srs_counter[samplerate] += 1
         lengths.append(data.shape[0] / samplerate)
     for k, v in srs_counter.items():

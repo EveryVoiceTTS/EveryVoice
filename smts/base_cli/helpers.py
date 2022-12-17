@@ -64,6 +64,7 @@ def preprocess_base_command(
     output_path: Optional[Path],
     cpus: Optional[int],
     overwrite: bool,
+    debug: bool,
 ):
     from smts.preprocessor import Preprocessor
 
@@ -87,6 +88,7 @@ def preprocess_base_command(
         cpus=cpus,
         overwrite=overwrite,
         to_process=to_process,
+        debug=debug,
     )
     return preprocessor, config, to_process
 

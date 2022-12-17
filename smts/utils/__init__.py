@@ -40,7 +40,7 @@ def _flatten(structure, key="", path="", flattened=None):
 def load_config_from_json_or_yaml_path(path: Path):
     if not path.exists():
         raise ValueError(f"Config file '{path}' does not exist")
-    with open(path, "r") as f:
+    with open(path, "r", encoding="utf8") as f:
         config = json.load(f) if path.suffix == ".json" else yaml.safe_load(f)
     return config
 
@@ -113,7 +113,7 @@ def plot_spectrogram(spectrogram):
 
 
 def write_filelist(files, path):
-    with open(path, "w") as f:
+    with open(path, "w", encoding="utf8") as f:
         writer = csv.DictWriter(
             f,
             fieldnames=files[0].keys(),
@@ -152,7 +152,54 @@ def load_lj_metadata_hifigan(path):
     return files
 
 
-def generic_dict_loader(path, fieldnames=None):
+def read_festival(path):
+    """Read Festival format into filelist
+    Args:
+        path (Path): Path to fesetival format filelist
+    """
+    festival_pattern = re.compile(
+        r"""
+    (\s*
+    (?P<basename>[\w\d\-\_]*)
+    \s*
+    "(?P<text>[^"]*)"
+     )
+    """,
+        re.VERBOSE,
+    )
+    data = []
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            match = re.search(festival_pattern, line.strip())
+            basename = match["basename"].strip()
+            text = match["text"].strip()
+            data.append({"basename": basename, "text": text})
+    return data
+
+
+def sniff_and_return_filelist_data(path):
+    """Sniff csv, and return dialect if not festival format:
+    ( LJ0002 "this is the festival format" )
+    Args:
+        path (Path): path to filelist
+    Returns:
+        False if not csv
+    """
+    festival_pattern = re.compile(r'\( [\w\d_]* "[^"]*" \)')
+    with open(path, newline="", encoding="utf8") as f:
+        data = f.read(1024)
+        f.seek(0)
+        if re.search(festival_pattern, data):
+            return read_festival(path)
+        else:
+            dialect = csv.Sniffer().sniff(data)
+            reader = csv.DictReader(f, dialect=dialect)
+            return list(reader)
+
+
+def generic_dict_loader(
+    path, delimiter="|", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
+):
     with open(
         path,
         "r",
@@ -162,17 +209,19 @@ def generic_dict_loader(path, fieldnames=None):
         reader = csv.DictReader(
             f,
             fieldnames=fieldnames,
-            delimiter="|",
-            quoting=csv.QUOTE_NONE,
-            escapechar="\\",
+            delimiter=delimiter,
+            quoting=quoting,
+            escapechar=escapechar,
         )
         files = list(reader)
     return files
 
 
-def generic_csv_loader(path):
+def generic_csv_loader(path, delimiter="|", quoting=csv.QUOTE_NONE, escapechar="\\"):
     with open(path, "r", newline="", encoding="utf8") as f:
-        reader = csv.reader(f, delimiter="|", quoting=csv.QUOTE_NONE, escapechar="\\")
+        reader = csv.reader(
+            f, delimiter=delimiter, quoting=quoting, escapechar=escapechar
+        )
         return list(reader)
 
 

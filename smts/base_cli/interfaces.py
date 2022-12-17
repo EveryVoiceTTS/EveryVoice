@@ -28,6 +28,7 @@ def preprocess_base_command_interface(
     ),
     cpus: Optional[int] = typer.Option(min(4, mp.cpu_count()), "-C", "--cpus"),
     overwrite: bool = typer.Option(False, "-O", "--overwrite"),
+    debug: bool = typer.Option(False, "-D", "--debug"),
 ):
     pass
 
