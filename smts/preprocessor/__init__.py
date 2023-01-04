@@ -660,7 +660,7 @@ class Preprocessor:
             Panel(
                 f"You've finished preprocessing: {', '.join(to_process)}. Your files are located at {self.save_dir.absolute()}. {report}",
                 title="Congratulations 🎉",
-                subtitle="Next Steps Documentation: http://localhost:8000/guides/index.html",
+                subtitle="Next Steps Documentation: https://roedoejet.github.io/SmallTeamSpeech/guides/custom.html",
                 border_style=Style(color="#0B4F19"),
             )
         )

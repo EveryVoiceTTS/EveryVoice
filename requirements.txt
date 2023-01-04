@@ -8,6 +8,7 @@ nltk==3.7
 pandas==1.4.4
 panphon==0.20.0
 pathos==0.2.9
+pycountry==22.3.5
 pydantic==1.10.2
 pympi-ling
 pysdtw==0.0.5
@@ -16,6 +17,8 @@ python-slugify==5.0.0
 pyworld == 0.2.10
 PyYAML>=5.1
 questionary==1.10.0
+readalongs==0.2.20221114
+simple-term-menu==1.5.2
 setuptools==59.5.0 # https://github.com/pytorch/pytorch/issues/69894
 tabulate==0.8.10
 typer[all]==0.6.1

@@ -23,7 +23,7 @@ aligner:
     filelist: "./preprocessed/YourDataSet/processed_filelist.psv"
     filelist_loader: "smts.utils.generic_dict_loader"
     logger:
-      name: "Base Experiment"
+      name: "BaseExperiment"
       save_dir: "./logs"
       sub_dir: "smts.utils.get_current_time"
       version: "base"
@@ -136,7 +136,7 @@ feature_prediction:
     filelist: "./preprocessed/YourDataSet/processed_filelist.psv"
     filelist_loader: "smts.utils.generic_dict_loader"
     logger:
-      name: "Base Experiment"
+      name: "BaseExperiment"
       save_dir: "./logs"
       sub_dir: "smts.utils.get_current_time"
       version: "base"
@@ -178,7 +178,7 @@ vocoder:
     filelist: "./preprocessed/YourDataSet/processed_filelist.psv"
     filelist_loader: "smts.utils.generic_dict_loader"
     logger:
-      name: "Base Experiment"
+      name: "BaseExperiment"
       save_dir: "./logs"
       sub_dir: "smts.utils.get_current_time"
       version: "base"

@@ -82,7 +82,7 @@ class PartialConfigModel(ConfigModel):
 
 
 class LoggerConfig(ConfigModel):
-    name: str = "Base Experiment"
+    name: str = "BaseExperiment"
     save_dir: DirectoryPath = Path("./logs")
     sub_dir: str = "smts.utils.get_current_time"
     version: str = "base"
@@ -116,7 +116,7 @@ class BaseTrainingConfig(ConfigModel):
     filelist_loader: Callable = generic_dict_loader
     logger: LoggerConfig = Field(default_factory=LoggerConfig)
     val_data_workers: int = 0
-    train_data_workers: int = 0
+    train_data_workers: int = 4
 
     @convert_callables(kwargs_to_convert=["filelist_loader"])
     @convert_paths(kwargs_to_convert=["finetune_checkpoint", "filelist"])

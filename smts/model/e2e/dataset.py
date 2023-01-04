@@ -10,6 +10,7 @@ from smts.dataloader import BaseDataModule
 from smts.model.e2e.config import SMTSConfig
 from smts.text import TextProcessor
 from smts.text.lookups import LookupTables
+from smts.utils import check_dataset_size
 from smts.utils.heavy import _flatten, get_segments
 
 
@@ -162,6 +163,7 @@ class E2EDataModule(BaseDataModule):
         )  # TODO: should this be set somewhere else?
         self.train_split = config.training.train_split
         self.load_dataset()
+        self.dataset_length = len(self.dataset)
 
     @staticmethod
     def collate_method(data):
@@ -190,11 +192,13 @@ class E2EDataModule(BaseDataModule):
         )
 
     def prepare_data(self):
-        train_split = int(len(self.dataset) * self.train_split)
-
+        train_samples = int(self.dataset_length * self.train_split)
+        val_samples = self.dataset_length - train_samples
         self.train_dataset, self.val_dataset = random_split(
-            self.dataset, [train_split, len(self.dataset) - train_split]
+            self.dataset, [train_samples, val_samples]
         )
+        check_dataset_size(self.batch_size, train_samples, "training")
+        check_dataset_size(self.batch_size, val_samples, "validation")
         self.train_dataset = E2EDataset(self.train_dataset, self.config)
         self.val_dataset = E2EDataset(self.val_dataset, self.config)
         # save it to disk

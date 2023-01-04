@@ -18,6 +18,19 @@ import smts
 _whitespace_re = re.compile(r"\s+")
 
 
+def check_dataset_size(batch_size: int, number_of_samples: int, name: str):
+    if batch_size > number_of_samples:
+        reduce_train_split = (
+            "You can also decrease the train split to increase the number of samples in your validation dataset."
+            if "val" in name
+            else ""
+        )
+        logger.error(
+            f"Your {name} dataset only has {number_of_samples} samples, but you have a defined batch size of {batch_size}. Please either add more data or decrease your batch size. {reduce_train_split}"
+        )
+        exit()
+
+
 def return_configs_from_dir(dir: Path) -> Dict[str, Path]:
     return {os.path.basename(path)[:-5]: path for path in dir.glob("*.yaml")}
 
