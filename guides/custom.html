@@ -180,13 +180,13 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#step-6-train-aligner">
-   Step 6: Train Aligner
+  <a class="reference internal nav-link" href="#step-6a-train-aligner">
+   Step 6a: Train Aligner
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#step-6-export-alignments">
-   Step 6: Export Alignments
+  <a class="reference internal nav-link" href="#step-6b-export-alignments">
+   Step 6b: Export Alignments
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
@@ -269,35 +269,35 @@ then you should have a psv file that looks like this:</p>
 <section id="step-4-run-the-configuration-wizard">
 <h2>Step 4: Run the Configuration Wizard 🧙<a class="headerlink" href="#step-4-run-the-configuration-wizard" title="Permalink to this headline">#</a></h2>
 <p>Once you have your data, the best thing to do is to run the Configuration Wizard 🧙. To do that run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts config-wizard
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>config-wizard
 </pre></div>
 </div>
 <p>After running the config-wizard, cd into your newly created directory. Let’s call it <cite>test</cite> for now.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span> <span class="nb">test</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span><span class="nb">test</span>
 </pre></div>
 </div>
 </section>
 <section id="step-5-run-the-preprocessor">
 <h2>Step 5: Run the Preprocessor<a class="headerlink" href="#step-5-run-the-preprocessor" title="Permalink to this headline">#</a></h2>
 <p>Your models need to do a number of preprocessing steps in order to prepare for training. To preprocess everything you need, run the following:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts dfa preprocess -p config/aligner.yaml
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>dfa<span class="w"> </span>preprocess<span class="w"> </span>-p<span class="w"> </span>config/aligner.yaml
 </pre></div>
 </div>
 </section>
-<section id="step-6-train-aligner">
-<h2>Step 6: Train Aligner<a class="headerlink" href="#step-6-train-aligner" title="Permalink to this headline">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts dfa train -p config/aligner.yaml
+<section id="step-6a-train-aligner">
+<h2>Step 6a: Train Aligner<a class="headerlink" href="#step-6a-train-aligner" title="Permalink to this headline">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>dfa<span class="w"> </span>train<span class="w"> </span>-p<span class="w"> </span>config/aligner.yaml
 </pre></div>
 </div>
 <p>By default, we run our training with PyTorch Lightning's “auto” strategy. But, if you are on a machine where you know the hardware, you can specify it like:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts dfa train -p config/aligner.yaml -d <span class="m">1</span> -a gpu
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>dfa<span class="w"> </span>train<span class="w"> </span>-p<span class="w"> </span>config/aligner.yaml<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span><span class="w"> </span>-a<span class="w"> </span>gpu
 </pre></div>
 </div>
 <p>Which would use the GPU accelerator and specify 1 device/chip.</p>
 </section>
-<section id="step-6-export-alignments">
-<h2>Step 6: Export Alignments<a class="headerlink" href="#step-6-export-alignments" title="Permalink to this headline">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts dfa extract-alignments -p config/aligner.yaml -m logs/Aligner<span class="se">\ </span>Experiment/base/checkpoints/last.ckpt
+<section id="step-6b-export-alignments">
+<h2>Step 6b: Export Alignments<a class="headerlink" href="#step-6b-export-alignments" title="Permalink to this headline">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>dfa<span class="w"> </span>extract-alignments<span class="w"> </span>-p<span class="w"> </span>config/aligner.yaml<span class="w"> </span>-m<span class="w"> </span>logs/AlignerExperiment/base/checkpoints/last.ckpt
 </pre></div>
 </div>
 <p>This will extract the alignments from your best model and put them in your preprocessing folder.</p>
@@ -305,29 +305,29 @@ then you should have a psv file that looks like this:</p>
 <section id="step-7-preprocess-the-pitch-and-energy-data-for-your-feature-prediction-network">
 <h2>Step 7: Preprocess the pitch and energy data for your Feature Prediction Network<a class="headerlink" href="#step-7-preprocess-the-pitch-and-energy-data-for-your-feature-prediction-network" title="Permalink to this headline">#</a></h2>
 <p>For the phone-averaged pre-processing to work, you must have the durations from your aligner which is why we preprocess the data for the feature prediction network after training the aligner.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts fs2 preprocess -p config/feature_prediction.yaml -d pitch -d energy -O
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>fs2<span class="w"> </span>preprocess<span class="w"> </span>-p<span class="w"> </span>config/feature_prediction.yaml<span class="w"> </span>-d<span class="w"> </span>pitch<span class="w"> </span>-d<span class="w"> </span>energy<span class="w"> </span>-O
 </pre></div>
 </div>
 </section>
 <section id="step-8-train-your-vocoder">
 <h2>Step 8: Train your Vocoder<a class="headerlink" href="#step-8-train-your-vocoder" title="Permalink to this headline">#</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts hifigan train -p config/vocoder.yaml
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>hifigan<span class="w"> </span>train<span class="w"> </span>-p<span class="w"> </span>config/vocoder.yaml
 </pre></div>
 </div>
 </section>
 <section id="step-9-train-your-feature-prediction-network">
 <h2>Step 9: Train your Feature Prediction Network<a class="headerlink" href="#step-9-train-your-feature-prediction-network" title="Permalink to this headline">#</a></h2>
 <p>To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the config/feature_prediction.yaml</p>
-<p>At the bottom of that file you’ll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be /path/to/test/logs/Vocoder Experiment/base/checkpoints/last.ckpt where /path/to would be the actual path to it on your computer.)</p>
+<p>At the bottom of that file you’ll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be /path/to/test/logs/VocoderExperiment/base/checkpoints/last.ckpt where /path/to would be the actual path to it on your computer.)</p>
 <p>Once you’ve replaced the vocoder_path key, you can train your feature prediction network:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts fs2 train -p config/feature_prediction.yaml
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>fs2<span class="w"> </span>train<span class="w"> </span>-p<span class="w"> </span>config/feature_prediction.yaml
 </pre></div>
 </div>
 </section>
 <section id="step-10-synthesize-speech-in-your-language">
 <h2>Step 10: Synthesize Speech in Your Language!<a class="headerlink" href="#step-10-synthesize-speech-in-your-language" title="Permalink to this headline">#</a></h2>
 <p>You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export to wav, npy, or pt files.</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts fs2 synthesize logs/Feature<span class="se">\ </span>Prediction<span class="se">\ </span>Experiment/base/checkpoints/last.ckpt -t <span class="s2">&quot;මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ&quot;</span> -a gpu -d <span class="m">1</span> -O wav
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>fs2<span class="w"> </span>synthesize<span class="w"> </span>logs/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ&quot;</span><span class="w"> </span>-a<span class="w"> </span>gpu<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span><span class="w"> </span>-O<span class="w"> </span>wav
 </pre></div>
 </div>
 </section>

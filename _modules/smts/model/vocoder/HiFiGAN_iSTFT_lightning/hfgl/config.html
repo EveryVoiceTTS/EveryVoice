@@ -175,7 +175,7 @@
 
 
 <span class="k">class</span> <span class="nc">HiFiGANDepthwiseBlocks</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Only currently implemented for the generator&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Only currently implemented for the generator&quot;&quot;&quot;</span>
 
     <span class="n">generator</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
@@ -204,7 +204,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="o">**</span><span class="n">data</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Custom init to process activation function&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Custom init to process activation function&quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">data</span><span class="p">)</span></div>
 
 
@@ -234,7 +234,7 @@
 
 <div class="viewcode-block" id="HiFiGANConfig.load_config_from_path"><a class="viewcode-back" href="../../../../../../reference/vocoder.html#smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig.load_config_from_path">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">load_config_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;HiFiGANConfig&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Load a config from a path&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load a config from a path&quot;&quot;&quot;</span>
         <span class="n">config</span> <span class="o">=</span> <span class="n">load_config_from_json_or_yaml_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">HiFiGANConfig</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div>
 

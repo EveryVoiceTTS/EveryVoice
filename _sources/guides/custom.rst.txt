@@ -74,7 +74,7 @@ Your models need to do a number of preprocessing steps in order to prepare for t
     smts dfa preprocess -p config/aligner.yaml
 
 
-Step 6: Train Aligner
+Step 6a: Train Aligner
 ----------------------
 
 .. code-block:: bash
@@ -89,12 +89,12 @@ By default, we run our training with PyTorch Lightning\'s "auto" strategy. But, 
 
 Which would use the GPU accelerator and specify 1 device/chip.
 
-Step 6: Export Alignments
+Step 6b: Export Alignments
 -------------------------
 
 .. code-block:: bash
 
-    smts dfa extract-alignments -p config/aligner.yaml -m logs/Aligner\ Experiment/base/checkpoints/last.ckpt
+    smts dfa extract-alignments -p config/aligner.yaml -m logs/AlignerExperiment/base/checkpoints/last.ckpt
 
 This will extract the alignments from your best model and put them in your preprocessing folder.
 
@@ -122,7 +122,7 @@ Step 9: Train your Feature Prediction Network
 
 To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the config/feature_prediction.yaml
 
-At the bottom of that file you'll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be /path/to/test/logs/Vocoder Experiment/base/checkpoints/last.ckpt where /path/to would be the actual path to it on your computer.)
+At the bottom of that file you'll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be /path/to/test/logs/VocoderExperiment/base/checkpoints/last.ckpt where /path/to would be the actual path to it on your computer.)
 
 Once you've replaced the vocoder_path key, you can train your feature prediction network:
 
@@ -138,7 +138,7 @@ You can synthesize by pointing the CLI to your trained feature prediction networ
 
 .. code-block:: bash
 
-    smts fs2 synthesize logs/Feature\ Prediction\ Experiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1 -O wav
+    smts fs2 synthesize logs/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1 -O wav
 
 
 

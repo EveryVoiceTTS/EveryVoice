@@ -183,7 +183,7 @@
     <span class="p">)</span>
     <span class="n">binned_sampler</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">plot_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1000</span>
-    <span class="n">extraction_method</span><span class="p">:</span> <span class="n">DFAlignerExtractionMethod</span> <span class="o">=</span> <span class="n">DFAlignerExtractionMethod</span><span class="o">.</span><span class="n">beam</span></div>
+    <span class="n">extraction_method</span><span class="p">:</span> <span class="n">DFAlignerExtractionMethod</span> <span class="o">=</span> <span class="n">DFAlignerExtractionMethod</span><span class="o">.</span><span class="n">dijkstra</span></div>
 
 
 <div class="viewcode-block" id="DFAlignerConfig"><a class="viewcode-back" href="../../../../../../reference/aligner.html#smts.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig">[docs]</a><span class="k">class</span> <span class="nc">DFAlignerConfig</span><span class="p">(</span><span class="n">PartialConfigModel</span><span class="p">):</span>
@@ -194,7 +194,7 @@
 
 <div class="viewcode-block" id="DFAlignerConfig.load_config_from_path"><a class="viewcode-back" href="../../../../../../reference/aligner.html#smts.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig.load_config_from_path">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">load_config_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;DFAlignerConfig&quot;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;Load a config from a path&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load a config from a path&quot;&quot;&quot;</span>
         <span class="n">config</span> <span class="o">=</span> <span class="n">load_config_from_json_or_yaml_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">DFAlignerConfig</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span></div></div>
 
