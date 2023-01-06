@@ -30,6 +30,7 @@ from smts.config import ConfigError
 from smts.model.aligner.config import AlignerConfig
 from smts.model.feature_prediction.config import FeaturePredictionConfig
 from smts.model.vocoder.config import VocoderConfig
+from smts.preprocessor.attention_prior import BetaBinomialInterpolator
 from smts.text import TextProcessor
 from smts.utils import generic_dict_loader, write_filelist
 from smts.utils.heavy import dynamic_range_compression_torch, get_spectral_transform
@@ -534,6 +535,7 @@ class Preprocessor:
             isinstance(self.config, FeaturePredictionConfig)
             and self.config.model.variance_adaptor.variance_predictors.energy.level
             == "phone"
+            and not self.config.model.learn_alignment
         ):
             dur_path = self.create_path(item, "duration", "duration.pt")
             durs = torch.load(dur_path)
@@ -551,11 +553,28 @@ class Preprocessor:
             isinstance(self.config, FeaturePredictionConfig)
             and self.config.model.variance_adaptor.variance_predictors.pitch.level
             == "phone"
+            and not self.config.model.learn_alignment
         ):
             dur_path = self.create_path(item, "duration", "duration.pt")
             durs = torch.load(dur_path)
             pitch = self.average_data_by_durations(pitch, durs)
         torch.save(pitch, pitch_path)
+
+    def process_attn_prior(self, item):
+        binomial_interpolator = BetaBinomialInterpolator()
+        text = self.extract_text_inputs(item["text"], use_pfs=False)
+        input_spec_path = self.create_path(
+            item,
+            "spec",
+            f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.pt",
+        )
+        attn_prior_path = self.create_path(item, "attn", "attn-prior.pt")
+        input_spec = torch.load(input_spec_path)
+        attn_prior = torch.from_numpy(
+            binomial_interpolator(input_spec.size(1), text.size(0))
+        )
+        assert input_spec.size(1) == attn_prior.size(0)
+        torch.save(attn_prior, attn_prior_path)
 
     def process_text(self, item, use_pfs=False):
         basename = "pfs.pt" if use_pfs else "text.pt"
@@ -610,6 +629,8 @@ class Preprocessor:
             return self.process_pitch
         if process == "spec":
             return functools.partial(self.process_spec)
+        if process == "attn":
+            return self.process_attn_prior
 
     def preprocess(
         self,
@@ -620,7 +641,7 @@ class Preprocessor:
         debug=False,
     ):
         self.overwrite = overwrite
-        processing_order = ["audio", "text", "pfs", "spec", "energy", "pitch"]
+        processing_order = ["audio", "text", "pfs", "spec", "attn", "energy", "pitch"]
 
         for process in processing_order:
             if process not in to_process:
@@ -647,11 +668,17 @@ class Preprocessor:
                         f"A filelist was not found at {self.save_dir / output_path}. Please try processing your audio again."
                     )
                     exit()
-                pool = Pool(nodes=cpus)
                 process_fn = self.get_process_fn(process)
                 logger.info(f"Processing {process} on {cpus} CPUs...")
-                for _ in tqdm(pool.uimap(process_fn, filelist), total=len(filelist)):
-                    pass
+                if cpus:
+                    pool = Pool(nodes=cpus)
+                    for _ in tqdm(
+                        pool.uimap(process_fn, filelist), total=len(filelist)
+                    ):
+                        pass
+                else:
+                    for f in tqdm(filelist):
+                        process_fn(f)
         if "audio" in to_process:
             report = f"Here is a report:\n {self.report()}"
         else:
