@@ -326,7 +326,7 @@ the aligner and the other models.</p>
 <span id="cmdoption-smts-fs2-preprocess-data"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--data</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;data&gt;</span></span><a class="headerlink" href="#cmdoption-smts-fs2-preprocess-d" title="Permalink to this definition">#</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Options</dt>
-<dd class="field-odd"><p>audio | spec | text | pitch | energy</p>
+<dd class="field-odd"><p>audio | spec | attn | text | pitch | energy</p>
 </dd>
 </dl>
 </dd></dl>
@@ -846,7 +846,7 @@ the aligner and the other models.</p>
 <span class="w">            </span><span class="p">},</span>
 <span class="w">            </span><span class="nt">&quot;learn_alignment&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">               </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Learn Alignment&quot;</span><span class="p">,</span>
-<span class="w">               </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">               </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
 <span class="w">            </span><span class="p">},</span>
 <span class="w">            </span><span class="nt">&quot;max_length&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1819,7 +1819,7 @@ the aligner and the other models.</p>
 <span class="w">      </span><span class="p">},</span>
 <span class="w">      </span><span class="nt">&quot;learn_alignment&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Learn Alignment&quot;</span><span class="p">,</span>
-<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 <span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;boolean&quot;</span>
 <span class="w">      </span><span class="p">},</span>
 <span class="w">      </span><span class="nt">&quot;max_length&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -2167,7 +2167,7 @@ the aligner and the other models.</p>
 
 <dl class="py attribute pydantic_field">
 <dt class="sig sig-object py" id="smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2ModelConfig.learn_alignment">
-<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">learn_alignment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">False</span></em><a class="headerlink" href="#smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2ModelConfig.learn_alignment" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">learn_alignment</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">True</span></em><a class="headerlink" href="#smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2ModelConfig.learn_alignment" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute pydantic_field">
