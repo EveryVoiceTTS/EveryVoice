@@ -201,10 +201,7 @@ def config_wizard(
         )
         if spkr_column != "no":
             headers[int(spkr_column)] = "speaker"
-            langs_inferred_from_data = {x[int(spkr_column)] for x in filelist_data}
-        else:
-            langs_inferred_from_data = None
-            headers.append("speaker")
+    langs_inferred_from_data = None
     if "language" not in headers:
         lang_column = Prompt.ask(
             "Do you have a column for language id?",
@@ -218,6 +215,7 @@ def config_wizard(
         )
         if lang_column != "no":
             headers[int(lang_column)] = "language"
+            langs_inferred_from_data = {x[int(lang_column)] for x in filelist_data}
     # TODO: test with multilingual and monolingual labelled (with recognized and unrecognized) and unlabelled datasets
     if langs_inferred_from_data is None:
         # No language selected
@@ -227,7 +225,6 @@ def config_wizard(
             logger.info(
                 "Sorry, if your dataset has more than one language in it, you will have to add this information to your filelist, because the wizard can't guess!"
             )
-        headers.append("language")
     else:
         langs_to_convert = (
             {}

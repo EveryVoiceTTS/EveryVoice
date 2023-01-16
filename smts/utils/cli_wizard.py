@@ -128,10 +128,11 @@ def get_symbol_set(
             f"We don't support [{iso}] - {lang} so we will just guess. You can always update/change the symbol set in your configuration file later."
         )
         possible_values = [iso, lang, "default"]
-        possible_text_transformations = [lower, nfc_normalize]
+        possible_text_transformations = ["none", lower, nfc_normalize]
         text_transformations: List[int] = get_menu_prompt(  # type: ignore
             f"Please select all the text transformations to apply to [{iso}] - {lang} before determining symbol set:",
             [
+                "None",
                 "Lowercase",
                 "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
             ],
@@ -142,8 +143,9 @@ def get_symbol_set(
             row_lang = row["language"]
             if row_lang in possible_values:
                 text = row["text"]
-                for t in text_transformations:
-                    text = possible_text_transformations[t](text)
+                if 0 not in text_transformations:
+                    for t in text_transformations:
+                        text = possible_text_transformations[t](text)
                 for c in text:
                     chars.add(c)
         symbols[iso] = [
