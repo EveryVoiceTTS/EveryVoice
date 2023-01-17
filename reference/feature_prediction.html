@@ -521,7 +521,8 @@ the aligner and the other models.</p>
 <dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-smts-fs2-train-d">
 <span id="cmdoption-smts-fs2-train-devices"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--devices</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;devices&gt;</span></span><a class="headerlink" href="#cmdoption-smts-fs2-train-d" title="Permalink to this definition">#</a></dt>
-<dd><dl class="field-list simple">
+<dd><p>The number of GPUs on each node</p>
+<dl class="field-list simple">
 <dt class="field-odd">Default</dt>
 <dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">auto</span></code></p>
 </dd>
@@ -529,9 +530,26 @@ the aligner and the other models.</p>
 </dd></dl>
 
 <dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-smts-fs2-train-0">
+<span id="cmdoption-smts-fs2-train-nodes"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--nodes</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;nodes&gt;</span></span><a class="headerlink" href="#cmdoption-smts-fs2-train-0" title="Permalink to this definition">#</a></dt>
+<dd><p>The number of nodes on your machine</p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
 <dt class="sig sig-object std" id="cmdoption-smts-fs2-train-s">
 <span id="cmdoption-smts-fs2-train-strategy"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--strategy</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;strategy&gt;</span></span><a class="headerlink" href="#cmdoption-smts-fs2-train-s" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>The strategy for data parallelization: <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html">https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html</a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Default</dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">ddp</span></code></p>
+</dd>
+</dl>
+</dd></dl>
 
 </section>
 </section>
