@@ -107,6 +107,7 @@ def train_base_command(
     config_path: Path,
     accelerator: str,
     devices: str,
+    nodes: int,
     strategy: str,
 ):
     config = load_config_base_command(
@@ -150,6 +151,7 @@ def train_base_command(
         max_epochs=config.training.max_epochs,
         callbacks=[ckpt_callback, lr_monitor],
         strategy=strategy,
+        num_nodes=nodes,
         detect_anomaly=False,  # used for debugging, but triples training time
     )
     model_obj = model(config)

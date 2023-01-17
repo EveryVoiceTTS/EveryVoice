@@ -44,8 +44,18 @@ def train_base_command_interface(
         "-a",
         help="Uses PyTorch Lightning Accelerators: https://pytorch-lightning.readthedocs.io/en/stable/extensions/accelerator.html",
     ),
-    devices: str = typer.Option("auto", "--devices", "-d"),
-    strategy: str = typer.Option(None, "--strategy", "-s"),
+    devices: str = typer.Option(
+        "auto", "--devices", "-d", help="The number of GPUs on each node"
+    ),
+    nodes: str = typer.Option(
+        1, "--nodes", "-n", help="The number of nodes on your machine"
+    ),
+    strategy: str = typer.Option(
+        "ddp",
+        "--strategy",
+        "-s",
+        help="The strategy for data parallelization: https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html",
+    ),
 ):
     pass
 
@@ -61,7 +71,17 @@ def inference_base_command_interface(
         "-a",
         help="Uses PyTorch Lightning Accelerators: https://pytorch-lightning.readthedocs.io/en/stable/extensions/accelerator.html",
     ),
-    devices: str = typer.Option("auto", "--devices", "-d"),
-    strategy: str = typer.Option(None, "--strategy", "-s"),
+    devices: str = typer.Option(
+        "auto", "--devices", "-d", help="The number of GPUs on each node"
+    ),
+    nodes: int = typer.Option(
+        1, "--nodes", "-n", help="The number of nodes on your machine"
+    ),
+    strategy: str = typer.Option(
+        "ddp",
+        "--strategy",
+        "-s",
+        help="The strategy for data parallelization: https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html",
+    ),
 ):
     pass
