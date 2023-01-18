@@ -124,6 +124,12 @@ class TextProcessor:
             self.missing_symbols[symbol] += 1
         return clean_tokens
 
+    def get_missing_symbols(self, text):
+        """ Helper function to return a list of symbols missing from configuration.
+        """
+        clean_text = self.clean_text(text)
+        return self._missing_symbol_finder.tokenize(clean_text)
+
     def cleaned_text_to_sequence(self, cleaned_text):
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
         Args:

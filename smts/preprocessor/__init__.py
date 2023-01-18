@@ -632,6 +632,29 @@ class Preprocessor:
         if process == "attn":
             return self.process_attn_prior
 
+    def check_data(
+        self,
+        filelist,
+        word_seg_token=" "
+    ):
+        data = []
+        for item in tqdm(filelist):
+            data_point = {k: v for k, v in item.items()}
+            raw_text = item['text']
+            n_words = len(raw_text.split(word_seg_token))
+            n_chars = len(self.text_processor.text_to_sequence(raw_text))
+            audio = torch.load(self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.pt"))
+            audio_length_s = len(audio) / self.input_sampling_rate
+            data_point['duration'] = audio_length_s
+            data_point['speaking_rate_word'] = n_words / audio_length_s
+            data_point['speaking_rate_char'] = n_chars / audio_length_s
+            data_point['n_missing_symbols'] = len(self.text_processor.get_missing_symbols(raw_text))
+            data_point["n_words"] = n_words
+            data_point["n_chars"] = n_chars
+            breakpoint()
+            data.append(data_point)
+        return data
+
     def preprocess(
         self,
         output_path="processed_filelist.psv",
@@ -639,10 +662,20 @@ class Preprocessor:
         to_process=List[str],
         overwrite=False,
         debug=False,
+        check_data=True,
     ):
         self.overwrite = overwrite
         processing_order = ["audio", "text", "pfs", "spec", "attn", "energy", "pitch"]
-
+        if check_data:
+            # speaking rate (words/second, float, scatterplot or bar chart)
+            # speaking rate (characters/second, float, scatterplot or bar chart)
+            # unrecognized symbols (bool, list)
+            # duration (float, bar chart)
+            # SNR ratio (float, bar chart)
+            # silence % (float, bar chart)
+            filelist_test = generic_dict_loader('preprocessed/processed_filelist.psv')
+            self.check_data(filelist_test)
+        breakpoint()
         for process in processing_order:
             if process not in to_process:
                 continue
