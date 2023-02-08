@@ -178,7 +178,6 @@ class Preprocessor:
         self,
         wav_path: str,
         normalize=True,
-        use_effects=False,
         resample_rate=None,
         sox_effects=None,
         save_wave=False,
@@ -193,7 +192,7 @@ class Preprocessor:
         """
 
         audio, sr = load_audio(wav_path, normalize=normalize)
-        if use_effects and sox_effects:
+        if sox_effects:
             audio, sr = apply_effects_tensor(
                 audio,
                 sr,
@@ -472,6 +471,7 @@ class Preprocessor:
         filtered_filelist = []
         for dataset in tqdm(self.datasets, total=len(self.datasets)):
             data_dir = Path(dataset.data_dir)
+            sox_effects = dataset.sox_effects
             filelist = dataset.filelist_loader(dataset.filelist)
             if debug:
                 filelist = filelist[:10]
@@ -501,6 +501,7 @@ class Preprocessor:
                     input_audio, _ = self.process_audio(
                         data_dir / (item["basename"] + ".wav"),
                         resample_rate=self.input_sampling_rate,
+                        sox_effects=sox_effects
                     )
                     if input_audio is None:
                         continue
@@ -515,6 +516,7 @@ class Preprocessor:
                     output_audio, _ = self.process_audio(
                         data_dir / (item["basename"] + ".wav"),
                         resample_rate=self.output_sampling_rate,
+                        sox_effects=sox_effects
                     )
                     if output_audio is None:
                         continue
@@ -643,15 +645,26 @@ class Preprocessor:
             raw_text = item['text']
             n_words = len(raw_text.split(word_seg_token))
             n_chars = len(self.text_processor.text_to_sequence(raw_text))
-            audio = torch.load(self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.pt"))
+            audio_path = self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.pt")
+            try:
+                audio = torch.load(audio_path)
+            except FileNotFoundError:
+                logger.warning(f"Sorry the preprocessed audio file at {audio_path} was not found, you must preprocess your data before running the data checker.")
+                continue
             audio_length_s = len(audio) / self.input_sampling_rate
+            audio_silence_removed, _ = apply_effects_tensor(
+                audio.unsqueeze(0),
+                self.config.preprocessing.audio.input_sampling_rate,
+                [["silence", "1", "0.1", "1.0%", "-1", "0.1", "1.0%"]],
+            )
+            silence_length_s = (len(audio) - len(audio_silence_removed[0])) / self.input_sampling_rate
+            data_point["silence_ratio"] = silence_length_s / audio_length_s
             data_point['duration'] = audio_length_s
             data_point['speaking_rate_word'] = n_words / audio_length_s
             data_point['speaking_rate_char'] = n_chars / audio_length_s
             data_point['n_missing_symbols'] = len(self.text_processor.get_missing_symbols(raw_text))
             data_point["n_words"] = n_words
             data_point["n_chars"] = n_chars
-            breakpoint()
             data.append(data_point)
         return data
 
@@ -666,16 +679,6 @@ class Preprocessor:
     ):
         self.overwrite = overwrite
         processing_order = ["audio", "text", "pfs", "spec", "attn", "energy", "pitch"]
-        if check_data:
-            # speaking rate (words/second, float, scatterplot or bar chart)
-            # speaking rate (characters/second, float, scatterplot or bar chart)
-            # unrecognized symbols (bool, list)
-            # duration (float, bar chart)
-            # SNR ratio (float, bar chart)
-            # silence % (float, bar chart)
-            filelist_test = generic_dict_loader('preprocessed/processed_filelist.psv')
-            self.check_data(filelist_test)
-        breakpoint()
         for process in processing_order:
             if process not in to_process:
                 continue

@@ -6,12 +6,14 @@ from typing import List
 import questionary
 import typer
 from loguru import logger
+from merge_args import merge_args
 from rich import print
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.style import Style
 from slugify import slugify
 
+from smts.base_cli.interfaces import load_config_base_command_interface
 from smts.config import CONFIGS
 from smts.model.aligner.DeepForcedAligner.dfaligner.cli import app as dfaligner_app
 from smts.model.e2e.cli import app as e2e_app
@@ -411,6 +413,62 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
     from smts.run_tests import run_tests
 
     run_tests(suite)
+
+
+@app.command()
+@merge_args(load_config_base_command_interface)
+def check_outliers(
+        name: CONFIGS_ENUM = typer.Option(None, "--name", "-n"),
+        **kwargs,):
+    """This command will embed audio using a Wav2Vec2 model and check for outliers"""
+    from smts.base_cli.helpers import load_config_base_command
+    from smts.dataloader import OODDataModule
+    from smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
+    from tqdm import tqdm
+    import torch
+    import torchaudio
+    import numpy as np
+    from cleanlab.outlier import OutOfDistribution
+    from cleanlab.rank import find_top_issues
+
+    config = load_config_base_command(
+        name=name,
+        model_config=HiFiGANConfig,
+        configs=CONFIGS,
+        **kwargs,
+    )
+    data_sample_rate = config.preprocessing.audio.input_sampling_rate
+    data_module = OODDataModule
+    data = data_module(config, use_segments=True, segment_size=data_sample_rate)
+    data.prepare_data()
+    train_data = data.predict_dataloader()
+    bundle = torchaudio.pipelines.HUBERT_BASE
+    model = bundle.get_model()
+    model.eval()
+
+    def embed_audio(model, dataloader):
+        feature_embeddings = []
+        ids = []
+        for batch in tqdm(dataloader):
+            with torch.no_grad():
+                audio = batch[0]
+                if bundle.sample_rate != data_sample_rate:
+                    audio = torchaudio.functional.resample(audio, data_sample_rate, bundle.sample_rate)
+                embeddings, _ = model.extract_features(audio)
+                feature_embeddings.extend(torch.mean(embeddings[0], 1).numpy())
+                ids.extend(batch[1])
+        feature_embeddings = np.array(feature_embeddings)
+        return feature_embeddings, ids  # each row corresponds to embedding of a different image
+    
+    feature_embeddings, ids = embed_audio(model, train_data)
+    ood = OutOfDistribution()
+    ood_features_scores = ood.fit_score(features=feature_embeddings)
+    top_ood_features_idxs = find_top_issues(quality_scores=ood_features_scores, top=15)
+    bottom_ood_features_idxs = find_top_issues(quality_scores=-ood_features_scores, top=15)
+    top_ids = [ids[x] for x in top_ood_features_idxs]
+    bottom_ids = [ids[x] for x in bottom_ood_features_idxs]
+    print(top_ids)
+    print(bottom_ids)
 
 
 CLICK_APP = typer.main.get_group(app)
