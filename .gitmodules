@@ -1,0 +1,9 @@
+[submodule "everyvoice/model/aligner/DeepForcedAligner"]
+	path = everyvoice/model/aligner/DeepForcedAligner
+	url = ../DeepForcedAligner.git
+[submodule "everyvoice/model/feature_prediction/FastSpeech2_lightning"]
+	path = everyvoice/model/feature_prediction/FastSpeech2_lightning
+	url = ../FastSpeech2_lightning.git
+[submodule "everyvoice/model/vocoder/HiFiGAN_iSTFT_lightning"]
+	path = everyvoice/model/vocoder/HiFiGAN_iSTFT_lightning
+	url = ../HiFiGAN_iSTFT_lightning.git
