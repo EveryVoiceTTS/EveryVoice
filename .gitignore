@@ -10,3 +10,4 @@ gpu_output
 slurm*
 smts/data
 docs/build
+.DS_Store
