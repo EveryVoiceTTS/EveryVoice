@@ -46,7 +46,7 @@ jobs:
           folder: docs/build/html # The folder the action should deploy.
       - name: Run tests
         run: |
-          cd smts && coverage run run_tests.py dev
+          cd everyvoice && coverage run run_tests.py dev
           coverage xml
       - uses: codecov/codecov-action@v2
         with:

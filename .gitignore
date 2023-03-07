@@ -8,6 +8,6 @@ preprocessed
 *egg-info
 gpu_output
 slurm*
-smts/data
+everyvoice/data
 docs/build
 .DS_Store

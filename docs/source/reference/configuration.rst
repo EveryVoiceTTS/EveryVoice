@@ -7,7 +7,7 @@ Each model has a statically typed configuration model. Each configuration has de
 
 .. code-block:: python
 
-    from smts.config.preprocessing_config import PreprocessingConfig
+    from everyvoice.config.preprocessing_config import PreprocessingConfig
 
     preprocessing_config = PreprocessingConfig()
 
@@ -24,8 +24,8 @@ This section of the documentation is meant for technical explanations and refere
 
 Here is the reference documentation for the Configuration Wizard 🧙‍♀️
 
-.. click:: smts.cli:CLICK_APP
-    :prog: smts
+.. click:: everyvoice.cli:CLICK_APP
+    :prog: everyvoice
     :nested: full
     :commands: config-wizard
 
@@ -60,8 +60,8 @@ By default, these functions turn raw text to lowercase, collapse whitespace, and
 .. code-block:: python
     :caption: You can instantiate configuration objects with callables in Python
 
-    from smts.config.text_config import TextConfig
-    from smts.utils import collapse_whitespace, lower, nfc_normalize
+    from everyvoice.config.text_config import TextConfig
+    from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 
     text_config = TextConfig(cleaners=[lower, collapse_whitespace, nfc_normalize])
 
@@ -72,9 +72,9 @@ your configuration will look like this in yaml:
     :caption: Callables will be serialized using module dot-notation in yaml and json
 
     cleaners:
-        - smts.utils.lower
-        - smts.utils.collapse_whitespace
-        - smts.utils.nfc_normalize
+        - everyvoice.utils.lower
+        - everyvoice.utils.collapse_whitespace
+        - everyvoice.utils.nfc_normalize
 
 This will then be de-serialized upon instantiation of your configuration.
 
@@ -92,7 +92,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 TextConfig
 **********
 
-.. autopydantic_settings:: smts.config.text_config.TextConfig
+.. autopydantic_settings:: everyvoice.config.text_config.TextConfig
     :settings-show-json: False
     :settings-show-config-member: False
     :settings-show-config-summary: False
@@ -103,7 +103,7 @@ TextConfig
 Symbols
 *******
 
-.. autopydantic_settings:: smts.config.text_config.Symbols
+.. autopydantic_settings:: everyvoice.config.text_config.Symbols
     :settings-show-json: True
     :settings-show-config-member: False
     :settings-show-config-summary: False
