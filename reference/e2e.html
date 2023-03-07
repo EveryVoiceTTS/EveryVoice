@@ -1,126 +1,290 @@
 
+
 <!DOCTYPE html>
 
-<html lang="en">
+
+<html lang="en" >
+
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
-    <title>E2E &#8212; SmallTeamSpeech 0.0.0 documentation</title>
-    
+    <title>E2E &#8212; EveryVoice 0.0.0 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
   <!-- Loaded before other Sphinx assets -->
-  <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
-<link href="../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  <link href="../_static/styles/theme.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
 
-    
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+  <link href="../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
-    
+  
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=12da95d707ffb74b382d" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=12da95d707ffb74b382d" />
 
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-    <script src="../_static/jquery.js"></script>
-    <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'reference/e2e';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Guides" href="../guides/index.html" />
     <link rel="prev" title="Vocoder" href="vocoder.html" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en">
-    
-
-    <!-- Google Analytics -->
-    
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
   </head>
-  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
-    
-    <div class="container-fluid" id="banner"></div>
-
-    
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
-
-  <div id="navbar-start">
-    
-    
-<a class="navbar-brand" href="../index.html">
-<p class="title">SmallTeamSpeech</p>
-</a>
-
-    
-  </div>
-
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
 
   
-  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
-    <div id="navbar-center" class="mr-auto">
-      
-      <div class="navbar-center-item">
-        <ul id="navbar-main-elements" class="navbar-nav">
-    <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../start.html">
-  Getting Started
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../install.html">
-  Installation
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="reference internal nav-link" href="index.html">
-  Reference
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../guides/index.html">
-  Guides
- </a>
-</li>
-
-    
-</ul>
-      </div>
-      
-    </div>
-
-    <div id="navbar-end">
-      
-      <div class="navbar-end-item">
-        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
-      </ul>
-      </div>
-      
-    </div>
+  
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
   </div>
-</div>
-    </nav>
+  
+    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  <div class="navbar-header-items__start">
     
+      <div class="navbar-item">
+  
 
-    <div class="container-xl">
-      <div class="row">
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+    <p class="title logo__title">EveryVoice 0.0.0 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../start.html">
+                        Getting Started
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../install.html">
+                        Installation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="index.html">
+                        Reference
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../guides/index.html">
+                        Guides
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
           
-            
-            <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar">
-              <div class="sidebar-start-items">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+        </div>
+      
+      
+        <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+  </button>
+`);
+</script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </nav>
+  
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item"><nav class="navbar-nav">
+  <p class="sidebar-header-items__title"
+     role="heading"
+     aria-level="1"
+     aria-label="Site Navigation">
+    Site Navigation
+  </p>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../start.html">
+                        Getting Started
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../install.html">
+                        Installation
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="index.html">
+                        Reference
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../guides/index.html">
+                        Guides
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+<script>
+document.write(`
+  <button class="theme-switch-button btn btn-sm btn-outline-primary navbar-btn rounded-circle" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch" data-mode="light"><i class="fa-solid fa-sun"></i></span>
+    <span class="theme-switch" data-mode="dark"><i class="fa-solid fa-moon"></i></span>
+    <span class="theme-switch" data-mode="auto"><i class="fa-solid fa-circle-half-stroke"></i></span>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
   <div>
     <h4>Previous topic</h4>
     <p class="topless"><a href="vocoder.html"
@@ -130,174 +294,142 @@
     <h4>Next topic</h4>
     <p class="topless"><a href="../guides/index.html"
                           title="next chapter">Guides</a></p>
-  </div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="../search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
+  </div></div>
+        <div class="sidebar-primary-item">
+<div id="searchbox"></div></div>
     </div>
-</div>
-<script>$('#searchbox').show(0);</script>
-              </div>
-              <div class="sidebar-end-items">
-              </div>
-            </div>
-            
-          
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
 
-          
-          <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
               
-              <div class="toc-item">
-                
-<div class="tocsection onthispage mt-5 pt-1 pb-3">
-    <i class="fas fa-list"></i> On this page
-</div>
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
 
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#command-line-interface">
-   Command Line Interface
-  </a>
-  <ul class="nav section-nav flex-column">
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#smts">
-     smts
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#smts-e2e">
-       e2e
+
+
+<nav aria-label="Breadcrumbs">
+  <ul class="bd-breadcrumbs" role="navigation" aria-label="Breadcrumb">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
       </a>
-      <ul class="nav section-nav flex-column">
-       <li class="toc-h5 nav-item toc-entry">
-        <a class="reference internal nav-link" href="#smts-e2e-train">
-         train
-        </a>
-       </li>
-      </ul>
-     </li>
-    </ul>
-   </li>
-   <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#configuration">
-     Configuration
-    </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#main-configuration">
-       Main Configuration
-      </a>
-     </li>
-    </ul>
-   </li>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Reference</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">E2E</li>
   </ul>
- </li>
-</ul>
-
 </nav>
-              </div>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
               
-              <div class="toc-item">
+              
+              
                 
-              </div>
-              
-            
-          </div>
-          
-
-          
-          
-            
-          
-          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
-              
-              <div>
-                
+<div id="searchbox"></div>
+                <article class="bd-article" role="main">
+                  
   <section id="e2e">
-<span id="id1"></span><h1>E2E<a class="headerlink" href="#e2e" title="Permalink to this headline">#</a></h1>
+<span id="id1"></span><h1>E2E<a class="headerlink" href="#e2e" title="Permalink to this heading">#</a></h1>
 <section id="command-line-interface">
-<h2>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this headline">#</a></h2>
-<section id="smts">
-<h3>smts<a class="headerlink" href="#smts" title="Permalink to this headline">#</a></h3>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+<h2>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permalink to this heading">#</a></h2>
+<section id="everyvoice">
+<h3>everyvoice<a class="headerlink" href="#everyvoice" title="Permalink to this heading">#</a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>everyvoice<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
 </pre></div>
 </div>
-<section id="smts-e2e">
-<h4>e2e<a class="headerlink" href="#smts-e2e" title="Permalink to this headline">#</a></h4>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>e2e<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
+<section id="everyvoice-e2e">
+<h4>e2e<a class="headerlink" href="#everyvoice-e2e" title="Permalink to this heading">#</a></h4>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>everyvoice<span class="w"> </span>e2e<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARGS<span class="o">]</span>...
 </pre></div>
 </div>
-<section id="smts-e2e-train">
-<h5>train<a class="headerlink" href="#smts-e2e-train" title="Permalink to this headline">#</a></h5>
-<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>smts<span class="w"> </span>e2e<span class="w"> </span>train<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+<section id="everyvoice-e2e-train">
+<h5>train<a class="headerlink" href="#everyvoice-e2e-train" title="Permalink to this heading">#</a></h5>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>everyvoice<span class="w"> </span>e2e<span class="w"> </span>train<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
 <p class="rubric">Options</p>
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-e2e-train-n">
-<span id="cmdoption-smts-e2e-train-name"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-smts-e2e-train-n" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object std" id="cmdoption-everyvoice-e2e-train-n">
+<span id="cmdoption-everyvoice-e2e-train-name"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-e2e-train-n" title="Permalink to this definition">#</a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Options</dt>
-<dd class="field-odd"><p>training | base | lj | lj_training</p>
+<dt class="field-odd">Options<span class="colon">:</span></dt>
+<dd class="field-odd"><p>training | base | lj_training | lj</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-e2e-train-c">
-<span id="cmdoption-smts-e2e-train-config"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;config_args&gt;</span></span><a class="headerlink" href="#cmdoption-smts-e2e-train-c" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object std" id="cmdoption-everyvoice-e2e-train-c">
+<span id="cmdoption-everyvoice-e2e-train-config"></span><span class="sig-name descname"><span class="pre">-c</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;config_args&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-e2e-train-c" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-e2e-train-p">
-<span id="cmdoption-smts-e2e-train-config-path"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config-path</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;config_path&gt;</span></span><a class="headerlink" href="#cmdoption-smts-e2e-train-p" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object std" id="cmdoption-everyvoice-e2e-train-p">
+<span id="cmdoption-everyvoice-e2e-train-config-path"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config-path</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;config_path&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-e2e-train-p" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-e2e-train-a">
-<span id="cmdoption-smts-e2e-train-accelerator"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--accelerator</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;accelerator&gt;</span></span><a class="headerlink" href="#cmdoption-smts-e2e-train-a" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object std" id="cmdoption-everyvoice-e2e-train-a">
+<span id="cmdoption-everyvoice-e2e-train-accelerator"></span><span class="sig-name descname"><span class="pre">-a</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--accelerator</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;accelerator&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-e2e-train-a" title="Permalink to this definition">#</a></dt>
 <dd><p>Uses PyTorch Lightning Accelerators: <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/extensions/accelerator.html">https://pytorch-lightning.readthedocs.io/en/stable/extensions/accelerator.html</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Default</dt>
+<dt class="field-odd">Default<span class="colon">:</span></dt>
 <dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">auto</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-e2e-train-d">
-<span id="cmdoption-smts-e2e-train-devices"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--devices</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;devices&gt;</span></span><a class="headerlink" href="#cmdoption-smts-e2e-train-d" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object std" id="cmdoption-everyvoice-e2e-train-d">
+<span id="cmdoption-everyvoice-e2e-train-devices"></span><span class="sig-name descname"><span class="pre">-d</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--devices</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;devices&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-e2e-train-d" title="Permalink to this definition">#</a></dt>
 <dd><p>The number of GPUs on each node</p>
 <dl class="field-list simple">
-<dt class="field-odd">Default</dt>
+<dt class="field-odd">Default<span class="colon">:</span></dt>
 <dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">auto</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-e2e-train-0">
-<span id="cmdoption-smts-e2e-train-nodes"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--nodes</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;nodes&gt;</span></span><a class="headerlink" href="#cmdoption-smts-e2e-train-0" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object std" id="cmdoption-everyvoice-e2e-train-0">
+<span id="cmdoption-everyvoice-e2e-train-nodes"></span><span class="sig-name descname"><span class="pre">-n</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--nodes</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;nodes&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-e2e-train-0" title="Permalink to this definition">#</a></dt>
 <dd><p>The number of nodes on your machine</p>
 <dl class="field-list simple">
-<dt class="field-odd">Default</dt>
+<dt class="field-odd">Default<span class="colon">:</span></dt>
 <dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-smts-e2e-train-s">
-<span id="cmdoption-smts-e2e-train-strategy"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--strategy</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;strategy&gt;</span></span><a class="headerlink" href="#cmdoption-smts-e2e-train-s" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object std" id="cmdoption-everyvoice-e2e-train-s">
+<span id="cmdoption-everyvoice-e2e-train-strategy"></span><span class="sig-name descname"><span class="pre">-s</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--strategy</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;strategy&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-e2e-train-s" title="Permalink to this definition">#</a></dt>
 <dd><p>The strategy for data parallelization: <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html">https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html</a></p>
 <dl class="field-list simple">
-<dt class="field-odd">Default</dt>
+<dt class="field-odd">Default<span class="colon">:</span></dt>
 <dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">ddp</span></code></p>
 </dd>
 </dl>
@@ -307,15 +439,15 @@
 </section>
 </section>
 <section id="configuration">
-<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h3>
+<h3>Configuration<a class="headerlink" href="#configuration" title="Permalink to this heading">#</a></h3>
 <section id="main-configuration">
-<h4>Main Configuration<a class="headerlink" href="#main-configuration" title="Permalink to this headline">#</a></h4>
+<h4>Main Configuration<a class="headerlink" href="#main-configuration" title="Permalink to this heading">#</a></h4>
 <dl class="py class pydantic_settings">
-<dt class="sig sig-object py" id="smts.model.e2e.config.SMTSConfig">
-<em class="property"><span class="pre">pydantic</span> <span class="pre">settings</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">smts.model.e2e.config.</span></span><span class="sig-name descname"><span class="pre">SMTSConfig</span></span><a class="reference internal" href="../_modules/smts/model/e2e/config.html#SMTSConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smts.model.e2e.config.SMTSConfig" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="everyvoice.model.e2e.config.EveryVoiceConfig">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">settings</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">everyvoice.model.e2e.config.</span></span><span class="sig-name descname"><span class="pre">EveryVoiceConfig</span></span><a class="reference internal" href="../_modules/everyvoice/model/e2e/config.html#EveryVoiceConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#everyvoice.model.e2e.config.EveryVoiceConfig" title="Permalink to this definition">#</a></dt>
 <dd><p><details  class="autodoc_pydantic_collapsable_json">
 <summary>Show JSON schema</summary><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-<span class="w">   </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SMTSConfig&quot;</span><span class="p">,</span>
+<span class="w">   </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;EveryVoiceConfig&quot;</span><span class="p">,</span>
 <span class="w">   </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span>
 <span class="w">   </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">&quot;aligner&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -464,7 +596,7 @@
 <span class="w">            </span><span class="p">},</span>
 <span class="w">            </span><span class="nt">&quot;sub_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">               </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Sub Dir&quot;</span><span class="p">,</span>
-<span class="w">               </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;smts.utils.get_current_time&quot;</span><span class="p">,</span>
+<span class="w">               </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;everyvoice.utils.get_current_time&quot;</span><span class="p">,</span>
 <span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span>
 <span class="w">            </span><span class="p">},</span>
 <span class="w">            </span><span class="nt">&quot;version&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -1081,38 +1213,38 @@
 </pre></div>
 </div>
 </details></p><dl class="field-list simple">
-<dt class="field-odd">Fields</dt>
+<dt class="field-odd">Fields<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><a class="reference internal" href="#smts.model.e2e.config.SMTSConfig.aligner" title="smts.model.e2e.config.SMTSConfig.aligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aligner</span> <span class="pre">(smts.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig)</span></code></a></p></li>
-<li><p><a class="reference internal" href="#smts.model.e2e.config.SMTSConfig.feature_prediction" title="smts.model.e2e.config.SMTSConfig.feature_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_prediction</span> <span class="pre">(smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2Config)</span></code></a></p></li>
-<li><p><a class="reference internal" href="#smts.model.e2e.config.SMTSConfig.training" title="smts.model.e2e.config.SMTSConfig.training"><code class="xref py py-obj docutils literal notranslate"><span class="pre">training</span> <span class="pre">(smts.model.e2e.config.E2ETrainingConfig)</span></code></a></p></li>
-<li><p><a class="reference internal" href="#smts.model.e2e.config.SMTSConfig.vocoder" title="smts.model.e2e.config.SMTSConfig.vocoder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vocoder</span> <span class="pre">(smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#everyvoice.model.e2e.config.EveryVoiceConfig.aligner" title="everyvoice.model.e2e.config.EveryVoiceConfig.aligner"><code class="xref py py-obj docutils literal notranslate"><span class="pre">aligner</span> <span class="pre">(everyvoice.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#everyvoice.model.e2e.config.EveryVoiceConfig.feature_prediction" title="everyvoice.model.e2e.config.EveryVoiceConfig.feature_prediction"><code class="xref py py-obj docutils literal notranslate"><span class="pre">feature_prediction</span> <span class="pre">(everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2Config)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#everyvoice.model.e2e.config.EveryVoiceConfig.training" title="everyvoice.model.e2e.config.EveryVoiceConfig.training"><code class="xref py py-obj docutils literal notranslate"><span class="pre">training</span> <span class="pre">(everyvoice.model.e2e.config.E2ETrainingConfig)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#everyvoice.model.e2e.config.EveryVoiceConfig.vocoder" title="everyvoice.model.e2e.config.EveryVoiceConfig.vocoder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vocoder</span> <span class="pre">(everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig)</span></code></a></p></li>
 </ul>
 </dd>
 </dl>
 <dl class="py attribute pydantic_field">
-<dt class="sig sig-object py" id="smts.model.e2e.config.SMTSConfig.aligner">
-<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">aligner</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="aligner.html#smts.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig" title="smts.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig"><span class="pre">smts.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig</span></a></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#smts.model.e2e.config.SMTSConfig.aligner" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="everyvoice.model.e2e.config.EveryVoiceConfig.aligner">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">aligner</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="aligner.html#everyvoice.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig" title="everyvoice.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig"><span class="pre">DFAlignerConfig</span></a></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#everyvoice.model.e2e.config.EveryVoiceConfig.aligner" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute pydantic_field">
-<dt class="sig sig-object py" id="smts.model.e2e.config.SMTSConfig.feature_prediction">
-<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">feature_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="feature_prediction.html#smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2Config" title="smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2Config"><span class="pre">smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2Config</span></a></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#smts.model.e2e.config.SMTSConfig.feature_prediction" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="everyvoice.model.e2e.config.EveryVoiceConfig.feature_prediction">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">feature_prediction</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="feature_prediction.html#everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2Config" title="everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2Config"><span class="pre">FastSpeech2Config</span></a></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#everyvoice.model.e2e.config.EveryVoiceConfig.feature_prediction" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute pydantic_field">
-<dt class="sig sig-object py" id="smts.model.e2e.config.SMTSConfig.training">
-<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">smts.model.e2e.config.E2ETrainingConfig</span></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#smts.model.e2e.config.SMTSConfig.training" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="everyvoice.model.e2e.config.EveryVoiceConfig.training">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">training</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">E2ETrainingConfig</span></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#everyvoice.model.e2e.config.EveryVoiceConfig.training" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute pydantic_field">
-<dt class="sig sig-object py" id="smts.model.e2e.config.SMTSConfig.vocoder">
-<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">vocoder</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="vocoder.html#smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig" title="smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig"><span class="pre">smts.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig</span></a></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#smts.model.e2e.config.SMTSConfig.vocoder" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="everyvoice.model.e2e.config.EveryVoiceConfig.vocoder">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">vocoder</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="vocoder.html#everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig" title="everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig"><span class="pre">HiFiGANConfig</span></a></em><em class="property"> <span class="pre">[Required]</span></em><a class="headerlink" href="#everyvoice.model.e2e.config.EveryVoiceConfig.vocoder" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="smts.model.e2e.config.SMTSConfig.load_config_from_path">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_config_from_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">pathlib.Path</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">PosixPath('/home/runner/work/SmallTeamSpeech/SmallTeamSpeech/smts/config/base/base_composed.yaml')</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#smts.model.e2e.config.SMTSConfig" title="smts.model.e2e.config.SMTSConfig"><span class="pre">smts.model.e2e.config.SMTSConfig</span></a></span></span><a class="reference internal" href="../_modules/smts/model/e2e/config.html#SMTSConfig.load_config_from_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#smts.model.e2e.config.SMTSConfig.load_config_from_path" title="Permalink to this definition">#</a></dt>
+<dt class="sig sig-object py" id="everyvoice.model.e2e.config.EveryVoiceConfig.load_config_from_path">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_config_from_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Path</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">PosixPath('/home/runner/work/EveryVoice/EveryVoice/everyvoice/config/base/base_composed.yaml')</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#everyvoice.model.e2e.config.EveryVoiceConfig" title="everyvoice.model.e2e.config.EveryVoiceConfig"><span class="pre">EveryVoiceConfig</span></a></span></span><a class="reference internal" href="../_modules/everyvoice/model/e2e/config.html#EveryVoiceConfig.load_config_from_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#everyvoice.model.e2e.config.EveryVoiceConfig.load_config_from_path" title="Permalink to this definition">#</a></dt>
 <dd><p>Load a config from a path</p>
 </dd></dl>
 
@@ -1124,51 +1256,131 @@
 </section>
 
 
-              </div>
+                </article>
               
               
-              <!-- Previous / next buttons -->
-<div class='prev-next-area'>
-    <a class='left-prev' id="prev-link" href="vocoder.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Vocoder</p>
-        </div>
+              
+                <footer class="bd-footer-article">
+                  <!-- Previous / next buttons -->
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="vocoder.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Vocoder</p>
+      </div>
     </a>
-    <a class='right-next' id="next-link" href="../guides/index.html" title="next page">
-    <div class="prev-next-info">
+    <a class="right-next"
+       href="../guides/index.html"
+       title="next page">
+      <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
         <p class="prev-next-title">Guides</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
     </a>
 </div>
+                </footer>
               
-          </main>
-          
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
 
-      </div>
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#command-line-interface">Command Line Interface</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice">everyvoice</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice-e2e">e2e</a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice-e2e-train">train</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#main-configuration">Main Configuration</a><ul class="nav section-nav flex-column">
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.model.e2e.config.EveryVoiceConfig"><code class="docutils literal notranslate"><span class="pre">EveryVoiceConfig</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.model.e2e.config.EveryVoiceConfig.aligner"><code class="docutils literal notranslate"><span class="pre">EveryVoiceConfig.aligner</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.model.e2e.config.EveryVoiceConfig.feature_prediction"><code class="docutils literal notranslate"><span class="pre">EveryVoiceConfig.feature_prediction</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.model.e2e.config.EveryVoiceConfig.training"><code class="docutils literal notranslate"><span class="pre">EveryVoiceConfig.training</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.model.e2e.config.EveryVoiceConfig.vocoder"><code class="docutils literal notranslate"><span class="pre">EveryVoiceConfig.vocoder</span></code></a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.model.e2e.config.EveryVoiceConfig.load_config_from_path"><code class="docutils literal notranslate"><span class="pre">EveryVoiceConfig.load_config_from_path()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+  <div class="tocsection sourcelink">
+    <a href="../_sources/reference/e2e.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            <div class="bd-footer-content__inner"></div>
+          </footer>
+        
+      </main>
     </div>
+  </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
-<footer class="footer mt-5 mt-md-0">
-  <div class="container">
+  <script src="../_static/scripts/bootstrap.js?digest=12da95d707ffb74b382d"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=12da95d707ffb74b382d"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+  <p class="copyright">
     
-    <div class="footer-item">
-      <p class="copyright">
-    &copy; Copyright 2022, Aidan Pine.<br>
-</p>
+      © Copyright 2022, Aidan Pine.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+  <p class="sphinx-version">
+    Created using <a href="https://sphinx-doc.org/">Sphinx</a> 6.1.3.
+    <br/>
+  </p>
+</div>
+      
     </div>
-    
-    <div class="footer-item">
-      <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.5.0.<br>
-</p>
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item"><p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.13.1.
+</p></div>
+      
     </div>
-    
-  </div>
-</footer>
+  
+</div>
+
+  </footer>
   </body>
 </html>
