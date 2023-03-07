@@ -1,6 +1,6 @@
-# Small Team Speech Model
+# EveryVoice TTS Toolkit 💬
 
-[![codecov](https://codecov.io/gh/roedoejet/SmallTeamSpeech/branch/main/graph/badge.svg?token=yErCxf64IU)](https://codecov.io/gh/roedoejet/SmallTeamSpeech)
+[![codecov](https://codecov.io/gh/roedoejet/EveryVoice/branch/main/graph/badge.svg?token=yErCxf64IU)](https://codecov.io/gh/roedoejet/EveryVoice)
 [![license](https://img.shields.io/badge/Licence-MIT-green)](LICENSE)
 
 This is an implementation of the Text-to-Speech (TTS) model used by the Small Teams "Speech Generation for Indigenous Language Education" project.
@@ -14,8 +14,8 @@ It is largely based off the FastSpeech2/Fastpitch models.
 Clone clone the repo and pip install it locally:
 
 ```sh
-$ git clone https://github.com/roedoejet/SmallTeamSpeech.git
-$ cd SmallTeamSpeech
+$ git clone https://github.com/roedoejet/EveryVoice.git
+$ cd EveryVoice
 $ git submodule update --init
 $ pip install -e .
 ```
@@ -25,8 +25,8 @@ $ pip install -e .
 I recommend using Conda and Python 3.9. To do that, create a new environment:
 
 ```
-conda create --name SmallTeamSpeech python=3.9
-conda activate SmallTeamSpeech
+conda create --name EveryVoice python=3.9
+conda activate EveryVoice
 conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 ```
 
@@ -40,12 +40,12 @@ Alternatively, you can just create the whole thing from our `environment.yml` fi
 
 ```
 conda env create -f environment.yml
-conda activate SmallTeamSpeech
+conda activate EveryVoice
 ```
 
 ## Contributing
 
-Feel free to dive in! [Open an issue](https://github.com/roedoejet/SmallTeamSpeech/issues/new) or submit PRs.
+Feel free to dive in! [Open an issue](https://github.com/roedoejet/EveryVoice/issues/new) or submit PRs.
 
 This repo follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
@@ -80,4 +80,4 @@ https://github.com/DigitalPhonetics/IMS-Toucan
 
 ## Tests
 
-Run unit tests by `python3 -m unittest tests/test_configs.py` or suites of tests by running `smts test dev` if you have the package installed interactively.
+Run unit tests by `python3 -m unittest tests/test_configs.py` or suites of tests by running `everyvoice test dev` if you have the package installed interactively.

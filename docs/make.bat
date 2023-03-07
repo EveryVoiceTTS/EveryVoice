@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=source
 set BUILDDIR=build
-set SPHINXPROJ=SmallTeamSpeech
+set SPHINXPROJ=EveryVoice
 
 if "%1" == "" goto help
 

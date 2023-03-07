@@ -1,0 +1,33 @@
+dataset: "LJ"
+pitch_type: "pyworld"
+pitch_phone_averaging: True
+energy_phone_averaging: True
+value_separator: "--"
+save_dir: "./preprocessed/LJ"
+audio:
+  min_audio_length: 0.25
+  max_audio_length: 11.0
+  max_wav_value: 32768.0
+  norm_db: -3.0
+  sil_threshold: 1.0
+  sil_duration: 0.1
+  input_sampling_rate: 22050
+  output_sampling_rate: 22050
+  alignment_sampling_rate: 22050
+  target_bit_depth: 16
+  alignment_bit_depth: 16
+  fft_window_frames: 1024
+  fft_hop_frames: 256
+  f_min: 0
+  f_max: 8000
+  n_fft: 1024
+  n_mels: 80
+  spec_type: "mel-librosa"
+  vocoder_segment_size: 8192
+source_data:
+  - label: "LJ"
+    data_dir: "./data/lj/wavs"
+    textgrid_dir: "./data/lj/textgrids"
+    filelist_loader: "everyvoice.utils.load_lj_metadata_hifigan" # TODO: sort out callables
+    filelist: "./filelists/lj_full.psv"
+    sox_effects: []

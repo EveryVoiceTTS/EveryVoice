@@ -1,4 +1,4 @@
-name: SmallTeamSpeech
+name: EveryVoice
 channels:
   - pytorch
   - conda-forge
@@ -171,4 +171,4 @@ dependencies:
     - werkzeug==2.2.2
     - yarl==1.8.1
     - zipp==3.8.1
-prefix: /home/pinea/.conda/envs/SmallTeamSpeech
+prefix: /home/pinea/.conda/envs/EveryVoice

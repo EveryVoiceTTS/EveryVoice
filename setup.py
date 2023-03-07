@@ -1,4 +1,4 @@
-""" Setup for smts
+""" Setup for everyvoice
 """
 import datetime as dt
 from os import path
@@ -9,7 +9,7 @@ build_no = dt.datetime.now().strftime("%Y%m%d")
 
 # Ugly hack to read the current version number without importing g2p:
 # (works by )
-with open("smts/_version.py", "r", encoding="utf8") as version_file:
+with open("everyvoice/_version.py", "r", encoding="utf8") as version_file:
     namespace = {}  # type: ignore
     exec(version_file.read(), namespace)
     VERSION = namespace["VERSION"] + "." + build_no
@@ -23,13 +23,13 @@ with open(path.join(this_directory, "requirements.txt"), encoding="utf8") as f:
     REQS = f.read().splitlines()
 
 setup(
-    name="smts",
+    name="everyvoice",
     python_requires=">=3.9",
     version=VERSION,
     author="Aidan Pine",
     author_email="hello@aidanpine.ca",
     license="MIT",
-    url="https://github.com/roedoejet/SmallTeamSpeech",
+    url="https://github.com/roedoejet/EveryVoice",
     description="Text-to-Speech Synthesis for the Speech Generation for Indigenous Language Education Small Teams Project",
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -37,7 +37,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=REQS,
-    entry_points={"console_scripts": ["smts = smts.cli:app"]},
+    entry_points={"console_scripts": ["everyvoice = everyvoice.cli:app"]},
     zip_safe=False,
     classifiers=[
         "Programming Language :: Python :: 3",

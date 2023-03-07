@@ -7,8 +7,8 @@ E2E
 Command Line Interface
 -----------------------
 
-.. click:: smts.cli:CLICK_APP
-    :prog: smts
+.. click:: everyvoice.cli:CLICK_APP
+    :prog: everyvoice
     :nested: full
     :commands: e2e
 
@@ -19,7 +19,7 @@ Configuration
 Main Configuration
 ~~~~~~~~~~~~~~~~~~
 
-.. autopydantic_settings:: smts.model.e2e.config.SMTSConfig
+.. autopydantic_settings:: everyvoice.model.e2e.config.EveryVoiceConfig
     :settings-show-json: True
     :settings-show-config-member: False
     :settings-show-config-summary: False

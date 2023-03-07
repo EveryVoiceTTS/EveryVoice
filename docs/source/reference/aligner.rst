@@ -13,8 +13,8 @@ the aligner and the other models.
 Command Line Interface
 ----------------------
 
-.. click:: smts.cli:CLICK_APP
-    :prog: smts
+.. click:: everyvoice.cli:CLICK_APP
+    :prog: everyvoice
     :nested: full
     :commands: dfa
 
@@ -24,7 +24,7 @@ Configuration
 Main Configuration
 ******************
 
-.. autopydantic_settings:: smts.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig
+.. autopydantic_settings:: everyvoice.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerConfig
     :settings-show-json: True
     :settings-show-config-member: False
     :settings-show-config-summary: False
@@ -35,7 +35,7 @@ Main Configuration
 Training Configuration
 **********************
 
-.. autopydantic_settings:: smts.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerTrainingConfig
+.. autopydantic_settings:: everyvoice.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerTrainingConfig
     :settings-show-json: True
     :settings-show-config-member: False
     :settings-show-config-summary: False
@@ -46,7 +46,7 @@ Training Configuration
 Model Configuration
 *******************
 
-.. autopydantic_settings:: smts.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerModelConfig
+.. autopydantic_settings:: everyvoice.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerModelConfig
     :settings-show-json: True
     :settings-show-config-member: False
     :settings-show-config-summary: False

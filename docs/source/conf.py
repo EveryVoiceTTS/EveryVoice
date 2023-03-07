@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# SmallTeamSpeech documentation build configuration file, created by
+# EveryVoice documentation build configuration file, created by
 # sphinx-quickstart on Mon Dec  5 17:51:09 2022.
 #
 # This file is execfile()d with the current directory set to its
@@ -55,7 +55,7 @@ source_suffix = [".rst", "md"]
 master_doc = "index"
 
 # General information about the project.
-project = "SmallTeamSpeech"
+project = "EveryVoice"
 copyright = "2022, Aidan Pine"
 author = "Aidan Pine"
 
@@ -121,7 +121,7 @@ html_sidebars = {
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = "SmallTeamSpeechdoc"
+htmlhelp_basename = "EveryVoicedoc"
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -147,7 +147,7 @@ latex_elements: Dict[str, str] = {
 latex_documents = [
     (
         master_doc,
-        "SmallTeamSpeech.tex",
+        "EveryVoice.tex",
         f"{project} Documentation",
         "Aidan Pine",
         "manual",
@@ -159,7 +159,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "smallteamspeech", f"{project} Documentation", [author], 1)]
+man_pages = [(master_doc, "EveryVoice", f"{project} Documentation", [author], 1)]
 
 
 # -- Options for Texinfo output -------------------------------------------
@@ -170,10 +170,10 @@ man_pages = [(master_doc, "smallteamspeech", f"{project} Documentation", [author
 texinfo_documents = [
     (
         master_doc,
-        "SmallTeamSpeech",
+        "EveryVoice",
         f"{project} Documentation",
         author,
-        "SmallTeamSpeech",
+        "EveryVoice",
         "One line description of project.",
         "Miscellaneous",
     ),

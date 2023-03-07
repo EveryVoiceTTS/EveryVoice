@@ -1,4 +1,4 @@
-name: SmallTeamSpeech
+name: EveryVoice
 channels:
   - pytorch
   - conda-forge

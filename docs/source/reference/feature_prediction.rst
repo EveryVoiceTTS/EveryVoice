@@ -15,8 +15,8 @@ the aligner and the other models.
 Command Line Interface
 ***********************
 
-.. click:: smts.cli:CLICK_APP
-    :prog: smts
+.. click:: everyvoice.cli:CLICK_APP
+    :prog: everyvoice
     :nested: full
     :commands: fs2
 
@@ -27,7 +27,7 @@ Configuration
 Main Configuration
 ~~~~~~~~~~~~~~~~~~
 
-.. autopydantic_settings:: smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2Config
+.. autopydantic_settings:: everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2Config
     :settings-show-json: True
     :settings-show-config-member: False
     :settings-show-config-summary: False
@@ -38,7 +38,7 @@ Main Configuration
 Training Configuration
 ~~~~~~~~~~~~~~~~~~~~~~
 
-.. autopydantic_settings:: smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2TrainingConfig
+.. autopydantic_settings:: everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2TrainingConfig
     :settings-show-json: True
     :settings-show-config-member: False
     :settings-show-config-summary: False
@@ -49,7 +49,7 @@ Training Configuration
 Model Configuration
 ~~~~~~~~~~~~~~~~~~~
 
-.. autopydantic_settings:: smts.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2ModelConfig
+.. autopydantic_settings:: everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2ModelConfig
     :settings-show-json: True
     :settings-show-config-member: False
     :settings-show-config-summary: False
