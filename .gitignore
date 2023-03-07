@@ -11,3 +11,5 @@ slurm*
 everyvoice/data
 docs/build
 .DS_Store
+dist
+build
