@@ -13,7 +13,9 @@ import typer
 
 def load_config_base_command_interface(
     config_args: List[str] = typer.Option(None, "--config", "-c"),
-    config_path: Path = typer.Option(None, exists=True, dir_okay=False, file_okay=True),
+    config_path: Path = typer.Option(
+        None, "--config-path", "-p", exists=True, dir_okay=False, file_okay=True
+    ),
 ):
     pass
 

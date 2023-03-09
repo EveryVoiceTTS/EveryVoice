@@ -12,6 +12,7 @@ from typing import List, Tuple, Union
 
 import numpy as np
 import torch
+from clipdetect import detect_clipping
 from loguru import logger
 from pathos.multiprocessing import ProcessingPool as Pool
 from pydantic import BaseModel
@@ -33,7 +34,10 @@ from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor.attention_prior import BetaBinomialInterpolator
 from everyvoice.text import TextProcessor
 from everyvoice.utils import generic_dict_loader, write_filelist
-from everyvoice.utils.heavy import dynamic_range_compression_torch, get_spectral_transform
+from everyvoice.utils.heavy import (
+    dynamic_range_compression_torch,
+    get_spectral_transform,
+)
 
 
 class Scaler:
@@ -631,6 +635,64 @@ class Preprocessor:
             return functools.partial(self.process_spec)
         if process == "attn":
             return self.process_attn_prior
+
+    def check_data(self, filelist, word_seg_token=" ", heavy_clip_detction=False):
+        data = []
+        # speaking rate (words/second, float, scatterplot or bar chart)
+        # speaking rate (characters/second, float, scatterplot or bar chart)
+        # articulation level (mean energy/speaking rate)
+        # unrecognized symbols (bool, list)
+        # duration (float, box plot)
+        # clipping (float, box plot)
+        # silence % (float, box plot)
+        for item in tqdm(filelist):
+            data_point = {k: v for k, v in item.items()}
+            raw_text = item["text"]
+            n_words = len(raw_text.split(word_seg_token))
+            n_chars = len(self.text_processor.text_to_sequence(raw_text))
+            audio = torch.load(
+                self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.pt")
+            )
+            if heavy_clip_detction:
+                _, total_clipping = detect_clipping(audio)
+            else:
+                # this isn't a great way of detecting clipping,
+                # but it's a lot faster than clipdetect
+                audio_max = audio.max()
+                audio_min = audio.min()
+                total_clipping = (
+                    audio[audio >= audio_max].size(0)
+                    + audio[audio <= audio_min].size(0)
+                    - 2
+                )
+            pitch = torch.load(self.create_path(item, "pitch", "pitch.pt"))
+            energy = torch.load(self.create_path(item, "energy", "energy.pt"))
+            audio_length_s = len(audio) / self.input_sampling_rate
+            data_point["total_clipped_samples"] = total_clipping
+            data_point["pitch_min"] = float(pitch.min())
+            data_point["pitch_max"] = float(pitch.max())
+            data_point["pitch_mean"] = float(pitch.mean())
+            data_point["pitch_std"] = float(pitch.std())
+            data_point["energy_min"] = float(energy.min())
+            data_point["energy_max"] = float(energy.max())
+            data_point["energy_mean"] = float(energy.mean())
+            data_point["energy_std"] = float(energy.std())
+            data_point["duration"] = audio_length_s
+            data_point["speaking_rate_word"] = n_words / audio_length_s
+            data_point["speaking_rate_char"] = n_chars / audio_length_s
+            data_point["articulation_rate_word"] = (
+                data_point["energy_mean"] / data_point["speaking_rate_word"]
+            )
+            data_point["articulation_rate_char"] = (
+                data_point["energy_mean"] / data_point["speaking_rate_char"]
+            )
+            data_point["n_missing_symbols"] = len(
+                self.text_processor.get_missing_symbols(raw_text)
+            )
+            data_point["n_words"] = n_words
+            data_point["n_chars"] = n_chars
+            data.append(data_point)
+        return data
 
     def preprocess(
         self,

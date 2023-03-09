@@ -1,3 +1,4 @@
+clipdetect>=0.1.1
 einops==0.5.0
 g2p==0.5.20221013
 librosa==0.9.2
