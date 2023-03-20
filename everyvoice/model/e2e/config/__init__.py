@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Dict, Union
 
-from pydantic import FilePath, validator
+from pydantic import Field, FilePath, validator
 from pydantic.fields import ModelField
 
 from everyvoice.config.shared_types import BaseTrainingConfig, PartialConfigModel
@@ -30,13 +30,12 @@ class E2ETrainingConfig(BaseTrainingConfig):
 
 
 class EveryVoiceConfig(PartialConfigModel):
-    aligner: AlignerConfig
-    feature_prediction: FeaturePredictionConfig
-    vocoder: VocoderConfig
-    training: E2ETrainingConfig
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    aligner: AlignerConfig = Field(default_factory=AlignerConfig)
+    feature_prediction: FeaturePredictionConfig = Field(
+        default_factory=FeaturePredictionConfig
+    )
+    vocoder: VocoderConfig = Field(default_factory=VocoderConfig)
+    training: E2ETrainingConfig = Field(default_factory=E2ETrainingConfig)
 
     @staticmethod
     def load_config_from_path(

@@ -6,7 +6,10 @@ import yaml
 
 from everyvoice.config import CONFIGS
 from everyvoice.config import __file__ as everyvoice_file
-from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.model.aligner.config import AlignerConfig
+from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
+from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
+from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import expand_config_string_syntax, lower
 
 
@@ -19,6 +22,25 @@ class ConfigTest(TestCase):
         with open(Path(everyvoice_file).parent / "base" / "base_composed.yaml") as f:
             self.yaml_config = yaml.safe_load(f)
             self.config = EveryVoiceConfig(**self.yaml_config)
+
+    def test_from_object(self):
+        """Test from object"""
+        config_default = EveryVoiceConfig()
+        config_declared = EveryVoiceConfig(
+            aligner=AlignerConfig(),
+            feature_prediction=FeaturePredictionConfig(),
+            vocoder=VocoderConfig(),
+            training=E2ETrainingConfig(),
+        )
+        config_32 = EveryVoiceConfig(
+            aligner=AlignerConfig(),
+            feature_prediction=FeaturePredictionConfig(),
+            vocoder=VocoderConfig(),
+            training=E2ETrainingConfig(batch_size=32),
+        )
+        self.assertEqual(config_default.training.batch_size, 16)
+        self.assertEqual(config_declared.training.batch_size, 16)
+        self.assertEqual(config_32.training.batch_size, 32)
 
     def test_update_from_file(self):
         """Test that updating the config from yaml/json works"""
@@ -63,7 +85,9 @@ class ConfigTest(TestCase):
 
     def test_shared_sox(self):
         """Test that the shared sox config is correct"""
-        config: EveryVoiceConfig = EveryVoiceConfig.load_config_from_path(CONFIGS["openslr"])
+        config: EveryVoiceConfig = EveryVoiceConfig.load_config_from_path(
+            CONFIGS["openslr"]
+        )
         sox_effects = config.vocoder.preprocessing.source_data[0].sox_effects
         self.assertEqual(len(config.vocoder.preprocessing.source_data), 4)
         for d_other in config.vocoder.preprocessing.source_data[1:]:
