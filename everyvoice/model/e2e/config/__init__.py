@@ -1,29 +1,32 @@
 from pathlib import Path
 from typing import Dict, Union
 
-from pydantic import FilePath
+from pydantic import FilePath, validator
+from pydantic.fields import ModelField
 
 from everyvoice.config.shared_types import BaseTrainingConfig, PartialConfigModel
 from everyvoice.config.utils import __file__ as config_dir
-from everyvoice.config.utils import convert_paths
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
-from everyvoice.utils import load_config_from_json_or_yaml_path, return_configs_from_dir
+from everyvoice.utils import (
+    load_config_from_json_or_yaml_path,
+    rel_path_to_abs_path,
+    return_configs_from_dir,
+)
 
 
 class E2ETrainingConfig(BaseTrainingConfig):
     feature_prediction_checkpoint: Union[None, FilePath]
     vocoder_checkpoint: Union[None, FilePath]
 
-    @convert_paths(
-        kwargs_to_convert=["feature_prediction_checkpoint", "vocoder_checkpoint"]
+    @validator(
+        "feature_prediction_checkpoint", "vocoder_checkpoint", pre=True, always=True
     )
-    def __init__(self, **data) -> None:
-        """Custom init to process file paths"""
-        super().__init__(
-            **data,
-        )
+    def convert_paths(cls, v, values, field: ModelField):
+        path = rel_path_to_abs_path(v)
+        values[field.name] = path
+        return path
 
 
 class EveryVoiceConfig(PartialConfigModel):

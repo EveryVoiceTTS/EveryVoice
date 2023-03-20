@@ -1,39 +1,5 @@
 from importlib import import_module
-from typing import Callable, List, Union
-
-from everyvoice.utils import rel_path_to_abs_path
-
-
-def convert_callables(*args, kwargs_to_convert: List[str] = []):
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-            converted_kwargs = {
-                k: string_to_callable(v)
-                for k, v in kwargs.items()
-                if k in kwargs_to_convert
-            }
-            kwargs = kwargs | converted_kwargs
-            return fn(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
-
-
-def convert_paths(*args, kwargs_to_convert: List[str] = []):
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-            converted_kwargs = {
-                k: rel_path_to_abs_path(v)
-                for k, v in kwargs.items()
-                if k in kwargs_to_convert
-            }
-            kwargs = kwargs | converted_kwargs
-            return fn(*args, **kwargs)
-
-        return wrapper
-
-    return decorator
+from typing import Callable, Union
 
 
 def string_to_callable(string: Union[str, Callable]) -> Callable:

@@ -1,13 +1,13 @@
-import contextlib
 from collections.abc import Mapping
 from pathlib import Path
 from types import FunctionType
 from typing import Callable, Tuple, Union
 
 from loguru import logger
-from pydantic import BaseModel, DirectoryPath, Extra, Field, FilePath
+from pydantic import BaseModel, DirectoryPath, Extra, Field, FilePath, validator
+from pydantic.fields import ModelField
 
-from everyvoice.config.utils import convert_callables, convert_paths
+from everyvoice.config.utils import string_to_callable
 from everyvoice.utils import (
     generic_dict_loader,
     load_config_from_json_or_yaml_path,
@@ -53,18 +53,23 @@ class PartialConfigModel(ConfigModel):
         """Allow for partial configurations"""
         config = {}
         data_to_expand = {}
-        # if expandable keys are provided, only expand those
-        if "expandable" in data and data["expandable"]:
-            for k, v in data.items():
-                if k in data["expandable"] and isinstance(v, str):
-                    data_to_expand[k] = v
-                else:
-                    config[k] = v
-        else:
-            data_to_expand = data
-        # remove expandable key
-        if "expandable" in config:
-            del config["expandable"]
+        # TODO: this is awkward and should be fixed
+        expandable_keys = [
+            "aligner",
+            "audio",
+            "feature_prediction",
+            "preprocessing",
+            "source_data",
+            "sox_effects",
+            "text",
+            "training",
+            "vocoder",
+        ]
+        for k, v in data.items():
+            if k in expandable_keys and isinstance(v, str):
+                data_to_expand[k] = v
+            else:
+                config[k] = v
         # first extend any paths
         if "extend_from" in data:
             path = rel_path_to_abs_path(data["extend_from"])
@@ -87,20 +92,21 @@ class LoggerConfig(ConfigModel):
     sub_dir: str = "everyvoice.utils.get_current_time"
     version: str = "base"
 
-    @convert_callables(kwargs_to_convert=["sub_dir"])
-    @convert_paths(kwargs_to_convert=["save_dir"])
-    def __init__(self, **data) -> None:
-        """Custom init to process file paths"""
-        # Supress keyerrors because defaults will be used if not supplied
-        with contextlib.suppress(KeyError):
-            if callable(data["sub_dir"]):
-                data["sub_dir"] = data["sub_dir"]()
-            if not data["save_dir"].exists():
-                logger.info(
-                    f"Directory at {data['save_dir']} does not exist. Creating..."
-                )
-                data["save_dir"].mkdir(parents=True, exist_ok=True)
-        super().__init__(**data)
+    @validator("sub_dir", pre=True, always=True)
+    def convert_callable_sub_dir(cls, v, values):
+        func = string_to_callable(v)
+        called = func()
+        values["sub_dir"] = called
+        return called
+
+    @validator("save_dir", pre=True, always=True)
+    def convert_path(cls, v, values):
+        path = rel_path_to_abs_path(v)
+        values["save_dir"] = path
+        if not path.exists():
+            logger.info(f"Directory at {path} does not exist. Creating...")
+            path.mkdir(parents=True, exist_ok=True)
+        return path
 
 
 class BaseTrainingConfig(ConfigModel):
@@ -118,17 +124,17 @@ class BaseTrainingConfig(ConfigModel):
     val_data_workers: int = 0
     train_data_workers: int = 4
 
-    @convert_callables(kwargs_to_convert=["filelist_loader"])
-    @convert_paths(kwargs_to_convert=["finetune_checkpoint", "filelist"])
-    def __init__(
-        self,
-        **data,
-    ) -> None:
-        """Custom init to process file paths"""
-        # Supress keyerrors because defaults will be used if not supplied
-        super().__init__(
-            **data,
-        )
+    @validator("filelist_loader", pre=True, always=True)
+    def convert_callable_filelist_loader(cls, v, values):
+        func = string_to_callable(v)
+        values["filelist_loader"] = func
+        return func
+
+    @validator("finetune_checkpoint", "filelist", pre=True, always=True)
+    def convert_paths(cls, v, values, field: ModelField):
+        path = rel_path_to_abs_path(v)
+        values[field.name] = path
+        return path
 
 
 class BaseOptimizer(ConfigModel):

@@ -5,10 +5,15 @@ from typing import Callable, List, Union
 
 from loguru import logger
 from pydantic import DirectoryPath, Field, FilePath, validator
+from pydantic.fields import ModelField
 
 from everyvoice.config.shared_types import ConfigModel, PartialConfigModel
-from everyvoice.config.utils import convert_callables, convert_paths
-from everyvoice.utils import generic_dict_loader, load_config_from_json_or_yaml_path
+from everyvoice.config.utils import string_to_callable
+from everyvoice.utils import (
+    generic_dict_loader,
+    load_config_from_json_or_yaml_path,
+    rel_path_to_abs_path,
+)
 
 
 class AudioSpecTypeEnum(Enum):
@@ -58,17 +63,17 @@ class Dataset(PartialConfigModel):
     filelist_loader: Callable = generic_dict_loader
     sox_effects: list = []
 
-    @convert_callables(kwargs_to_convert=["filelist_loader"])
-    @convert_paths(kwargs_to_convert=["data_dir", "textgrid_dir", "filelist"])
-    def __init__(
-        self,
-        **data,
-    ) -> None:
-        """Custom init to process file paths"""
-        super().__init__(
-            **data,
-            expandable=["sox_effects"],
-        )
+    @validator("filelist_loader", pre=True, always=True)
+    def convert_callable_filelist_loader(cls, v, values):
+        func = string_to_callable(v)
+        values["filelist_loader"] = func
+        return func
+
+    @validator("data_dir", "textgrid_dir", "filelist", pre=True, always=True)
+    def convert_paths(cls, v, values, field: ModelField):
+        path = rel_path_to_abs_path(v)
+        values[field.name] = path
+        return path
 
 
 class PreprocessingConfig(PartialConfigModel):
@@ -81,21 +86,16 @@ class PreprocessingConfig(PartialConfigModel):
     audio: AudioConfig = Field(default_factory=AudioConfig)
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
 
-    @validator("save_dir")
-    def create_dir(cls, v: str):
-        return v
-
-    @convert_paths(kwargs_to_convert=["save_dir"])
-    def __init__(self, **data) -> None:
-        """Custom init to process file paths"""
+    @validator("save_dir", pre=True, always=True)
+    def create_dir(cls, v, values):
+        path = rel_path_to_abs_path(v)
         # Supress keyerrors because defaults will be used if not supplied
         with contextlib.suppress(KeyError):
-            if not data["save_dir"].exists():
-                logger.info(
-                    f"Directory at {data['save_dir']} does not exist. Creating..."
-                )
-                data["save_dir"].mkdir(parents=True, exist_ok=True)
-        super().__init__(**data, expandable=["audio", "source_data"])
+            if not path.exists():
+                logger.info(f"Directory at {path} does not exist. Creating...")
+                path.mkdir(parents=True, exist_ok=True)
+        values["save_dir"] = path
+        return path
 
     @staticmethod
     def load_config_from_path(path: Path) -> "PreprocessingConfig":
