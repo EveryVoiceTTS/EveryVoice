@@ -51,6 +51,39 @@ class PitchCalculationMethod(Enum):
     cwt = "cwt"
 
 
+class StandardDatasetEnum(Enum):
+    LJ = "LJ"
+    VCTK = "VCTK"
+    LibriTTS100 = "LibriTTS-100"
+    LibriTTS360 = "LibriTTS-360"
+
+class StandardDataset(PartialConfigModel):
+    download: bool = False
+    data_dir: Union[DirectoryPath, Path] = Path(
+        "/please/create/a/path/to/where/the/parent/directory/of/where/data/is/stored"
+    )
+    label: StandardDatasetEnum = StandardDatasetEnum.LJ
+    sox_effects: list = []
+
+    @validator("data_dir", pre=True, always=True)
+    def convert_paths(cls, v, values, field: ModelField):
+        path = rel_path_to_abs_path(v)
+        values[field.name] = path
+        return path
+
+    def filelist_loader(self, filelist=None):
+        """ Also saves audio tensors
+        """
+        from tqdm import tqdm
+        if self.label == StandardDatasetEnum.LJ:
+            from torchaudio.datasets import LJSPEECH
+            dataset = LJSPEECH(root=self.data_dir, download=self.download)
+            # TODO: add basename, somehow integrate with Preprocessor
+        elif self.label == StandardDatasetEnum.VCTK:
+            pass
+        else:
+            pass
+
 class Dataset(PartialConfigModel):
     label: str = "YourDataSet"
     data_dir: Union[DirectoryPath, Path] = Path(
@@ -84,7 +117,7 @@ class PreprocessingConfig(PartialConfigModel):
     value_separator: str = "--"
     save_dir: DirectoryPath = Path("./preprocessed/YourDataSet")
     audio: AudioConfig = Field(default_factory=AudioConfig)
-    source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
+    source_data: List[Union[Dataset, StandardDataset]] = Field(default_factory=lambda: [Dataset()])
 
     @validator("save_dir", pre=True, always=True)
     def create_dir(cls, v, values):
