@@ -18,12 +18,12 @@
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="_static/styles/theme.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
-<link href="_static/styles/bootstrap.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
-<link href="_static/styles/pydata-sphinx-theme.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
+  <link href="_static/styles/theme.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=e353d410970836974a52" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=e353d410970836974a52" rel="stylesheet" />
 
   
-  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=12da95d707ffb74b382d" rel="stylesheet" />
+  <link href="_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=e353d410970836974a52" rel="stylesheet" />
   <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
 <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
@@ -33,8 +33,8 @@
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=12da95d707ffb74b382d" />
-<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=12da95d707ffb74b382d" />
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=e353d410970836974a52" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52" />
 
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/doctools.js"></script>
@@ -390,7 +390,7 @@ document.write(`
 </li>
         <li><a href="reference/e2e.html#cmdoption-everyvoice-e2e-train-p">everyvoice-e2e-train command line option</a>
 </li>
-        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-config-path">everyvoice-fs2-check-data command line option</a>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-p">everyvoice-fs2-check-data command line option</a>
 </li>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-preprocess-p">everyvoice-fs2-preprocess command line option</a>
 </li>
@@ -601,8 +601,6 @@ document.write(`
         <li><a href="reference/aligner.html#cmdoption-everyvoice-dfa-extract-alignments-predict">everyvoice-dfa-extract-alignments command line option</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --should-check-stats
 
@@ -610,6 +608,8 @@ document.write(`
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-audit-should-check-stats">everyvoice-fs2-audit command line option</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --stats
 
@@ -824,6 +824,8 @@ document.write(`
 </li>
         <li><a href="reference/e2e.html#cmdoption-everyvoice-e2e-train-p">everyvoice-e2e-train command line option</a>
 </li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-p">everyvoice-fs2-check-data command line option</a>
+</li>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-preprocess-p">everyvoice-fs2-preprocess command line option</a>
 </li>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-train-p">everyvoice-fs2-train command line option</a>
@@ -895,11 +897,13 @@ document.write(`
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/vocoder.html#everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig.check_upsample_rate_consistency">check_upsample_rate_consistency() (everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig class method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/configuration.html#everyvoice.config.text_config.TextConfig.cleaners">cleaners (everyvoice.config.text_config.TextConfig attribute)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="reference/aligner.html#everyvoice.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerModelConfig.conv_dim">conv_dim (everyvoice.model.aligner.DeepForcedAligner.dfaligner.config.DFAlignerModelConfig attribute)</a>
+</li>
+      <li><a href="reference/vocoder.html#everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANModelConfig.convert_callable_activation_function">convert_callable_activation_function() (everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANModelConfig class method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -1089,7 +1093,7 @@ document.write(`
       <ul>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-c">--config</a>
 </li>
-        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-config-path">--config-path</a>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-p">--config-path</a>
 </li>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-f">--filelist</a>
 </li>
@@ -1100,6 +1104,8 @@ document.write(`
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-f">-f</a>
 </li>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-n">-n</a>
+</li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-p">-p</a>
 </li>
       </ul></li>
       <li>
@@ -1387,6 +1393,10 @@ document.write(`
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-synthesize-arg-MODEL_PATH">everyvoice-fs2-synthesize command line option</a>
 </li>
       </ul></li>
+      <li><a href="reference/vocoder.html#everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANModelConfig.mpd_layers">mpd_layers (everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANModelConfig attribute)</a>
+</li>
+      <li><a href="reference/vocoder.html#everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANModelConfig.msd_layers">msd_layers (everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANModelConfig attribute)</a>
+</li>
       <li><a href="reference/feature_prediction.html#everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2ModelConfig.multilingual">multilingual (everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2ModelConfig attribute)</a>
 </li>
       <li><a href="reference/feature_prediction.html#everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2ModelConfig.multispeaker">multispeaker (everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config.FastSpeech2ModelConfig attribute)</a>
@@ -1552,9 +1562,15 @@ document.write(`
               
               
                 <footer class="bd-footer-article">
-                  <!-- Previous / next buttons -->
+                  
+<div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item"><!-- Previous / next buttons -->
 <div class="prev-next-area">
+</div></div>
+  
 </div>
+
                 </footer>
               
             </div>
@@ -1564,7 +1580,7 @@ document.write(`
             
           </div>
           <footer class="bd-footer-content">
-            <div class="bd-footer-content__inner"></div>
+            
           </footer>
         
       </main>
@@ -1572,8 +1588,8 @@ document.write(`
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="_static/scripts/bootstrap.js?digest=12da95d707ffb74b382d"></script>
-<script src="_static/scripts/pydata-sphinx-theme.js?digest=12da95d707ffb74b382d"></script>
+  <script src="_static/scripts/bootstrap.js?digest=e353d410970836974a52"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=e353d410970836974a52"></script>
 
   <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
@@ -1591,7 +1607,7 @@ document.write(`
       
         <div class="footer-item">
   <p class="sphinx-version">
-    Created using <a href="https://sphinx-doc.org/">Sphinx</a> 6.1.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
     <br/>
   </p>
 </div>
@@ -1602,7 +1618,7 @@ document.write(`
     <div class="footer-items__end">
       
         <div class="footer-item"><p class="theme-version">
-  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.13.1.
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.13.3.
 </p></div>
       
     </div>
