@@ -17,7 +17,7 @@ from g2p.exceptions import InvalidLanguageCode, NoPath
 from g2p.transducer import CompositeTransducer
 from loguru import logger
 from pydantic import BaseModel
-from readalongs.util import get_langs
+from g2p import get_arpabet_langs
 from rich import print
 from rich.panel import Panel
 from tqdm import tqdm
@@ -84,7 +84,7 @@ def get_lang_information() -> Tuple[Dict[str, str], Dict[str, str]]:
     logger.info("Getting supported languages...")
     from pycountry import languages
 
-    supported_langs = get_langs()[1].items()
+    supported_langs = get_arpabet_langs()[1].items()
     all_langs = list(languages)
     supported_langs_choices = ["[none]: my language isn't here"] + [
         f"[{k}]: {v}" for k, v in supported_langs
