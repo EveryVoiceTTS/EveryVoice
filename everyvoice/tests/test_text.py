@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from unicodedata import normalize
 from unittest import TestCase, main
 
