@@ -235,9 +235,9 @@ def config_wizard(
         )  # we might need to convert some of the names of languages to the recognized iso code
         logger.info("Getting supported languages...")
         from pycountry import languages
-        from readalongs.util import get_langs
+        from g2p import get_arbabet_langs
 
-        supported_langs = get_langs()[1]
+        supported_langs = get_arbabet_langs()[1]
         all_langs = list(languages)
         ds_supported_langs = {}
         ds_unsupported_langs = {}
