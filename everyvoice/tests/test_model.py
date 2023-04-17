@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from unittest import TestCase, main
 
 from everyvoice.model.e2e.config import EveryVoiceConfig

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import tempfile
 from pathlib import Path
 from unittest import TestCase, main
@@ -236,8 +238,10 @@ class PreprocessingTest(TestCase):
             self.assertEqual(feats.size(1), sum(durs))
 
     def test_energy(self):
-        frame_energy_config = EveryVoiceConfig.load_config_from_path().vocoder.update_config(
-            {"preprocessing": {"energy_phone_averaging": False}}
+        frame_energy_config = (
+            EveryVoiceConfig.load_config_from_path().vocoder.update_config(
+                {"preprocessing": {"energy_phone_averaging": False}}
+            )
         )
         preprocessor = Preprocessor(frame_energy_config)
         for entry in self.filelist[1:]:
