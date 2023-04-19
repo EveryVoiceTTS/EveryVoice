@@ -111,14 +111,17 @@ class LoggerConfig(ConfigModel):
 
 class BaseTrainingConfig(ConfigModel):
     batch_size: int = 16
-    train_split: float = 0.9
     save_top_k_ckpts: int = 5
     ckpt_steps: Union[int, None] = None
     ckpt_epochs: Union[int, None] = 1
     max_epochs: int = 1000
-    seed: int = 1234
     finetune_checkpoint: Union[FilePath, None] = None
-    filelist: Union[Path, FilePath] = Path("./path/to/your/preprocessed/filelist.psv")
+    training_filelist: Union[Path, FilePath] = Path(
+        "./path/to/your/preprocessed/training_filelist.psv"
+    )
+    validation_filelist: Union[Path, FilePath] = Path(
+        "./path/to/your/preprocessed/validation_filelist.psv"
+    )
     filelist_loader: Callable = generic_dict_loader
     logger: LoggerConfig = Field(default_factory=LoggerConfig)
     val_data_workers: int = 0
@@ -130,7 +133,13 @@ class BaseTrainingConfig(ConfigModel):
         values["filelist_loader"] = func
         return func
 
-    @validator("finetune_checkpoint", "filelist", pre=True, always=True)
+    @validator(
+        "finetune_checkpoint",
+        "training_filelist",
+        "validation_filelist",
+        pre=True,
+        always=True,
+    )
     def convert_paths(cls, v, values, field: ModelField):
         path = rel_path_to_abs_path(v)
         values[field.name] = path

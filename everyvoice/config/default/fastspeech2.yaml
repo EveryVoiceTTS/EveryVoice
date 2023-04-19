@@ -92,7 +92,6 @@ training:
     linear_schedule_end: 20
     linear_schedule_end_ratio: 0.0
   batch_size: 16
-  train_split: 0.9
   save_top_k_ckpts: 5
   ckpt_steps: null
   ckpt_epochs: 1

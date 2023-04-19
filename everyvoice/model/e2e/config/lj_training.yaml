@@ -1,5 +1,4 @@
 batch_size: 16
-train_split: 0.99
 save_top_k_ckpts: 3
 ckpt_steps: null
 ckpt_epochs: 1

@@ -1,10 +1,9 @@
-import random
 from pathlib import Path
 
 import numpy as np
 import torch
 from torch.nn.utils.rnn import pad_sequence
-from torch.utils.data import Dataset, random_split
+from torch.utils.data import Dataset
 
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.model.e2e.config import EveryVoiceConfig
@@ -25,7 +24,6 @@ class E2EDataset(Dataset):
         self.preprocessed_dir = Path(
             self.config.feature_prediction.preprocessing.save_dir
         )
-        random.seed(self.config.training.seed)
         self.output_sampling_rate = (
             self.config.vocoder.preprocessing.audio.output_sampling_rate
         )
@@ -161,9 +159,8 @@ class E2EDataModule(BaseDataModule):
         self.batch_size = (
             config.training.batch_size
         )  # TODO: should this be set somewhere else?
-        self.train_split = config.training.train_split
         self.load_dataset()
-        self.dataset_length = len(self.dataset)
+        self.dataset_length = len(self.train_dataset) + len(self.val_dataset)
 
     @staticmethod
     def collate_method(data):
@@ -187,16 +184,16 @@ class E2EDataModule(BaseDataModule):
         return data
 
     def load_dataset(self):
-        self.dataset = self.config.training.filelist_loader(
-            self.config.training.filelist
+        self.train_dataset = self.config.training.filelist_loader(
+            self.config.training.training_filelist
+        )
+        self.val_dataset = self.config.training.filelist_loader(
+            self.config.training.validation_filelist
         )
 
     def prepare_data(self):
-        train_samples = int(self.dataset_length * self.train_split)
-        val_samples = self.dataset_length - train_samples
-        self.train_dataset, self.val_dataset = random_split(
-            self.dataset, [train_samples, val_samples]
-        )
+        train_samples = len(self.train_dataset)
+        val_samples = len(self.val_dataset)
         check_dataset_size(self.batch_size, train_samples, "training")
         check_dataset_size(self.batch_size, val_samples, "validation")
         self.train_dataset = E2EDataset(self.train_dataset, self.config)

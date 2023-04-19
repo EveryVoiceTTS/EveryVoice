@@ -82,6 +82,8 @@ class PreprocessingConfig(PartialConfigModel):
     pitch_phone_averaging: bool = True
     energy_phone_averaging: bool = True
     value_separator: str = "--"
+    train_split: float = 0.9
+    dataset_split_seed: int = 1234
     save_dir: DirectoryPath = Path("./preprocessed/YourDataSet")
     audio: AudioConfig = Field(default_factory=AudioConfig)
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])

@@ -7,6 +7,7 @@
 import functools
 import multiprocessing as mp
 import os
+import random
 from pathlib import Path
 from typing import List, Tuple, Union
 
@@ -704,7 +705,7 @@ class Preprocessor:
     ):
         self.overwrite = overwrite
         processing_order = ["audio", "text", "pfs", "spec", "attn", "energy", "pitch"]
-
+        random.seed(self.config.preprocessing.dataset_split_seed)
         for process in processing_order:
             if process not in to_process:
                 continue
@@ -712,6 +713,19 @@ class Preprocessor:
             if process == "audio":
                 if filelist := self.process_all_audio(debug=debug):
                     write_filelist(filelist, self.save_dir / output_path)
+                    # sample the validation set and subtract it from the whole dataset to determine the training set
+                    random.shuffle(filelist)
+                    train_split = int(
+                        len(filelist) * self.config.preprocessing.train_split
+                    )
+                    write_filelist(
+                        filelist[:train_split],
+                        self.save_dir / f"training-{output_path}",
+                    )
+                    write_filelist(
+                        filelist[train_split:],
+                        self.save_dir / f"validation-{output_path}",
+                    )
                     report = self.report()
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
                         f.write(report)

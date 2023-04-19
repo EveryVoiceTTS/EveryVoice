@@ -18,7 +18,7 @@ class DataLoaderTest(TestCase):
         self.config = EveryVoiceConfig.load_config_from_path()
         self.lj_preprocessed = Path(__file__).parent / "data" / "lj" / "preprocessed"
         self.config.vocoder.preprocessing.save_dir = self.lj_preprocessed
-        self.config.vocoder.training.filelist = (
+        self.config.vocoder.training.training_filelist = (
             self.lj_preprocessed / "preprocessed_filelist.psv"
         )
 
@@ -30,7 +30,7 @@ class DataLoaderTest(TestCase):
     def test_spec_dataset(self):
         dataset = SpecDataset(
             self.config.vocoder.training.filelist_loader(
-                self.config.vocoder.training.filelist
+                self.config.vocoder.training.training_filelist
             ),
             self.config.vocoder,
             use_segments=True,

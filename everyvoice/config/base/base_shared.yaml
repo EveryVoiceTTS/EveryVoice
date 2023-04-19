@@ -13,7 +13,6 @@ aligner:
     plot_steps: 1000
     extraction_method: "beam"
     batch_size: 32
-    train_split: 0.99
     save_top_k_ckpts: 3
     ckpt_steps: null
     ckpt_epochs: 1
@@ -126,7 +125,6 @@ feature_prediction:
       linear_schedule_end: 20
       linear_schedule_end_ratio: 0.0
     batch_size: 16
-    train_split: 0.9
     save_top_k_ckpts: 5
     ckpt_steps: null
     ckpt_epochs: 1
@@ -168,7 +166,6 @@ vocoder:
     wgan_clip_value: 0.01
     use_weighted_sampler: False
     batch_size: 16
-    train_split: 0.9
     save_top_k_ckpts: 5
     ckpt_steps: null
     ckpt_epochs: 1

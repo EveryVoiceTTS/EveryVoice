@@ -12,7 +12,6 @@ training:
   plot_steps: 1000
   extraction_method: "beam"
   batch_size: 32
-  train_split: 0.99
   save_top_k_ckpts: 3
   ckpt_steps: null
   ckpt_epochs: 1

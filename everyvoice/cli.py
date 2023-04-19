@@ -13,9 +13,13 @@ from rich.style import Style
 from slugify import slugify
 
 from everyvoice.config import CONFIGS
-from everyvoice.model.aligner.DeepForcedAligner.dfaligner.cli import app as dfaligner_app
+from everyvoice.model.aligner.DeepForcedAligner.dfaligner.cli import (
+    app as dfaligner_app,
+)
 from everyvoice.model.e2e.cli import app as e2e_app
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import app as fs2_app
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
+    app as fs2_app,
+)
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import app as hfgl_app
 
 app = typer.Typer(pretty_exceptions_show_locals=False)
@@ -316,7 +320,12 @@ def config_wizard(
     log_dir = (output_path / "logs").absolute()
     log_dir.mkdir(parents=True, exist_ok=True)
     ## Create Preprocessing Config
-    preprocessed_filelist_path = output_path / "preprocessed" / "processed_filelist.psv"
+    preprocessed_training_filelist_path = (
+        output_path / "preprocessed" / "training-processed_filelist.psv"
+    )
+    preprocessed_validation_filelist_path = (
+        output_path / "preprocessed" / "validation-processed_filelist.psv"
+    )
     audio_config = AudioConfig(
         min_audio_length=min_length,
         max_audio_length=max_length,
@@ -348,7 +357,9 @@ def config_wizard(
     aligner_logger = LoggerConfig(name="AlignerExperiment", save_dir=log_dir)
     aligner_config = AlignerConfig(
         training=BaseTrainingConfig(
-            filelist=preprocessed_filelist_path.absolute(), logger=aligner_logger
+            training_filelist=preprocessed_training_filelist_path.absolute(),
+            validation_filelist=preprocessed_validation_filelist_path.absolute(),
+            logger=aligner_logger,
         )
     )
     aligner_config_path = (config_dir / f"aligner.{config_format}").absolute()
@@ -360,7 +371,9 @@ def config_wizard(
     fp_logger = LoggerConfig(name="FeaturePredictionExperiment", save_dir=log_dir)
     fp_config = FeaturePredictionConfig(
         training=BaseTrainingConfig(
-            filelist=preprocessed_filelist_path.absolute(), logger=fp_logger
+            training_filelist=preprocessed_training_filelist_path.absolute(),
+            validation_filelist=preprocessed_validation_filelist_path.absolute(),
+            logger=fp_logger,
         )
     )
     fp_config_path = (config_dir / f"feature_prediction.{config_format}").absolute()
@@ -372,7 +385,9 @@ def config_wizard(
     vocoder_logger = LoggerConfig(name="VocoderExperiment", save_dir=log_dir)
     vocoder_config = VocoderConfig(
         training=BaseTrainingConfig(
-            filelist=preprocessed_filelist_path.absolute(), logger=vocoder_logger
+            training_filelist=preprocessed_training_filelist_path.absolute(),
+            validation_filelist=preprocessed_validation_filelist_path.absolute(),
+            logger=vocoder_logger,
         )
     )
     vocoder_config_path = (config_dir / f"vocoder.{config_format}").absolute()
@@ -386,7 +401,9 @@ def config_wizard(
         feature_prediction=fp_config_path,
         aligner=aligner_config_path,
         training=BaseTrainingConfig(
-            filelist=preprocessed_filelist_path.absolute(), logger=e2e_logger
+            training_filelist=preprocessed_training_filelist_path.absolute(),
+            validation_filelist=preprocessed_validation_filelist_path.absolute(),
+            logger=e2e_logger,
         ),
     )
     e2e_config_json = json.loads(e2e_config.json())
