@@ -92,7 +92,8 @@ class LoggerConfig(ConfigModel):
     sub_dir: str = "everyvoice.utils.get_current_time"
     version: str = "base"
 
-    @validator("sub_dir", pre=True, always=True)
+    # always=False so that value doesn't get called if using default (i.e. allows config-wizard to work properly)
+    @validator("sub_dir", pre=True, always=False)
     def convert_callable_sub_dir(cls, v, values):
         func = string_to_callable(v)
         called = func()
