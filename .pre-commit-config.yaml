@@ -23,14 +23,17 @@ repos:
         language: system
         types: [python]
         stages: [commit]
+# We do flake8 last since black fixes a lot of the stuff it complains about
+-   repo: https://github.com/PyCQA/flake8
+    rev: 3.8.3
+    hooks:
+    -   id: flake8
+# We do mypy last because it's the slowest of them all
+-   repo: local
+    hooks:
     -   id: mypy
         name: mypy
         entry: mypy
         language: system
         types: [python]
         stages: [commit]
-# We do flake8 last since black fixes a lot of the stuff it complains about
--   repo: https://github.com/PyCQA/flake8
-    rev: 3.8.3
-    hooks:
-    -   id: flake8
