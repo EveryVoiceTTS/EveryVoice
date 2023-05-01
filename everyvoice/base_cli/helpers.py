@@ -13,7 +13,9 @@ from loguru import logger
 from tqdm import tqdm
 
 from everyvoice.model.aligner.config import DFAlignerConfig
-from everyvoice.model.aligner.DeepForcedAligner.dfaligner.dataset import AlignerDataModule
+from everyvoice.model.aligner.DeepForcedAligner.dfaligner.dataset import (
+    AlignerDataModule,
+)
 from everyvoice.model.aligner.DeepForcedAligner.dfaligner.model import Aligner
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.e2e.dataset import E2EDataModule
@@ -22,15 +24,21 @@ from everyvoice.model.feature_prediction.config import FastSpeech2Config
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.dataset import (
     FastSpeech2DataModule,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import FastSpeech2
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
+    FastSpeech2,
+)
 from everyvoice.model.vocoder.config import HiFiGANConfig
-from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import HiFiGANDataModule
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
+    HiFiGANDataModule,
+)
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 
 
 def load_config_base_command(
     name: Enum,
-    model_config: Union[DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig],
+    model_config: Union[
+        DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
+    ],
     configs,
     # Must include the above in model-specific command
     config_args: List[str],
@@ -54,7 +62,9 @@ def load_config_base_command(
 
 def preprocess_base_command(
     name: Enum,
-    model_config: Union[DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig],
+    model_config: Union[
+        DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
+    ],
     configs,
     data,
     preprocess_categories,
@@ -95,7 +105,9 @@ def preprocess_base_command(
 
 def train_base_command(
     name: Enum,
-    model_config: Union[DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig],
+    model_config: Union[
+        DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
+    ],
     configs,
     data_module: Union[
         AlignerDataModule, E2EDataModule, FastSpeech2DataModule, HiFiGANDataModule
@@ -149,6 +161,7 @@ def train_base_command(
         accelerator=accelerator,
         devices=devices,
         max_epochs=config.training.max_epochs,
+        max_steps=config.training.max_steps,
         callbacks=[ckpt_callback, lr_monitor],
         strategy=strategy,
         num_nodes=nodes,
