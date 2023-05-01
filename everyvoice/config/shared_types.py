@@ -116,6 +116,7 @@ class BaseTrainingConfig(ConfigModel):
     ckpt_steps: Union[int, None] = None
     ckpt_epochs: Union[int, None] = 1
     max_epochs: int = 1000
+    max_steps: int = 100000
     finetune_checkpoint: Union[FilePath, None] = None
     training_filelist: Union[Path, FilePath] = Path(
         "./path/to/your/preprocessed/training_filelist.psv"
