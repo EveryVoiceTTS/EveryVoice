@@ -6,7 +6,9 @@ import torch
 from loguru import logger
 
 from everyvoice.model.e2e.config import EveryVoiceConfig
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import FastSpeech2
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
+    FastSpeech2,
+)
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
     Stats,
 )

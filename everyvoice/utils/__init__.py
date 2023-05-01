@@ -168,7 +168,7 @@ def load_lj_metadata_hifigan(path):
 def read_festival(path):
     """Read Festival format into filelist
     Args:
-        path (Path): Path to fesetival format filelist
+        path (Path): Path to festival format filelist
     """
     festival_pattern = re.compile(
         r"""
@@ -210,6 +210,11 @@ def sniff_and_return_filelist_data(path):
             return list(reader)
 
 
+# NOTE: It's annoying to be so un-DRY (with different functions for each different delmiter),
+# but currently the json serializing of pydantic BaseModels isn't properly configured to serialize partials
+# which would probably be needed to make this more DRY
+
+
 def generic_dict_loader(
     path, delimiter="|", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
 ):
@@ -230,12 +235,47 @@ def generic_dict_loader(
     return files
 
 
-def generic_csv_loader(path, delimiter="|", quoting=csv.QUOTE_NONE, escapechar="\\"):
-    with open(path, "r", newline="", encoding="utf8") as f:
-        reader = csv.reader(
-            f, delimiter=delimiter, quoting=quoting, escapechar=escapechar
+generic_psv_loader = generic_dict_loader
+
+
+def generic_csv_loader(
+    path, delimiter=",", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
+):
+    with open(
+        path,
+        "r",
+        newline="",
+        encoding="utf8",
+    ) as f:
+        reader = csv.DictReader(
+            f,
+            fieldnames=fieldnames,
+            delimiter=delimiter,
+            quoting=quoting,
+            escapechar=escapechar,
         )
-        return list(reader)
+        files = list(reader)
+    return files
+
+
+def generic_tsv_loader(
+    path, delimiter="\t", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
+):
+    with open(
+        path,
+        "r",
+        newline="",
+        encoding="utf8",
+    ) as f:
+        reader = csv.DictReader(
+            f,
+            fieldnames=fieldnames,
+            delimiter=delimiter,
+            quoting=quoting,
+            escapechar=escapechar,
+        )
+        files = list(reader)
+    return files
 
 
 def write_dict(path, data, fieldnames):

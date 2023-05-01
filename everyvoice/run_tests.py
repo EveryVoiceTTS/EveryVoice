@@ -14,6 +14,7 @@ from everyvoice.tests.test_dataloader import DataLoaderTest
 from everyvoice.tests.test_model import ModelTest
 from everyvoice.tests.test_preprocessing import PreprocessingTest
 from everyvoice.tests.test_text import TextTest
+from everyvoice.tests.test_wizard import WizardTest
 
 # Unit tests
 
@@ -32,9 +33,15 @@ PREPROCESSING_TESTS = [
 
 MODEL_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [ModelTest]]
 
+CLI_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [WizardTest]]
 
 DEV_TESTS = (
-    CONFIG_TESTS + DATALOADER_TESTS + TEXT_TESTS + PREPROCESSING_TESTS + MODEL_TESTS
+    CONFIG_TESTS
+    + DATALOADER_TESTS
+    + TEXT_TESTS
+    + PREPROCESSING_TESTS
+    + MODEL_TESTS
+    + CLI_TESTS
 )
 
 
