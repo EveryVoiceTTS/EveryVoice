@@ -6,6 +6,7 @@ import torch
 import torchaudio.transforms as T
 from torch.nn.utils.rnn import pad_sequence
 
+from everyvoice.config.preprocessing_config import AudioSpecTypeEnum
 from everyvoice.utils import _flatten
 
 
@@ -54,7 +55,7 @@ def get_spectral_transform(
     f_min=0,
     f_max=8000,
 ):
-    if spec_type == "mel-torch":
+    if spec_type == AudioSpecTypeEnum.mel.value:
         return T.MelSpectrogram(
             sample_rate=sample_rate,
             n_fft=n_fft,
@@ -66,7 +67,7 @@ def get_spectral_transform(
             norm="slaney",
             center=True,
         )
-    elif spec_type == "mel-librosa":
+    elif spec_type == AudioSpecTypeEnum.mel_librosa.value:
         from librosa.filters import mel as librosa_mel
 
         transform = T.Spectrogram(
@@ -98,13 +99,13 @@ def get_spectral_transform(
             return mel
 
         return mel_transform
-    elif spec_type == "linear":
+    elif spec_type == AudioSpecTypeEnum.linear.value:
         return T.Spectrogram(
             n_fft=n_fft,
             win_length=win_length,
             hop_length=hop_length,
         )
-    elif spec_type == "raw":
+    elif spec_type == AudioSpecTypeEnum.raw.value:
         return T.Spectrogram(
             n_fft=n_fft,
             win_length=win_length,

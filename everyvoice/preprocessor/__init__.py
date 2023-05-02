@@ -29,6 +29,7 @@ from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
 from everyvoice.config import ConfigError
+from everyvoice.config.preprocessing_config import PitchCalculationMethod
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
@@ -164,7 +165,7 @@ class Preprocessor:
             or self.output_spectral_transform is None
         ):
             raise ConfigError(
-                f"Spectral feature specification {self.audio_config.spec_type} is not supported. Please edit your config file."
+                f"Spectral feature specification '{self.audio_config.spec_type}' is not supported. Please edit your config file."
             )
 
     def load_audio_tensor(self, audio_path: Union[Path, str]):
@@ -272,7 +273,7 @@ class Preprocessor:
         Args:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
         """
-        if self.config.preprocessing.pitch_type == "pyworld":
+        if self.config.preprocessing.pitch_type == PitchCalculationMethod.pyworld.value:
             import pyworld as pw  # This isn't a very good place for an import,
 
             # but also pyworld is very annoying to install so this is a compromise
@@ -297,7 +298,7 @@ class Preprocessor:
             pitch[pitch == 0] = np.nan
             pitch = self._interpolate(pitch)
             pitch = tensor(pitch).float()
-        elif self.config.preprocessing.pitch_type == "kaldi":
+        elif self.config.preprocessing.pitch_type == PitchCalculationMethod.kaldi.value:
             pitch = compute_kaldi_pitch(
                 waveform=audio_tensor,
                 sample_rate=self.input_sampling_rate,
@@ -704,6 +705,8 @@ class Preprocessor:
         debug=False,
     ):
         self.overwrite = overwrite
+        if not isinstance(output_path, Path):
+            output_path = Path(output_path)
         processing_order = ["audio", "text", "pfs", "spec", "attn", "energy", "pitch"]
         random.seed(self.config.preprocessing.dataset_split_seed)
         for process in processing_order:
@@ -712,7 +715,7 @@ class Preprocessor:
             (self.save_dir / process).mkdir(parents=True, exist_ok=True)
             if process == "audio":
                 if filelist := self.process_all_audio(debug=debug):
-                    write_filelist(filelist, self.save_dir / output_path)
+                    write_filelist(filelist, self.save_dir / output_path.name)
                     # sample the validation set and subtract it from the whole dataset to determine the training set
                     random.shuffle(filelist)
                     train_split = int(
@@ -720,11 +723,11 @@ class Preprocessor:
                     )
                     write_filelist(
                         filelist[:train_split],
-                        self.save_dir / f"training-{output_path}",
+                        self.save_dir / f"training-{output_path.name}",
                     )
                     write_filelist(
                         filelist[train_split:],
-                        self.save_dir / f"validation-{output_path}",
+                        self.save_dir / f"validation-{output_path.name}",
                     )
                     report = self.report()
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
@@ -733,7 +736,7 @@ class Preprocessor:
             else:
                 # If audio has already been processed, then just read the processed_filelist
                 try:
-                    filelist = generic_dict_loader(self.save_dir / output_path)
+                    filelist = generic_dict_loader(self.save_dir / output_path.name)
                     if debug:
                         logger.info(
                             "Debug flag was set to true, only processing first 10 files"
@@ -741,7 +744,7 @@ class Preprocessor:
                         filelist = filelist[:10]
                 except FileNotFoundError:
                     logger.error(
-                        f"A filelist was not found at {self.save_dir / output_path}. Please try processing your audio again."
+                        f"A filelist was not found at {self.save_dir / output_path.name}. Please try processing your audio again."
                     )
                     exit()
                 process_fn = self.get_process_fn(process)

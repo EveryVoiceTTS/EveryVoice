@@ -7,6 +7,10 @@ from tqdm import tqdm
 
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.model.vocoder.config import VocoderConfig
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
+    HiFiGANTrainingConfig,
+)
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     HiFiGANDataModule,
     SpecDataset,
@@ -17,8 +21,18 @@ class DataLoaderTest(TestCase):
     """Basic test for dataloaders"""
 
     def setUp(self) -> None:
-        self.config = EveryVoiceConfig.load_config_from_path()
+
         self.lj_preprocessed = Path(__file__).parent / "data" / "lj" / "preprocessed"
+        self.config = EveryVoiceConfig(
+            vocoder=VocoderConfig(
+                training=HiFiGANTrainingConfig(
+                    training_filelist=self.lj_preprocessed
+                    / "training-preprocessed_filelist.psv",
+                    validation_filelist=self.lj_preprocessed
+                    / "validation-preprocessed_filelist.psv",
+                )
+            )
+        )
         self.config.vocoder.preprocessing.save_dir = self.lj_preprocessed
         self.config.vocoder.training.training_filelist = (
             self.lj_preprocessed / "preprocessed_filelist.psv"
@@ -59,7 +73,7 @@ class DataLoaderTest(TestCase):
     def test_hifi_data_loader(self):
         hfgdm = HiFiGANDataModule(self.config.vocoder)
         hfgdm.load_dataset()
-        self.assertEqual(len(hfgdm.dataset), 5)
+        self.assertEqual(len(hfgdm.train_dataset), 5)
 
     def test_hifi_ft_data_loader(self):
         """TODO: can't make this test until I generate some synthesized samples"""
