@@ -1,0 +1,3 @@
+[general]
+# We don't require a body, just a title, even though a body is also a good idea
+ignore=body-is-missing
