@@ -10,7 +10,7 @@ class ModelTest(TestCase):
     """Basic test for models"""
 
     def setUp(self) -> None:
-        self.config = EveryVoiceConfig.load_config_from_path()
+        self.config = EveryVoiceConfig()
         self.hifi_gan = HiFiGAN(self.config.vocoder)
 
     def test_hparams(self):

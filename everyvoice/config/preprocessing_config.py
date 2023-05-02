@@ -41,7 +41,7 @@ class AudioConfig(ConfigModel):
     f_max: int = 8000
     n_fft: int = 1024
     n_mels: int = 80
-    spec_type: AudioSpecTypeEnum = AudioSpecTypeEnum.mel_librosa
+    spec_type: Union[AudioSpecTypeEnum, str] = AudioSpecTypeEnum.mel_librosa.value
     vocoder_segment_size: int = 8192
 
 
@@ -61,7 +61,7 @@ class Dataset(PartialConfigModel):
         "/please/create/a/path/to/your/dataset/filelist"
     )
     filelist_loader: Callable = generic_dict_loader
-    sox_effects: list = []
+    sox_effects: list = [["channels", "1"]]
 
     @validator("filelist_loader", pre=True, always=True)
     def convert_callable_filelist_loader(cls, v, values):
@@ -78,7 +78,9 @@ class Dataset(PartialConfigModel):
 
 class PreprocessingConfig(PartialConfigModel):
     dataset: str = "YourDataSet"
-    pitch_type: PitchCalculationMethod = PitchCalculationMethod.pyworld
+    pitch_type: Union[
+        PitchCalculationMethod, str
+    ] = PitchCalculationMethod.pyworld.value
     pitch_phone_averaging: bool = True
     energy_phone_averaging: bool = True
     value_separator: str = "--"

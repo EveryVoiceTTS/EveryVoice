@@ -6,8 +6,7 @@ from unittest import TestCase, main
 
 import yaml
 
-from everyvoice.config import CONFIGS
-from everyvoice.config import __file__ as everyvoice_file
+from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -21,9 +20,7 @@ class ConfigTest(TestCase):
     data_dir = Path(__file__).parent / "data"
 
     def setUp(self) -> None:
-        with open(Path(everyvoice_file).parent / "base" / "base_composed.yaml") as f:
-            self.yaml_config = yaml.safe_load(f)
-            self.config = EveryVoiceConfig(**self.yaml_config)
+        self.config = EveryVoiceConfig()
 
     def test_from_object(self):
         """Test from object"""
@@ -56,7 +53,7 @@ class ConfigTest(TestCase):
         self.assertEqual(self.config.vocoder.training.batch_size, 456)
 
     def test_string_to_dict(self):
-        base_config = EveryVoiceConfig.load_config_from_path()
+        base_config = EveryVoiceConfig()
         test_string = "vocoder.training.gan_type=wgan"
         test_bad_strings = [
             "vocoder.training.gan_type==wgan",
@@ -69,7 +66,7 @@ class ConfigTest(TestCase):
             with self.assertRaises(ValueError):
                 expand_config_string_syntax(bs)
 
-        self.assertEqual(base_config.vocoder.training.gan_type, "original")
+        self.assertEqual(base_config.vocoder.training.gan_type.value, "original")
         config = base_config.combine_configs(base_config, test_dict)
         self.assertEqual(config["vocoder"]["training"]["gan_type"], "wgan")
 
@@ -87,9 +84,12 @@ class ConfigTest(TestCase):
 
     def test_shared_sox(self):
         """Test that the shared sox config is correct"""
-        config: EveryVoiceConfig = EveryVoiceConfig.load_config_from_path(
-            CONFIGS["openslr"]
+        vocoder_config = VocoderConfig(
+            preprocessing=PreprocessingConfig(
+                source_data=[Dataset(), Dataset(), Dataset(), Dataset()]
+            )
         )
+        config: EveryVoiceConfig = EveryVoiceConfig(vocoder=vocoder_config)
         sox_effects = config.vocoder.preprocessing.source_data[0].sox_effects
         self.assertEqual(len(config.vocoder.preprocessing.source_data), 4)
         for d_other in config.vocoder.preprocessing.source_data[1:]:
@@ -98,12 +98,9 @@ class ConfigTest(TestCase):
 
     def test_correct_number_typing(self):
         batch_size = 64.0
-        config = EveryVoiceConfig.load_config_from_path()
-        config.update_config(
-            {"feature_prediction": {"training": {"batch_size": batch_size}}}
-        )
+        config = EveryVoiceConfig(training=E2ETrainingConfig(batch_size=batch_size))
         self.assertIsInstance(batch_size, float)
-        self.assertEqual(config.feature_prediction.training.batch_size, 64)
+        self.assertEqual(config.training.batch_size, 64)
         self.assertIsInstance(config.feature_prediction.training.batch_size, int)
 
 

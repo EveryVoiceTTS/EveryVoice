@@ -1,7 +1,7 @@
 import contextlib
 from typing import Callable, Dict, List, Union
 
-from pydantic import BaseModel, Extra, Field
+from pydantic import BaseModel, Extra, Field, validator
 
 from everyvoice.config.shared_types import ConfigModel
 from everyvoice.config.utils import string_to_callable
@@ -22,10 +22,9 @@ class TextConfig(ConfigModel):
     to_replace: Dict[str, str] = {}  # Happens before cleaners
     cleaners: List[Callable] = [lower, collapse_whitespace, nfc_normalize]
 
-    def __init__(self, **data) -> None:
-        """Custom init to process cleaners"""
+    @validator("cleaners", pre=True, always=True)
+    def convert_callable_cleaners(cls, v, values):
         with contextlib.suppress(KeyError):
-            cleaners = data["cleaners"]
-            for i, c in enumerate(cleaners):
-                cleaners[i] = string_to_callable(c)
-        super().__init__(**data)
+            for i, c in enumerate(v):
+                v[i] = string_to_callable(c)
+        return v

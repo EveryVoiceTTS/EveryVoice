@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-
+import string
 from unicodedata import normalize
 from unittest import TestCase, main
 
-from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.config.text_config import Symbols, TextConfig
+from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.text import TextProcessor
 
 
@@ -12,7 +13,9 @@ class TextTest(TestCase):
 
     def setUp(self) -> None:
         self.base_text_processor = TextProcessor(
-            EveryVoiceConfig.load_config_from_path().aligner
+            FeaturePredictionConfig(
+                text=TextConfig(symbols=Symbols(letters=string.ascii_letters))
+            )
         )
 
     def test_text_to_sequence(self):
@@ -37,61 +40,57 @@ class TextTest(TestCase):
         )
 
     def test_phonological_features(self):
-        moh_config = (
-            EveryVoiceConfig.load_config_from_path().feature_prediction.update_config(
-                {
-                    "text": {
-                        "symbols": {
-                            "letters": [
-                                "ʌ̃̀ː",
-                                "ʌ̃́ː",
-                                "t͡ʃ",
-                                "d͡ʒ",
-                                "ʌ̃́",
-                                "ʌ̃ː",
-                                "kʰʷ",
-                                "ũ̀ː",
-                                "ɡʷ",
-                                "áː",
-                                "àː",
-                                "aː",
-                                "ʌ̃",
-                                "èː",
-                                "éː",
-                                "iː",
-                                "íː",
-                                "ìː",
-                                "kʷ",
-                                "ṹː",
-                                "óː",
-                                "òː",
-                                "ʃ",
-                                "d",
-                                "ɡ",
-                                "á",
-                                "a",
-                                "é",
-                                "e",
-                                "í",
-                                "i",
-                                "k",
-                                "n",
-                                "ṹ",
-                                "ũ",
-                                "ó",
-                                "o",
-                                "r",
-                                "h",
-                                "t",
-                                "s",
-                                "w",
-                                "f",
-                                "j",
-                                "ʔ",
-                            ]
-                        }
-                    }
-                }
+        moh_config = FeaturePredictionConfig(
+            text=TextConfig(
+                symbols=Symbols(
+                    letters=[
+                        "ʌ̃̀ː",
+                        "ʌ̃́ː",
+                        "t͡ʃ",
+                        "d͡ʒ",
+                        "ʌ̃́",
+                        "ʌ̃ː",
+                        "kʰʷ",
+                        "ũ̀ː",
+                        "ɡʷ",
+                        "áː",
+                        "àː",
+                        "aː",
+                        "ʌ̃",
+                        "èː",
+                        "éː",
+                        "iː",
+                        "íː",
+                        "ìː",
+                        "kʷ",
+                        "ṹː",
+                        "óː",
+                        "òː",
+                        "ʃ",
+                        "d",
+                        "ɡ",
+                        "á",
+                        "a",
+                        "é",
+                        "e",
+                        "í",
+                        "i",
+                        "k",
+                        "n",
+                        "ṹ",
+                        "ũ",
+                        "ó",
+                        "o",
+                        "r",
+                        "h",
+                        "t",
+                        "s",
+                        "w",
+                        "f",
+                        "j",
+                        "ʔ",
+                    ]
+                )
             )
         )
         moh_text_processor = TextProcessor(moh_config)
@@ -106,8 +105,10 @@ class TextTest(TestCase):
 
     def test_duplicate_symbols(self):
         duplicate_symbols_text_processor = TextProcessor(
-            EveryVoiceConfig.load_config_from_path().feature_prediction.update_config(
-                ({"text": {"symbols": {"duplicate": "e"}}})
+            FeaturePredictionConfig(
+                text=TextConfig(
+                    symbols=Symbols(letters=string.ascii_letters, duplicate=["e"])
+                )
             )
         )
         self.assertIn("e", duplicate_symbols_text_processor.duplicate_symbols)
@@ -115,15 +116,19 @@ class TextTest(TestCase):
     def test_bad_symbol_configuration(self):
         with self.assertRaises(TypeError):
             TextProcessor(
-                EveryVoiceConfig.load_config_from_path().feature_prediction.update_config(
-                    ({"text": {"symbols": {"bad": 1}}})
+                FeaturePredictionConfig(
+                    text=TextConfig(
+                        symbols=Symbols(letters=string.ascii_letters, bad=[1])
+                    )
                 )
             )
 
     def test_dipgrahs(self):
         digraph_text_processor = TextProcessor(
-            EveryVoiceConfig.load_config_from_path().feature_prediction.update_config(
-                ({"text": {"symbols": {"digraph": ["ee"]}}})
+            FeaturePredictionConfig(
+                text=TextConfig(
+                    symbols=Symbols(letters=string.ascii_letters, digraph=["ee"])
+                )
             )
         )
         text = "ee"  # should be treated as "ee" and not two instances of "e"
@@ -133,8 +138,10 @@ class TextTest(TestCase):
     def test_normalization(self):
         # This test doesn't really test very much, but just here to highlight that base cleaning involves NFC
         accented_text_processor = TextProcessor(
-            EveryVoiceConfig.load_config_from_path().feature_prediction.update_config(
-                ({"text": {"symbols": {"accented": ["é"]}}})
+            FeaturePredictionConfig(
+                text=TextConfig(
+                    symbols=Symbols(letters=string.ascii_letters, accented=["é"])
+                )
             )
         )
         text = "he\u0301llo world"

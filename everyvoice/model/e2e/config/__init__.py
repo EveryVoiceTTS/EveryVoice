@@ -5,7 +5,6 @@ from pydantic import Field, FilePath, validator
 from pydantic.fields import ModelField
 
 from everyvoice.config.shared_types import BaseTrainingConfig, PartialConfigModel
-from everyvoice.config.utils import __file__ as config_dir
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
@@ -39,7 +38,7 @@ class EveryVoiceConfig(PartialConfigModel):
 
     @staticmethod
     def load_config_from_path(
-        path: Path = (Path(config_dir).parent / "base" / "base_composed.yaml"),
+        path: Path,
     ) -> "EveryVoiceConfig":
         """Load a config from a path"""
         config = load_config_from_json_or_yaml_path(path)
