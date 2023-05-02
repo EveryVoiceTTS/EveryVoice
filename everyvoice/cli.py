@@ -12,7 +12,10 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import app as hfgl_app
 
-app = typer.Typer(pretty_exceptions_show_locals=False)
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    context_settings={"help_option_names": ["-h", "--help"]},
+)
 app.add_typer(dfaligner_app, name="dfa")
 app.add_typer(e2e_app, name="e2e")
 app.add_typer(hfgl_app, name="hifigan")
