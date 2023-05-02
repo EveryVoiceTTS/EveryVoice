@@ -53,7 +53,6 @@ class PreprocessingTest(TestCase):
             print(f"tmpdir={self.tempdir}")
         self.tempdir = Path(self.tempdir)  # type: ignore
         self.filelist = read_filelist(self.data_dir / "metadata.csv")  # type: ignore
-        self.preprocessor = Preprocessor(self.fp_config)
 
     def tearDown(self):
         """Clean up the temporary directory"""

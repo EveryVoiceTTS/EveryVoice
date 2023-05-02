@@ -310,7 +310,7 @@ def return_symbols(language):
 class TextProcessingStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
-            "Which of the following supported languages are in your dataset?",
+            "Which of the following text transformations would like to apply before determining the symbol set?",
             [
                 "None",
                 "Lowercase",
@@ -347,7 +347,7 @@ class TextProcessingStep(Step):
 class SoxEffectsStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
-            "Which of the following supported languages are in your dataset?",
+            "Which of the following audio preprocessing options would you like to apply?",
             [
                 "None",
                 "Resample to suggested sample rate: 22050 kHz",
