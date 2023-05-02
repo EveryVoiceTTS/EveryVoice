@@ -387,13 +387,6 @@ when working with a configuration class.</p>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>everyvoice<span class="w"> </span>config-wizard<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
 </pre></div>
 </div>
-<p class="rubric">Options</p>
-<dl class="std option">
-<dt class="sig sig-object std" id="cmdoption-everyvoice-config-wizard-name">
-<span class="sig-name descname"><span class="pre">--name</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;name&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-config-wizard-name" title="Permalink to this definition">#</a></dt>
-<dd><p><strong>Required</strong> The name of your dataset.</p>
-</dd></dl>
-
 </section>
 </section>
 </section>
@@ -463,11 +456,23 @@ for your data. You can share the TextConfig with any models that need it and onl
 <li><p><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.to_replace" title="everyvoice.config.text_config.TextConfig.to_replace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_replace</span> <span class="pre">(Dict[str,</span> <span class="pre">str])</span></code></a></p></li>
 </ul>
 </dd>
+<dt class="field-even">Validators<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.convert_callable_cleaners" title="everyvoice.config.text_config.TextConfig.convert_callable_cleaners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_callable_cleaners</span></code></a> » <a class="reference internal" href="#everyvoice.config.text_config.TextConfig.cleaners" title="everyvoice.config.text_config.TextConfig.cleaners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cleaners</span></code></a></p></li>
+</ul>
+</dd>
 </dl>
 <dl class="py attribute pydantic_field">
 <dt class="sig sig-object py" id="everyvoice.config.text_config.TextConfig.cleaners">
 <em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cleaners</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;function</span> <span class="pre">lower&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">collapse_whitespace&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">nfc_normalize&gt;]</span></em><a class="headerlink" href="#everyvoice.config.text_config.TextConfig.cleaners" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Validated by<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.convert_callable_cleaners" title="everyvoice.config.text_config.TextConfig.convert_callable_cleaners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_callable_cleaners</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py attribute pydantic_field">
 <dt class="sig sig-object py" id="everyvoice.config.text_config.TextConfig.symbols">
@@ -477,6 +482,11 @@ for your data. You can share the TextConfig with any models that need it and onl
 <dl class="py attribute pydantic_field">
 <dt class="sig sig-object py" id="everyvoice.config.text_config.TextConfig.to_replace">
 <em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_replace</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#everyvoice.config.text_config.TextConfig.to_replace" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.TextConfig.convert_callable_cleaners">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">convert_callable_cleaners</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.cleaners" title="everyvoice.config.text_config.TextConfig.cleaners"><em class="xref py py-obj"><span class="pre">cleaners</span></em></a><a class="reference internal" href="../_modules/everyvoice/config/text_config.html#TextConfig.convert_callable_cleaners"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#everyvoice.config.text_config.TextConfig.convert_callable_cleaners" title="Permalink to this definition">#</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -628,6 +638,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 <li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.config.text_config.TextConfig.cleaners"><code class="docutils literal notranslate"><span class="pre">TextConfig.cleaners</span></code></a></li>
 <li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.config.text_config.TextConfig.symbols"><code class="docutils literal notranslate"><span class="pre">TextConfig.symbols</span></code></a></li>
 <li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.config.text_config.TextConfig.to_replace"><code class="docutils literal notranslate"><span class="pre">TextConfig.to_replace</span></code></a></li>
+<li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice.config.text_config.TextConfig.convert_callable_cleaners"><code class="docutils literal notranslate"><span class="pre">TextConfig.convert_callable_cleaners</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -687,7 +698,7 @@ for your data. You can share the TextConfig with any models that need it and onl
       
         <div class="footer-item">
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.1.3.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 6.2.1.
     <br/>
   </p>
 </div>
