@@ -33,6 +33,12 @@ class PreprocessingTest(TestCase):
     fp_config.preprocessing.source_data[0].filelist = data_dir / "metadata.csv"
     fp_config.preprocessing.save_dir = lj_preprocessed
     preprocessor = Preprocessor(fp_config)
+
+    # Important side effect: this code must run before all the other tests suites
+    # can pass, because it generates the input files for several test cases in this
+    # suite and in other test suites.  This works because run_tests.py calls
+    # LOAD.loadTestsFromTestCase(PreprocessingTest) regardless of which test
+    # suite is being run.
     preprocessor.preprocess(
         output_path=lj_filelist,
         cpus=1,
