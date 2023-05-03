@@ -1,0 +1,6 @@
+[run]
+branch = True
+source_pkgs = everyvoice
+
+[report]
+precision = 2
