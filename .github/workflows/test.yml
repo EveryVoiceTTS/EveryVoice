@@ -26,7 +26,7 @@ jobs:
         run: sudo apt-get install -y libsndfile1
       - name: Install Conda Deps
         run: |
-          conda install -c conda-forge sox librosa
+          conda install -c conda-forge sox librosa pycountry fire unicodecsv
           conda install pytorch torchaudio -c pytorch
       - name: Install other dependencies
         run: |
