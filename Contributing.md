@@ -19,6 +19,8 @@ Run these commands in each of your sandboxes to enable our pre-commit hooks and 
 pip install -r requirements.dev.txt
 pre-commit install
 gitlint install-hook
+git submodule foreach 'pre-commit install'
+git submodule foreach 'gitlint install-hook'
 ```
 
 ## Pre-commit hooks
@@ -121,3 +123,15 @@ gitlint install-hook
 - Now, next time you make a change and commit it, your commit log will be checked:
   - `git commit -m'non-compliant commit log text'` outputs an error
   - `git commit -m'fix(g2p): fixing a bug in g2p integration'` works
+
+### Initializing submodules too
+
+The EveryVoice repo uses submodules, and the gitlint and pre-commit
+initialization has to be done separately in each of one them. You can cd into
+each submodule directory and run the same commands shown above, but there is a
+shortcut:
+
+```sh
+git submodule foreach 'pre-commit install'
+git submodule foreach 'gitlint install-hook'
+```
