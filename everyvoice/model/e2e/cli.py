@@ -6,7 +6,10 @@ from merge_args import merge_args
 from everyvoice.base_cli.interfaces import train_base_command_interface
 from everyvoice.model.e2e.config import CONFIGS, EveryVoiceConfig
 
-app = typer.Typer(pretty_exceptions_show_locals=False)
+app = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    help="End-to-end training: jointly train the FastSpeech2 and HiFiGAN networks",
+)
 
 _config_keys = {k: k for k in CONFIGS.keys()}
 
