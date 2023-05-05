@@ -405,6 +405,61 @@ the aligner and the other models.</p>
 </dd></dl>
 
 </section>
+<section id="everyvoice-fs2-benchmark">
+<h6>benchmark<a class="headerlink" href="#everyvoice-fs2-benchmark" title="Permalink to this heading">#</a></h6>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>everyvoice<span class="w"> </span>fs2<span class="w"> </span>benchmark<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+<p class="rubric">Options</p>
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-everyvoice-fs2-benchmark-p">
+<span id="cmdoption-everyvoice-fs2-benchmark-config-path"></span><span class="sig-name descname"><span class="pre">-p</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--config-path</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;config_path&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-fs2-benchmark-p" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-everyvoice-fs2-benchmark-benchmark-type">
+<span class="sig-name descname"><span class="pre">--benchmark-type</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;benchmark_type&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-fs2-benchmark-benchmark-type" title="Permalink to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">BenchmarkType.training</span></code></p>
+</dd>
+<dt class="field-even">Options<span class="colon">:</span></dt>
+<dd class="field-even"><p>training | inference</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-everyvoice-fs2-benchmark-gpu">
+<span id="cmdoption-everyvoice-fs2-benchmark-no-gpu"></span><span class="sig-name descname"><span class="pre">--gpu</span></span><span class="sig-prename descclassname"></span><span class="sig-prename descclassname"><span class="pre">,</span> </span><span class="sig-name descname"><span class="pre">--no-gpu</span></span><span class="sig-prename descclassname"></span><a class="headerlink" href="#cmdoption-everyvoice-fs2-benchmark-gpu" title="Permalink to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">True</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-everyvoice-fs2-benchmark-warmup-reps">
+<span class="sig-name descname"><span class="pre">--warmup-reps</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;warmup_reps&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-fs2-benchmark-warmup-reps" title="Permalink to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">10</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="std option">
+<dt class="sig sig-object std" id="cmdoption-everyvoice-fs2-benchmark-repetitions">
+<span class="sig-name descname"><span class="pre">--repetitions</span></span><span class="sig-prename descclassname"> <span class="pre">&lt;repetitions&gt;</span></span><a class="headerlink" href="#cmdoption-everyvoice-fs2-benchmark-repetitions" title="Permalink to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Default<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="docutils literal notranslate"><span class="pre">300</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
 <section id="everyvoice-fs2-check-data">
 <h6>check-data<a class="headerlink" href="#everyvoice-fs2-check-data" title="Permalink to this heading">#</a></h6>
 <div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>everyvoice<span class="w"> </span>fs2<span class="w"> </span>check-data<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span>
@@ -2473,6 +2528,7 @@ the aligner and the other models.</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice">everyvoice</a><ul class="nav section-nav flex-column">
 <li class="toc-h5 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice-fs2">fs2</a><ul class="nav section-nav flex-column">
 <li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice-fs2-audit">audit</a></li>
+<li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice-fs2-benchmark">benchmark</a></li>
 <li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice-fs2-check-data">check-data</a></li>
 <li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice-fs2-preprocess">preprocess</a></li>
 <li class="toc-h6 nav-item toc-entry"><a class="reference internal nav-link" href="#everyvoice-fs2-synthesize">synthesize</a></li>

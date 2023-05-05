@@ -351,6 +351,13 @@ document.write(`
 </li>
       </ul></li>
       <li>
+    --benchmark-type
+
+      <ul>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-benchmark-type">everyvoice-fs2-benchmark command line option</a>
+</li>
+      </ul></li>
+      <li>
     --config
 
       <ul>
@@ -389,6 +396,8 @@ document.write(`
         <li><a href="reference/aligner.html#cmdoption-everyvoice-dfa-train-p">everyvoice-dfa-train command line option</a>
 </li>
         <li><a href="reference/e2e.html#cmdoption-everyvoice-e2e-train-p">everyvoice-e2e-train command line option</a>
+</li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-p">everyvoice-fs2-benchmark command line option</a>
 </li>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-p">everyvoice-fs2-check-data command line option</a>
 </li>
@@ -468,6 +477,13 @@ document.write(`
 </li>
       </ul></li>
       <li>
+    --gpu
+
+      <ul>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-gpu">everyvoice-fs2-benchmark command line option</a>
+</li>
+      </ul></li>
+      <li>
     --input
 
       <ul>
@@ -520,6 +536,13 @@ document.write(`
 
       <ul>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-audit-dimensions">everyvoice-fs2-audit command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --no-gpu
+
+      <ul>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-gpu">everyvoice-fs2-benchmark command line option</a>
 </li>
       </ul></li>
       <li>
@@ -599,6 +622,15 @@ document.write(`
         <li><a href="reference/aligner.html#cmdoption-everyvoice-dfa-extract-alignments-predict">everyvoice-dfa-extract-alignments command line option</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    --repetitions
+
+      <ul>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-repetitions">everyvoice-fs2-benchmark command line option</a>
+</li>
+      </ul></li>
       <li>
     --should-check-stats
 
@@ -606,8 +638,6 @@ document.write(`
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-audit-should-check-stats">everyvoice-fs2-audit command line option</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     --stats
 
@@ -649,6 +679,13 @@ document.write(`
 
       <ul>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-synthesize-v">everyvoice-fs2-synthesize command line option</a>
+</li>
+      </ul></li>
+      <li>
+    --warmup-reps
+
+      <ul>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-warmup-reps">everyvoice-fs2-benchmark command line option</a>
 </li>
       </ul></li>
       <li>
@@ -821,6 +858,8 @@ document.write(`
         <li><a href="reference/aligner.html#cmdoption-everyvoice-dfa-train-p">everyvoice-dfa-train command line option</a>
 </li>
         <li><a href="reference/e2e.html#cmdoption-everyvoice-e2e-train-p">everyvoice-e2e-train command line option</a>
+</li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-p">everyvoice-fs2-benchmark command line option</a>
 </li>
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-p">everyvoice-fs2-check-data command line option</a>
 </li>
@@ -1081,6 +1120,25 @@ document.write(`
 </li>
       </ul></li>
       <li>
+    everyvoice-fs2-benchmark command line option
+
+      <ul>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-benchmark-type">--benchmark-type</a>
+</li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-p">--config-path</a>
+</li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-gpu">--gpu</a>
+</li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-gpu">--no-gpu</a>
+</li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-repetitions">--repetitions</a>
+</li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-warmup-reps">--warmup-reps</a>
+</li>
+        <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-benchmark-p">-p</a>
+</li>
+      </ul></li>
+      <li>
     everyvoice-fs2-check-data command line option
 
       <ul>
@@ -1101,6 +1159,8 @@ document.write(`
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-check-data-p">-p</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     everyvoice-fs2-preprocess command line option
 
@@ -1142,8 +1202,6 @@ document.write(`
         <li><a href="reference/feature_prediction.html#cmdoption-everyvoice-fs2-preprocess-S">-S</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     everyvoice-fs2-synthesize command line option
 
