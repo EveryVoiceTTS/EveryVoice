@@ -42,7 +42,7 @@ jobs:
           cd docs && make html
       - name: Deploy 🚀
         if: github.ref == 'refs/heads/main'  # only publish the docs from main
-        uses: JamesIves/github-pages-deploy-action@v4.2.3
+        uses: JamesIves/github-pages-deploy-action@v4
         with:
           branch: gh-pages # The branch the action should deploy to.
           folder: docs/build/html # The folder the action should deploy.
@@ -50,7 +50,7 @@ jobs:
         run: |
           cd everyvoice && coverage run run_tests.py dev
           coverage xml
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
-          fail_ci_if_error: true # optional (default = false)
+          fail_ci_if_error: false # optional (default = false)
           token: ${{ secrets.CODECOV_TOKEN }}
