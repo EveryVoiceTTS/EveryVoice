@@ -16,9 +16,9 @@ from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import (
-    generic_csv_loader,
-    generic_psv_loader,
-    generic_tsv_loader,
+    generic_csv_dict_reader,
+    generic_psv_dict_reader,
+    generic_tsv_dict_reader,
     read_festival,
 )
 from everyvoice.wizard import Step, StepNames
@@ -119,11 +119,11 @@ class ConfigFormatStep(Step):
             )
             sox_effects = self.state[dataset]["sox_effects"]
             if self.state[dataset][StepNames.filelist_format_step.value] == "psv":
-                filelist_loader = generic_psv_loader
+                filelist_loader = generic_psv_dict_reader
             elif self.state[dataset][StepNames.filelist_format_step.value] == "csv":
-                filelist_loader = generic_csv_loader
+                filelist_loader = generic_csv_dict_reader
             elif self.state[dataset][StepNames.filelist_format_step.value] == "tsv":
-                filelist_loader = generic_tsv_loader
+                filelist_loader = generic_tsv_dict_reader
             elif (
                 self.state[dataset][StepNames.filelist_format_step.value] == "festival"
             ):

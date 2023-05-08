@@ -8,7 +8,7 @@ from loguru import logger
 from tqdm import tqdm
 
 from everyvoice.config.text_config import Symbols
-from everyvoice.utils import generic_csv_loader, generic_dict_loader, read_festival
+from everyvoice.utils import generic_csv_reader, generic_dict_loader, read_festival
 from everyvoice.wizard import Step, StepNames, Tour
 from everyvoice.wizard.prompts import get_response_from_menu_prompt
 from everyvoice.wizard.validators import validate_path
@@ -83,7 +83,7 @@ class FilelistFormatStep(Step):
             self.state["filelist_headers"] = list(filelist_data_dict[0].keys())
             self.state["filelist_data"] = filelist_data_dict
         else:
-            self.state["filelist_data"] = generic_csv_loader(
+            self.state["filelist_data"] = generic_csv_reader(
                 filelist_path, delimiter=self.state.get("filelist_delimiter")
             )
             self.state["filelist_headers"] = list(self.state["filelist_data"][0])

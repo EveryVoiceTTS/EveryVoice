@@ -235,10 +235,32 @@ def generic_dict_loader(
     return files
 
 
-generic_psv_loader = generic_dict_loader
+generic_psv_dict_reader = generic_dict_loader
 
 
-def generic_csv_loader(
+def generic_csv_reader(
+    path,
+    delimiter=",",
+    quoting=csv.QUOTE_NONE,
+    escapechar="\\",
+):
+    with open(
+        path,
+        "r",
+        newline="",
+        encoding="utf8",
+    ) as f:
+        reader = csv.reader(
+            f,
+            delimiter=delimiter,
+            quoting=quoting,
+            escapechar=escapechar,
+        )
+        files = list(reader)
+    return files
+
+
+def generic_csv_dict_reader(
     path, delimiter=",", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
 ):
     with open(
@@ -258,7 +280,7 @@ def generic_csv_loader(
     return files
 
 
-def generic_tsv_loader(
+def generic_tsv_dict_reader(
     path, delimiter="\t", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
 ):
     with open(
