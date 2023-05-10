@@ -43,6 +43,12 @@ conda env create -f environment.yml
 conda activate EveryVoice
 ```
 
+### Documentation
+
+Read the full [EveryVoice documentation](https://docs.everyvoice.ca/).
+
+In particular, read the [Guides](https://docs.everyvoice.ca/guides/index.html) to get familiar with the whole process.
+
 ## Contributing
 
 Feel free to dive in! [Open an issue](https://github.com/roedoejet/EveryVoice/issues/new) or submit PRs.

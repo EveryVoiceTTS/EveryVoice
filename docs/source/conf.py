@@ -56,7 +56,7 @@ master_doc = "index"
 
 # General information about the project.
 project = "EveryVoice"
-copyright = "2022, Aidan Pine"
+copyright = "2023, National Research Council Canada"
 author = "Aidan Pine"
 
 # The version info for the project you're documenting, acts as replacement for
