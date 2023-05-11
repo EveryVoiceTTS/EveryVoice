@@ -15,12 +15,7 @@ from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
-from everyvoice.utils import (
-    generic_csv_dict_reader,
-    generic_psv_dict_reader,
-    generic_tsv_dict_reader,
-    read_festival,
-)
+from everyvoice.utils import generic_psv_dict_reader, write_filelist
 from everyvoice.wizard import Step, StepNames
 from everyvoice.wizard.dataset import return_dataset_steps
 from everyvoice.wizard.prompts import get_response_from_menu_prompt
@@ -32,7 +27,16 @@ class NameStep(Step):
         return input("What would you like to call this project? ")
 
     def validate(self, response):
-        return len(response) > 0
+        if len(response) == 0:
+            logger.info("Sorry, you have to put something here")
+            return False
+        slug = slugify(response)
+        if not slug == response:
+            logger.info(
+                f"Sorry, your name: '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like {slug} instead."
+            )
+            return False
+        return True
 
     def effect(self):
         logger.info(
@@ -112,27 +116,29 @@ class ConfigFormatStep(Step):
                 .expanduser()
                 .absolute()
             )
-            filelist_path = (
-                Path(self.state[dataset][StepNames.filelist_step.value])
+            new_filelist_path = (
+                (
+                    output_path
+                    / f"{self.state[dataset][StepNames.dataset_name_step.value]}-filelist.psv"
+                )
                 .expanduser()
                 .absolute()
             )
+            for entry_i in range(len(self.state[dataset]["filelist_data"])):
+                self.state[dataset]["filelist_data"][entry_i] = {
+                    k: v
+                    for k, v in self.state[dataset]["filelist_data"][entry_i].items()
+                    if not k.startswith("unknown")
+                }
+            write_filelist(self.state[dataset]["filelist_data"], new_filelist_path)
             sox_effects = self.state[dataset]["sox_effects"]
-            if self.state[dataset][StepNames.filelist_format_step.value] == "psv":
-                filelist_loader = generic_psv_dict_reader
-            elif self.state[dataset][StepNames.filelist_format_step.value] == "csv":
-                filelist_loader = generic_csv_dict_reader
-            elif self.state[dataset][StepNames.filelist_format_step.value] == "tsv":
-                filelist_loader = generic_tsv_dict_reader
-            elif (
-                self.state[dataset][StepNames.filelist_format_step.value] == "festival"
-            ):
-                filelist_loader = read_festival
+            filelist_loader = generic_psv_dict_reader
+
             datasets.append(
                 Dataset(
                     label=dataset,
                     data_dir=wavs_dir,
-                    filelist=filelist_path,
+                    filelist=new_filelist_path,
                     filelist_loader=filelist_loader,
                     sox_effects=sox_effects,
                 )
