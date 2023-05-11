@@ -5,6 +5,7 @@ from unicodedata import normalize
 
 import questionary
 from loguru import logger
+from slugify import slugify
 from tqdm import tqdm
 
 from everyvoice.config.text_config import Symbols
@@ -14,6 +15,28 @@ from everyvoice.wizard.prompts import get_response_from_menu_prompt
 from everyvoice.wizard.validators import validate_path
 
 # WAVS & FILELIST
+
+
+class DatasetNameStep(Step):
+    def prompt(self):
+        return input("What would you like to call this dataset? ")
+
+    def validate(self, response):
+        if len(response) == 0:
+            logger.info("Sorry, you have to put something here")
+            return False
+        slug = slugify(response)
+        if not slug == response:
+            logger.info(
+                f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."
+            )
+            return False
+        return True
+
+    def effect(self):
+        logger.info(
+            f"Great! Configuration Wizard 🧙 finished the configuration for your dataset named '{self.response}'"
+        )
 
 
 class WavsDirStep(Step):
@@ -221,7 +244,7 @@ class HasLanguageStep(Step):
         return response in ["yes", "no"]
 
     def effect(self):
-        if self.state[StepNames.data_has_speaker_value_step.value] == "yes":
+        if self.state[StepNames.data_has_language_value_step.value] == "yes":
             self.tour.add_step(
                 HeaderStep(
                     name=StepNames.language_header_step.value,
@@ -482,6 +505,10 @@ def return_dataset_steps(dataset_index=0):
         ),
         SoxEffectsStep(
             name=StepNames.sox_effects_step.value,
+            state_subset=f"dataset_{dataset_index}",
+        ),
+        DatasetNameStep(
+            name=StepNames.dataset_name_step.value,
             state_subset=f"dataset_{dataset_index}",
         ),
     ]
