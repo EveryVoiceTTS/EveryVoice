@@ -17,7 +17,7 @@ Clone clone the repo and pip install it locally:
 $ git clone https://github.com/roedoejet/EveryVoice.git
 $ cd EveryVoice
 $ git submodule update --init
-$ pip install -e .
+$ python -m pip install -e .
 ```
 
 ### Dependencies
@@ -33,7 +33,7 @@ conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
 You can then install the rest of the Python dependencies with pip
 
 ```
-pip3 install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
 Alternatively, you can just create the whole thing from our `environment.yml` file:
