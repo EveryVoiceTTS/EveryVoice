@@ -42,7 +42,7 @@ In order to get started, please:
  - have your audio data (in .wav format) together in a folder
  - have a 'metadata' file that minimally has two columns, one for the text of the audio and one for the basename of the file
 
-Inside /path/to/wavs/ you should have wav audio files like test0001.wav, test0002.wav etc - they can be called anything you want. but the part of the file (minus the .wav portion) must be in your metadata file.
+Inside /path/to/wavs/ you should have wav audio files like test0001.wav, test0002.wav etc - they can be called anything you want but the part of the file (minus the .wav portion) must be in your metadata file.
 
 Example wavs directory: "/path/to/wavs/"
 
