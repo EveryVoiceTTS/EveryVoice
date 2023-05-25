@@ -698,7 +698,7 @@ class Preprocessor:
 
     def preprocess(
         self,
-        output_path="processed_filelist.psv",
+        output_path="filelist.psv",
         cpus=min(5, mp.cpu_count()),
         to_process=List[str],
         overwrite=False,
@@ -723,11 +723,11 @@ class Preprocessor:
                     )
                     write_filelist(
                         filelist[:train_split],
-                        self.save_dir / f"training-{output_path.name}",
+                        self.save_dir / f"training_{output_path.name}",
                     )
                     write_filelist(
                         filelist[train_split:],
-                        self.save_dir / f"validation-{output_path.name}",
+                        self.save_dir / f"validation_{output_path.name}",
                     )
                     report = self.report()
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
