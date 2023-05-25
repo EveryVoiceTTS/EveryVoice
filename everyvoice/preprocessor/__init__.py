@@ -707,7 +707,7 @@ class Preprocessor:
         self.overwrite = overwrite
         if not isinstance(output_path, Path):
             output_path = Path(output_path)
-        processing_order = ["audio", "text", "pfs", "spec", "attn", "energy", "pitch"]
+        processing_order = ("audio", "text", "pfs", "spec", "attn", "energy", "pitch")
         random.seed(self.config.preprocessing.dataset_split_seed)
         for process in processing_order:
             if process not in to_process:
