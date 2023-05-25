@@ -12,5 +12,5 @@ Welcome to EveryVoice's documentation!
 
    start
    install
-   reference/index
    guides/index
+   reference/index
