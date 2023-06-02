@@ -476,7 +476,7 @@ class Preprocessor:
         """Process all audio across datasets, create a combined, filtered filelist and return it"""
         self.dataset_sanity_checks()
         filtered_filelist = []
-        for dataset in tqdm(self.datasets, total=len(self.datasets)):
+        for dataset in tqdm(self.datasets, total=len(self.datasets), desc="Dataset"):
             data_dir = Path(dataset.data_dir)
             filelist = dataset.filelist_loader(dataset.filelist)
             if debug:
@@ -488,7 +488,7 @@ class Preprocessor:
             non_missing_files = list(
                 self._collect_non_missing_files_from_filelist(filelist, data_dir)
             )
-            for item in tqdm(non_missing_files):
+            for item in tqdm(non_missing_files, desc="Processing Audio"):
                 item = self.get_speaker_and_language(item)
                 input_audio_save_path = self.create_path(
                     item, "audio", f"audio-{self.input_sampling_rate}.pt"
@@ -647,7 +647,7 @@ class Preprocessor:
         # duration (float, box plot)
         # clipping (float, box plot)
         # silence % (float, box plot)
-        for item in tqdm(filelist):
+        for item in tqdm(filelist, desc="Checking Data"):
             data_point = {k: v for k, v in item.items()}
             raw_text = item["text"]
             n_words = len(raw_text.split(word_seg_token))
@@ -752,11 +752,13 @@ class Preprocessor:
                 if cpus:
                     pool = Pool(nodes=cpus)
                     for _ in tqdm(
-                        pool.uimap(process_fn, filelist), total=len(filelist)
+                        pool.uimap(process_fn, filelist),
+                        total=len(filelist),
+                        desc=f"Processing {process}",
                     ):
                         pass
                 else:
-                    for f in tqdm(filelist):
+                    for f in tqdm(filelist, desc=f"Processing {process}"):
                         process_fn(f)
         if "audio" in to_process:
             report = f"Here is a report:\n {self.report()}"
