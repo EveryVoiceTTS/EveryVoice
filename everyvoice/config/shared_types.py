@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from types import FunctionType
 from typing import Callable, Tuple, Union
@@ -35,8 +35,19 @@ class ConfigModel(BaseModel):
         return self
 
     @staticmethod
-    def combine_configs(orig_dict: dict, new_dict: dict):
+    def combine_configs(orig_dict: Union[dict, Sequence], new_dict: dict):
         """See https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth"""
+        if isinstance(orig_dict, Sequence):
+            orig_list = list(orig_dict)
+            for key_s, val in new_dict.items():
+                key_i = int(key_s)
+                if isinstance(val, Mapping):
+                    tmp = ConfigModel.combine_configs(orig_list[key_i], val)  # type: ignore
+                    orig_list[key_i] = tmp
+                else:
+                    orig_list[key_i] = val
+            return orig_list
+
         orig_dict = dict(orig_dict)
         new_dict = dict(new_dict)
         for key, val in new_dict.items():
