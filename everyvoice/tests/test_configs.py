@@ -82,6 +82,20 @@ class ConfigTest(TestCase):
         self.assertEqual(self.config.feature_prediction.text.cleaners, [lower])
         self.assertEqual(self.config.feature_prediction.text.symbols.pad, "FOO")
 
+    def test_change_with_indices(self):
+        """Text the --config-args can also work with arrays"""
+        config = FeaturePredictionConfig()
+        config.update_config(
+            {
+                "preprocessing": {
+                    "source_data": {"0": {"filelist": "/foo/bar/filelist.psv"}}
+                }
+            }
+        )
+        self.assertEqual(
+            str(config.preprocessing.source_data[0].filelist), "/foo/bar/filelist.psv"
+        )
+
     def test_shared_sox(self):
         """Test that the shared sox config is correct"""
         vocoder_config = VocoderConfig(
