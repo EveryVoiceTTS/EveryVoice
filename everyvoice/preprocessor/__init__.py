@@ -750,13 +750,26 @@ class Preprocessor:
                 process_fn = self.get_process_fn(process)
                 logger.info(f"Processing {process} on {cpus} CPUs...")
                 if cpus:
-                    pool = Pool(nodes=cpus)
-                    for _ in tqdm(
-                        pool.uimap(process_fn, filelist),
-                        total=len(filelist),
-                        desc=f"Processing {process}",
-                    ):
-                        pass
+                    if False:
+                        pool = Pool(nodes=cpus)
+                        for _ in tqdm(
+                            pool.uimap(process_fn, filelist),
+                            total=len(filelist),
+                            desc=f"Processing {process}",
+                        ):
+                            pass
+                    else:
+                        from joblib import Parallel, delayed
+
+                        # batch_size = min(100, 1 + len(filelist) // (cpus * 3))
+                        batch_size = 100
+                        Parallel(
+                            n_jobs=cpus,
+                            verbose=10,
+                            backend="loky",
+                            batch_size=batch_size,
+                        )(delayed(process_fn)(file) for file in filelist)
+
                 else:
                     for f in tqdm(filelist, desc=f"Processing {process}"):
                         process_fn(f)
