@@ -472,6 +472,42 @@ class Preprocessor:
             / self.sep.join([item["basename"], item["speaker"], item["language"], fn])
         )
 
+    def process_one_audio(self, item, data_dir):
+        item = self.get_speaker_and_language(item)
+        input_audio_save_path = self.create_path(
+            item, "audio", f"audio-{self.input_sampling_rate}.pt"
+        )
+        output_audio_save_path = self.create_path(
+            item, "audio", f"audio-{self.output_sampling_rate}.pt"
+        )
+        if (
+            input_audio_save_path.exists()
+            and output_audio_save_path.exists()
+            and not self.overwrite
+        ):
+            return None
+        if not input_audio_save_path.exists() or self.overwrite:
+            input_audio, _ = self.process_audio(
+                data_dir / (item["basename"] + ".wav"),
+                resample_rate=self.input_sampling_rate,
+            )
+            if input_audio is None:
+                return None
+            else:
+                torch.save(input_audio, input_audio_save_path)
+        if (
+            self.input_sampling_rate != self.output_sampling_rate
+            and not output_audio_save_path.exists()
+            or self.overwrite
+        ):
+            output_audio, _ = self.process_audio(
+                data_dir / (item["basename"] + ".wav"),
+                resample_rate=self.output_sampling_rate,
+            )
+            if output_audio is not None:
+                torch.save(output_audio, output_audio_save_path)
+        return item
+
     def process_all_audio(self, debug=False):
         """Process all audio across datasets, create a combined, filtered filelist and return it"""
         self.dataset_sanity_checks()
@@ -489,43 +525,9 @@ class Preprocessor:
                 self._collect_non_missing_files_from_filelist(filelist, data_dir)
             )
             for item in tqdm(non_missing_files, desc="Processing Audio"):
-                item = self.get_speaker_and_language(item)
-                input_audio_save_path = self.create_path(
-                    item, "audio", f"audio-{self.input_sampling_rate}.pt"
-                )
-                output_audio_save_path = self.create_path(
-                    item, "audio", f"audio-{self.output_sampling_rate}.pt"
-                )
-                if (
-                    input_audio_save_path.exists()
-                    and output_audio_save_path.exists()
-                    and not self.overwrite
-                ):
-                    self.counters.skipped_processes += 1
-                    continue
-                if not input_audio_save_path.exists() or self.overwrite:
-                    input_audio, _ = self.process_audio(
-                        data_dir / (item["basename"] + ".wav"),
-                        resample_rate=self.input_sampling_rate,
-                    )
-                    if input_audio is None:
-                        continue
-                    else:
-                        filtered_filelist.append(item)
-                        torch.save(input_audio, input_audio_save_path)
-                if (
-                    self.input_sampling_rate != self.output_sampling_rate
-                    and not output_audio_save_path.exists()
-                    or self.overwrite
-                ):
-                    output_audio, _ = self.process_audio(
-                        data_dir / (item["basename"] + ".wav"),
-                        resample_rate=self.output_sampling_rate,
-                    )
-                    if output_audio is None:
-                        continue
-                    else:
-                        torch.save(output_audio, output_audio_save_path)
+                processed_item = self.process_one_audio(item, data_dir)
+                if processed_item is not None:
+                    filtered_filelist.append(processed_item)
         return filtered_filelist
 
     def process_energy(self, item):
