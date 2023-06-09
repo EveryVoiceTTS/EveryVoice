@@ -27,9 +27,9 @@ class DataLoaderTest(TestCase):
             vocoder=VocoderConfig(
                 training=HiFiGANTrainingConfig(
                     training_filelist=self.lj_preprocessed
-                    / "training-preprocessed_filelist.psv",
+                    / "training_preprocessed_filelist.psv",
                     validation_filelist=self.lj_preprocessed
-                    / "validation-preprocessed_filelist.psv",
+                    / "validation_preprocessed_filelist.psv",
                 )
             )
         )
