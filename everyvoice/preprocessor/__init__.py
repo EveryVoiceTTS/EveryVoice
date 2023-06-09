@@ -14,8 +14,8 @@ from typing import List, Tuple, Union
 import numpy as np
 import torch
 from clipdetect import detect_clipping
+from joblib import Parallel, delayed
 from loguru import logger
-from pathos.multiprocessing import ProcessingPool as Pool
 from pydantic import BaseModel
 from rich import print
 from rich.panel import Panel
@@ -456,15 +456,6 @@ class Preprocessor:
                 )
                 exit()
 
-    def _collect_non_missing_files_from_filelist(self, filelist, data_dir):
-        for f in filelist:
-            audio_path = data_dir / (f["basename"] + ".wav")
-            if not audio_path.exists():
-                logger.warning(f"File '{f}' is missing and will not be processed.")
-                self.counters.missing_files.append(f)
-            else:
-                yield f
-
     def create_path(self, item: dict, folder: str, fn: str):
         return (
             self.save_dir
@@ -473,6 +464,18 @@ class Preprocessor:
         )
 
     def process_one_audio(self, item, data_dir):
+        """Process one audio item
+
+        Return:
+           - item if it is found and processed successfully
+           - None otherwise, indicating it should be skipped from further processing
+        """
+        audio_path = data_dir / (item["basename"] + ".wav")
+        if not audio_path.exists():
+            logger.warning(f"File '{item}' is missing and will not be processed.")
+            self.counters.missing_files.append(item)
+            return None
+
         item = self.get_speaker_and_language(item)
         input_audio_save_path = self.create_path(
             item, "audio", f"audio-{self.input_sampling_rate}.pt"
@@ -488,7 +491,7 @@ class Preprocessor:
             return None
         if not input_audio_save_path.exists() or self.overwrite:
             input_audio, _ = self.process_audio(
-                data_dir / (item["basename"] + ".wav"),
+                audio_path,
                 resample_rate=self.input_sampling_rate,
             )
             if input_audio is None:
@@ -501,14 +504,14 @@ class Preprocessor:
             or self.overwrite
         ):
             output_audio, _ = self.process_audio(
-                data_dir / (item["basename"] + ".wav"),
+                audio_path,
                 resample_rate=self.output_sampling_rate,
             )
             if output_audio is not None:
                 torch.save(output_audio, output_audio_save_path)
         return item
 
-    def process_all_audio(self, debug=False):
+    def process_all_audio(self, cpus: int, debug=False):
         """Process all audio across datasets, create a combined, filtered filelist and return it"""
         self.dataset_sanity_checks()
         filtered_filelist = []
@@ -520,14 +523,25 @@ class Preprocessor:
                 logger.info(
                     "Debug flag was set to true, only processing first 10 files"
                 )
-            logger.info(f"Collecting files for {dataset.label}")
-            non_missing_files = list(
-                self._collect_non_missing_files_from_filelist(filelist, data_dir)
-            )
-            for item in tqdm(non_missing_files, desc="Processing Audio"):
-                processed_item = self.process_one_audio(item, data_dir)
-                if processed_item is not None:
-                    filtered_filelist.append(processed_item)
+            logger.info(f"Collecting files for {dataset.label} and processing audio")
+            if cpus > 1:
+                logger.info("Launching parallel processes may take a moment...")
+                batch_size = min(100, 1 + len(filelist) // (cpus * 2))
+                # batch_size = 100
+                processed_items = Parallel(
+                    n_jobs=cpus,
+                    verbose=10,
+                    backend="loky",
+                    batch_size=batch_size,
+                )(delayed(self.process_one_audio)(item, data_dir) for item in filelist)
+                filtered_filelist.extend(
+                    item for item in processed_items if item is not None
+                )
+            else:
+                for item in tqdm(filelist, desc="Processing Audio on 1 CPU"):
+                    processed_item = self.process_one_audio(item, data_dir)
+                    if processed_item is not None:
+                        filtered_filelist.append(processed_item)
         return filtered_filelist
 
     def process_energy(self, item):
@@ -716,7 +730,7 @@ class Preprocessor:
                 continue
             (self.save_dir / process).mkdir(parents=True, exist_ok=True)
             if process == "audio":
-                if filelist := self.process_all_audio(debug=debug):
+                if filelist := self.process_all_audio(cpus, debug=debug):
                     write_filelist(filelist, self.save_dir / output_path.name)
                     # sample the validation set and subtract it from the whole dataset to determine the training set
                     random.shuffle(filelist)
@@ -735,6 +749,7 @@ class Preprocessor:
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
                         f.write(report)
                     print(report)
+                logger.info(f"Audio Filelist len={len(filelist or [])}")
             else:
                 # If audio has already been processed, then just read the processed_filelist
                 try:
@@ -746,34 +761,24 @@ class Preprocessor:
                         filelist = filelist[:10]
                 except FileNotFoundError:
                     logger.error(
-                        f"A filelist was not found at {self.save_dir / output_path.name}. Please try processing your audio again."
+                        f"A filelist was not found at {self.save_dir / output_path.name}. "
+                        "Please try processing your audio again."
                     )
                     exit()
                 process_fn = self.get_process_fn(process)
                 logger.info(f"Processing {process} on {cpus} CPUs...")
-                if cpus:
-                    if False:
-                        pool = Pool(nodes=cpus)
-                        for _ in tqdm(
-                            pool.uimap(process_fn, filelist),
-                            total=len(filelist),
-                            desc=f"Processing {process}",
-                        ):
-                            pass
-                    else:
-                        from joblib import Parallel, delayed
-
-                        # batch_size = min(100, 1 + len(filelist) // (cpus * 3))
-                        batch_size = 100
-                        Parallel(
-                            n_jobs=cpus,
-                            verbose=10,
-                            backend="loky",
-                            batch_size=batch_size,
-                        )(delayed(process_fn)(file) for file in filelist)
-
+                logger.info(f"Filelist len={len(filelist or [])}")
+                if cpus > 1:
+                    batch_size = min(100, 1 + len(filelist) // (cpus * 2))
+                    # batch_size = 100
+                    Parallel(
+                        n_jobs=cpus,
+                        verbose=10,
+                        backend="loky",
+                        batch_size=batch_size,
+                    )(delayed(process_fn)(file) for file in filelist)
                 else:
-                    for f in tqdm(filelist, desc=f"Processing {process}"):
+                    for f in tqdm(filelist, desc=f"Processing {process} on 1 CPU"):
                         process_fn(f)
         if "audio" in to_process:
             report = f"Here is a report:\n {self.report()}"
