@@ -6,17 +6,16 @@
 """
 import functools
 import multiprocessing as mp
-import os
 import random
+from multiprocessing import Manager
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 from clipdetect import detect_clipping
 from joblib import Parallel, delayed
 from loguru import logger
-from pydantic import BaseModel
 from rich import print
 from rich.panel import Panel
 from rich.style import Style
@@ -105,13 +104,23 @@ class Scaler:
 
 
 # TODO: make work with multiprocessing: https://stackoverflow.com/questions/2080660/how-to-increment-a-shared-counter-from-multiple-processes
-class Counters(BaseModel):
-    duration: float = 0.0
-    nans: List[str] = []
-    audio_too_long: List[str] = []
-    audio_too_short: List[str] = []
-    skipped_processes: int = 0
-    missing_files: List[str] = []
+class Counters:
+    def __init__(self, manager: Manager):
+        self._lock = manager.Lock()
+        self._duration = manager.Value("l", 0)
+        self._nans = manager.Value("l", 0)
+        self._audio_too_long = manager.Value("l", 0)
+        self._audio_too_short = manager.Value("l", 0)
+        self._skipped_processes = manager.Value("l", 0)
+        self._missing_files = manager.Value("l", 0)
+
+    def increment(self, counter: str, increment: int = 1):
+        with self._lock:
+            self.__getattribute__("_" + counter).value += increment
+
+    def value(self, counter):
+        with self._lock:
+            return self.__getattribute__("_" + counter).value
 
 
 class Preprocessor:
@@ -119,12 +128,12 @@ class Preprocessor:
         self, config: Union[AlignerConfig, FeaturePredictionConfig, VocoderConfig]
     ):
         self.config = config
+        self.counters = Counters(Manager())
         self.pitch_scaler = Scaler()
         self.energy_scaler = Scaler()
         self.datasets = config.preprocessing.source_data
         self.save_dir = Path(config.preprocessing.save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
-        self.counters = Counters()
         self.audio_config = config.preprocessing.audio
         self.sep = config.preprocessing.value_separator
         self.text_processor = (
@@ -216,15 +225,15 @@ class Preprocessor:
             logger.warning(
                 f"Audio too long: {wav_path} ({seconds} seconds - we will skip this file)"
             )
-            self.counters.audio_too_long.append(os.path.basename(wav_path))
+            self.counters.increment("audio_too_long")
             return None, None
         if seconds < self.audio_config.min_audio_length:
             logger.warning(
                 f"Audio too short: {wav_path} ({seconds} seconds - we will skip this file)"
             )
-            self.counters.audio_too_short.append(os.path.basename(wav_path))
+            self.counters.increment("audio_too_short")
             return None, None
-        self.counters.duration += seconds
+        self.counters.increment("duration", seconds)
         if save_wave:
             save_audio(
                 wav_path + ".processed.wav",
@@ -360,7 +369,7 @@ class Preprocessor:
 
     def print_duration(self):
         """Convert seconds to a human readable format"""
-        seconds = int(self.counters.duration)
+        seconds = int(self.counters.value("duration"))
         hours = seconds // 3600
         seconds %= 3600
         minutes = seconds // 60
@@ -371,7 +380,7 @@ class Preprocessor:
         """Print a report of the dataset processing"""
         headers = ["type", "quantity"]
         table = [
-            ["missing files", len(self.counters.missing_files)],
+            ["missing files", self.counters.value("missing_files")],
             [
                 "missing symbols",
                 len(self.text_processor.missing_symbols) if self.text_processor else 0,
@@ -382,10 +391,10 @@ class Preprocessor:
                 if self.text_processor
                 else 0,
             ],
-            ["skipped processes", self.counters.skipped_processes],
-            ["nans", self.counters.nans],
-            ["audio_too_short", len(self.counters.audio_too_short)],
-            ["audio_too_long", len(self.counters.audio_too_long)],
+            ["skipped processes", self.counters.value("skipped_processes")],
+            ["nans", self.counters.value("nans")],
+            ["audio_too_short", self.counters.value("audio_too_short")],
+            ["audio_too_long", self.counters.value("audio_too_long")],
             ["duration", self.print_duration()],
         ]
         return tabulate(table, headers, tablefmt=tablefmt)
@@ -463,7 +472,7 @@ class Preprocessor:
             / self.sep.join([item["basename"], item["speaker"], item["language"], fn])
         )
 
-    def process_one_audio(self, item, data_dir):
+    def process_one_audio(self, item: dict, data_dir) -> Optional[dict]:
         """Process one audio item
 
         Return:
@@ -473,7 +482,7 @@ class Preprocessor:
         audio_path = data_dir / (item["basename"] + ".wav")
         if not audio_path.exists():
             logger.warning(f"File '{item}' is missing and will not be processed.")
-            self.counters.missing_files.append(item)
+            self.counters.increment("missing_files")
             return None
 
         item = self.get_speaker_and_language(item)
@@ -514,7 +523,7 @@ class Preprocessor:
     def process_all_audio(self, cpus: int, debug=False):
         """Process all audio across datasets, create a combined, filtered filelist and return it"""
         self.dataset_sanity_checks()
-        filtered_filelist = []
+        filtered_filelist: List[dict] = []
         for dataset in tqdm(self.datasets, total=len(self.datasets), desc="Dataset"):
             data_dir = Path(dataset.data_dir)
             filelist = dataset.filelist_loader(dataset.filelist)
@@ -609,7 +618,7 @@ class Preprocessor:
             item, "audio", f"audio-{self.input_sampling_rate}.pt"
         )
         if not input_audio_path.exists():
-            self.counters.skipped_processes += 1
+            self.counters.increment("skipped_processes")
             logger.info(f"Audio at {input_audio_path} is missing. Skipping...")
             return
         output_audio_path = self.create_path(
