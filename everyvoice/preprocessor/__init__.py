@@ -16,11 +16,10 @@ import torch
 from clipdetect import detect_clipping
 from joblib import Parallel, delayed
 from loguru import logger
-from rich import print
+from rich import print as rich_print
 from rich.panel import Panel
 from rich.style import Style
 from tabulate import tabulate
-from torch import Tensor, linalg, mean, tensor
 from torchaudio import load as load_audio
 from torchaudio import save as save_audio
 from torchaudio.functional import compute_kaldi_pitch, resample
@@ -197,7 +196,7 @@ class Preprocessor:
         resample_rate=None,
         sox_effects=None,
         save_wave=False,
-    ) -> Union[Tuple[Tensor, int], Tuple[None, None]]:
+    ) -> Union[Tuple[torch.Tensor, int], Tuple[None, None]]:
         """Process audio
 
         Args:
@@ -246,7 +245,7 @@ class Preprocessor:
         return (audio, sr)
 
     def extract_spectral_features(
-        self, audio_tensor: Tensor, transform, normalize=True
+        self, audio_tensor: torch.Tensor, transform, normalize=True
     ):
         """Given an audio tensor, extract the log Mel spectral features
         from the given start and end points
@@ -269,7 +268,7 @@ class Preprocessor:
         x[nans] = np.interp(y(nans), y(~nans), x[~nans])
         return x
 
-    def extract_pitch(self, audio_tensor: Tensor):
+    def extract_pitch(self, audio_tensor: torch.Tensor):
         """Given an audio tensor, extract the pitch
 
         TODO: consider CWT and Parselmouth
@@ -306,7 +305,7 @@ class Preprocessor:
             )
             pitch[pitch == 0] = np.nan
             pitch = self._interpolate(pitch)
-            pitch = tensor(pitch).float()
+            pitch = torch.tensor(pitch).float()
         elif self.config.preprocessing.pitch_type == PitchCalculationMethod.kaldi.value:
             pitch = compute_kaldi_pitch(
                 waveform=audio_tensor,
@@ -334,25 +333,25 @@ class Preprocessor:
         for duration in durations.numpy().tolist():
             if duration > 0:
                 new_data.append(
-                    mean(
+                    torch.mean(
                         data[current_frame_position : current_frame_position + duration]
                     )
                 )
             else:
                 new_data.append(1e-7)
             current_frame_position += duration
-        return tensor(new_data)
+        return torch.tensor(new_data)
 
-    def extract_energy(self, spectral_feature_tensor: Tensor):
+    def extract_energy(self, spectral_feature_tensor: torch.Tensor):
         """Given a spectral feature tensor, and durations extract the energy averaged across a phone
 
         Args:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
             durations (_type_): _descriptiont    #TODO
         """
-        return linalg.norm(spectral_feature_tensor, dim=0)
+        return torch.linalg.norm(spectral_feature_tensor, dim=0)
 
-    def extract_text_inputs(self, text, use_pfs=False) -> Tensor:
+    def extract_text_inputs(self, text, use_pfs=False) -> torch.Tensor:
         """Given some text, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
 
         Args:
@@ -757,7 +756,7 @@ class Preprocessor:
                     report = self.report()
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
                         f.write(report)
-                    print(report)
+                    rich_print(report)
                 logger.info(f"Audio Filelist len={len(filelist or [])}")
             else:
                 # If audio has already been processed, then just read the processed_filelist
@@ -793,7 +792,7 @@ class Preprocessor:
             report = f"Here is a report:\n {self.report()}"
         else:
             report = ""
-        print(
+        rich_print(
             Panel(
                 f"You've finished preprocessing: {', '.join(to_process)}. Your files are located at {self.save_dir.absolute()}. {report}",
                 title="Congratulations 🎉",
