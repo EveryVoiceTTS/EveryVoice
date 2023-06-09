@@ -128,6 +128,7 @@ class Preprocessor:
     ):
         self.config = config
         self.counters = Counters(Manager())
+        self.cpus = 0
         self.pitch_scaler = Scaler()
         self.energy_scaler = Scaler()
         self.datasets = config.preprocessing.source_data
@@ -409,26 +410,40 @@ class Preprocessor:
     def compute_stats(
         self, energy=True, pitch=True
     ) -> Tuple[Union[Scaler, None], Union[Scaler, None]]:
+        if self.cpus > 1:
+            parallel = Parallel(
+                n_jobs=self.cpus, verbose=5, backend="loky", batch_size=500
+            )
         if energy:
             energy_scaler = Scaler()
-            for path in tqdm(
-                (self.config.preprocessing.save_dir / "energy").glob("*energy*"),
-                desc="Gathering energy values",
-            ):
-                energy_data = torch.load(path)
-                energy_scaler.data.append(energy_data)
+            paths = (self.config.preprocessing.save_dir / "energy").glob("*energy*")
+            if self.cpus > 1:
+                logger.info("Gathering energy values")
+                for energy_data in parallel(
+                    delayed(torch.load)(path) for path in paths
+                ):
+                    energy_scaler.data.append(energy_data)
+            else:
+                for path in tqdm(paths, desc="Gathering energy values"):
+                    energy_data = torch.load(path)
+                    energy_scaler.data.append(energy_data)
         if pitch:
             pitch_scaler = Scaler()
-            for path in tqdm(
-                (self.config.preprocessing.save_dir / "pitch").glob("*pitch*"),
-                desc="Gathering pitch values",
-            ):
-                pitch_data = torch.load(path)
-                pitch_scaler.data.append(pitch_data)
+            paths = (self.config.preprocessing.save_dir / "pitch").glob("*pitch*")
+            if self.cpus > 1:
+                logger.info("Gathering pitch values")
+                for pitch_data in parallel(delayed(torch.load)(path) for path in paths):
+                    pitch_scaler.data.append(pitch_data)
+            else:
+                for path in tqdm(paths, desc="Gathering pitch values"):
+                    pitch_data = torch.load(path)
+                    pitch_scaler.data.append(pitch_data)
         return energy_scaler if energy else energy, pitch_scaler if pitch else pitch
 
     def normalize_stats(self, energy_scaler: Scaler, pitch_scaler: Scaler):
         """Normalize pitch and energy to unit variance"""
+        # Note: this function is IO bound, because it is a tight loop writing small files.
+        # Attempts to parallelize it make it much slower, even with only 2 threads.
         logger.info("Scaling dataset statistics...")
         stats = {}
         if energy_scaler:
@@ -519,7 +534,7 @@ class Preprocessor:
                 torch.save(output_audio, output_audio_save_path)
         return item
 
-    def process_all_audio(self, cpus: int, debug=False):
+    def process_all_audio(self, debug=False):
         """Process all audio across datasets, create a combined, filtered filelist and return it"""
         self.dataset_sanity_checks()
         filtered_filelist: List[dict] = []
@@ -532,12 +547,13 @@ class Preprocessor:
                     "Debug flag was set to true, only processing first 10 files"
                 )
             logger.info(f"Collecting files for {dataset.label} and processing audio")
-            if cpus > 1:
+            if self.cpus * 3 > len(filelist):
+                self.cpus = len(filelist) // 3
+            if self.cpus > 1:
                 logger.info("Launching parallel processes may take a moment...")
-                batch_size = min(100, 1 + len(filelist) // (cpus * 2))
-                # batch_size = 100
+                batch_size = min(100, 1 + len(filelist) // (self.cpus * 2))
                 processed_items = Parallel(
-                    n_jobs=cpus,
+                    n_jobs=self.cpus,
                     verbose=10,
                     backend="loky",
                     batch_size=batch_size,
@@ -729,6 +745,7 @@ class Preprocessor:
         debug=False,
     ):
         self.overwrite = overwrite
+        self.cpus = cpus
         if not isinstance(output_path, Path):
             output_path = Path(output_path)
         processing_order = ("audio", "text", "pfs", "spec", "attn", "energy", "pitch")
@@ -738,7 +755,7 @@ class Preprocessor:
                 continue
             (self.save_dir / process).mkdir(parents=True, exist_ok=True)
             if process == "audio":
-                if filelist := self.process_all_audio(cpus, debug=debug):
+                if filelist := self.process_all_audio(debug=debug):
                     write_filelist(filelist, self.save_dir / output_path.name)
                     # sample the validation set and subtract it from the whole dataset to determine the training set
                     random.shuffle(filelist)
@@ -774,13 +791,12 @@ class Preprocessor:
                     )
                     exit()
                 process_fn = self.get_process_fn(process)
-                logger.info(f"Processing {process} on {cpus} CPUs...")
+                logger.info(f"Processing {process} on {self.cpus} CPUs...")
                 logger.info(f"Filelist len={len(filelist or [])}")
-                if cpus > 1:
-                    batch_size = min(100, 1 + len(filelist) // (cpus * 2))
-                    # batch_size = 100
+                if self.cpus > 1:
+                    batch_size = min(100, 1 + len(filelist) // (self.cpus * 2))
                     Parallel(
-                        n_jobs=cpus,
+                        n_jobs=self.cpus,
                         verbose=10,
                         backend="loky",
                         batch_size=batch_size,
