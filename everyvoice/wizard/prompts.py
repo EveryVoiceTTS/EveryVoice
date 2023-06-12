@@ -7,8 +7,9 @@ from rich.panel import Panel
 
 
 def get_response_from_menu_prompt(
-    prompt_text: str,
-    choices: List[str],
+    prompt_text: str = "",
+    choices: List[str] = [],
+    title: str = "",
     multi=False,
     search=False,
     return_indices=False,
@@ -23,9 +24,11 @@ def get_response_from_menu_prompt(
     Returns:
         int: index of choice
     """
-    print(Panel(prompt_text))
+    if prompt_text:
+        print(Panel(prompt_text))
     menu = simple_term_menu.TerminalMenu(
         choices,
+        title=title,
         multi_select=multi,
         multi_select_select_on_accept=(not multi),
         multi_select_empty_ok=multi,

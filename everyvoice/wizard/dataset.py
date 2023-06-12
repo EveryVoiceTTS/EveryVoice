@@ -72,7 +72,7 @@ class SampleRateConfigStep(Step):
 class FilelistFormatStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
-            "Select which format your filelist is in:",
+            prompt_text="Select which format your filelist is in:",
             choices=["psv", "tsv", "csv", "festival"],
             multi=False,
             search=False,
@@ -210,8 +210,8 @@ class HasSpeakerStep(Step):
             return "no"
         else:
             return get_response_from_menu_prompt(
-                "Does your data have a column/value for the speaker?",
-                ["yes", "no"],
+                prompt_text="Does your data have a column/value for the speaker?",
+                choices=["yes", "no"],
             )
 
     def validate(self, response):
@@ -236,8 +236,8 @@ class HasLanguageStep(Step):
             return "no"
         else:
             return get_response_from_menu_prompt(
-                "Does your data have a column/value for the language?",
-                ["yes", "no"],
+                prompt_text="Does your data have a column/value for the language?",
+                choices=["yes", "no"],
             )
 
     def validate(self, response):
@@ -277,8 +277,8 @@ class SelectLanguageStep(Step):
             f"[{k}]: {v}" for k, v in supported_langs.items()
         ]
         return get_response_from_menu_prompt(  # type: ignore
-            "Which of the following supported languages are in your dataset?",
-            supported_langs_choices,
+            choices=supported_langs_choices,
+            title="Which of the following supported languages are in your dataset?",
             multi=False,
             search=True,
         )
@@ -333,8 +333,8 @@ def return_symbols(language):
 class TextProcessingStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
-            "Which of the following text transformations would like to apply before determining the symbol set?",
-            [
+            prompt_text="Which of the following text transformations would like to apply before determining the symbol set?",
+            choices=[
                 "Lowercase",
                 "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
             ],
@@ -366,8 +366,8 @@ class TextProcessingStep(Step):
 class SoxEffectsStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
-            "Which of the following audio preprocessing options would you like to apply?",
-            [
+            prompt_text="Which of the following audio preprocessing options would you like to apply?",
+            choices=[
                 "Resample to suggested sample rate: 22050 kHz",
                 "Normalization (-3.0dB)",
                 "Remove Silence at Start",
@@ -418,8 +418,8 @@ class SymbolSetStep(Step):
         if not symbols:
             return
         punctuation = get_response_from_menu_prompt(  # type: ignore
-            "Which of the following symbols are punctuation?",
-            symbols,
+            choices=symbols,
+            title="Which of the following symbols are punctuation?",
             multi=True,
             search=True,
         )
@@ -427,8 +427,8 @@ class SymbolSetStep(Step):
             punctuation = []
         symbols = [x for x in symbols if x not in punctuation]
         banned_symbols = get_response_from_menu_prompt(  # type: ignore
-            "Ignore utterances that contain any of the following characters",
-            symbols,
+            title="Ignore utterances that contain any of the following characters:",
+            choices=symbols,
             multi=True,
             search=True,
         )
@@ -437,8 +437,8 @@ class SymbolSetStep(Step):
         self.state["banned_symbols"] = banned_symbols
         symbols = [x for x in symbols if x not in banned_symbols]
         ignored_symbols = get_response_from_menu_prompt(  # type: ignore
-            "Which of the following symbols can be ignored?",
-            symbols,
+            title="Which of the following symbols can be ignored?",
+            choices=symbols,
             multi=True,
             search=True,
         )
