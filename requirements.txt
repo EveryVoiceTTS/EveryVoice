@@ -9,7 +9,6 @@ merge-args
 nltk==3.7
 pandas==1.4.4
 panphon==0.20.0
-pathos==0.2.9
 pycountry==22.3.5
 pydantic==1.10.2
 pympi-ling
