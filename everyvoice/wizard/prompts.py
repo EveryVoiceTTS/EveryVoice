@@ -27,14 +27,14 @@ def get_response_from_menu_prompt(
     menu = simple_term_menu.TerminalMenu(
         choices,
         multi_select=multi,
+        multi_select_select_on_accept=(not multi),
+        multi_select_empty_ok=multi,
         show_multi_select_hint=multi,
         show_search_hint=search,
     )
     index = menu.show()
     sys.stdout.write("\033[K")
-    if index is None:
-        exit()
-    if return_indices:
+    if index is None or return_indices:
         return index
     else:
         if isinstance(index, tuple):
