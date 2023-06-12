@@ -335,7 +335,6 @@ class TextProcessingStep(Step):
         return get_response_from_menu_prompt(
             "Which of the following text transformations would like to apply before determining the symbol set?",
             [
-                "None",
                 "Lowercase",
                 "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
             ],
@@ -345,26 +344,23 @@ class TextProcessingStep(Step):
         )
 
     def validate(self, response):
-        if isinstance(response, tuple) and (0 in response and len(response) > 1):
-            logger.warning("Please either select None or one or more other steps.")
-            return False
-        else:
-            return True
+        return True
 
     def effect(self):
         process_lookup = {
-            1: {"fn": lambda x: x.lower(), "desc": "lowercase"},
-            2: {"fn": lambda x: normalize("NFC", x), "desc": ""},
+            0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
+            1: {"fn": lambda x: normalize("NFC", x), "desc": ""},
         }
-        for process in self.response:
-            if process:
-                for i in tqdm(
-                    range(len(self.state["filelist_data"])),
-                    desc=f"Applying {process_lookup[process]['desc']} to data",
-                ):
-                    self.state["filelist_data"][i]["text"] = process_lookup[process][
-                        "fn"
-                    ](self.state["filelist_data"][i]["text"])
+        if self.response:
+            for process in self.response:
+                if process:
+                    for i in tqdm(
+                        range(len(self.state["filelist_data"])),
+                        desc=f"Applying {process_lookup[process]['desc']} to data",
+                    ):
+                        self.state["filelist_data"][i]["text"] = process_lookup[
+                            process
+                        ]["fn"](self.state["filelist_data"][i]["text"])
 
 
 class SoxEffectsStep(Step):
@@ -372,7 +368,6 @@ class SoxEffectsStep(Step):
         return get_response_from_menu_prompt(
             "Which of the following audio preprocessing options would you like to apply?",
             [
-                "None",
                 "Resample to suggested sample rate: 22050 kHz",
                 "Normalization (-3.0dB)",
                 "Remove Silence at Start",
@@ -384,23 +379,20 @@ class SoxEffectsStep(Step):
         )
 
     def validate(self, response):
-        if isinstance(response, tuple) and (0 in response and len(response) > 1):
-            logger.warning("Please either select None or one or more other steps.")
-            return False
-        else:
-            return True
+        return True
 
     def effect(self):
         audio_effects = {
-            1: ["rate", "22050"],
-            2: ["norm", "-3.0"],
-            3: ["silence", "1", "0.1", "1.0%"],
-            4: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
+            0: ["rate", "22050"],
+            1: ["norm", "-3.0"],
+            2: ["silence", "1", "0.1", "1.0%"],
+            3: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
         }
         self.state["sox_effects"] = [["channel", "1"]]
-        for effect in self.response:
-            if effect:
-                self.state["sox_effects"].append(audio_effects[effect])
+        if self.response:
+            for effect in self.response:
+                if effect:
+                    self.state["sox_effects"].append(audio_effects[effect])
 
 
 class SymbolSetStep(Step):
@@ -431,6 +423,8 @@ class SymbolSetStep(Step):
             multi=True,
             search=True,
         )
+        if punctuation is None:
+            punctuation = []
         symbols = [x for x in symbols if x not in punctuation]
         banned_symbols = get_response_from_menu_prompt(  # type: ignore
             "Ignore utterances that contain any of the following characters",
@@ -438,6 +432,8 @@ class SymbolSetStep(Step):
             multi=True,
             search=True,
         )
+        if banned_symbols is None:
+            banned_symbols = []
         self.state["banned_symbols"] = banned_symbols
         symbols = [x for x in symbols if x not in banned_symbols]
         ignored_symbols = get_response_from_menu_prompt(  # type: ignore
@@ -446,6 +442,8 @@ class SymbolSetStep(Step):
             multi=True,
             search=True,
         )
+        if ignored_symbols is None:
+            ignored_symbols = []
         return Symbols(
             punctuation=punctuation,
             symbol_set=[x for x in symbols if x not in ignored_symbols],
