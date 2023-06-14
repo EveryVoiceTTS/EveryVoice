@@ -102,12 +102,12 @@ class Scaler:
         }
 
 
-# TODO: make work with multiprocessing: https://stackoverflow.com/questions/2080660/how-to-increment-a-shared-counter-from-multiple-processes
 class Counters:
     def __init__(self, manager: Manager):
         self._lock = manager.Lock()
         self._duration = manager.Value("l", 0)
         self._nans = manager.Value("l", 0)
+        self._audio_empty = manager.Value("l", 0)
         self._audio_too_long = manager.Value("l", 0)
         self._audio_too_short = manager.Value("l", 0)
         self._skipped_processes = manager.Value("l", 0)
@@ -221,6 +221,10 @@ class Preprocessor:
             audio /= torch.max(torch.abs(audio))
             audio *= 0.95
         seconds = len(audio[0]) / sr
+        if audio[0].sum() == 0:
+            logger.warning(f"Audio empty: {wav_path} - we will skip this file")
+            self.counters.increment("audio_empty")
+            return None, None
         if seconds > self.audio_config.max_audio_length:
             logger.warning(
                 f"Audio too long: {wav_path} ({seconds} seconds - we will skip this file)"
@@ -393,6 +397,7 @@ class Preprocessor:
             ],
             ["skipped processes", self.counters.value("skipped_processes")],
             ["nans", self.counters.value("nans")],
+            ["audio_empty", self.counters.value("audio_empty")],
             ["audio_too_short", self.counters.value("audio_too_short")],
             ["audio_too_long", self.counters.value("audio_too_long")],
             ["duration", self.print_duration()],
