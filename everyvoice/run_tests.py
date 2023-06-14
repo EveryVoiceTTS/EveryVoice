@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 """ Organize tests into Test Suites
 """
@@ -63,11 +63,14 @@ def run_tests(suite):
     if isinstance(suite, str):
         logger.error("Please specify a test suite to run: i.e. 'dev' or 'all'")
     else:
-        return runner.run(suite)
+        return runner.run(suite).wasSuccessful()
 
 
 if __name__ == "__main__":
     try:
-        run_tests(sys.argv[1])
+        result = run_tests(sys.argv[1])
+        if not result:
+            sys.exit(1)
     except IndexError:
         logger.error("Please specify a test suite to run: i.e. 'dev' or 'all'")
+        sys.exit(1)

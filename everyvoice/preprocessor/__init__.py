@@ -6,22 +6,20 @@
 """
 import functools
 import multiprocessing as mp
-import os
 import random
+from multiprocessing import Manager
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
 from clipdetect import detect_clipping
+from joblib import Parallel, delayed
 from loguru import logger
-from pathos.multiprocessing import ProcessingPool as Pool
-from pydantic import BaseModel
-from rich import print
+from rich import print as rich_print
 from rich.panel import Panel
 from rich.style import Style
 from tabulate import tabulate
-from torch import Tensor, linalg, mean, tensor
 from torchaudio import load as load_audio
 from torchaudio import save as save_audio
 from torchaudio.functional import compute_kaldi_pitch, resample
@@ -105,13 +103,23 @@ class Scaler:
 
 
 # TODO: make work with multiprocessing: https://stackoverflow.com/questions/2080660/how-to-increment-a-shared-counter-from-multiple-processes
-class Counters(BaseModel):
-    duration: float = 0.0
-    nans: List[str] = []
-    audio_too_long: List[str] = []
-    audio_too_short: List[str] = []
-    skipped_processes: int = 0
-    missing_files: List[str] = []
+class Counters:
+    def __init__(self, manager: Manager):
+        self._lock = manager.Lock()
+        self._duration = manager.Value("l", 0)
+        self._nans = manager.Value("l", 0)
+        self._audio_too_long = manager.Value("l", 0)
+        self._audio_too_short = manager.Value("l", 0)
+        self._skipped_processes = manager.Value("l", 0)
+        self._missing_files = manager.Value("l", 0)
+
+    def increment(self, counter: str, increment: int = 1):
+        with self._lock:
+            self.__getattribute__("_" + counter).value += increment
+
+    def value(self, counter):
+        with self._lock:
+            return self.__getattribute__("_" + counter).value
 
 
 class Preprocessor:
@@ -119,12 +127,13 @@ class Preprocessor:
         self, config: Union[AlignerConfig, FeaturePredictionConfig, VocoderConfig]
     ):
         self.config = config
+        self.counters = Counters(Manager())
+        self.cpus = 0
         self.pitch_scaler = Scaler()
         self.energy_scaler = Scaler()
         self.datasets = config.preprocessing.source_data
         self.save_dir = Path(config.preprocessing.save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
-        self.counters = Counters()
         self.audio_config = config.preprocessing.audio
         self.sep = config.preprocessing.value_separator
         self.text_processor = (
@@ -188,7 +197,7 @@ class Preprocessor:
         resample_rate=None,
         sox_effects=None,
         save_wave=False,
-    ) -> Union[Tuple[Tensor, int], Tuple[None, None]]:
+    ) -> Union[Tuple[torch.Tensor, int], Tuple[None, None]]:
         """Process audio
 
         Args:
@@ -216,15 +225,15 @@ class Preprocessor:
             logger.warning(
                 f"Audio too long: {wav_path} ({seconds} seconds - we will skip this file)"
             )
-            self.counters.audio_too_long.append(os.path.basename(wav_path))
+            self.counters.increment("audio_too_long")
             return None, None
         if seconds < self.audio_config.min_audio_length:
             logger.warning(
                 f"Audio too short: {wav_path} ({seconds} seconds - we will skip this file)"
             )
-            self.counters.audio_too_short.append(os.path.basename(wav_path))
+            self.counters.increment("audio_too_short")
             return None, None
-        self.counters.duration += seconds
+        self.counters.increment("duration", seconds)
         if save_wave:
             save_audio(
                 wav_path + ".processed.wav",
@@ -237,7 +246,7 @@ class Preprocessor:
         return (audio, sr)
 
     def extract_spectral_features(
-        self, audio_tensor: Tensor, transform, normalize=True
+        self, audio_tensor: torch.Tensor, transform, normalize=True
     ):
         """Given an audio tensor, extract the log Mel spectral features
         from the given start and end points
@@ -260,7 +269,7 @@ class Preprocessor:
         x[nans] = np.interp(y(nans), y(~nans), x[~nans])
         return x
 
-    def extract_pitch(self, audio_tensor: Tensor):
+    def extract_pitch(self, audio_tensor: torch.Tensor):
         """Given an audio tensor, extract the pitch
 
         TODO: consider CWT and Parselmouth
@@ -297,7 +306,7 @@ class Preprocessor:
             )
             pitch[pitch == 0] = np.nan
             pitch = self._interpolate(pitch)
-            pitch = tensor(pitch).float()
+            pitch = torch.tensor(pitch).float()
         elif self.config.preprocessing.pitch_type == PitchCalculationMethod.kaldi.value:
             pitch = compute_kaldi_pitch(
                 waveform=audio_tensor,
@@ -325,25 +334,25 @@ class Preprocessor:
         for duration in durations.numpy().tolist():
             if duration > 0:
                 new_data.append(
-                    mean(
+                    torch.mean(
                         data[current_frame_position : current_frame_position + duration]
                     )
                 )
             else:
                 new_data.append(1e-7)
             current_frame_position += duration
-        return tensor(new_data)
+        return torch.tensor(new_data)
 
-    def extract_energy(self, spectral_feature_tensor: Tensor):
+    def extract_energy(self, spectral_feature_tensor: torch.Tensor):
         """Given a spectral feature tensor, and durations extract the energy averaged across a phone
 
         Args:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
             durations (_type_): _descriptiont    #TODO
         """
-        return linalg.norm(spectral_feature_tensor, dim=0)
+        return torch.linalg.norm(spectral_feature_tensor, dim=0)
 
-    def extract_text_inputs(self, text, use_pfs=False) -> Tensor:
+    def extract_text_inputs(self, text, use_pfs=False) -> torch.Tensor:
         """Given some text, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
 
         Args:
@@ -360,7 +369,7 @@ class Preprocessor:
 
     def print_duration(self):
         """Convert seconds to a human readable format"""
-        seconds = int(self.counters.duration)
+        seconds = int(self.counters.value("duration"))
         hours = seconds // 3600
         seconds %= 3600
         minutes = seconds // 60
@@ -371,7 +380,7 @@ class Preprocessor:
         """Print a report of the dataset processing"""
         headers = ["type", "quantity"]
         table = [
-            ["missing files", len(self.counters.missing_files)],
+            ["missing files", self.counters.value("missing_files")],
             [
                 "missing symbols",
                 len(self.text_processor.missing_symbols) if self.text_processor else 0,
@@ -382,10 +391,10 @@ class Preprocessor:
                 if self.text_processor
                 else 0,
             ],
-            ["skipped processes", self.counters.skipped_processes],
-            ["nans", self.counters.nans],
-            ["audio_too_short", len(self.counters.audio_too_short)],
-            ["audio_too_long", len(self.counters.audio_too_long)],
+            ["skipped processes", self.counters.value("skipped_processes")],
+            ["nans", self.counters.value("nans")],
+            ["audio_too_short", self.counters.value("audio_too_short")],
+            ["audio_too_long", self.counters.value("audio_too_long")],
             ["duration", self.print_duration()],
         ]
         return tabulate(table, headers, tablefmt=tablefmt)
@@ -401,26 +410,40 @@ class Preprocessor:
     def compute_stats(
         self, energy=True, pitch=True
     ) -> Tuple[Union[Scaler, None], Union[Scaler, None]]:
+        if self.cpus > 1:
+            parallel = Parallel(
+                n_jobs=self.cpus, verbose=5, backend="loky", batch_size=500
+            )
         if energy:
             energy_scaler = Scaler()
-            for path in tqdm(
-                (self.config.preprocessing.save_dir / "energy").glob("*energy*"),
-                desc="Gathering energy values",
-            ):
-                energy_data = torch.load(path)
-                energy_scaler.data.append(energy_data)
+            paths = (self.config.preprocessing.save_dir / "energy").glob("*energy*")
+            if self.cpus > 1:
+                logger.info("Gathering energy values")
+                for energy_data in parallel(
+                    delayed(torch.load)(path) for path in paths
+                ):
+                    energy_scaler.data.append(energy_data)
+            else:
+                for path in tqdm(paths, desc="Gathering energy values"):
+                    energy_data = torch.load(path)
+                    energy_scaler.data.append(energy_data)
         if pitch:
             pitch_scaler = Scaler()
-            for path in tqdm(
-                (self.config.preprocessing.save_dir / "pitch").glob("*pitch*"),
-                desc="Gathering pitch values",
-            ):
-                pitch_data = torch.load(path)
-                pitch_scaler.data.append(pitch_data)
+            paths = (self.config.preprocessing.save_dir / "pitch").glob("*pitch*")
+            if self.cpus > 1:
+                logger.info("Gathering pitch values")
+                for pitch_data in parallel(delayed(torch.load)(path) for path in paths):
+                    pitch_scaler.data.append(pitch_data)
+            else:
+                for path in tqdm(paths, desc="Gathering pitch values"):
+                    pitch_data = torch.load(path)
+                    pitch_scaler.data.append(pitch_data)
         return energy_scaler if energy else energy, pitch_scaler if pitch else pitch
 
     def normalize_stats(self, energy_scaler: Scaler, pitch_scaler: Scaler):
         """Normalize pitch and energy to unit variance"""
+        # Note: this function is IO bound, because it is a tight loop writing small files.
+        # Attempts to parallelize it make it much slower, even with only 2 threads.
         logger.info("Scaling dataset statistics...")
         stats = {}
         if energy_scaler:
@@ -456,15 +479,6 @@ class Preprocessor:
                 )
                 exit()
 
-    def _collect_non_missing_files_from_filelist(self, filelist, data_dir):
-        for f in filelist:
-            audio_path = data_dir / (f["basename"] + ".wav")
-            if not audio_path.exists():
-                logger.warning(f"File '{f}' is missing and will not be processed.")
-                self.counters.missing_files.append(f)
-            else:
-                yield f
-
     def create_path(self, item: dict, folder: str, fn: str):
         return (
             self.save_dir
@@ -472,10 +486,58 @@ class Preprocessor:
             / self.sep.join([item["basename"], item["speaker"], item["language"], fn])
         )
 
+    def process_one_audio(self, item: dict, data_dir) -> Optional[dict]:
+        """Process one audio item
+
+        Return:
+           - item if it is found and processed successfully
+           - None otherwise, indicating it should be skipped from further processing
+        """
+        audio_path = data_dir / (item["basename"] + ".wav")
+        if not audio_path.exists():
+            logger.warning(f"File '{item}' is missing and will not be processed.")
+            self.counters.increment("missing_files")
+            return None
+
+        item = self.get_speaker_and_language(item)
+        input_audio_save_path = self.create_path(
+            item, "audio", f"audio-{self.input_sampling_rate}.pt"
+        )
+        output_audio_save_path = self.create_path(
+            item, "audio", f"audio-{self.output_sampling_rate}.pt"
+        )
+        if (
+            input_audio_save_path.exists()
+            and output_audio_save_path.exists()
+            and not self.overwrite
+        ):
+            return None
+        if not input_audio_save_path.exists() or self.overwrite:
+            input_audio, _ = self.process_audio(
+                audio_path,
+                resample_rate=self.input_sampling_rate,
+            )
+            if input_audio is None:
+                return None
+            else:
+                torch.save(input_audio, input_audio_save_path)
+        if (
+            self.input_sampling_rate != self.output_sampling_rate
+            and not output_audio_save_path.exists()
+            or self.overwrite
+        ):
+            output_audio, _ = self.process_audio(
+                audio_path,
+                resample_rate=self.output_sampling_rate,
+            )
+            if output_audio is not None:
+                torch.save(output_audio, output_audio_save_path)
+        return item
+
     def process_all_audio(self, debug=False):
         """Process all audio across datasets, create a combined, filtered filelist and return it"""
         self.dataset_sanity_checks()
-        filtered_filelist = []
+        filtered_filelist: List[dict] = []
         for dataset in tqdm(self.datasets, total=len(self.datasets), desc="Dataset"):
             data_dir = Path(dataset.data_dir)
             filelist = dataset.filelist_loader(dataset.filelist)
@@ -484,48 +546,26 @@ class Preprocessor:
                 logger.info(
                     "Debug flag was set to true, only processing first 10 files"
                 )
-            logger.info(f"Collecting files for {dataset.label}")
-            non_missing_files = list(
-                self._collect_non_missing_files_from_filelist(filelist, data_dir)
-            )
-            for item in tqdm(non_missing_files, desc="Processing Audio"):
-                item = self.get_speaker_and_language(item)
-                input_audio_save_path = self.create_path(
-                    item, "audio", f"audio-{self.input_sampling_rate}.pt"
+            logger.info(f"Collecting files for {dataset.label} and processing audio")
+            if self.cpus * 3 > len(filelist):
+                self.cpus = len(filelist) // 3
+            if self.cpus > 1:
+                logger.info("Launching parallel processes may take a moment...")
+                batch_size = min(100, 1 + len(filelist) // (self.cpus * 2))
+                processed_items = Parallel(
+                    n_jobs=self.cpus,
+                    verbose=10,
+                    backend="loky",
+                    batch_size=batch_size,
+                )(delayed(self.process_one_audio)(item, data_dir) for item in filelist)
+                filtered_filelist.extend(
+                    item for item in processed_items if item is not None
                 )
-                output_audio_save_path = self.create_path(
-                    item, "audio", f"audio-{self.output_sampling_rate}.pt"
-                )
-                if (
-                    input_audio_save_path.exists()
-                    and output_audio_save_path.exists()
-                    and not self.overwrite
-                ):
-                    self.counters.skipped_processes += 1
-                    continue
-                if not input_audio_save_path.exists() or self.overwrite:
-                    input_audio, _ = self.process_audio(
-                        data_dir / (item["basename"] + ".wav"),
-                        resample_rate=self.input_sampling_rate,
-                    )
-                    if input_audio is None:
-                        continue
-                    else:
-                        filtered_filelist.append(item)
-                        torch.save(input_audio, input_audio_save_path)
-                if (
-                    self.input_sampling_rate != self.output_sampling_rate
-                    and not output_audio_save_path.exists()
-                    or self.overwrite
-                ):
-                    output_audio, _ = self.process_audio(
-                        data_dir / (item["basename"] + ".wav"),
-                        resample_rate=self.output_sampling_rate,
-                    )
-                    if output_audio is None:
-                        continue
-                    else:
-                        torch.save(output_audio, output_audio_save_path)
+            else:
+                for item in tqdm(filelist, desc="Processing Audio on 1 CPU"):
+                    processed_item = self.process_one_audio(item, data_dir)
+                    if processed_item is not None:
+                        filtered_filelist.append(processed_item)
         return filtered_filelist
 
     def process_energy(self, item):
@@ -593,7 +633,7 @@ class Preprocessor:
             item, "audio", f"audio-{self.input_sampling_rate}.pt"
         )
         if not input_audio_path.exists():
-            self.counters.skipped_processes += 1
+            self.counters.increment("skipped_processes")
             logger.info(f"Audio at {input_audio_path} is missing. Skipping...")
             return
         output_audio_path = self.create_path(
@@ -705,6 +745,7 @@ class Preprocessor:
         debug=False,
     ):
         self.overwrite = overwrite
+        self.cpus = cpus
         if not isinstance(output_path, Path):
             output_path = Path(output_path)
         processing_order = ("audio", "text", "pfs", "spec", "attn", "energy", "pitch")
@@ -732,7 +773,8 @@ class Preprocessor:
                     report = self.report()
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
                         f.write(report)
-                    print(report)
+                    rich_print(report)
+                logger.info(f"Audio Filelist len={len(filelist or [])}")
             else:
                 # If audio has already been processed, then just read the processed_filelist
                 try:
@@ -744,27 +786,29 @@ class Preprocessor:
                         filelist = filelist[:10]
                 except FileNotFoundError:
                     logger.error(
-                        f"A filelist was not found at {self.save_dir / output_path.name}. Please try processing your audio again."
+                        f"A filelist was not found at {self.save_dir / output_path.name}. "
+                        "Please try processing your audio again."
                     )
                     exit()
                 process_fn = self.get_process_fn(process)
-                logger.info(f"Processing {process} on {cpus} CPUs...")
-                if cpus:
-                    pool = Pool(nodes=cpus)
-                    for _ in tqdm(
-                        pool.uimap(process_fn, filelist),
-                        total=len(filelist),
-                        desc=f"Processing {process}",
-                    ):
-                        pass
+                logger.info(f"Processing {process} on {self.cpus} CPUs...")
+                logger.info(f"Filelist len={len(filelist or [])}")
+                if self.cpus > 1:
+                    batch_size = min(100, 1 + len(filelist) // (self.cpus * 2))
+                    Parallel(
+                        n_jobs=self.cpus,
+                        verbose=10,
+                        backend="loky",
+                        batch_size=batch_size,
+                    )(delayed(process_fn)(file) for file in filelist)
                 else:
-                    for f in tqdm(filelist, desc=f"Processing {process}"):
+                    for f in tqdm(filelist, desc=f"Processing {process} on 1 CPU"):
                         process_fn(f)
         if "audio" in to_process:
             report = f"Here is a report:\n {self.report()}"
         else:
             report = ""
-        print(
+        rich_print(
             Panel(
                 f"You've finished preprocessing: {', '.join(to_process)}. Your files are located at {self.save_dir.absolute()}. {report}",
                 title="Congratulations 🎉",

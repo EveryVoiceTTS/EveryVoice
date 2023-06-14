@@ -24,18 +24,18 @@ jobs:
           python-version: 3.9
       - name: Install libsndfile
         run: sudo apt-get install -y libsndfile1
-      - name: Install Conda Deps
+      - name: Install Torch related deps
         run: |
-          conda install -c conda-forge sox librosa pycountry fire unicodecsv
-          conda install pytorch torchaudio -c pytorch
+          conda install -c conda-forge pycountry pyworld
+          pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
       - name: Install other dependencies
         run: |
-          pip3 install coverage soundfile
-          pip3 install -e .
-          cd docs && pip3 install -r requirements.txt
+          pip install coverage soundfile
+          pip install -e .
+          cd docs && pip install -r requirements.txt
       - name: Check licenses
         run: |
-          pip3 install pip-licenses
+          pip install pip-licenses
           if pip-licenses | grep -E -v 'Artistic License|LGPL|Public Domain' | grep GNU; then echo 'Please avoid introducing *GPL dependencies'; false; fi
       - name: Docs
         run: |

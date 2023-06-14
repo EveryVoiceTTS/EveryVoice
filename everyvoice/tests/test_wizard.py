@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from types import MethodType
 from unittest import TestCase, main
 
