@@ -30,7 +30,7 @@ class NameStep(Step):
         if len(response) == 0:
             logger.info("Sorry, you have to put something here")
             return False
-        slug = slugify(response)
+        slug = slugify(response, lowercase=False)
         if not slug == response:
             logger.info(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like {slug} instead."
@@ -57,7 +57,9 @@ class OutputPathStep(Step):
                 f"Sorry, the path at '{path.absolute()}' is a file. Please select a directory."
             )
             return False
-        path = path / slugify(self.state.get(StepNames.name_step.value))
+        path = path / slugify(
+            self.state.get(StepNames.name_step.value), lowercase=False
+        )
         if path.exists():
             logger.warning(
                 f"Sorry, the path at '{path.absolute()}' already exists. Please choose another output directory."

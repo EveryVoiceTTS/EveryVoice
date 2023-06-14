@@ -25,7 +25,7 @@ class DatasetNameStep(Step):
         if len(response) == 0:
             logger.info("Sorry, you have to put something here")
             return False
-        slug = slugify(response)
+        slug = slugify(response, lowercase=False)
         if not slug == response:
             logger.info(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."
