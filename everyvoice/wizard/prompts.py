@@ -1,5 +1,5 @@
 import sys
-from typing import Iterable, List, Union
+from typing import List, Tuple, Union
 
 import simple_term_menu
 from rich import print
@@ -8,7 +8,7 @@ from rich.panel import Panel
 
 def get_response_from_menu_prompt(
     prompt_text: str = "",
-    choices: Iterable[str] = (),
+    choices: Tuple[str, ...] = (),
     title: str = "",
     multi=False,
     search=False,
@@ -34,6 +34,7 @@ def get_response_from_menu_prompt(
         multi_select_empty_ok=multi,
         show_multi_select_hint=multi,
         show_search_hint=search,
+        status_bar_style=("fg_gray", "bg_black"),
     )
     index = menu.show()
     sys.stdout.write("\033[K")

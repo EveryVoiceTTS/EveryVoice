@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from everyvoice.config.text_config import Symbols
 from everyvoice.utils import generic_csv_reader, generic_dict_loader, read_festival
-from everyvoice.wizard import Step, StepNames, Tour
+from everyvoice.wizard import CUSTOM_QUESTIONARY_STYLE, Step, StepNames, Tour
 from everyvoice.wizard.prompts import get_response_from_menu_prompt
 from everyvoice.wizard.validators import validate_path
 
@@ -41,7 +41,9 @@ class DatasetNameStep(Step):
 
 class WavsDirStep(Step):
     def prompt(self):
-        return questionary.path("Where are your audio files?").ask()
+        return questionary.path(
+            "Where are your audio files?", style=CUSTOM_QUESTIONARY_STYLE
+        ).ask()
 
     def validate(self, response):
         valid_path = validate_path(response, is_dir=True, is_file=False, exists=True)
@@ -55,7 +57,8 @@ class WavsDirStep(Step):
 class SampleRateConfigStep(Step):
     def prompt(self):
         return questionary.text(
-            "What is the sample rate (in Hertz) of your data?"
+            "What is the sample rate (in Hertz) of your data?",
+            style=CUSTOM_QUESTIONARY_STYLE,
         ).ask()
 
     def validate(self, response):
@@ -479,7 +482,9 @@ def return_dataset_steps(dataset_index=0):
         ),
         Step(
             name=StepNames.filelist_step.value,
-            prompt_method=questionary.path("Where is your data filelist?").ask,
+            prompt_method=questionary.path(
+                "Where is your data filelist?", style=CUSTOM_QUESTIONARY_STYLE
+            ).ask,
             validate_method=partial(
                 validate_path, is_dir=False, is_file=True, exists=True
             ),
