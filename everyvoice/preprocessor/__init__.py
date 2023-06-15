@@ -40,6 +40,14 @@ from everyvoice.utils.heavy import (
 )
 
 
+def save(tensor: torch.Tensor, path: Path):
+    """Create hierarchy before saving a tensor."""
+    path = Path(path)
+    if not path.parent.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+    torch.save(tensor, path)
+
+
 class Scaler:
     def __init__(self):
         self._data = []
@@ -416,7 +424,7 @@ class Preprocessor:
             )
         if energy:
             energy_scaler = Scaler()
-            paths = (self.config.preprocessing.save_dir / "energy").glob("*energy*")
+            paths = (self.config.preprocessing.save_dir / "energy").glob("**/*energy*")
             if self.cpus > 1:
                 logger.info("Gathering energy values")
                 for energy_data in parallel(
@@ -429,7 +437,7 @@ class Preprocessor:
                     energy_scaler.data.append(energy_data)
         if pitch:
             pitch_scaler = Scaler()
-            paths = (self.config.preprocessing.save_dir / "pitch").glob("*pitch*")
+            paths = (self.config.preprocessing.save_dir / "pitch").glob("**/*pitch*")
             if self.cpus > 1:
                 logger.info("Gathering pitch values")
                 for pitch_data in parallel(delayed(torch.load)(path) for path in paths):
@@ -449,22 +457,22 @@ class Preprocessor:
         if energy_scaler:
             energy_stats = energy_scaler.calculate_stats()
             for path in tqdm(
-                (self.config.preprocessing.save_dir / "energy").glob("*energy*"),
+                (self.config.preprocessing.save_dir / "energy").glob("**/*energy*"),
                 desc="Normalizing energy values",
             ):
                 energy = torch.load(path)
                 energy = energy_scaler.normalize(energy)
-                torch.save(energy, path)
+                save(energy, path)
             stats["energy"] = energy_stats
         if pitch_scaler:
             pitch_stats = pitch_scaler.calculate_stats()
             for path in tqdm(
-                (self.config.preprocessing.save_dir / "pitch").glob("*pitch*"),
+                (self.config.preprocessing.save_dir / "pitch").glob("**/*pitch*"),
                 desc="Normalizing pitch values",
             ):
                 pitch = torch.load(path)
                 pitch = pitch_scaler.normalize(pitch)
-                torch.save(pitch, path)
+                save(pitch, path)
             stats["pitch"] = pitch_stats
 
         return stats
@@ -520,7 +528,7 @@ class Preprocessor:
             if input_audio is None:
                 return None
             else:
-                torch.save(input_audio, input_audio_save_path)
+                save(input_audio, input_audio_save_path)
         if (
             self.input_sampling_rate != self.output_sampling_rate
             and not output_audio_save_path.exists()
@@ -531,7 +539,7 @@ class Preprocessor:
                 resample_rate=self.output_sampling_rate,
             )
             if output_audio is not None:
-                torch.save(output_audio, output_audio_save_path)
+                save(output_audio, output_audio_save_path)
         return item
 
     def process_all_audio(self, debug=False):
@@ -586,7 +594,7 @@ class Preprocessor:
             dur_path = self.create_path(item, "duration", "duration.pt")
             durs = torch.load(dur_path)
             energy = self.average_data_by_durations(energy, durs)
-        torch.save(energy, energy_path)
+        save(energy, energy_path)
 
     def process_pitch(self, item):
         audio_path = self.create_path(
@@ -604,7 +612,7 @@ class Preprocessor:
             dur_path = self.create_path(item, "duration", "duration.pt")
             durs = torch.load(dur_path)
             pitch = self.average_data_by_durations(pitch, durs)
-        torch.save(pitch, pitch_path)
+        save(pitch, pitch_path)
 
     def process_attn_prior(self, item):
         binomial_interpolator = BetaBinomialInterpolator()
@@ -620,13 +628,13 @@ class Preprocessor:
             binomial_interpolator(input_spec.size(1), text.size(0))
         )
         assert input_spec.size(1) == attn_prior.size(0)
-        torch.save(attn_prior, attn_prior_path)
+        save(attn_prior, attn_prior_path)
 
     def process_text(self, item, use_pfs=False):
         basename = "pfs.pt" if use_pfs else "text.pt"
         text_path = self.create_path(item, "text", basename)
         text = self.extract_text_inputs(item["text"], use_pfs=use_pfs)
-        torch.save(text, text_path)
+        save(text, text_path)
 
     def process_spec(self, item):
         input_audio_path = self.create_path(
@@ -656,13 +664,13 @@ class Preprocessor:
             output_spec = self.extract_spectral_features(
                 output_audio, self.output_spectral_transform
             )
-            torch.save(output_spec, output_spec_path)
+            save(output_spec, output_spec_path)
         else:
             output_audio = input_audio
         input_spec = self.extract_spectral_features(
             input_audio, self.input_spectral_transform
         )
-        torch.save(input_spec, input_spec_path)
+        save(input_spec, input_spec_path)
 
     def get_process_fn(self, process):
         if process == "text":
