@@ -7,7 +7,7 @@
 import functools
 import multiprocessing as mp
 import random
-from multiprocessing import Manager
+from multiprocessing import Manager, managers
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
 
@@ -103,7 +103,7 @@ class Scaler:
 
 
 class Counters:
-    def __init__(self, manager: Manager):
+    def __init__(self, manager: managers.SyncManager):
         self._lock = manager.Lock()
         self._duration = manager.Value("l", 0)
         self._nans = manager.Value("l", 0)
