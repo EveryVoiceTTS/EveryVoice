@@ -9,38 +9,29 @@ It is largely based off the FastSpeech2/Fastpitch models.
 
 ## Quickstart
 
-### Install
-
-Clone clone the repo and pip install it locally:
+### Environment
+We recommend using Conda and Python 3.9. To do that, create a new environment:
 
 ```sh
-$ git clone https://github.com/roedoejet/EveryVoice.git
-$ cd EveryVoice
-$ git submodule update --init
-$ python -m pip install -e .
-```
-
-### Dependencies
-
-I recommend using Conda and Python 3.9. To do that, create a new environment:
-
-```
 conda create --name EveryVoice python=3.9
 conda activate EveryVoice
-conda install pytorch torchvision torchaudio cudatoolkit=11.3 -c pytorch
+python \
+  -m pip \
+    install \
+      torch==1.13.1+cu117 \
+      torchaudio==0.13.1 \
+      --extra-index-url https://download.pytorch.org/whl/cu117
 ```
 
-You can then install the rest of the Python dependencies with pip
+### Install
 
-```
-python -m pip install -r requirements.txt
-```
+Clone the repository and `pip` install it locally:
 
-Alternatively, you can just create the whole thing from our `environment.yml` file:
-
-```
-conda env create -f environment.yml
-conda activate EveryVoice
+```sh
+git clone https://github.com/roedoejet/EveryVoice.git
+cd EveryVoice
+git submodule update --init
+python -m pip install --editable .
 ```
 
 ### Documentation
@@ -58,7 +49,7 @@ This repo follows the [Contributor Covenant](http://contributor-covenant.org/ver
 You can install our standard Git hooks by running these commands in your sandbox:
 
 ```sh
-pip install -r requirements.dev.txt
+python -m pip install --requirement requirements.dev.txt
 pre-commit install
 gitlint install-hook
 ```
@@ -70,12 +61,13 @@ our Git hooks.
 You can then interactively install the package by running the following command from the project root:
 
 ```sh
-pip install -e .
+python -m pip install --editable .
 ```
 
 ## Acknowledgements
 
-This repo draws on many other wonderful code bases. Many thanks to:
+This repository draws on many other wonderful code bases.
+Many thanks to:
 
 https://github.com/nocotan/pytorch-lightning-gans
 https://github.com/rishikksh20/iSTFTNet-pytorch
@@ -86,4 +78,4 @@ https://github.com/DigitalPhonetics/IMS-Toucan
 
 ## Tests
 
-Run unit tests by `python3 -m unittest tests/test_configs.py` or suites of tests by running `everyvoice test dev` if you have the package installed interactively.
+Run unit tests by `python -m unittest tests/test_configs.py` or suites of tests by running `everyvoice test dev` if you have the package installed interactively.
