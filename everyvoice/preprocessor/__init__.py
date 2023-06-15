@@ -207,7 +207,13 @@ class Preprocessor:
             [Tensor, int]: audio Tensor, sampling rate
         """
 
-        audio, sr = load_audio(wav_path, normalize=normalize)
+        audio, sr = load_audio(wav_path)
+        if (
+            abs(audio[0].sum()) < 0.01
+        ):  # This is a conservative threshold, so some very quiet/silent files may still get through
+            logger.warning(f"Audio empty: {wav_path} - we will skip this file")
+            self.counters.increment("audio_empty")
+            return None, None
         if use_effects and sox_effects:
             audio, sr = apply_effects_tensor(
                 audio,
@@ -221,10 +227,6 @@ class Preprocessor:
             audio /= torch.max(torch.abs(audio))
             audio *= 0.95
         seconds = len(audio[0]) / sr
-        if audio[0].sum() == 0:
-            logger.warning(f"Audio empty: {wav_path} - we will skip this file")
-            self.counters.increment("audio_empty")
-            return None, None
         if seconds > self.audio_config.max_audio_length:
             logger.warning(
                 f"Audio too long: {wav_path} ({seconds} seconds - we will skip this file)"
