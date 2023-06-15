@@ -73,7 +73,7 @@ class FilelistFormatStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
             prompt_text="Select which format your filelist is in:",
-            choices=["psv", "tsv", "csv", "festival"],
+            choices=("psv", "tsv", "csv", "festival"),
             multi=False,
             search=False,
             return_indices=False,
@@ -144,13 +144,13 @@ class HeaderStep(Step):
     def prompt(self):
         choices = [
             f"{x}: {self.state['filelist_data'][0][x]}"
-            for x in range(len(self.state["filelist_headers"]))
+            for x, _ in enumerate(self.state["filelist_headers"])
         ]
         # filter if already selected
         if "selected_headers" in self.state:
-            choices = [
+            choices = tuple(
                 x for x in choices if int(x[:1]) not in self.state["selected_headers"]
-            ]
+            )
         response = get_response_from_menu_prompt(
             prompt_text=self.prompt_text,
             choices=choices,
@@ -205,17 +205,19 @@ class FinalHeaderStep(HeaderStep):
 
 
 class HasSpeakerStep(Step):
+    choices = ("yes", "no")
+
     def prompt(self):
         if self.state[StepNames.filelist_format_step.value] == "festival":
             return "no"
         else:
             return get_response_from_menu_prompt(
                 prompt_text="Does your data have a column/value for the speaker?",
-                choices=["yes", "no"],
+                choices=self.choices,
             )
 
     def validate(self, response):
-        return response in ["yes", "no"]
+        return response in self.choices
 
     def effect(self):
         if self.state[StepNames.data_has_speaker_value_step.value] == "yes":
@@ -231,17 +233,19 @@ class HasSpeakerStep(Step):
 
 
 class HasLanguageStep(Step):
+    choices = ("yes", "no")
+
     def prompt(self):
         if self.state[StepNames.filelist_format_step.value] == "festival":
             return "no"
         else:
             return get_response_from_menu_prompt(
                 prompt_text="Does your data have a column/value for the language?",
-                choices=["yes", "no"],
+                choices=self.choices,
             )
 
     def validate(self, response):
-        return response in ["yes", "no"]
+        return response in self.choices
 
     def effect(self):
         if self.state[StepNames.data_has_language_value_step.value] == "yes":
@@ -334,10 +338,10 @@ class TextProcessingStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
             prompt_text="Which of the following text transformations would like to apply before determining the symbol set?",
-            choices=[
+            choices=(
                 "Lowercase",
                 "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
-            ],
+            ),
             multi=True,
             search=False,
             return_indices=True,
@@ -367,12 +371,12 @@ class SoxEffectsStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
             prompt_text="Which of the following audio preprocessing options would you like to apply?",
-            choices=[
+            choices=(
                 "Resample to suggested sample rate: 22050 kHz",
                 "Normalization (-3.0dB)",
                 "Remove Silence at Start",
                 "Remove Silence throughout",
-            ],
+            ),
             multi=True,
             search=False,
             return_indices=True,
@@ -425,7 +429,7 @@ class SymbolSetStep(Step):
         )
         if punctuation is None:
             punctuation = []
-        symbols = [x for x in symbols if x not in punctuation]
+        symbols = tuple(x for x in symbols if x not in punctuation)
         banned_symbols = get_response_from_menu_prompt(  # type: ignore
             title="Ignore utterances that contain any of the following characters:",
             choices=symbols,
@@ -435,7 +439,7 @@ class SymbolSetStep(Step):
         if banned_symbols is None:
             banned_symbols = []
         self.state["banned_symbols"] = banned_symbols
-        symbols = [x for x in symbols if x not in banned_symbols]
+        symbols = tuple(x for x in symbols if x not in banned_symbols)
         ignored_symbols = get_response_from_menu_prompt(  # type: ignore
             title="Which of the following symbols can be ignored?",
             choices=symbols,

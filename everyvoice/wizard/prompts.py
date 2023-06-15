@@ -1,5 +1,5 @@
 import sys
-from typing import List, Union
+from typing import Iterable, List, Union
 
 import simple_term_menu
 from rich import print
@@ -8,7 +8,7 @@ from rich.panel import Panel
 
 def get_response_from_menu_prompt(
     prompt_text: str = "",
-    choices: List[str] = [],
+    choices: Iterable[str] = (),
     title: str = "",
     multi=False,
     search=False,
