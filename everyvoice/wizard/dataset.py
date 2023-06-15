@@ -48,7 +48,7 @@ class WavsDirStep(Step):
         if not valid_path:
             return False
         valid_path = Path(response).expanduser()
-        contains_wavs = next(valid_path.glob("*.wav"), False)
+        contains_wavs = next(valid_path.glob("**/*.wav"), False)
         return valid_path and contains_wavs
 
 
@@ -517,7 +517,6 @@ def return_dataset_steps(dataset_index=0):
 
 
 if __name__ == "__main__":
-
     tour = Tour(
         name="Dataset Tour",
         # steps = [TextProcessingStep(name='test')]
