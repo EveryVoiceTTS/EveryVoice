@@ -16,7 +16,7 @@ from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import generic_psv_dict_reader, write_filelist
-from everyvoice.wizard import Step, StepNames
+from everyvoice.wizard import CUSTOM_QUESTIONARY_STYLE, Step, StepNames
 from everyvoice.wizard.dataset import return_dataset_steps
 from everyvoice.wizard.prompts import get_response_from_menu_prompt
 from everyvoice.wizard.utils import write_dict_to_config
@@ -47,7 +47,9 @@ class NameStep(Step):
 class OutputPathStep(Step):
     def prompt(self):
         return questionary.path(
-            "Where should the wizard save your files?", default="."
+            "Where should the wizard save your files?",
+            default=".",
+            style=CUSTOM_QUESTIONARY_STYLE,
         ).ask()
 
     def validate(self, response):
