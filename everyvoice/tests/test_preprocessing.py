@@ -98,6 +98,12 @@ class PreprocessingTest(TestCase):
             self.assertEqual(sr, 22050)
             self.assertEqual(audio.dtype, float32)
 
+    def test_process_empty_audio(self):
+        for fn in ["empty.wav", "zeros.wav"]:
+            audio, sr = self.preprocessor.process_audio(self.data_dir / fn)
+            self.assertEqual(audio, None)
+            self.assertEqual(sr, None)
+
     def test_process_audio(self):
         for entry in self.filelist[1:]:
             audio, sr = self.preprocessor.process_audio(
