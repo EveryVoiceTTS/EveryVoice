@@ -15,12 +15,11 @@ We recommend using Conda and Python 3.9. To do that, create a new environment:
 ```sh
 conda create --name EveryVoice python=3.9
 conda activate EveryVoice
-python \
-  -m pip \
-    install \
-      torch==1.13.1+cu117 \
-      torchaudio==0.13.1 \
-      --extra-index-url https://download.pytorch.org/whl/cu117
+pip \
+  install \
+    torch==1.13.1+cu117 \
+    torchaudio==0.13.1 \
+    --extra-index-url https://download.pytorch.org/whl/cu117
 ```
 
 ### Install
@@ -31,7 +30,7 @@ Clone the repository and `pip` install it locally:
 git clone https://github.com/roedoejet/EveryVoice.git
 cd EveryVoice
 git submodule update --init
-python -m pip install --editable .
+pip install -e .
 ```
 
 ### Documentation
@@ -49,7 +48,7 @@ This repo follows the [Contributor Covenant](http://contributor-covenant.org/ver
 You can install our standard Git hooks by running these commands in your sandbox:
 
 ```sh
-python -m pip install --requirement requirements.dev.txt
+pip install -r requirements.dev.txt
 pre-commit install
 gitlint install-hook
 ```
@@ -61,7 +60,7 @@ our Git hooks.
 You can then interactively install the package by running the following command from the project root:
 
 ```sh
-python -m pip install --editable .
+pip install -e .
 ```
 
 ## Acknowledgements
