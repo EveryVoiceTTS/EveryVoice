@@ -12,7 +12,10 @@ from loguru import logger
 from everyvoice.tests.test_configs import ConfigTest
 from everyvoice.tests.test_dataloader import DataLoaderTest
 from everyvoice.tests.test_model import ModelTest
-from everyvoice.tests.test_preprocessing import PreprocessingTest
+from everyvoice.tests.test_preprocessing import (
+    PreprocessingHierarchyTest,
+    PreprocessingTest,
+)
 from everyvoice.tests.test_text import TextTest
 from everyvoice.tests.test_wizard import WizardTest
 
@@ -28,7 +31,8 @@ DATALOADER_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [DataLoaderTe
 TEXT_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [TextTest]]
 
 PREPROCESSING_TESTS = [
-    LOADER.loadTestsFromTestCase(test) for test in [PreprocessingTest]
+    LOADER.loadTestsFromTestCase(test)
+    for test in [PreprocessingTest, PreprocessingHierarchyTest]
 ]
 
 MODEL_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [ModelTest]]
