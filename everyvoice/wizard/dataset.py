@@ -358,16 +358,15 @@ class TextProcessingStep(Step):
             0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
             1: {"fn": lambda x: normalize("NFC", x), "desc": ""},
         }
-        if self.response:
+        if self.response is not None and len(self.response):
             for process in self.response:
-                if process:
-                    for i in tqdm(
-                        range(len(self.state["filelist_data"])),
-                        desc=f"Applying {process_lookup[process]['desc']} to data",
-                    ):
-                        self.state["filelist_data"][i]["text"] = process_lookup[
-                            process
-                        ]["fn"](self.state["filelist_data"][i]["text"])
+                for i in tqdm(
+                    range(len(self.state["filelist_data"])),
+                    desc=f"Applying {process_lookup[process]['desc']} to data",
+                ):
+                    self.state["filelist_data"][i]["text"] = process_lookup[process][
+                        "fn"
+                    ](self.state["filelist_data"][i]["text"])
 
 
 class SoxEffectsStep(Step):
@@ -396,10 +395,9 @@ class SoxEffectsStep(Step):
             3: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
         }
         self.state["sox_effects"] = [["channel", "1"]]
-        if self.response:
+        if self.response is not None and len(self.response):
             for effect in self.response:
-                if effect:
-                    self.state["sox_effects"].append(audio_effects[effect])
+                self.state["sox_effects"].append(audio_effects[effect])
 
 
 class SymbolSetStep(Step):
