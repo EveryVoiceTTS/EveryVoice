@@ -43,7 +43,7 @@ class PreprocessingTest(TestCase):
         output_path=lj_filelist,
         cpus=1,
         overwrite=True,
-        to_process=["audio", "energy", "pitch", "text", "spec"],
+        to_process=("audio", "energy", "pitch", "text", "spec"),
     )
 
     def setUp(self) -> None:
@@ -289,6 +289,46 @@ class PreprocessingTest(TestCase):
     def test_sanity(self):
         """TODO: make sanity checking code for each type of data, maybe also data analysis tooling"""
         pass
+
+
+class PreprocessingHierarchyTest(TestCase):
+    def test_hierarchy(self):
+        """Unit tests for preprocessing steps"""
+
+        with tempfile.TemporaryDirectory(prefix="hierarchy", dir=".") as tmpdir:
+            tmpdir = Path(tmpdir)
+            data_dir = Path(__file__).parent / "data"
+            wavs_dir = data_dir / "hierarchy" / "wavs"
+            preprocessed_dir = tmpdir / "hierarchy" / "preprocessed"
+            filelist = preprocessed_dir / "preprocessed_filelist.psv"
+
+            fp_config = EveryVoiceConfig().feature_prediction
+            fp_config.preprocessing.source_data[0].data_dir = wavs_dir
+            fp_config.preprocessing.source_data[0].filelist = (
+                data_dir / "hierarchy" / "metadata.csv"
+            )
+            fp_config.preprocessing.save_dir = preprocessed_dir
+            preprocessor = Preprocessor(fp_config)
+
+            preprocessor.preprocess(
+                output_path=filelist,
+                cpus=2,
+                overwrite=True,
+                # to_process=("audio", "energy", "pitch", "text", "spec"),
+                # to_process=("audio", "text", "pfs", "spec", "attn", "energy", "pitch"),
+                to_process=("audio", "text", "spec", "attn", "energy", "pitch"),
+            )
+
+            for t in ("audio", "text", "spec", "attn", "energy", "pitch"):
+                # There are two speakers
+                sources = [d.name for d in tmpdir.glob(f"**/{t}/*")]
+                self.assertSetEqual(set(sources), set(("LJ010", "LJ050")))
+                # First speaker as one recording
+                files = list(tmpdir.glob(f"**/{t}/LJ010/*.pt"))
+                self.assertEqual(len(files), 1)
+                # Second speaker as 5 recordings
+                files = list(tmpdir.glob(f"**/{t}/LJ050/*.pt"))
+                self.assertEqual(len(files), 5)
 
 
 if __name__ == "__main__":
