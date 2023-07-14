@@ -228,8 +228,8 @@ def vocoder_infer(mels, vocoder, max_wav_value, lengths=None):
     # mels (1, 80, 111) normal
     # mels small (1, 80, 5)
     with torch.no_grad():
-        wavs = vocoder(mels.transpose(1, 2)).squeeze(1)
-    wavs = wavs.cpu().numpy()
+        wavs = vocoder(mels.transpose(1, 2)).squeeze(1) * max_wav_value
+    wavs = wavs.cpu().numpy().astype("int16")
     wavs = [wav for wav in wavs]
 
     for i in range(len(mels)):
