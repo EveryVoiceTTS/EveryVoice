@@ -205,6 +205,7 @@ class Preprocessor:
         resample_rate=None,
         sox_effects=None,
         save_wave=False,
+        update_counters=True,
     ) -> Union[Tuple[torch.Tensor, int], Tuple[None, None]]:
         """Process audio
 
@@ -220,7 +221,8 @@ class Preprocessor:
             abs(audio[0].sum()) < 0.01
         ):  # This is a conservative threshold, so some very quiet/silent files may still get through
             logger.warning(f"Audio empty: {wav_path} - we will skip this file")
-            self.counters.increment("audio_empty")
+            if update_counters:
+                self.counters.increment("audio_empty")
             return None, None
         if use_effects and sox_effects:
             audio, sr = apply_effects_tensor(
@@ -239,15 +241,18 @@ class Preprocessor:
             logger.warning(
                 f"Audio too long: {wav_path} ({seconds} seconds - we will skip this file)"
             )
-            self.counters.increment("audio_too_long")
+            if update_counters:
+                self.counters.increment("audio_too_long")
             return None, None
         if seconds < self.audio_config.min_audio_length:
             logger.warning(
                 f"Audio too short: {wav_path} ({seconds} seconds - we will skip this file)"
             )
-            self.counters.increment("audio_too_short")
+            if update_counters:
+                self.counters.increment("audio_too_short")
             return None, None
-        self.counters.increment("duration", seconds)
+        if update_counters:
+            self.counters.increment("duration", seconds)
         if save_wave:
             save_audio(
                 wav_path + ".processed.wav",
@@ -544,6 +549,7 @@ class Preprocessor:
             output_audio, _ = self.process_audio(
                 audio_path,
                 resample_rate=self.output_sampling_rate,
+                update_counters=False,
             )
             if output_audio is not None:
                 save(output_audio, output_audio_save_path)
