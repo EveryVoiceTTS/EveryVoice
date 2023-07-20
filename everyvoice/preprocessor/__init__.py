@@ -431,16 +431,14 @@ class Preprocessor:
         self, energy=True, pitch=True
     ) -> Tuple[Union[Scaler, None], Union[Scaler, None]]:
         if self.cpus > 1:
-            parallel = Parallel(
-                n_jobs=self.cpus, verbose=5, backend="loky", batch_size=500
-            )
+            parallel = Parallel(n_jobs=self.cpus, backend="loky", batch_size=500)
         if energy:
             energy_scaler = Scaler()
             paths = (self.config.preprocessing.save_dir / "energy").glob("**/*energy*")
             if self.cpus > 1:
                 logger.info("Gathering energy values")
                 for energy_data in parallel(
-                    delayed(torch.load)(path) for path in paths
+                    delayed(torch.load)(path) for path in tqdm(paths, desc="energy")
                 ):
                     energy_scaler.data.append(energy_data)
             else:
@@ -452,7 +450,9 @@ class Preprocessor:
             paths = (self.config.preprocessing.save_dir / "pitch").glob("**/*pitch*")
             if self.cpus > 1:
                 logger.info("Gathering pitch values")
-                for pitch_data in parallel(delayed(torch.load)(path) for path in paths):
+                for pitch_data in parallel(
+                    delayed(torch.load)(path) for path in tqdm(paths, desc="pitch")
+                ):
                     pitch_scaler.data.append(pitch_data)
             else:
                 for path in tqdm(paths, desc="Gathering pitch values"):
@@ -575,10 +575,13 @@ class Preprocessor:
                 batch_size = min(100, 1 + len(filelist) // (self.cpus * 2))
                 processed_items = Parallel(
                     n_jobs=self.cpus,
-                    verbose=10,
+                    # verbose=10,
                     backend="loky",
                     batch_size=batch_size,
-                )(delayed(self.process_one_audio)(item, data_dir) for item in filelist)
+                )(
+                    delayed(self.process_one_audio)(item, data_dir)
+                    for item in tqdm(filelist, desc="audio")
+                )
                 filtered_filelist.extend(
                     item for item in processed_items if item is not None
                 )
@@ -818,10 +821,13 @@ class Preprocessor:
                     batch_size = min(100, 1 + len(filelist) // (self.cpus * 2))
                     Parallel(
                         n_jobs=self.cpus,
-                        verbose=10,
+                        # verbose=10,
                         backend="loky",
                         batch_size=batch_size,
-                    )(delayed(process_fn)(file) for file in filelist)
+                    )(
+                        delayed(process_fn)(file)
+                        for file in tqdm(filelist, desc=process)
+                    )
                 else:
                     for f in tqdm(filelist, desc=f"Processing {process} on 1 CPU"):
                         process_fn(f)
