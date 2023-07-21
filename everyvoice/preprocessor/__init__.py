@@ -33,7 +33,7 @@ from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor.attention_prior import BetaBinomialInterpolator
 from everyvoice.text import TextProcessor
-from everyvoice.utils import generic_dict_loader, write_filelist
+from everyvoice.utils import generic_dict_loader, tqdm_joblib_context, write_filelist
 from everyvoice.utils.heavy import (
     dynamic_range_compression_torch,
     get_spectral_transform,
@@ -437,10 +437,11 @@ class Preprocessor:
             paths = (self.config.preprocessing.save_dir / "energy").glob("**/*energy*")
             if self.cpus > 1:
                 logger.info("Gathering energy values")
-                for energy_data in parallel(
-                    delayed(torch.load)(path) for path in tqdm(paths, desc="energy")
-                ):
-                    energy_scaler.data.append(energy_data)
+                with tqdm_joblib_context(tqdm(desc="Gathering energy values")):
+                    for energy_data in parallel(
+                        delayed(torch.load)(path) for path in paths
+                    ):
+                        energy_scaler.data.append(energy_data)
             else:
                 for path in tqdm(paths, desc="Gathering energy values"):
                     energy_data = torch.load(path)
@@ -450,10 +451,11 @@ class Preprocessor:
             paths = (self.config.preprocessing.save_dir / "pitch").glob("**/*pitch*")
             if self.cpus > 1:
                 logger.info("Gathering pitch values")
-                for pitch_data in parallel(
-                    delayed(torch.load)(path) for path in tqdm(paths, desc="pitch")
-                ):
-                    pitch_scaler.data.append(pitch_data)
+                with tqdm_joblib_context(tqdm(desc="Gathering pitch values")):
+                    for pitch_data in parallel(
+                        delayed(torch.load)(path) for path in paths
+                    ):
+                        pitch_scaler.data.append(pitch_data)
             else:
                 for path in tqdm(paths, desc="Gathering pitch values"):
                     pitch_data = torch.load(path)
@@ -573,15 +575,21 @@ class Preprocessor:
             if self.cpus > 1:
                 logger.info("Launching parallel processes may take a moment...")
                 batch_size = min(100, 1 + len(filelist) // (self.cpus * 2))
-                processed_items = Parallel(
-                    n_jobs=self.cpus,
-                    # verbose=10,
-                    backend="loky",
-                    batch_size=batch_size,
-                )(
-                    delayed(self.process_one_audio)(item, data_dir)
-                    for item in tqdm(filelist, desc="audio")
-                )
+                with tqdm_joblib_context(
+                    tqdm(
+                        desc=f"Processing audio on {self.cpus} CPUs",
+                        total=len(filelist),
+                    )
+                ):
+                    processed_items = Parallel(
+                        n_jobs=self.cpus,
+                        # verbose=10,
+                        backend="loky",
+                        batch_size=batch_size,
+                    )(
+                        delayed(self.process_one_audio)(item, data_dir)
+                        for item in filelist
+                    )
                 filtered_filelist.extend(
                     item for item in processed_items if item is not None
                 )
@@ -819,15 +827,17 @@ class Preprocessor:
                 logger.info(f"Filelist len={len(filelist or [])}")
                 if self.cpus > 1:
                     batch_size = min(100, 1 + len(filelist) // (self.cpus * 2))
-                    Parallel(
-                        n_jobs=self.cpus,
-                        # verbose=10,
-                        backend="loky",
-                        batch_size=batch_size,
-                    )(
-                        delayed(process_fn)(file)
-                        for file in tqdm(filelist, desc=process)
-                    )
+                    with tqdm_joblib_context(
+                        tqdm(
+                            desc=f"Processing {process} on {self.cpus} CPUs",
+                            total=len(filelist),
+                        )
+                    ):
+                        Parallel(
+                            n_jobs=self.cpus,
+                            backend="loky",
+                            batch_size=batch_size,
+                        )(delayed(process_fn)(file) for file in filelist)
                 else:
                     for f in tqdm(filelist, desc=f"Processing {process} on 1 CPU"):
                         process_fn(f)
