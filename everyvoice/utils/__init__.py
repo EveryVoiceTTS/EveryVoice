@@ -2,12 +2,14 @@ import csv
 import json
 import os
 import re
+from contextlib import contextmanager
 from datetime import datetime
 from os.path import dirname, isabs, isfile, splitext
 from pathlib import Path
 from typing import Any, Dict, List, Union
 from unicodedata import normalize
 
+import joblib.parallel
 import yaml
 from loguru import logger
 from pympi.Praat import TextGrid
@@ -355,3 +357,30 @@ def read_filelist(
 def check_file_exists(path: str):
     if not isfile(path):
         raise FileNotFoundError(f"File at {path} could not be found")
+
+
+@contextmanager
+def tqdm_joblib_context(tqdm_instance):
+    """Context manager to make tqdm compatible with joblib.Parallel
+
+    Runs the parallel jobs using joblib, but displays the nicer tqdm progress bar
+    Only tested with tqdm.tqdm, but should also work with tqdm.notepad.tqdm and
+    other variants
+
+    Usage:
+        with tqdm_joblib_context(tqdm(desc="my description", total=len(job_list))):
+            joblib.Parallel(n_jobs=cpus)(delayed(fn)(item) for item in job_list)
+    """
+
+    class ParallelCallback(joblib.parallel.BatchCompletionCallBack):
+        def __call__(self, out):
+            tqdm_instance.update(n=self.batch_size)
+            super().__call__(out)
+
+    old_callback = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = ParallelCallback
+    try:
+        yield
+    finally:
+        tqdm_instance.close()
+        joblib.parallel.BatchCompletionCallBack = old_callback
