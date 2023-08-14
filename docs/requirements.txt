@@ -3,5 +3,5 @@ sphinx-book-theme
 pydata-sphinx-theme
 sphinx-autobuild
 sphinx-click
-autodoc-pydantic
+autodoc-pydantic==1.9.0
 sphinx-copybutton
