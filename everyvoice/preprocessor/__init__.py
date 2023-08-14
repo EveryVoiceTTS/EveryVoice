@@ -24,6 +24,7 @@ from rich.style import Style
 from tabulate import tabulate
 from torchaudio import load as load_audio
 from torchaudio import save as save_audio
+from torchaudio import transforms
 from torchaudio.functional import compute_kaldi_pitch, resample
 from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
@@ -219,8 +220,10 @@ class Preprocessor:
         """
 
         audio, sr = load_audio(wav_path)
+        loudness_transform = transforms.Loudness(sr)
+        loudness = loudness_transform(audio)
         if (
-            abs(audio[0].sum()) < 0.01
+            torch.isnan(loudness) or loudness < -36
         ):  # This is a conservative threshold, so some very quiet/silent files may still get through
             logger.warning(f"Audio empty: {wav_path} - we will skip this file")
             if update_counters:
