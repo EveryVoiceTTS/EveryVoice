@@ -7,7 +7,6 @@ from unicodedata import normalize
 
 import questionary
 from loguru import logger
-from slugify import slugify
 from tqdm import tqdm
 
 from everyvoice.config.text_config import Symbols
@@ -27,7 +26,8 @@ class DatasetNameStep(Step):
         if len(response) == 0:
             logger.info("Sorry, you have to put something here")
             return False
-        slug = slugify(response, lowercase=False)
+        special_chars = re.compile(r"[\W]+")
+        slug = re.sub(special_chars, "-", response)
         if not slug == response:
             logger.info(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."
