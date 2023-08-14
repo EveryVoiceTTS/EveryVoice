@@ -1,5 +1,7 @@
+import os
 import re
 from functools import partial
+from glob import glob
 from pathlib import Path
 from unicodedata import normalize
 
@@ -50,7 +52,7 @@ class WavsDirStep(Step):
         if not valid_path:
             return False
         valid_path = Path(response).expanduser()
-        contains_wavs = next(valid_path.glob("**/*.wav"), False)
+        contains_wavs = glob(os.path.join(valid_path, "**/*.wav"), recursive=True)
         return valid_path and contains_wavs
 
 

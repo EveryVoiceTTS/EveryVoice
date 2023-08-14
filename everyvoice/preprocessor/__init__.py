@@ -6,7 +6,9 @@
 """
 import functools
 import multiprocessing as mp
+import os
 import random
+from glob import glob
 from multiprocessing import Manager, managers
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
@@ -434,7 +436,12 @@ class Preprocessor:
             parallel = Parallel(n_jobs=self.cpus, backend="loky", batch_size=500)
         if energy:
             energy_scaler = Scaler()
-            paths = (self.config.preprocessing.save_dir / "energy").glob("**/*energy*")
+            paths = glob(
+                os.path.join(
+                    (self.config.preprocessing.save_dir / "energy"), "**/*energy*"
+                ),
+                recursive=True,
+            )
             if self.cpus > 1:
                 logger.info("Gathering energy values")
                 with tqdm_joblib_context(tqdm(desc="Gathering energy values")):
@@ -448,7 +455,12 @@ class Preprocessor:
                     energy_scaler.data.append(energy_data)
         if pitch:
             pitch_scaler = Scaler()
-            paths = (self.config.preprocessing.save_dir / "pitch").glob("**/*pitch*")
+            paths = glob(
+                os.path.join(
+                    (self.config.preprocessing.save_dir / "pitch"), "**/*pitch*"
+                ),
+                recursive=True,
+            )
             if self.cpus > 1:
                 logger.info("Gathering pitch values")
                 with tqdm_joblib_context(tqdm(desc="Gathering pitch values")):
@@ -471,7 +483,12 @@ class Preprocessor:
         if energy_scaler:
             energy_stats = energy_scaler.calculate_stats()
             for path in tqdm(
-                (self.config.preprocessing.save_dir / "energy").glob("**/*energy*"),
+                glob(
+                    os.path.join(
+                        (self.config.preprocessing.save_dir / "energy"), "**/*energy*"
+                    ),
+                    recursive=True,
+                ),
                 desc="Normalizing energy values",
             ):
                 energy = torch.load(path)
@@ -481,7 +498,12 @@ class Preprocessor:
         if pitch_scaler:
             pitch_stats = pitch_scaler.calculate_stats()
             for path in tqdm(
-                (self.config.preprocessing.save_dir / "pitch").glob("**/*pitch*"),
+                glob(
+                    os.path.join(
+                        (self.config.preprocessing.save_dir / "pitch"), "**/*pitch*"
+                    ),
+                    recursive=True,
+                ),
                 desc="Normalizing pitch values",
             ):
                 pitch = torch.load(path)
