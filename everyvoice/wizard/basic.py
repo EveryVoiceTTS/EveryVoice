@@ -132,7 +132,7 @@ class ConfigFormatStep(Step):
                 self.state[dataset]["filelist_data"][entry_i] = {
                     k: v
                     for k, v in self.state[dataset]["filelist_data"][entry_i].items()
-                    if not k.startswith("unknown")
+                    if k is not None and not k.startswith("unknown")
                 }
             write_filelist(self.state[dataset]["filelist_data"], new_filelist_path)
             sox_effects = self.state[dataset]["sox_effects"]
