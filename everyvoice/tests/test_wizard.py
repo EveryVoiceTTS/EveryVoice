@@ -1,11 +1,16 @@
 #!/usr/bin/env python
 
+import string
+import tempfile
+from pathlib import Path
 from types import MethodType
 from unittest import TestCase, main
 
 from anytree import RenderTree
 
-from everyvoice.wizard import Step
+from everyvoice.config.text_config import Symbols
+from everyvoice.wizard import Step, StepNames
+from everyvoice.wizard.basic import ConfigFormatStep
 
 
 class WizardTest(TestCase):
@@ -21,6 +26,31 @@ class WizardTest(TestCase):
         for step in [nothing_step, no_validate_step, no_prompt_step]:
             with self.assertRaises(NotImplementedError):
                 step.run()
+
+    def test_config_format_effect(self):
+        config_step = ConfigFormatStep(name="Config Step")
+        self.assertTrue(config_step.validate("yaml"))
+        self.assertTrue(config_step.validate("json"))
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            config_step.state = {}
+            config_step.state[StepNames.output_step.value] = tmpdirname
+            config_step.state[StepNames.name_step.value] = config_step.name
+            config_step.state["dataset_test"] = {}
+            config_step.state["dataset_test"][
+                StepNames.symbol_set_step.value
+            ] = Symbols(symbol_set=string.ascii_letters)
+            config_step.state["dataset_test"][StepNames.wavs_dir_step.value] = (
+                Path(tmpdirname) / "test"
+            )
+            config_step.state["dataset_test"][
+                StepNames.dataset_name_step.value
+            ] = "test"
+            config_step.state["dataset_test"]["filelist_data"] = [
+                {"basename": "0001", "text": "hello"},
+                {"basename": "0002", "text": "hello", None: "test"},
+            ]
+            config_step.state["dataset_test"]["sox_effects"] = []
+            config_step.effect()
 
     def test_access_response(self):
         root_step = Step(
