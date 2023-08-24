@@ -6,7 +6,6 @@ from loguru import logger
 from rich import print
 from rich.panel import Panel
 from rich.style import Style
-from slugify import slugify
 
 from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
 from everyvoice.config.shared_types import BaseTrainingConfig, LoggerConfig
@@ -19,7 +18,7 @@ from everyvoice.utils import generic_psv_dict_reader, write_filelist
 from everyvoice.wizard import CUSTOM_QUESTIONARY_STYLE, Step, StepNames
 from everyvoice.wizard.dataset import return_dataset_steps
 from everyvoice.wizard.prompts import get_response_from_menu_prompt
-from everyvoice.wizard.utils import write_dict_to_config
+from everyvoice.wizard.utils import sanitize_path, write_dict_to_config
 
 
 class NameStep(Step):
@@ -30,10 +29,10 @@ class NameStep(Step):
         if len(response) == 0:
             logger.info("Sorry, you have to put something here")
             return False
-        slug = slugify(response, lowercase=False)
-        if not slug == response:
+        sanitized_path = sanitize_path(response)
+        if not sanitized_path == response:
             logger.info(
-                f"Sorry, your name: '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like {slug} instead."
+                f"Sorry, your name: '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like '{sanitized_path}' instead."
             )
             return False
         return True
@@ -59,9 +58,7 @@ class OutputPathStep(Step):
                 f"Sorry, the path at '{path.absolute()}' is a file. Please select a directory."
             )
             return False
-        path = path / slugify(
-            self.state.get(StepNames.name_step.value), lowercase=False
-        )
+        path = path / sanitize_path(self.state.get(StepNames.name_step.value))
         if path.exists():
             logger.warning(
                 f"Sorry, the path at '{path.absolute()}' already exists. Please choose another output directory."
