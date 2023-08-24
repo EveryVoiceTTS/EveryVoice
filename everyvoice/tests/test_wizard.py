@@ -28,6 +28,10 @@ class WizardTest(TestCase):
                 step.run()
 
     def test_config_format_effect(self):
+        """This is testing is that a null key can be passed without throwing an error,
+        as reported by Marc Tessier. There are no assertions, it is just testing that
+        no exceptions get raised.
+        """
         config_step = ConfigFormatStep(name="Config Step")
         self.assertTrue(config_step.validate("yaml"))
         self.assertTrue(config_step.validate("json"))
