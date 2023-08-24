@@ -21,7 +21,6 @@ class DataLoaderTest(TestCase):
     """Basic test for dataloaders"""
 
     def setUp(self) -> None:
-
         self.lj_preprocessed = Path(__file__).parent / "data" / "lj" / "preprocessed"
         self.config = EveryVoiceConfig(
             vocoder=VocoderConfig(

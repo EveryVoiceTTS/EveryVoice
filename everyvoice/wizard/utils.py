@@ -1,8 +1,37 @@
 import json
+import re
 from pathlib import Path
 from typing import Dict
 
 import yaml
+
+
+def sanitize_path(path: str):
+    """Given a string, sanitize it by removing:
+    # pound
+    % percent
+    & ampersand
+    { left curly bracket
+    } right curly bracket
+    \\ back slash
+    < left angle bracket
+    > right angle bracket
+    * asterisk
+    ? question mark
+    / forward slash
+    blank spaces
+    $ dollar sign
+    ! exclamation point
+    ' single quotes
+    " double quotes
+    : colon
+    @ at sign
+    + plus sign
+    ` backtick
+    | pipe
+    = equal sign
+    """
+    return re.sub(r'[#%&{}\\<>*?/ !$\'":@+`|=]', "", path)
 
 
 def write_dict_to_config(config: Dict, path: Path):
