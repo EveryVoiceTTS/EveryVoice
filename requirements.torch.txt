@@ -1,0 +1,4 @@
+# these requirements have to be installed ahead of time in your environment and from a different URL:
+# pip install -r requirements.torch.txt --extra-index-url https://download.pytorch.org/whl/cu117
+torch==1.13.1+cu117
+torchaudio==0.13.1

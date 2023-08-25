@@ -15,12 +15,16 @@ We recommend using Conda and Python 3.9. To do that, create a new environment:
 ```sh
 conda create --name EveryVoice python=3.9
 conda activate EveryVoice
-pip \
-  install \
-    torch==1.13.1+cu117 \
-    torchaudio==0.13.1 \
-    --extra-index-url https://download.pytorch.org/whl/cu117
+pip install -r requirements.torch.txt --extra-index-url https://download.pytorch.org/whl/cu117
+pip install cython
 ```
+
+Installation will require a fair bit of space on `~/.cache` and your `$TMPDIR`
+(`/tmp` by default, if `$TMPDIR` is not set).  If you get the error
+`OSError: [Errno 28] No space left on device` during installation, you may need
+to do one or both of these operations:
+ - `export TMPDIR=/path/to/a/large/tmp/space` (or maybe `export TMPDIR=.`)
+ - `mkdir /path/to/a/large/filesystem/.cache; ln -s /path/to/a/large/filesystem/.cache ~/.cache`
 
 ### Install
 
