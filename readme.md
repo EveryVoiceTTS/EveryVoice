@@ -67,6 +67,18 @@ You can then interactively install the package by running the following command 
 pip install -e .
 ```
 
+## Automated installation
+
+All the installation steps documented here have been automated and can be triggered with:
+
+```sh
+git clone https://github.com/roedoejet/EveryVoice.git
+cd EveryVoice
+git submodule update --init
+bash make-fresh-env.sh <env-name-of-your-choice>
+conda activate <env-name-of-your-choice>
+```
+
 ## Acknowledgements
 
 This repository draws on many other wonderful code bases.
