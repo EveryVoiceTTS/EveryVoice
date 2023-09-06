@@ -10,12 +10,13 @@ It is largely based off the FastSpeech2/Fastpitch models.
 ## Quickstart
 
 ### Environment
-We recommend using Conda and Python 3.9. To do that, create a new environment:
+We recommend using Conda and Python 3.9. To do that, create a new environment,
+replacing cu117 (for CUDA 11.7) by your actual CUDA version's tag:
 
 ```sh
 conda create --name EveryVoice python=3.9
 conda activate EveryVoice
-pip install -r requirements.torch.txt --extra-index-url https://download.pytorch.org/whl/cu117
+CUDA_TAG=cu117 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
 pip install cython
 ```
 
