@@ -68,15 +68,21 @@ CUDA_TAG=$CUDA_TAG pip install -r requirements.torch.txt --find-links https://do
 pip install cython
 pip install -e .
 pip install -r requirements.dev.txt
-echo "Main environment creation completed with success"
+echo ""
+echo "Environment creation completed with success"
 
+echo ""
+echo "Configuring your sandbox in case you want to contribute to the project."
 if ! pre-commit install; then
     echo "Error running \"pre-commit install\". Your \"$ENV_NAME\" environment is good, but if you want to submit contributions to the project, please troubleshoot and rerun \"pre-commit install\" in your sandbox."
 fi
 if ! gitlint install-hook; then
+    echo ""
     echo "Error running \"gitlint install-hook\". Your \"$ENV_NAME\" environment is good, but if you want to submit contributions to the project, please troubleshoot and rerun \"gitlint install-hook\" in your sandbox."
 fi
 
+echo ""
+echo "SUCCESS!"
 echo "EveryVoice environment \"$ENV_NAME\" successfully created."
 echo "Run \"conda activate $ENV_NAME\" to activate it."
 echo "Run \"cd everyvoice; ./run_tests.py all\" to validate it."
