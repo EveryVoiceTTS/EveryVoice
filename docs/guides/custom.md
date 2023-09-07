@@ -80,7 +80,7 @@ Which would use the GPU accelerator and specify 1 device/chip.
 
 To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the `config/feature_prediction.yaml`
 
-At the bottom of that file you'll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be `/path/to/test/logs/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.)
+At the bottom of that file you'll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be `/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.)
 
 Once you've replaced the vocoder_path key, you can train your feature prediction network:
 
@@ -93,7 +93,7 @@ everyvoice fs2 train -p config/feature_prediction.yaml
 You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export to wav, npy, or pt files.
 
 ```bash
-everyvoice fs2 synthesize logs/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1 -O wav
+everyvoice fs2 synthesize logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1 -O wav
 ```
 
 <!-- % Step 10 (optional): Finetune your vocoder

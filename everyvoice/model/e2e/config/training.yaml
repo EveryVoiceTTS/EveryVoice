@@ -11,7 +11,7 @@ filelist: "./preprocessed/LJ/processed_filelist.psv"
 filelist_loader: "everyvoice.utils.generic_dict_loader"
 logger:
   name: "BaseExperiment"
-  save_dir: "./logs"
+  save_dir: "./logs_and_checkpoints"
   sub_dir: "everyvoice.utils.get_current_time"
   version: "e2e"
 val_data_workers: 0

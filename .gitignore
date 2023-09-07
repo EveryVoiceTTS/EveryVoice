@@ -2,6 +2,7 @@
 __pycache__
 .coverage
 logs
+logs_and_checkpoints
 *.ckpt
 .vscode
 *egg-info
