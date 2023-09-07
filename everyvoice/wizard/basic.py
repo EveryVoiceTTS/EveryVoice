@@ -97,7 +97,8 @@ class ConfigFormatStep(Step):
         config_dir = (output_path / "config").absolute()
         config_dir.mkdir(exist_ok=True, parents=True)
         # log dir
-        log_dir = (output_path / "logs").absolute()
+        log_dir = LoggerConfig().save_dir.stem
+        log_dir = (output_path / log_dir).absolute()
         log_dir.mkdir(parents=True, exist_ok=True)
         datasets = []
         # Text Configuration

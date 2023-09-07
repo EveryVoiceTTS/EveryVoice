@@ -99,7 +99,7 @@ class PartialConfigModel(ConfigModel):
 
 class LoggerConfig(ConfigModel):
     name: str = "BaseExperiment"
-    save_dir: DirectoryPath = Path("./logs")
+    save_dir: DirectoryPath = Path("./logs_and_checkpoints")
     sub_dir: str = "everyvoice.utils.get_current_time"
     version: str = "base"
 

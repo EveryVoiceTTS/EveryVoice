@@ -55,6 +55,9 @@ class WizardTest(TestCase):
             ]
             config_step.state["dataset_test"]["sox_effects"] = []
             config_step.effect()
+            self.assertTrue(
+                (Path(tmpdirname) / config_step.name / "logs_and_checkpoints").exists()
+            )
 
     def test_access_response(self):
         root_step = Step(
