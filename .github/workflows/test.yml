@@ -30,20 +30,10 @@ jobs:
           pip install cython
           pip install -e .
           pip install coverage
-          cd docs && pip install -r requirements.txt
       - name: Check licenses
         run: |
           pip install pip-licenses
           if pip-licenses | grep -E -v 'Artistic License|LGPL|Public Domain' | grep GNU; then echo 'Please avoid introducing *GPL dependencies'; false; fi
-      - name: Docs
-        run: |
-          cd docs && make html
-      - name: Deploy 🚀
-        if: github.ref == 'refs/heads/main'  # only publish the docs from main
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          branch: gh-pages # The branch the action should deploy to.
-          folder: docs/build/html # The folder the action should deploy.
       - name: Run tests
         run: |
           cd everyvoice && coverage run run_tests.py dev

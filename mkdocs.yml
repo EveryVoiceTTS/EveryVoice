@@ -1,0 +1,61 @@
+site_name: EveryVoice TTS Toolkit Documentation
+site_url: https://docs.everyvoice.ca
+repo_url: https://github.com/roedoejet/EveryVoice
+repo_name: roedoejet/EveryVoice
+theme:
+  name: material
+  favicon: favicon-32x32.png
+  custom_dir: docs/overrides
+  palette:
+    # Palette toggle for light mode
+    - primary: blue
+      accent: light blue
+      scheme: default
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - scheme: slate
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+  features:
+    - content.code.copy
+    - content.code.select
+    - announce.dismiss
+plugins:
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [everyvoice]
+extra:
+  homepage: https://docs.everyvoice.ca
+  version:
+    provider: mike
+    default: stable
+markdown_extensions:
+  - mkdocs-typer
+  - mkdocs-click
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+nav:
+  - Home: index.md
+  - Getting Started: start.md
+  - Installation: install.md
+  - Guides:
+    - Getting Started: guides/index.md
+    - Background to TTS: guides/background.md
+    - Customize to your language: guides/custom.md
+    - How to fine-tune: guides/finetune.md
+  - Reference:
+    - How to use: reference/index.md
+    - Configuration: reference/configuration.md
+    - Aligner: reference/aligner.md
+    - End-to-End TTS: reference/e2e.md
+    - Feature Prediction: reference/feature_prediction.md
+    - Vocoder: reference/vocoder.md
