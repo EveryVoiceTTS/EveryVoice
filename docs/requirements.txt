@@ -1,7 +1,6 @@
-myst-parser
-sphinx-book-theme
-pydata-sphinx-theme
-sphinx-autobuild
-sphinx-click
-autodoc-pydantic==1.9.0
-sphinx-copybutton
+mkdocs>=1.5.2
+mkdocs-click>=0.8.0
+mkdocs-typer>=0.0.3
+mkdocs-material>=9.2.5
+mkdocstrings[python]>=0.22.0
+mike>=1.1.2

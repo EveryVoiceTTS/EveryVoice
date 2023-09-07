@@ -1,0 +1,40 @@
+name: Deploy docs
+on:
+  push:
+    branches:
+      - main
+jobs:
+ docs:
+    # Create latest docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.SGILE_PAT }}
+          submodules: recursive
+          fetch-depth: 0 # fetch all commits/branches
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.9
+      - name: Install libsndfile
+        run: sudo apt-get install -y libsndfile1
+      - name: Install Torch related deps
+        run: |
+          conda install -c conda-forge pycountry pyworld
+          pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
+      - name: Install other dependencies
+        run: |
+          pip install coverage soundfile
+          pip install -e .
+      - name: Install documentation dependencies
+        run: |
+          pip install -r docs/requirements.txt
+      - name: Setup doc deploy
+        run: |
+            git config user.name 'github-actions[bot]'
+            git config user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: Deploy docs with mike 🚀
+        run: |
+          mkdocs build
+          mike deploy --push --update-aliases latest

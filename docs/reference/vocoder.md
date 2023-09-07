@@ -1,29 +1,25 @@
-.. _vocoder:
+# Vocoder
 
-Vocoder
-=============
+## HiFiGAN/iSTFT-Net
 
-HiFiGAN/iSTFT-Net
------------------
-
-Source Code: https://github.com/roedoejet/HiFiGAN_iSTFT_lightning
+Source Code: <https://github.com/roedoejet/HiFiGAN_iSTFT_lightning>
 
 This vocoder is based on the HiFiGAN/iSTFT-Net neural vocoders.
 
-Command Line Interface
-**********************
+### Command Line Interface
 
+```{eval-rst}
 .. click:: everyvoice.cli:CLICK_APP
     :prog: everyvoice
     :nested: full
     :commands: hifigan
+```
 
-Configuration
-*************
+### Configuration
 
-Main Configuration
-~~~~~~~~~~~~~~~~~~
+#### Main Configuration
 
+```{eval-rst}
 .. autopydantic_settings:: everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig
     :settings-show-json: True
     :settings-show-config-member: False
@@ -31,10 +27,11 @@ Main Configuration
     :settings-show-validator-members: True
     :settings-show-validator-summary: True
     :field-list-validators: True
+```
 
-Training Configuration
-~~~~~~~~~~~~~~~~~~~~~~
+#### Training Configuration
 
+```{eval-rst}
 .. autopydantic_settings:: everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANTrainingConfig
     :settings-show-json: True
     :settings-show-config-member: False
@@ -42,10 +39,11 @@ Training Configuration
     :settings-show-validator-members: True
     :settings-show-validator-summary: True
     :field-list-validators: True
+```
 
-Model Configuration
-~~~~~~~~~~~~~~~~~~~
+#### Model Configuration
 
+```{eval-rst}
 .. autopydantic_settings:: everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANModelConfig
     :settings-show-json: True
     :settings-show-config-member: False
@@ -53,3 +51,4 @@ Model Configuration
     :settings-show-validator-members: True
     :settings-show-validator-summary: True
     :field-list-validators: True
+```
