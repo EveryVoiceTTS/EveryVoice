@@ -17,7 +17,7 @@ else
 fi
 
 # Don't overwrite an existing env
-if conda env list | grep -q "^$ENV_NAME "; then
+if conda env list | grep -q "/$ENV_NAME$"; then
     echo "Environment $ENV_NAME already exists, please use a different name."
     exit 1
 fi
