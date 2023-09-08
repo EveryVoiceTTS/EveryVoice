@@ -1,4 +1,4 @@
 # these requirements have to be installed ahead of time in your environment and from a different URL:
 # CUDA_TAG=cu117 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==1.13.1+${CUDA_TAG}
-torchaudio==0.13.1
+torchaudio==0.13.1+${CUDA_TAG}
