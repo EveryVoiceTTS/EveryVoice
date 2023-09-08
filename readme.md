@@ -10,17 +10,22 @@ It is largely based off the FastSpeech2/Fastpitch models.
 ## Quickstart
 
 ### Environment
-We recommend using Conda and Python 3.9. To do that, create a new environment:
+We recommend using Conda and Python 3.9. To do that, create a new environment,
+replacing cu117 (for CUDA 11.7) by your actual CUDA version's tag:
 
 ```sh
 conda create --name EveryVoice python=3.9
 conda activate EveryVoice
-pip \
-  install \
-    torch==1.13.1+cu117 \
-    torchaudio==0.13.1 \
-    --extra-index-url https://download.pytorch.org/whl/cu117
+CUDA_TAG=cu117 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+pip install cython
 ```
+
+Installation will require a fair bit of space on `~/.cache` and your `$TMPDIR`
+(`/tmp` by default, if `$TMPDIR` is not set).  If you get the error
+`OSError: [Errno 28] No space left on device` during installation, you may need
+to do one or both of these operations:
+ - `export TMPDIR=/path/to/a/large/tmp/space` (or maybe `export TMPDIR=.`)
+ - `mkdir /path/to/a/large/filesystem/.cache; ln -s /path/to/a/large/filesystem/.cache ~/.cache`
 
 ### Install
 
@@ -61,6 +66,18 @@ You can then interactively install the package by running the following command 
 
 ```sh
 pip install -e .
+```
+
+## Automated installation
+
+All the installation steps documented here have been automated and can be triggered with:
+
+```sh
+git clone https://github.com/roedoejet/EveryVoice.git
+cd EveryVoice
+git submodule update --init
+bash make-fresh-env.sh <env-name-of-your-choice>
+conda activate <env-name-of-your-choice>
 ```
 
 ## Acknowledgements

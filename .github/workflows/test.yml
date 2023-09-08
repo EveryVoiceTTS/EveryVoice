@@ -24,14 +24,12 @@ jobs:
           python-version: 3.9
       - name: Install libsndfile
         run: sudo apt-get install -y libsndfile1
-      - name: Install Torch related deps
+      - name: Install dependencies and package
         run: |
-          conda install -c conda-forge pycountry pyworld
-          pip install torch==1.13.1+cu117 torchvision==0.14.1+cu117 torchaudio==0.13.1 --extra-index-url https://download.pytorch.org/whl/cu117
-      - name: Install other dependencies
-        run: |
-          pip install coverage soundfile
+          CUDA_TAG=cu117 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+          pip install cython
           pip install -e .
+          pip install coverage
           cd docs && pip install -r requirements.txt
       - name: Check licenses
         run: |
