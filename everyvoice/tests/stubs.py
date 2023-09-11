@@ -1,0 +1,151 @@
+import io
+import logging
+import sys
+from contextlib import contextmanager
+from typing import Any, Generator, Sequence, Union
+
+from everyvoice.wizard import prompts
+
+_NOTSET = object()  # Sentinel object for monkeypatch()
+
+
+@contextmanager
+def monkeypatch(obj, name, value) -> Generator:
+    """Monkey patch obj.name to value for the duration of the context manager's life.
+
+    Yields:
+        value: the value monkey-patched, for use with "as v" notation"""
+    saved_value = getattr(obj, name, _NOTSET)
+    try:
+        setattr(obj, name, value)
+        yield value
+    finally:
+        if saved_value is _NOTSET:  # pragma: no cover
+            delattr(obj, name)
+        else:
+            setattr(obj, name, saved_value)
+
+
+QUIET = logging.CRITICAL + 100  # level high enough to disable all logging
+
+
+@contextmanager
+def patch_logger(
+    module, level: int = logging.INFO
+) -> Generator[logging.Logger, None, None]:
+    """Monkey patch the logger for a given module with a unit testing logger
+    of the given level. Use level=QUIET to just silence logging.
+
+    Yields:
+        logger (logging.Logger): patched logger, e.g., for use in self.assertLogs(logger)
+    """
+    with monkeypatch(module, "logger", logging.getLogger("UnitTesting")) as logger:
+        logger.setLevel(level)
+        yield logger
+
+
+@contextmanager
+def capture_stdout() -> Generator[io.StringIO, None, None]:
+    """Context manager to capture what is printed to stdout.
+
+    Usage:
+        with capture_stdout() as stdout:
+            # do stuff whose stdout you want to capture
+        stdout.getvalue() is what was printed to stdout during the context
+
+        with capture_stdout():
+            # do stuff with stdout suppressed
+
+    Yields:
+        stdout (io.StringIO): captured stdout
+    """
+    with monkeypatch(sys, "stdout", io.StringIO()) as stdout:
+        yield stdout
+
+
+@contextmanager
+def patch_menu_prompt(
+    response_index: Union[int, list],
+    multi=False,
+) -> Generator[io.StringIO, None, None]:
+    """Context manager to simulate what option(s) the user selects in a simple_term_menu.
+
+    Args:
+        response_index: the user's choice as a zero-based index for a
+            single-option menu, or the list of indices for a multi-option
+            menu
+        multi: if True, response_index is a list of response_indices used one
+            after the other each time a new simple_term_menu is instantiated
+
+    Yields:
+        stdout (io.StringIO): captured stdout stream.
+    """
+    with capture_stdout() as stdout:
+        with monkeypatch(
+            prompts, "simple_term_menu", SimpleTermMenuStub(response_index, multi)
+        ):
+            yield stdout
+
+
+class Say:
+    """Mock callable that returns response (if multi=False) or each value in
+    response in turn (if multi=True) when it is called."""
+
+    def __init__(self, response, multi=False) -> None:
+        self.response = response
+        self.last_index = -1
+        self.multi = multi
+
+    def __call__(self, *args: Any, **kwds: Any) -> Any:
+        if self.multi:
+            self.last_index += 1
+            return self.response[self.last_index]
+        else:
+            return self.response
+
+
+class SimpleTermMenuStub:
+    """Stub class for the simple_term_menu module."""
+
+    def __init__(self, response: Union[int, list[int]], multi=False):
+        """Constructor
+
+        Args:
+            response: the index or indices the user will be simulated to choose
+        """
+        self.multi = multi
+        self.last_index = -1
+        self.response = response
+
+    def TerminalMenu(self, *args, **kwargs):
+        return self
+
+    def show(self):
+        if self.multi:
+            print("term stub", self.last_index, self.response[self.last_index + 1])
+            self.last_index += 1
+            return self.response[self.last_index]
+        else:
+            return self.response
+
+
+class QuestionaryStub:
+    """Stub class for the questionary module"""
+
+    def __init__(self, responses: Sequence[str]) -> None:
+        """Constructor
+
+        Args:
+            responses (str): the sequence of answers the user is simulated to provide
+        """
+        self.last_index = -1
+        self.responses = responses
+
+    def path(self, *args, **kwargs):
+        return self
+
+    text = path
+
+    def ask(self):
+        self.last_index += 1
+        return self.responses[self.last_index]
