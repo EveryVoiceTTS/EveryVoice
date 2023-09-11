@@ -9,6 +9,7 @@ from unittest import TestLoader, TestSuite, TextTestRunner
 
 from loguru import logger
 
+from everyvoice.tests.test_cli import CLITest
 from everyvoice.tests.test_configs import ConfigTest
 from everyvoice.tests.test_dataloader import DataLoaderTest
 from everyvoice.tests.test_model import ModelTest
@@ -37,7 +38,7 @@ PREPROCESSING_TESTS = [
 
 MODEL_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [ModelTest]]
 
-CLI_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [WizardTest]]
+CLI_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [WizardTest, CLITest]]
 
 DEV_TESTS = (
     CONFIG_TESTS
