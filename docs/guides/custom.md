@@ -40,15 +40,15 @@ In this format, there are corresponding wav files labelled sin_2241_0329430812.w
 
 Head over to the [install documentation](../install.md) and install EveryVoice
 
-## Step 4: Run the Configuration Wizard 🧙
+## Step 4: Run the New Dataset Wizard 🧙
 
-Once you have your data, the best thing to do is to run the Configuration Wizard 🧙. To do that run:
+Once you have your data, the best thing to do is to run the New Dataset Wizard 🧙. To do that run:
 
 ```bash
-everyvoice config-wizard
+everyvoice new-dataset
 ```
 
-After running the config-wizard, cd into your newly created directory. Let's call it `test` for now.
+After running the new-dataset wizard, cd into your newly created directory. Let's call it `test` for now.
 
 ```bash
 cd test

@@ -36,7 +36,7 @@ class TestSuites(str, Enum):
 
 
 @app.command(
-    help="""This command will help you create all the configuration necessary for using your dataset.
+    help="""This command will help you create all the configuration necessary for using a new dataset.
 
 In order to get started, please:
  - have your audio data (in .wav format) together in a folder
@@ -50,7 +50,7 @@ Example metadata: https://github.com/roedoejet/EveryVoice/blob/main/everyvoice/f
 
 """
 )
-def config_wizard():
+def new_dataset():
     from everyvoice.wizard.main_tour import WIZARD_TOUR
 
     WIZARD_TOUR.run()
