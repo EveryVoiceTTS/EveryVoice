@@ -14,7 +14,7 @@ from everyvoice.wizard.basic import ConfigFormatStep
 
 
 class WizardTest(TestCase):
-    """Basic test for the config wizard"""
+    """Basic test for the new dataset wizard"""
 
     def setUp(self) -> None:
         pass
