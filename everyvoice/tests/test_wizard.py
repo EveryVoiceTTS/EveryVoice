@@ -1,16 +1,28 @@
 #!/usr/bin/env python
 
+import builtins
+import os
 import string
 import tempfile
 from pathlib import Path
 from types import MethodType
+from typing import Sequence
 from unittest import TestCase, main
 
 from anytree import RenderTree
 
+from everyvoice.config import preprocessing_config
 from everyvoice.config.text_config import Symbols
-from everyvoice.wizard import Step, StepNames
-from everyvoice.wizard.basic import ConfigFormatStep
+from everyvoice.tests.stubs import (
+    QUIET,
+    QuestionaryStub,
+    Say,
+    capture_stdout,
+    monkeypatch,
+    patch_logger,
+    patch_menu_prompt,
+)
+from everyvoice.wizard import Step, StepNames, Tour, basic, dataset, prompts, validators
 
 
 class WizardTest(TestCase):
@@ -32,7 +44,7 @@ class WizardTest(TestCase):
         as reported by Marc Tessier. There are no assertions, it is just testing that
         no exceptions get raised.
         """
-        config_step = ConfigFormatStep(name="Config Step")
+        config_step = basic.ConfigFormatStep(name="Config Step")
         self.assertTrue(config_step.validate("yaml"))
         self.assertTrue(config_step.validate("json"))
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -54,7 +66,10 @@ class WizardTest(TestCase):
                 {"basename": "0002", "text": "hello", None: "test"},
             ]
             config_step.state["dataset_test"]["sox_effects"] = []
-            config_step.effect()
+            with patch_logger(preprocessing_config, QUIET):
+                with capture_stdout() as stdout:
+                    config_step.effect()
+            self.assertIn("Congratulations", stdout.getvalue())
             self.assertTrue(
                 (Path(tmpdirname) / config_step.name / "logs_and_checkpoints").exists()
             )
@@ -81,6 +96,326 @@ class WizardTest(TestCase):
                 self.assertTrue(leaf[2].validate("bar"))
                 self.assertFalse(leaf[2].validate("foo"))
             leaf[2].run()
+
+    def test_main_tour(self):
+        from everyvoice.wizard.main_tour import WIZARD_TOUR
+
+        tour = WIZARD_TOUR
+        self.assertGreater(len(tour.steps), 6)
+        # TODO try to figure out how to actually run the tour in unit testing or
+        # at least add more interesting assertions that just the fact that it's
+        # got several steps.
+
+    def test_name_step(self):
+        """Exercise provide a valid dataset name."""
+        step = basic.NameStep("")
+        with patch_logger(basic) as logger, self.assertLogs(logger) as logs:
+            with monkeypatch(builtins, "input", Say("myname")):
+                step.run()
+        self.assertEqual(step.response, "myname")
+        self.assertIn("named 'myname'", logs.output[0])
+        self.assertTrue(step.completed)
+
+    def test_bad_name_step(self):
+        """Exercise provide an invalid dataset name."""
+        step = basic.NameStep("")
+        # For unit testing, we cannot call step.run() if we patch a response
+        # that will fail validation, because that would cause infinite
+        # recursion.
+        with patch_logger(basic) as logger, self.assertLogs(logger) as logs:
+            self.assertFalse(step.validate("foo/bar"))
+            self.assertFalse(step.validate(""))
+        self.assertIn("'foo/bar' is not valid", logs.output[0])
+        self.assertIn("you have to put something", logs.output[1])
+
+        step = basic.NameStep("")
+        with patch_logger(basic) as logger, self.assertLogs(logger) as logs:
+            with monkeypatch(builtins, "input", Say(("bad/name", "good-name"), True)):
+                step.run()
+        self.assertIn("'bad/name' is not valid", logs.output[0])
+        self.assertEqual(step.response, "good-name")
+
+    def test_output_path_step(self):
+        """Exercise the OutputPathStep"""
+        tour = Tour(
+            "testing",
+            [
+                basic.NameStep(StepNames.name_step.value),
+                basic.OutputPathStep(StepNames.output_step.value),
+            ],
+        )
+
+        # We need to answer the name step before we can validate the output path step
+        step = tour.steps[0]
+        with patch_logger(basic, level=QUIET) as logger:
+            with monkeypatch(builtins, "input", Say("myname")):
+                step.run()
+
+        step = tour.steps[1]
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            file_path = os.path.join(tmpdirname, "exits-as-file")
+            # Bad case 1: output dir exists and is a file
+            with open(file_path, "w") as f:
+                f.write("blah")
+                print("blah", file=f)
+            with patch_logger(basic) as logger, self.assertLogs(logger):
+                self.assertFalse(step.validate(file_path))
+
+            # Bad case 2: file called the same as the dataset exists in the output dir
+            dataset_file = os.path.join(tmpdirname, "myname")
+            with open(dataset_file, "w") as f:
+                f.write("blah")
+            with patch_logger(basic) as logger, self.assertLogs(logger):
+                self.assertFalse(step.validate(tmpdirname))
+            os.unlink(dataset_file)
+
+            # Good case
+            with patch_logger(basic) as logger, self.assertLogs(logger) as logs:
+                with monkeypatch(step, "prompt", Say(tmpdirname)):
+                    step.run()
+            self.assertIn("will put your files", logs.output[0])
+            output_dir = Path(tmpdirname) / "myname"
+            self.assertTrue(output_dir.exists())
+            self.assertTrue(output_dir.is_dir())
+
+    def test_more_data_step(self):
+        """Exercise giving an invalid response and a yes response to more data."""
+        tour = Tour(
+            "testing", [basic.MoreDatasetsStep(name=StepNames.more_datasets_step.value)]
+        )
+        step = tour.steps[0]
+        self.assertFalse(step.validate("foo"))
+        self.assertTrue(step.validate("yes"))
+        self.assertEqual(len(step.children), 0)
+        with patch_menu_prompt(1):  # answer 1 is "no"
+            step.run()
+        self.assertEqual(len(step.children), 1)
+        self.assertIsInstance(step.children[0], basic.ConfigFormatStep)
+
+        with patch_menu_prompt(0):  # answer 0 is "yes"
+            step.run()
+        self.assertGreater(len(step.children), 5)
+
+    def test_dataset_name(self):
+        step = dataset.DatasetNameStep("")
+        with monkeypatch(builtins, "input", Say(("", "bad/name", "good-name"), True)):
+            with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
+                step.run()
+        self.assertIn("you have to put something here", logs.output[0])
+        self.assertIn("is not valid", logs.output[1])
+        self.assertIn("finished the configuration", logs.output[2])
+        self.assertTrue(step.completed)
+
+    def test_wavs_dir(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            no_wavs_dir = os.path.join(tmpdirname, "no-wavs-here")
+            os.mkdir(no_wavs_dir)
+
+            has_wavs_dir = os.path.join(tmpdirname, "there-are-wavs-here")
+            os.mkdir(has_wavs_dir)
+            with open(os.path.join(has_wavs_dir, "foo.wav"), "w") as f:
+                f.write("A fantastic sounding clip! (or not...)")
+
+            step = dataset.WavsDirStep("")
+            with monkeypatch(
+                dataset,
+                "questionary",
+                QuestionaryStub(("not-a-path", no_wavs_dir, has_wavs_dir)),
+            ):
+                with patch_logger(validators, QUIET):
+                    step.run()
+            self.assertTrue(step.completed)
+            self.assertEqual(step.response, has_wavs_dir)
+
+    def test_sample_rate_config(self):
+        step = dataset.SampleRateConfigStep("")
+        with monkeypatch(
+            dataset,
+            "questionary",
+            QuestionaryStub(("not an int", "", 3.1415, 512, 1024)),
+        ):
+            with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
+                step.run()
+        self.assertIn("not a valid sample rate", logs.output[0])  # "not an int"
+        self.assertIn("not a valid sample rate", logs.output[1])  # "" is not an int
+        self.assertIn(
+            "not a valid sample rate", logs.output[2]
+        )  # 3.1415 is also not an int
+        self.assertTrue(step.completed)
+        self.assertEqual(step.response, 512)
+
+    def test_dataset_subtour(self):
+        def find_step(name: str, steps: Sequence[Step]):
+            for s in steps:
+                if s.name == name:
+                    return s
+            raise IndexError(f"Step {name} not found.")  # pragma: no cover
+
+        tour = Tour("unit testing", steps=dataset.return_dataset_steps())
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            d = Path(tmpdirname)
+            filelist = str(d / "filelist.psv")
+            with open(filelist, "w") as f:
+                f.write("columnA|non-standard-basename|non-standard-text|extra\n")
+                f.write("blah|somefile|text|irrelevant extra\n")
+                f.write("boom|file2|CaSeD \t NFD: éàê NFC: éàê|blah\n")
+                f.write("bam|banned_file|ZZZ|has banned symbol (Z)\n")
+
+            filelist_step = find_step(StepNames.filelist_step.value, tour.steps)
+            with monkeypatch(filelist_step, "prompt", Say(filelist)):
+                filelist_step.run()
+            format_step = find_step(StepNames.filelist_format_step.value, tour.steps)
+            with patch_menu_prompt(0):  # 0 is "psv"
+                format_step.run()
+            self.assertIsInstance(format_step.children[0], dataset.HeaderStep)
+            self.assertEqual(
+                format_step.children[0].name, StepNames.basename_header_step.value
+            )
+            self.assertIsInstance(format_step.children[1], dataset.HeaderStep)
+            self.assertEqual(
+                format_step.children[1].name, StepNames.text_header_step.value
+            )
+
+            step = format_step.children[0]
+            with patch_menu_prompt(1):  # 1 is second column
+                step.run()
+            self.assertEqual(step.response, 1)
+            self.assertEqual(step.state["filelist_headers"][1], "basename")
+
+            step = tour.steps[2].children[1]
+            with patch_menu_prompt(
+                1
+            ):  # 1 is second remaining column, i.e., third column
+                step.run()
+            # print(step.state["filelist_headers"])
+            self.assertEqual(step.state["filelist_headers"][2], "text")
+
+            speaker_step = find_step(
+                StepNames.data_has_speaker_value_step.value, tour.steps
+            )
+            children_before = len(speaker_step.children)
+            with patch_menu_prompt(1):  # 1 is "no"
+                speaker_step.run()
+            self.assertEqual(len(speaker_step.children), children_before)
+
+            language_step = find_step(
+                StepNames.data_has_language_value_step.value, tour.steps
+            )
+            children_before = len(language_step.children)
+            with patch_menu_prompt(1):  # 1 is "no"
+                language_step.run()
+            self.assertEqual(len(language_step.children), children_before + 1)
+            self.assertIsInstance(language_step.children[0], dataset.SelectLanguageStep)
+
+            select_lang_step = language_step.children[0]
+            with patch_logger(dataset, QUIET):
+                with patch_menu_prompt(15):  # some arbitrary language from the list
+                    select_lang_step.run()
+            # print(select_lang_step.state)
+            self.assertEqual(
+                select_lang_step.state["filelist_headers"],
+                ["unknown_0", "basename", "text", "unknown_3"],
+            )
+
+            text_processing_step = find_step(
+                StepNames.text_processing_step.value, tour.steps
+            )
+            # 0 is lowercase, 1 is NFC Normalization, select both
+            with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
+                with patch_menu_prompt([0, 1]):
+                    text_processing_step.run()
+            # print(text_processing_step.state)
+            self.assertEqual(
+                text_processing_step.state["filelist_data"][2]["text"],
+                "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
+            )
+
+            sox_effects_step = find_step(StepNames.sox_effects_step.value, tour.steps)
+            # 0 is resample to 22050 kHz, 2 is remove silence at start
+            with patch_menu_prompt([0, 2]):
+                sox_effects_step.run()
+            # print(sox_effects_step.state["sox_effects"])
+            self.assertEqual(
+                sox_effects_step.state["sox_effects"],
+                [["channel", "1"], ["rate", "22050"], ["silence", "1", "0.1", "1.0%"]],
+            )
+
+            symbol_set_step = find_step(StepNames.symbol_set_step.value, tour.steps)
+            self.assertEqual(len(symbol_set_step.state["filelist_data"]), 4)
+            with patch_menu_prompt([(0, 1, 2, 3), (11), ()], multi=True):
+                symbol_set_step.run()
+            self.assertEqual(symbol_set_step.state["banned_symbols"], "z")
+            self.assertEqual(
+                symbol_set_step.response.punctuation, ["\t", " ", "-", ":"]
+            )
+            self.assertEqual(
+                symbol_set_step.response.symbol_set,
+                ["a", "c", "d", "e", "f", "n", "o", "r", "s", "t", "x", "à", "é", "ê"],
+            )
+            self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
+
+    def test_validate_path(self):
+        """Unit testing for validate_path() in isolation."""
+        from everyvoice.wizard.validators import validate_path
+
+        with self.assertRaises(ValueError):
+            validate_path("", is_dir=False, is_file=False)
+        with self.assertRaises(ValueError):
+            validate_path("", is_dir=True, is_file=True)
+        with self.assertRaises(ValueError):
+            validate_path("")
+        with tempfile.TemporaryDirectory() as tmpdirname, patch_logger(
+            validators, QUIET
+        ):
+            self.assertTrue(
+                validate_path(tmpdirname, is_dir=True, is_file=False, exists=True)
+            )
+            self.assertFalse(
+                validate_path(tmpdirname, is_dir=False, is_file=True, exists=True)
+            )
+            self.assertFalse(
+                validate_path(tmpdirname, is_dir=True, is_file=False, exists=False)
+            )
+            file_name = os.path.join(tmpdirname, "some-file-name")
+            with open(file_name, "w") as f:
+                f.write("foo")
+            self.assertTrue(
+                validate_path(file_name, is_dir=False, is_file=True, exists=True)
+            )
+            self.assertFalse(
+                validate_path(file_name, is_dir=False, is_file=True, exists=False)
+            )
+
+            not_file_name = os.path.join(tmpdirname, "file-does-not-exist")
+            self.assertFalse(
+                validate_path(not_file_name, is_dir=False, is_file=True, exists=True)
+            )
+            self.assertTrue(
+                validate_path(not_file_name, is_dir=False, is_file=True, exists=False)
+            )
+
+    def test_prompt(self):
+        with patch_menu_prompt(0):
+            answer = prompts.get_response_from_menu_prompt(
+                choices=("choice1", "choice2")
+            )
+            self.assertEqual(answer, "choice1")
+        with patch_menu_prompt(1) as stdout:
+            answer = prompts.get_response_from_menu_prompt(
+                "some question", ("choice1", "choice2")
+            )
+            self.assertEqual(answer, "choice2")
+            self.assertIn("some question", stdout.getvalue())
+        with patch_menu_prompt((2, 4)):
+            answer = prompts.get_response_from_menu_prompt(
+                choices=("a", "b", "c", "d", "e"), multi=True
+            )
+            self.assertEqual(answer, ["c", "e"])
+        with patch_menu_prompt(1):
+            answer = prompts.get_response_from_menu_prompt(
+                choices=("a", "b", "c", "d", "e"), return_indices=True
+            )
+            self.assertEqual(answer, 1)
 
 
 if __name__ == "__main__":

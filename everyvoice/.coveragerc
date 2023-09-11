@@ -1,6 +1,11 @@
 [run]
 branch = True
 source_pkgs = everyvoice
+omit = *tmp*
 
 [report]
 precision = 2
+exclude_lines =
+    pragma: no cover
+    if 0:
+    if __name__ == .__main__.:

@@ -48,7 +48,7 @@ class WavsDirStep(Step):
         ).ask()
 
     def validate(self, response):
-        valid_path = validate_path(response, is_dir=True, is_file=False, exists=True)
+        valid_path = validate_path(response, is_dir=True, exists=True)
         if not valid_path:
             return False
         valid_path = Path(response).expanduser()
@@ -66,6 +66,11 @@ class SampleRateConfigStep(Step):
     def validate(self, response):
         try:
             self.response = int(response)
+            if self.response < 1 or float(response) != self.response:
+                logger.info(
+                    f"{response} is not a valid sample rate. Please enter an integer representing the sample rate in Hertz of your data."
+                )
+                return False
             return True
         except ValueError:
             logger.info(
@@ -485,9 +490,7 @@ def return_dataset_steps(dataset_index=0):
             prompt_method=questionary.path(
                 "Where is your data filelist?", style=CUSTOM_QUESTIONARY_STYLE
             ).ask,
-            validate_method=partial(
-                validate_path, is_dir=False, is_file=True, exists=True
-            ),
+            validate_method=partial(validate_path, is_file=True, exists=True),
             state_subset=f"dataset_{dataset_index}",
         ),
         FilelistFormatStep(

@@ -252,7 +252,8 @@ class MoreDatasetsStep(Step):
                         int(key.split("_")[1])
                         for key in self.state.keys()
                         if key.startswith("dataset_")
-                    ]
+                    ],
+                    default=0,
                 )
                 + 1
             )

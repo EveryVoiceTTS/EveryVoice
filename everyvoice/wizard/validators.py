@@ -3,11 +3,11 @@ from pathlib import Path
 from loguru import logger
 
 
-def validate_path(value: str, is_dir=True, is_file=True, exists=True):
+def validate_path(value: str, is_dir=False, is_file=False, exists=False):
     path = Path(value).expanduser()
-    if not is_dir and not is_file:
+    if is_dir and is_file or not is_dir and not is_file:
         raise ValueError(
-            "The path must be either a file or directory, but both were set to False"
+            "The path must be either a file or directory, but both or neither were specified."
         )
     if not is_file and path.is_file():
         logger.warning(

@@ -53,7 +53,7 @@ class PreprocessingTest(TestCase):
                 prefix=tempdir_prefix, dir="."
             )
             self.tempdir = self.tempdirobj.name
-        else:
+        else:  # pragma: no cover
             # Alternative tempdir code keeps it after running, for manual inspection:
             self.tempdir = tempfile.mkdtemp(prefix=tempdir_prefix, dir=".")
             print(f"tmpdir={self.tempdir}")
