@@ -1,16 +1,61 @@
 #!/usr/bin/env python
 
+import logging
 import string
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from types import MethodType
 from unittest import TestCase, main
 
 from anytree import RenderTree
 
+import everyvoice.wizard.basic as basic
 from everyvoice.config.text_config import Symbols
-from everyvoice.wizard import Step, StepNames
-from everyvoice.wizard.basic import ConfigFormatStep
+from everyvoice.wizard import Step, StepNames, Tour
+
+
+@contextmanager
+def patch_logger(module):
+    save_logger = module.logger
+    try:
+        module.logger = logging.getLogger("UnitTesting")
+        yield module.logger
+    finally:
+        module.logger = save_logger
+
+
+def canned_response(response):
+    """Return a function that returns response regardless of its input."""
+
+    def helper(*args, **kwargs):
+        return response
+
+    return helper
+
+
+@contextmanager
+def patch_response(response):
+    # Note the white-box ismplementation detail: since basic.py does
+    #    from everyvoice.wizard.prompts import get_response_from_menu_prompt
+    # we have to monkey patch the imported copy in basic.py rather that the
+    # original in prompts.py
+    save_response = basic.get_response_from_menu_prompt
+    try:
+        basic.get_response_from_menu_prompt = canned_response(response)
+        yield
+    finally:
+        basic.get_response_from_menu_prompt = save_response
+
+
+@contextmanager
+def patch_prompt(step, response):
+    save_prompt = step.prompt
+    try:
+        step.prompt = canned_response(response)
+        yield
+    finally:
+        step.prompt = save_prompt
 
 
 class WizardTest(TestCase):
@@ -32,7 +77,7 @@ class WizardTest(TestCase):
         as reported by Marc Tessier. There are no assertions, it is just testing that
         no exceptions get raised.
         """
-        config_step = ConfigFormatStep(name="Config Step")
+        config_step = basic.ConfigFormatStep(name="Config Step")
         self.assertTrue(config_step.validate("yaml"))
         self.assertTrue(config_step.validate("json"))
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -58,6 +103,42 @@ class WizardTest(TestCase):
             self.assertTrue(
                 (Path(tmpdirname) / config_step.name / "logs_and_checkpoints").exists()
             )
+
+    def test_name_step(self):
+        """Exercise provide a valid dataset name."""
+        step = basic.NameStep("")
+        with patch_logger(basic) as logger:
+            with self.assertLogs(logger) as logs:
+                with patch_prompt(step, "myname"):
+                    step.run()
+        self.assertEqual(step.response, "myname")
+        self.assertIn("named 'myname'", logs.output[0])
+        self.assertTrue(step.completed)
+
+    def test_bad_name_step(self):
+        """Exercise provide an invalid dataset name."""
+        step = basic.NameStep("")
+        # For unit testing, we cannot call step.run() if we patch a response
+        # that will fail validation, because that would cause infinite
+        # recursion.
+        with patch_logger(basic) as logger:
+            with self.assertLogs(logger) as logs:
+                self.assertFalse(step.validate("foo/bar"))
+        self.assertIn("'foo/bar' is not valid", logs.output[0])
+
+    def test_more_data_step(self):
+        """Exercise giving an invalid response and a yes response to more data."""
+        tour = Tour(
+            "testing", [basic.MoreDatasetsStep(name=StepNames.more_datasets_step.value)]
+        )
+        step = tour.steps[0]
+        self.assertFalse(step.validate("foo"))
+        self.assertTrue(step.validate("yes"))
+        self.assertEqual(len(step.children), 0)
+        with patch_response("no"):
+            step.run()
+        self.assertEqual(len(step.children), 1)
+        self.assertIsInstance(step.children[0], basic.ConfigFormatStep)
 
     def test_access_response(self):
         root_step = Step(
