@@ -1,5 +1,5 @@
 from collections.abc import Mapping, Sequence
-from pathlib import Path
+from pathlib import Path, PosixPath
 from types import FunctionType
 from typing import Callable, Tuple, Union
 
@@ -15,18 +15,30 @@ from everyvoice.utils import (
 )
 
 
+def samuel_posixpath(v: PosixPath) -> str:
+    """
+    """
+    #from pudb import set_trace; set_trace()
+    return f"SAMUEL PosixPath: {v}"
+
+
+
 class ConfigModel(BaseModel):
     class Config:
         extra = Extra.forbid
         use_enum_values = True
         json_encoders = {
-            Callable: lambda fn: ".".join(
-                [fn.__module__, fn.__name__]
-            ),  # This doesn't seem to work for some reason: https://github.com/pydantic/pydantic/issues/4151
-            FunctionType: lambda fn: ".".join(
-                [fn.__module__, fn.__name__]
-            ),  # But this does
-        }
+                Callable: lambda fn: ".".join(
+                    [fn.__module__, fn.__name__]
+                    ),  # This doesn't seem to work for some reason: https://github.com/pydantic/pydantic/issues/4151
+                FunctionType: lambda fn: ".".join(
+                    [fn.__module__, fn.__name__]
+                    ),  # But this does
+                Path: lambda v: f"SAMUEL Path: {v}",
+                DirectoryPath: lambda v: f"SAMUEL DirectoryPath: {v}",
+                FilePath: lambda v: f"SAMUEL FilePath: {v}",
+                PosixPath: samuel_posixpath,
+                }
 
     def update_config(self, new_config: dict):
         """Update the config with new values"""
