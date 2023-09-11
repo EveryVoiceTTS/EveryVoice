@@ -113,7 +113,7 @@ class LoggerConfig(ConfigModel):
 
     @validator("save_dir", pre=True, always=True)
     def convert_path(cls, v, values):
-        path = rel_path_to_abs_path(v)
+        path = Path(v)
         values["save_dir"] = path
         if not path.exists():
             logger.info(f"Directory at {path} does not exist. Creating...")
@@ -146,17 +146,17 @@ class BaseTrainingConfig(ConfigModel):
         values["filelist_loader"] = func
         return func
 
-    @validator(
-        "finetune_checkpoint",
-        "training_filelist",
-        "validation_filelist",
-        pre=True,
-        always=True,
-    )
-    def convert_paths(cls, v, values, field: ModelField):
-        path = rel_path_to_abs_path(v)
-        values[field.name] = path
-        return path
+#    @validator(
+#        "finetune_checkpoint",
+#        "training_filelist",
+#        "validation_filelist",
+#        pre=True,
+#        always=True,
+#    )
+#    def convert_paths(cls, v, values, field: ModelField):
+#        path = rel_path_to_abs_path(v)
+#        values[field.name] = path
+#        return path
 
 
 class BaseOptimizer(ConfigModel):

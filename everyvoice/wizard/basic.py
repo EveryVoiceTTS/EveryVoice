@@ -85,21 +85,25 @@ class ConfigFormatStep(Step):
         return response in ["yaml", "json"]
 
     def effect(self):
+        # TODO Make paths arbitrary to the config file itself.
+        # TODO testsuite that writes a config with relative path
+        # TODO have a central place to make paths relative to their config.
+        #      May be part of the model itself and not the wizard.
+        #from pudb import set_trace; set_trace()
         output_path = (
             (
                 Path(self.state[StepNames.output_step.value])
                 / self.state[StepNames.name_step.value]
             )
             .expanduser()
-            .absolute()
         )
         # create_config_files
-        config_dir = (output_path / "config").absolute()
-        config_dir.mkdir(exist_ok=True, parents=True)
+        config_dir = (output_path / "config")
+        config_dir.absolute().mkdir(exist_ok=True, parents=True)
         # log dir
         log_dir = LoggerConfig().save_dir.stem
-        log_dir = (output_path / log_dir).absolute()
-        log_dir.mkdir(parents=True, exist_ok=True)
+        log_dir = (output_path / log_dir)
+        log_dir.absolute().mkdir(parents=True, exist_ok=True)
         datasets = []
         # Text Configuration
         punctuation = []
@@ -124,7 +128,6 @@ class ConfigFormatStep(Step):
                     / f"{self.state[dataset][StepNames.dataset_name_step.value]}-filelist.psv"
                 )
                 .expanduser()
-                .absolute()
             )
             for entry_i in range(len(self.state[dataset]["filelist_data"])):
                 self.state[dataset]["filelist_data"][entry_i] = {
@@ -148,7 +151,7 @@ class ConfigFormatStep(Step):
         text_config = TextConfig(
             symbols=Symbols(punctuation=list(set(punctuation)), **symbols)
         )
-        text_config_path = (config_dir / f"text.{self.response}").absolute()
+        text_config_path = (config_dir / f"text.{self.response}")
         write_dict_to_config(json.loads(text_config.json()), text_config_path)
         # Preprocessing Config
         preprocessed_training_filelist_path = (
@@ -159,12 +162,12 @@ class ConfigFormatStep(Step):
         )
         preprocessing_config = PreprocessingConfig(
             dataset=self.state[StepNames.name_step.value],
-            save_dir=(output_path / "preprocessed").absolute(),
+            save_dir=(output_path / "preprocessed"),
             source_data=datasets,
         )
         preprocessing_config_path = (
             config_dir / f"preprocessing.{self.response}"
-        ).absolute()
+        )
         write_dict_to_config(
             json.loads(preprocessing_config.json()), preprocessing_config_path
         )
@@ -172,12 +175,12 @@ class ConfigFormatStep(Step):
         aligner_logger = LoggerConfig(name="AlignerExperiment", save_dir=log_dir)
         aligner_config = AlignerConfig(
             training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path.absolute(),
-                validation_filelist=preprocessed_validation_filelist_path.absolute(),
+                training_filelist=preprocessed_training_filelist_path,
+                validation_filelist=preprocessed_validation_filelist_path,
                 logger=aligner_logger,
             )
         )
-        aligner_config_path = (config_dir / f"aligner.{self.response}").absolute()
+        aligner_config_path = (config_dir / f"aligner.{self.response}")
         aligner_config_json = json.loads(aligner_config.json())
         aligner_config_json["preprocessing"] = str(preprocessing_config_path)
         aligner_config_json["text"] = str(text_config_path)
@@ -186,12 +189,12 @@ class ConfigFormatStep(Step):
         fp_logger = LoggerConfig(name="FeaturePredictionExperiment", save_dir=log_dir)
         fp_config = FeaturePredictionConfig(
             training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path.absolute(),
-                validation_filelist=preprocessed_validation_filelist_path.absolute(),
+                training_filelist=preprocessed_training_filelist_path,
+                validation_filelist=preprocessed_validation_filelist_path,
                 logger=fp_logger,
             )
         )
-        fp_config_path = (config_dir / f"feature_prediction.{self.response}").absolute()
+        fp_config_path = (config_dir / f"feature_prediction.{self.response}")
         fp_config_json = json.loads(fp_config.json())
         fp_config_json["preprocessing"] = str(preprocessing_config_path)
         fp_config_json["text"] = str(text_config_path)
@@ -200,12 +203,12 @@ class ConfigFormatStep(Step):
         vocoder_logger = LoggerConfig(name="VocoderExperiment", save_dir=log_dir)
         vocoder_config = VocoderConfig(
             training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path.absolute(),
-                validation_filelist=preprocessed_validation_filelist_path.absolute(),
+                training_filelist=preprocessed_training_filelist_path,
+                validation_filelist=preprocessed_validation_filelist_path,
                 logger=vocoder_logger,
             )
         )
-        vocoder_config_path = (config_dir / f"vocoder.{self.response}").absolute()
+        vocoder_config_path = (config_dir / f"vocoder.{self.response}")
         vocoder_config_json = json.loads(vocoder_config.json())
         vocoder_config_json["preprocessing"] = str(preprocessing_config_path)
         write_dict_to_config(vocoder_config_json, vocoder_config_path)
@@ -213,8 +216,8 @@ class ConfigFormatStep(Step):
         e2e_logger = LoggerConfig(name="E2E-Experiment", save_dir=log_dir)
         e2e_config = EveryVoiceConfig(
             training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path.absolute(),
-                validation_filelist=preprocessed_validation_filelist_path.absolute(),
+                training_filelist=preprocessed_training_filelist_path,
+                validation_filelist=preprocessed_validation_filelist_path,
                 logger=e2e_logger,
             ),
         )
@@ -222,7 +225,7 @@ class ConfigFormatStep(Step):
         e2e_config_json["aligner"] = str(aligner_config_path)
         e2e_config_json["feature_prediction"] = str(fp_config_path)
         e2e_config_json["vocoder"] = str(vocoder_config_path)
-        e2e_config_path = (config_dir / f"e2e.{self.response}").absolute()
+        e2e_config_path = (config_dir / f"e2e.{self.response}")
         write_dict_to_config(e2e_config_json, e2e_config_path)
         print(
             Panel(

@@ -69,11 +69,11 @@ class Dataset(PartialConfigModel):
         values["filelist_loader"] = func
         return func
 
-    @validator("data_dir", "textgrid_dir", "filelist", pre=True, always=True)
-    def convert_paths(cls, v, values, field: ModelField):
-        path = rel_path_to_abs_path(v)
-        values[field.name] = path
-        return path
+#    @validator("data_dir", "textgrid_dir", "filelist", pre=True, always=True)
+#    def convert_paths(cls, v, values, field: ModelField):
+#        path = rel_path_to_abs_path(v)
+#        values[field.name] = path
+#        return path
 
 
 class PreprocessingConfig(PartialConfigModel):
@@ -98,7 +98,7 @@ class PreprocessingConfig(PartialConfigModel):
             if not path.exists():
                 logger.info(f"Directory at {path} does not exist. Creating...")
                 path.mkdir(parents=True, exist_ok=True)
-        values["save_dir"] = path
+        #values["save_dir"] = path
         return path
 
     @staticmethod
