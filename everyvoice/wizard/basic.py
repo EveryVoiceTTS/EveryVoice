@@ -6,6 +6,7 @@ from loguru import logger
 from rich import print
 from rich.panel import Panel
 from rich.style import Style
+from typing import List
 
 from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
 from everyvoice.config.shared_types import BaseTrainingConfig, LoggerConfig
@@ -75,37 +76,109 @@ class OutputPathStep(Step):
 
 
 class ConfigFormatStep(Step):
-    def prompt(self):
-        return get_response_from_menu_prompt(
-            "Which format would you like to output the configuration to?",
-            ["yaml", "json"],
-        )
+    def __init__(self, *args, **kwargs):
+        """
+        """
+        super().__init__(*args, **kwargs)
+        self.config_dir: Path = None
+        self.log_dir: Path = None
+        self.aligner_config_path: Path=None
+        self.fp_config_path: Path=None
+        self.preprocessed_training_filelist_path: Path=None
+        self.preprocessed_validation_filelist_path: Path=None
+        self.preprocessing_config_path: Path = None
+        self.text_config_path: Path=None
+        self.vocoder_config_path: Path=None
 
-    def validate(self, response):
-        return response in ["yaml", "json"]
-
-    def effect(self):
-        # TODO Make paths arbitrary to the config file itself.
-        # TODO testsuite that writes a config with relative path
-        # TODO have a central place to make paths relative to their config.
-        #      May be part of the model itself and not the wizard.
-        #from pudb import set_trace; set_trace()
-        output_path = (
-            (
-                Path(self.state[StepNames.output_step.value])
-                / self.state[StepNames.name_step.value]
+    def _aligner_config(self):
+        """
+        """
+        ## Create Aligner Config
+        aligner_logger = LoggerConfig(name="AlignerExperiment", save_dir=self.log_dir)
+        aligner_config = AlignerConfig(
+            training=BaseTrainingConfig(
+                training_filelist=self.preprocessed_training_filelist_path,
+                validation_filelist=self.preprocessed_validation_filelist_path,
+                logger=aligner_logger,
             )
-            .expanduser()
         )
-        # create_config_files
-        config_dir = (output_path / "config")
-        config_dir.absolute().mkdir(exist_ok=True, parents=True)
-        # log dir
-        log_dir = LoggerConfig().save_dir.stem
-        log_dir = (output_path / log_dir)
-        log_dir.absolute().mkdir(parents=True, exist_ok=True)
-        datasets = []
+        aligner_config_json = json.loads(aligner_config.json())
+        aligner_config_json["preprocessing"] = str(self.preprocessing_config_path)
+        aligner_config_json["text"] = str(self.text_config_path)
+        self.aligner_config_path = (self.config_dir / f"aligner.{self.response}")
+        write_dict_to_config(aligner_config_json, self.aligner_config_path)
+
+    def _e2e_config(self):
+        """
+        """
+        # E2E Config
+        e2e_logger = LoggerConfig(name="E2E-Experiment", save_dir=self.log_dir)
+        e2e_config = EveryVoiceConfig(
+            training=BaseTrainingConfig(
+                training_filelist=self.preprocessed_training_filelist_path,
+                validation_filelist=self.preprocessed_validation_filelist_path,
+                logger=e2e_logger,
+            ),
+        )
+        e2e_config_json = json.loads(e2e_config.json())
+        e2e_config_json["aligner"] = str(self.aligner_config_path)
+        e2e_config_json["feature_prediction"] = str(self.fp_config_path)
+        e2e_config_json["vocoder"] = str(self.vocoder_config_path)
+        e2e_config_path = (self.config_dir / f"e2e.{self.response}")
+        write_dict_to_config(e2e_config_json, e2e_config_path)
+
+    def _feature_prediction_config(self):
+        """
+        """
+        # Create Feature Prediction Config
+        fp_logger = LoggerConfig(name="FeaturePredictionExperiment", save_dir=self.log_dir)
+        fp_config = FeaturePredictionConfig(
+            training=BaseTrainingConfig(
+                training_filelist=self.preprocessed_training_filelist_path,
+                validation_filelist=self.preprocessed_validation_filelist_path,
+                logger=fp_logger,
+            )
+        )
+        fp_config_json = json.loads(fp_config.json())
+        fp_config_json["preprocessing"] = str(self.preprocessing_config_path)
+        fp_config_json["text"] = str(self.text_config_path)
+        self.fp_config_path = (self.config_dir / f"feature_prediction.{self.response}")
+        write_dict_to_config(fp_config_json, self.fp_config_path)
+
+    def _preprocessing_config(self,
+            output_path: Path,
+            datasets: List,
+            ):
+        """
+        """
+        # Preprocessing Config
+        self.preprocessed_training_filelist_path = (
+            output_path / "preprocessed" / "training_filelist.psv"
+        )
+        self.preprocessed_validation_filelist_path = (
+            output_path / "preprocessed" / "validation_filelist.psv"
+        )
+        preprocessing_config = PreprocessingConfig(
+            dataset=self.state[StepNames.name_step.value],
+            save_dir=(output_path / "preprocessed"),
+            source_data=datasets,
+        )
+        self.preprocessing_config_path = (
+            self.config_dir / f"preprocessing.{self.response}"
+        )
+        write_dict_to_config(
+            json.loads(preprocessing_config.json()),
+            self.preprocessing_config_path,
+        )
+
+    def _text_config(self,
+            output_path: Path,
+            ) -> List[Dataset]:
+        """
+        Write the TextConfig to a file.
+        """
         # Text Configuration
+        datasets = []
         punctuation = []
         symbols = {}
         for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
@@ -151,85 +224,67 @@ class ConfigFormatStep(Step):
         text_config = TextConfig(
             symbols=Symbols(punctuation=list(set(punctuation)), **symbols)
         )
-        text_config_path = (config_dir / f"text.{self.response}")
-        write_dict_to_config(json.loads(text_config.json()), text_config_path)
-        # Preprocessing Config
-        preprocessed_training_filelist_path = (
-            output_path / "preprocessed" / "training_filelist.psv"
-        )
-        preprocessed_validation_filelist_path = (
-            output_path / "preprocessed" / "validation_filelist.psv"
-        )
-        preprocessing_config = PreprocessingConfig(
-            dataset=self.state[StepNames.name_step.value],
-            save_dir=(output_path / "preprocessed"),
-            source_data=datasets,
-        )
-        preprocessing_config_path = (
-            config_dir / f"preprocessing.{self.response}"
-        )
-        write_dict_to_config(
-            json.loads(preprocessing_config.json()), preprocessing_config_path
-        )
-        ## Create Aligner Config
-        aligner_logger = LoggerConfig(name="AlignerExperiment", save_dir=log_dir)
-        aligner_config = AlignerConfig(
-            training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path,
-                validation_filelist=preprocessed_validation_filelist_path,
-                logger=aligner_logger,
-            )
-        )
-        aligner_config_path = (config_dir / f"aligner.{self.response}")
-        aligner_config_json = json.loads(aligner_config.json())
-        aligner_config_json["preprocessing"] = str(preprocessing_config_path)
-        aligner_config_json["text"] = str(text_config_path)
-        write_dict_to_config(aligner_config_json, aligner_config_path)
-        # Create Feature Prediction Config
-        fp_logger = LoggerConfig(name="FeaturePredictionExperiment", save_dir=log_dir)
-        fp_config = FeaturePredictionConfig(
-            training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path,
-                validation_filelist=preprocessed_validation_filelist_path,
-                logger=fp_logger,
-            )
-        )
-        fp_config_path = (config_dir / f"feature_prediction.{self.response}")
-        fp_config_json = json.loads(fp_config.json())
-        fp_config_json["preprocessing"] = str(preprocessing_config_path)
-        fp_config_json["text"] = str(text_config_path)
-        write_dict_to_config(fp_config_json, fp_config_path)
+        self.text_config_path = (self.config_dir / f"text.{self.response}")
+        write_dict_to_config(json.loads(text_config.json()), self.text_config_path)
+
+        return datasets
+
+    def _vocoder_config(self):
+        """
+        """
         # Create Vocoder Config
-        vocoder_logger = LoggerConfig(name="VocoderExperiment", save_dir=log_dir)
+        vocoder_logger = LoggerConfig(name="VocoderExperiment", save_dir=self.log_dir)
         vocoder_config = VocoderConfig(
             training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path,
-                validation_filelist=preprocessed_validation_filelist_path,
+                training_filelist=self.preprocessed_training_filelist_path,
+                validation_filelist=self.preprocessed_validation_filelist_path,
                 logger=vocoder_logger,
             )
         )
-        vocoder_config_path = (config_dir / f"vocoder.{self.response}")
         vocoder_config_json = json.loads(vocoder_config.json())
-        vocoder_config_json["preprocessing"] = str(preprocessing_config_path)
-        write_dict_to_config(vocoder_config_json, vocoder_config_path)
-        # E2E Config
-        e2e_logger = LoggerConfig(name="E2E-Experiment", save_dir=log_dir)
-        e2e_config = EveryVoiceConfig(
-            training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path,
-                validation_filelist=preprocessed_validation_filelist_path,
-                logger=e2e_logger,
-            ),
+        vocoder_config_json["preprocessing"] = str(self.preprocessing_config_path)
+        self.vocoder_config_path = (self.config_dir / f"vocoder.{self.response}")
+        write_dict_to_config(vocoder_config_json, self.vocoder_config_path)
+
+    def prompt(self):
+        return get_response_from_menu_prompt(
+            "Which format would you like to output the configuration to?",
+            ["yaml", "json"],
         )
-        e2e_config_json = json.loads(e2e_config.json())
-        e2e_config_json["aligner"] = str(aligner_config_path)
-        e2e_config_json["feature_prediction"] = str(fp_config_path)
-        e2e_config_json["vocoder"] = str(vocoder_config_path)
-        e2e_config_path = (config_dir / f"e2e.{self.response}")
-        write_dict_to_config(e2e_config_json, e2e_config_path)
+
+    def validate(self, response):
+        return response in ["yaml", "json"]
+
+    def effect(self):
+        # TODO Make paths arbitrary to the config file itself.
+        # TODO testsuite that writes a config with relative path
+        # TODO have a central place to make paths relative to their config.
+        #      May be part of the model itself and not the wizard.
+        #from pudb import set_trace; set_trace()
+        output_path = (
+            (
+                Path(self.state[StepNames.output_step.value])
+                / self.state[StepNames.name_step.value]
+            )
+            .expanduser()
+        )
+        # create_config_files
+        self.config_dir = (output_path / "config")
+        self.config_dir.absolute().mkdir(exist_ok=True, parents=True)
+        # log dir
+        self.log_dir = (output_path / "logs")
+        self.log_dir.absolute().mkdir(parents=True, exist_ok=True)
+
+        datasets = self._text_config(output_path=output_path)
+        self._preprocessing_config(output_path=output_path, datasets=datasets)
+        self._aligner_config()
+        self._feature_prediction_config()
+        self._vocoder_config()
+        self._e2e_config()
+
         print(
             Panel(
-                f"You've finished configuring your dataset. Your files are located at {config_dir.absolute()}",
+                f"You've finished configuring your dataset. Your files are located at {self.config_dir.absolute()}",
                 title="Congratulations 🎉",
                 subtitle="Next Steps Documentation: https://docs.everyvoice.ca/guides",
                 border_style=Style(color="#0B4F19"),
