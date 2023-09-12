@@ -20,6 +20,7 @@ class CLITest(TestCase):
             "train",
             "synthesize",
             "preprocess",
+            "inspect-checkpoint",
         ]
 
     def test_commands_present(self):
@@ -45,6 +46,11 @@ class CLITest(TestCase):
                         json.loads(obj().model_dump_json()), schema=schema
                     )
                 )
+
+    def test_inspect_checkpoint(self):
+        result = self.runner.invoke(app, ["inspect-checkpoint", "--help"])
+        self.assertIn("inspect-checkpoint [OPTIONS] MODEL_PATH",
+                result.stdout)
 
 
 if __name__ == "__main__":

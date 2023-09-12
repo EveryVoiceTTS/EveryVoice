@@ -10,6 +10,9 @@ from everyvoice._version import VERSION
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     align_single as ctc_segment,
 )
+from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
+from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
     preprocess as preprocess_fs2,
 )
@@ -201,6 +204,10 @@ app.add_typer(
     short_help="Synthesize using your pre-trained EveryVoice models",
 )
 
+app.command(
+    name="inspect-checkpoint",
+    short_help="Extract structural information from a checkpoint",
+)(inspect_checkpoint)
 
 class TestSuites(str, Enum):
     all = "all"
