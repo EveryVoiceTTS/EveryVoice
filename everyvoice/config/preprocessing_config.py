@@ -69,12 +69,6 @@ class Dataset(PartialConfigModel):
         values["filelist_loader"] = func
         return func
 
-#    @validator("data_dir", "textgrid_dir", "filelist", pre=True, always=True)
-#    def convert_paths(cls, v, values, field: ModelField):
-#        path = rel_path_to_abs_path(v)
-#        values[field.name] = path
-#        return path
-
 
 class PreprocessingConfig(PartialConfigModel):
     dataset: str = "YourDataSet"
@@ -86,20 +80,12 @@ class PreprocessingConfig(PartialConfigModel):
     value_separator: str = "--"
     train_split: float = 0.9
     dataset_split_seed: int = 1234
-    save_dir: DirectoryPath = Path("./preprocessed/YourDataSet")
+    # save_dir used to be a DirectoryPath but pydantic as some magic that
+    # demand that the directory exists but it doesn't take into account that
+    # fact that we need it to be relative to the config file.
+    save_dir: Path = Path("./preprocessed/YourDataSet")
     audio: AudioConfig = Field(default_factory=AudioConfig)
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
-
-    @validator("save_dir", pre=True, always=True)
-    def create_dir(cls, v, values):
-        path = rel_path_to_abs_path(v)
-        # Supress keyerrors because defaults will be used if not supplied
-        with contextlib.suppress(KeyError):
-            if not path.exists():
-                logger.info(f"Directory at {path} does not exist. Creating...")
-                path.mkdir(parents=True, exist_ok=True)
-        #values["save_dir"] = path
-        return path
 
     @staticmethod
     def load_config_from_path(path: Path) -> "PreprocessingConfig":
