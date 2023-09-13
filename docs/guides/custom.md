@@ -65,13 +65,13 @@ everyvoice preprocess -p config/feature_prediction.yaml
 ## Step 6: Train your Vocoder
 
 ```bash
-everyvoice spec-to-wav train -p config/vocoder.yaml
+everyvoice train spec-to-wav -p config/vocoder.yaml
 ```
 
 By default, we run our training with PyTorch Lightning's "auto" strategy. But, if you are on a machine where you know the hardware, you can specify it like:
 
 ```bash
-everyvoice spec-to-wav train -p config/vocoder.yaml -d 1 -a gpu
+everyvoice train spec-to-wav -p config/vocoder.yaml -d 1 -a gpu
 ```
 
 Which would use the GPU accelerator and specify 1 device/chip.
@@ -85,7 +85,7 @@ At the bottom of that file you'll find a key called vocoder_path. Add the absolu
 Once you've replaced the vocoder_path key, you can train your feature prediction network:
 
 ```bash
-everyvoice text-to-spec train -p config/feature_prediction.yaml
+everyvoice train text-to-spec -p config/feature_prediction.yaml
 ```
 
 ## Step 8: Synthesize Speech in Your Language!
@@ -93,7 +93,7 @@ everyvoice text-to-spec train -p config/feature_prediction.yaml
 You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export to wav, npy, or pt files.
 
 ```bash
-everyvoice synthesize logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1
+everyvoice synthesize text-to-wav logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1
 ```
 
 <!-- % Step 10 (optional): Finetune your vocoder
