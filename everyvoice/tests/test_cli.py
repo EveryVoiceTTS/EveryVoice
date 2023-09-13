@@ -9,10 +9,7 @@ class CLITest(TestCase):
     def setUp(self) -> None:
         self.runner = CliRunner()
         self.commands = [
-            "text-to-spec",
-            "spec-to-wav",
-            "text-to-wav",
-            "align",
+            "new-dataset" "align",
             "synthesize",
             "preprocess",
         ]
