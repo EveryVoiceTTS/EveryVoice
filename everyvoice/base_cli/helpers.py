@@ -66,7 +66,7 @@ def preprocess_base_command(
         DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
     ],
     configs,
-    data,
+    steps,
     preprocess_categories,
     # Must include the above in model-specific command
     config_args: List[str],
@@ -81,18 +81,15 @@ def preprocess_base_command(
     config = load_config_base_command(
         name, model_config, configs, config_args, config_path
     )
-    to_process = [x.name for x in data]
+    to_process = [x.name for x in steps]
     preprocessor = Preprocessor(config)
-    if not data:
+    if not steps:
         logger.info(
             f"No specific preprocessing data requested, processing everything from dataset '{name}'"
         )
         to_process = list(preprocess_categories.__members__.keys())
-        if (
-            isinstance(config, FastSpeech2Config)
-            and config.model.use_phonological_feats
-        ):
-            to_process.append("pfs")
+    if isinstance(config, FastSpeech2Config) and config.model.use_phonological_feats:
+        to_process.append("pfs")
     preprocessor.preprocess(
         output_path=output_path,
         cpus=cpus,
