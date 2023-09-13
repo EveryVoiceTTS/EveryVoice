@@ -64,6 +64,7 @@ class ModelTypes(str, Enum):
 
 
 @app.command(
+    short_help="This command will help you create all the configuration necessary for using a new dataset.",
     help="""
     # This command will help you create all the configuration necessary for using a new dataset.
 
@@ -84,7 +85,7 @@ class ModelTypes(str, Enum):
 
     Example metadata: [https://github.com/roedoejet/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv](https://github.com/roedoejet/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv)
 
-"""
+""",
 )
 def new_dataset():
     from everyvoice.wizard.main_tour import WIZARD_TOUR

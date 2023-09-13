@@ -9,7 +9,8 @@ class CLITest(TestCase):
     def setUp(self) -> None:
         self.runner = CliRunner()
         self.commands = [
-            "new-dataset" "align",
+            "new-dataset",
+            "train",
             "synthesize",
             "preprocess",
         ]
