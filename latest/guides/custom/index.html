@@ -787,24 +787,24 @@ then you should have a psv file that looks like this:</p>
 </code></pre></div>
 <h2 id="step-5-run-the-preprocessor">Step 5: Run the Preprocessor<a class="headerlink" href="#step-5-run-the-preprocessor" title="Permanent link">&para;</a></h2>
 <p>Your models need to do a number of preprocessing steps in order to prepare for training. To preprocess everything you need, run the following:</p>
-<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>fs2<span class="w"> </span>preprocess<span class="w"> </span>-p<span class="w"> </span>config/feature_prediction.yaml
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>preprocess<span class="w"> </span>-p<span class="w"> </span>config/feature_prediction.yaml
 </code></pre></div>
 <h2 id="step-6-train-your-vocoder">Step 6: Train your Vocoder<a class="headerlink" href="#step-6-train-your-vocoder" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>hifigan<span class="w"> </span>train<span class="w"> </span>-p<span class="w"> </span>config/vocoder.yaml
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>spec-to-wav<span class="w"> </span>-p<span class="w"> </span>config/vocoder.yaml
 </code></pre></div>
 <p>By default, we run our training with PyTorch Lightning's "auto" strategy. But, if you are on a machine where you know the hardware, you can specify it like:</p>
-<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>hifigan<span class="w"> </span>train<span class="w"> </span>-p<span class="w"> </span>config/vocoder.yaml<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span><span class="w"> </span>-a<span class="w"> </span>gpu
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>spec-to-wav<span class="w"> </span>-p<span class="w"> </span>config/vocoder.yaml<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span><span class="w"> </span>-a<span class="w"> </span>gpu
 </code></pre></div>
 <p>Which would use the GPU accelerator and specify 1 device/chip.</p>
 <h2 id="step-7-train-your-feature-prediction-network">Step 7: Train your Feature Prediction Network<a class="headerlink" href="#step-7-train-your-feature-prediction-network" title="Permanent link">&para;</a></h2>
 <p>To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the <code>config/feature_prediction.yaml</code></p>
 <p>At the bottom of that file you'll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be <code>/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt</code> where <code>/path/to</code> would be the actual path to it on your computer.)</p>
 <p>Once you've replaced the vocoder_path key, you can train your feature prediction network:</p>
-<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>fs2<span class="w"> </span>train<span class="w"> </span>-p<span class="w"> </span>config/feature_prediction.yaml
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>text-to-spec<span class="w"> </span>-p<span class="w"> </span>config/feature_prediction.yaml
 </code></pre></div>
 <h2 id="step-8-synthesize-speech-in-your-language">Step 8: Synthesize Speech in Your Language!<a class="headerlink" href="#step-8-synthesize-speech-in-your-language" title="Permanent link">&para;</a></h2>
 <p>You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export to wav, npy, or pt files.</p>
-<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>fs2<span class="w"> </span>synthesize<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ&quot;</span><span class="w"> </span>-a<span class="w"> </span>gpu<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span><span class="w"> </span>-O<span class="w"> </span>wav
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>text-to-wav<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ&quot;</span><span class="w"> </span>-a<span class="w"> </span>gpu<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span>
 </code></pre></div>
 <!-- % Step 10 (optional): Finetune your vocoder
 
