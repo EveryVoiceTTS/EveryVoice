@@ -4,18 +4,18 @@ import typer
 
 from everyvoice.config import CONFIGS
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
-    preprocess as fs2_preprocess,
+    preprocess as preprocess_fs2,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
-    synthesize as fs2_synthesize,
+    synthesize as synthesize_fs2,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
-    train as fs2_train,
+    train as train_fs2,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
-    synthesize as hfg_synthesize,
+    synthesize as synthesize_hfg,
 )
-from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as hfg_train
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
 
 
 # See https://github.com/tiangolo/typer/issues/428#issuecomment-1238866548
@@ -103,7 +103,7 @@ app.command(
 
     By default every step of the preprocessor will be done, but you can run specific commands by adding them as arguments or --steps options for example: **everyvoice preprocess energy pitch** or **everyvoice preprocess --steps energy --steps audio**
     """,
-)(fs2_preprocess)
+)(preprocess_fs2)
 
 # Add the train commands
 train_group = typer.Typer(
@@ -123,12 +123,12 @@ train_group = typer.Typer(
 train_group.command(
     name="text-to-spec",
     short_help="Train your Text-to-Spec model",
-)(fs2_train)
+)(train_fs2)
 
 train_group.command(
     name="spec-to-wav",
     short_help="Train your Spec-to-Wav model",
-)(hfg_train)
+)(train_hfg)
 
 app.add_typer(
     train_group,
@@ -155,13 +155,13 @@ synthesize_group.command(
     name="text-to-wav",
     short_help="Given some text and a trained model, generate some audio",
     help="Given some text and a trained model, generate some audio.",
-)(fs2_synthesize)
+)(synthesize_fs2)
 
 synthesize_group.command(
     name="spec-to-wav",
     short_help="Given some Mel spectrograms and a trained model, generate some audio",
     help="Given some Mel spectrograms and a trained model, generate some audio.",
-)(hfg_synthesize)
+)(synthesize_hfg)
 
 app.add_typer(
     synthesize_group,
