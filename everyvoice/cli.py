@@ -101,7 +101,7 @@ app.command(
 
     This command will preprocess all of the data you need for use with EveryVoice.
 
-    By default every step of the preprocessor will be done, but you can run specific commands by adding them as arguments or --steps options for example: **everyvoice preprocess energy pitch** or **everyvoice preprocess --steps energy --steps audio**
+    By default every step of the preprocessor will be done, but you can run specific commands by adding them as arguments for example: **everyvoice preprocess energy pitch**
     """,
 )(preprocess_fs2)
 
