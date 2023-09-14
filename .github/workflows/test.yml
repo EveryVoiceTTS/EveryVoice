@@ -23,7 +23,9 @@ jobs:
         with:
           python-version: 3.9
       - name: Install libsndfile
-        run: sudo apt-get install -y libsndfile1
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsndfile1
       - name: Install dependencies and package
         run: |
           CUDA_TAG=cu117 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
