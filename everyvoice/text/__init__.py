@@ -6,7 +6,7 @@ from typing import Dict, List, Union
 from loguru import logger
 from nltk.tokenize import RegexpTokenizer
 
-from everyvoice.config import ConfigError
+from everyvoice.exceptions import ConfigError
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.text.features import get_features

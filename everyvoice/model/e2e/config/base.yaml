@@ -1,4 +1,0 @@
-aligner: "./config/default/aligner.yaml"
-feature_prediction: "./config/default/fastspeech2.yaml"
-vocoder: "./config/default/hifigan.yaml"
-training: "./model/e2e/config/training.yaml"

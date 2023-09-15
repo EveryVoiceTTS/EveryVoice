@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Dict, Union
+from typing import Union
 
 from pydantic import Field, FilePath, validator
 from pydantic.fields import ModelField
@@ -8,11 +8,7 @@ from everyvoice.config.shared_types import BaseTrainingConfig, PartialConfigMode
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
-from everyvoice.utils import (
-    load_config_from_json_or_yaml_path,
-    rel_path_to_abs_path,
-    return_configs_from_dir,
-)
+from everyvoice.utils import load_config_from_json_or_yaml_path, rel_path_to_abs_path
 
 
 class E2ETrainingConfig(BaseTrainingConfig):
@@ -43,7 +39,3 @@ class EveryVoiceConfig(PartialConfigModel):
         """Load a config from a path"""
         config = load_config_from_json_or_yaml_path(path)
         return EveryVoiceConfig(**config)
-
-
-CONFIG_DIR = Path(__file__).parent
-CONFIGS: Dict[str, Path] = return_configs_from_dir(CONFIG_DIR)

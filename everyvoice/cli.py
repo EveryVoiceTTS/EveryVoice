@@ -2,7 +2,6 @@ from enum import Enum
 
 import typer
 
-from everyvoice.config import CONFIGS
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
     preprocess as preprocess_fs2,
 )
@@ -101,7 +100,7 @@ app.command(
 
     This command will preprocess all of the data you need for use with EveryVoice.
 
-    By default every step of the preprocessor will be done, but you can run specific commands by adding them as arguments for example: **everyvoice preprocess energy pitch**
+    By default every step of the preprocessor will be done, but you can run specific commands by adding them as options for example: **everyvoice preprocess path/to/config.yaml -s energy -s pitch**
     """,
 )(preprocess_fs2)
 
@@ -145,22 +144,18 @@ synthesize_group = typer.Typer(
     help="""
     # Synthesize Help
 
-        - **text-to-spec** --- this is the most common model to run
+        - **text-to-spec** --- this is the most common model to run for performing normal speech synthesis.
 
-        - **spec-to-wav** --- this is the model that turns your spectral features into audio. It is also known as a 'vocoder'. You will typically not need to train your own version. Please refer to [https://pathtocheckpoints](https://pathtocheckpoints) for more information.
+        - **spec-to-wav** --- this is the model that turns your spectral features into audio. this type of synthesis is also known as copy synthesis and unless you know what you are doing, you probably don't want to do this.
     """,
 )
 
 synthesize_group.command(
     name="text-to-wav",
-    short_help="Given some text and a trained model, generate some audio",
-    help="Given some text and a trained model, generate some audio.",
 )(synthesize_fs2)
 
 synthesize_group.command(
     name="spec-to-wav",
-    short_help="Given some Mel spectrograms and a trained model, generate some audio",
-    help="Given some Mel spectrograms and a trained model, generate some audio.",
 )(synthesize_hfg)
 
 app.add_typer(
@@ -168,11 +163,6 @@ app.add_typer(
     name="synthesize",
     short_help="Synthesize using your pre-trained EveryVoice models",
 )
-
-
-_config_keys = {k: k for k in CONFIGS.keys()}
-
-CONFIGS_ENUM = Enum("CONFIGS", _config_keys)  # type: ignore
 
 
 class TestSuites(str, Enum):

@@ -21,12 +21,28 @@ def load_config_base_command_interface(
 
 
 def preprocess_base_command_interface(
-    config_args: List[str] = typer.Option(None, "--config-args", "-c"),
-    config_path: Path = typer.Option(
-        None, "--config-path", "-p", exists=True, dir_okay=False, file_okay=True
+    config_path: Path = typer.Argument(
+        ...,
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="The path to your model configuration file.",
     ),
-    output_path: Optional[Path] = typer.Option("filelist.psv", "-o", "--output"),
-    cpus: Optional[int] = typer.Option(min(4, mp.cpu_count()), "-C", "--cpus"),
+    config_args: List[str] = typer.Option(
+        None, "-c", "--config-args", help="Overwrite the configuration"
+    ),
+    output_path: Optional[Path] = typer.Option(
+        "filelist.psv",
+        "-o",
+        "--output",
+        help="The path to where the processed data filelist should be written",
+    ),
+    cpus: Optional[int] = typer.Option(
+        min(4, mp.cpu_count()),
+        "-C",
+        "--cpus",
+        help="How many CPUs to use when preprocessing",
+    ),
     overwrite: bool = typer.Option(False, "-O", "--overwrite"),
     debug: bool = typer.Option(False, "-D", "--debug"),
 ):
@@ -34,9 +50,15 @@ def preprocess_base_command_interface(
 
 
 def train_base_command_interface(
-    config_args: List[str] = typer.Option(None, "--config", "-c"),
-    config_path: Path = typer.Option(
-        None, "--config-path", "-p", exists=True, dir_okay=False, file_okay=True
+    config_path: Path = typer.Argument(
+        ...,
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="The path to your model configuration file.",
+    ),
+    config_args: List[str] = typer.Option(
+        None, "-c", "--config-args", help="Overwrite the configuration"
     ),
     accelerator: str = typer.Option(
         "auto",
