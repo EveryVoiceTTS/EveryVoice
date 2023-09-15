@@ -187,33 +187,6 @@ class HeaderStep(Step):
         self.state["filelist_headers"][self.response] = self.header_name
 
 
-class FinalHeaderStep(HeaderStep):
-    def effect(self):
-        # Rename the filelist header with the standard header name
-        index = self.state["filelist_headers"].index(self.response)
-        self.state["filelist_headers"][index] = self.header_name
-        # Rename unselected headers to unknown:
-        for i, header in enumerate(self.state["filelist_headers"]):
-            if header not in ["basename", "text", "speaker", "language"]:
-                self.state["filelist_headers"][i] = f"unknown_{i}"
-        # re-parse data:
-        filelist_path = self.state.get(StepNames.filelist_step.value)
-        if not isinstance(filelist_path, Path):
-            filelist_path = Path(filelist_path).expanduser()
-        if self.state.get(StepNames.filelist_format_step.value, None) in [
-            "psv",
-            "tsv",
-            "csv",
-        ]:
-            self.state["filelist_data"] = generic_dict_loader(
-                filelist_path,
-                delimiter=self.state.get("filelist_delimiter"),
-                fieldnames=self.state["filelist_headers"],
-            )
-        else:
-            self.state["filelist_data"] = read_festival(filelist_path)
-
-
 class HasSpeakerStep(Step):
     choices = ("yes", "no")
 
