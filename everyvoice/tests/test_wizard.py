@@ -28,6 +28,8 @@ from everyvoice.wizard import Step, StepNames, Tour, basic, dataset, prompts, va
 class WizardTest(TestCase):
     """Basic test for the new dataset wizard"""
 
+    data_dir = Path(__file__).parent / "data"
+
     def setUp(self) -> None:
         pass
 
@@ -252,107 +254,117 @@ class WizardTest(TestCase):
             raise IndexError(f"Step {name} not found.")  # pragma: no cover
 
         tour = Tour("unit testing", steps=dataset.return_dataset_steps())
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            d = Path(tmpdirname)
-            filelist = str(d / "filelist.psv")
-            with open(filelist, "w") as f:
-                f.write("columnA|non-standard-basename|non-standard-text|extra\n")
-                f.write("blah|somefile|text|irrelevant extra\n")
-                f.write("boom|file2|CaSeD \t NFD: éàê NFC: éàê|blah\n")
-                f.write("bam|banned_file|ZZZ|has banned symbol (Z)\n")
+        filelist = str(self.data_dir / "unit-test-case1.psv")
 
-            filelist_step = find_step(StepNames.filelist_step.value, tour.steps)
-            with monkeypatch(filelist_step, "prompt", Say(filelist)):
-                filelist_step.run()
-            format_step = find_step(StepNames.filelist_format_step.value, tour.steps)
-            with patch_menu_prompt(0):  # 0 is "psv"
+        filelist_step = find_step(StepNames.filelist_step.value, tour.steps)
+        with monkeypatch(filelist_step, "prompt", Say(filelist)):
+            filelist_step.run()
+        format_step = find_step(StepNames.filelist_format_step.value, tour.steps)
+        with patch_menu_prompt(0):  # 0 is "psv"
+            format_step.run()
+        self.assertIsInstance(format_step.children[0], dataset.HeaderStep)
+        self.assertEqual(
+            format_step.children[0].name, StepNames.basename_header_step.value
+        )
+        self.assertIsInstance(format_step.children[1], dataset.HeaderStep)
+        self.assertEqual(format_step.children[1].name, StepNames.text_header_step.value)
+
+        step = format_step.children[0]
+        with patch_menu_prompt(1):  # 1 is second column
+            step.run()
+        self.assertEqual(step.response, 1)
+        self.assertEqual(step.state["filelist_headers"][1], "basename")
+
+        step = tour.steps[2].children[1]
+        with patch_menu_prompt(1):  # 1 is second remaining column, i.e., third column
+            step.run()
+        # print(step.state["filelist_headers"])
+        self.assertEqual(step.state["filelist_headers"][2], "text")
+
+        speaker_step = find_step(
+            StepNames.data_has_speaker_value_step.value, tour.steps
+        )
+        children_before = len(speaker_step.children)
+        with patch_menu_prompt(1):  # 1 is "no"
+            speaker_step.run()
+        self.assertEqual(len(speaker_step.children), children_before)
+
+        language_step = find_step(
+            StepNames.data_has_language_value_step.value, tour.steps
+        )
+        children_before = len(language_step.children)
+        with patch_menu_prompt(1):  # 1 is "no"
+            language_step.run()
+        self.assertEqual(len(language_step.children), children_before + 1)
+        self.assertIsInstance(language_step.children[0], dataset.SelectLanguageStep)
+
+        select_lang_step = language_step.children[0]
+        with patch_logger(dataset, QUIET):
+            with patch_menu_prompt(15):  # some arbitrary language from the list
+                select_lang_step.run()
+        # print(select_lang_step.state)
+        self.assertEqual(
+            select_lang_step.state["filelist_headers"],
+            ["unknown_0", "basename", "text", "unknown_3"],
+        )
+
+        text_processing_step = find_step(
+            StepNames.text_processing_step.value, tour.steps
+        )
+        # 0 is lowercase, 1 is NFC Normalization, select both
+        with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
+            with patch_menu_prompt([0, 1]):
+                text_processing_step.run()
+        # print(text_processing_step.state)
+        self.assertEqual(
+            text_processing_step.state["filelist_data"][2]["text"],
+            "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
+        )
+
+        sox_effects_step = find_step(StepNames.sox_effects_step.value, tour.steps)
+        # 0 is resample to 22050 kHz, 2 is remove silence at start
+        with patch_menu_prompt([0, 2]):
+            sox_effects_step.run()
+        # print(sox_effects_step.state["sox_effects"])
+        self.assertEqual(
+            sox_effects_step.state["sox_effects"],
+            [["channel", "1"], ["rate", "22050"], ["silence", "1", "0.1", "1.0%"]],
+        )
+
+        symbol_set_step = find_step(StepNames.symbol_set_step.value, tour.steps)
+        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 4)
+        with patch_menu_prompt([(0, 1, 2, 3), (11), ()], multi=True):
+            symbol_set_step.run()
+        self.assertEqual(symbol_set_step.state["banned_symbols"], "z")
+        self.assertEqual(symbol_set_step.response.punctuation, ["\t", " ", "-", ":"])
+        self.assertEqual(
+            symbol_set_step.response.symbol_set,
+            ["a", "c", "d", "e", "f", "n", "o", "r", "s", "t", "x", "à", "é", "ê"],
+        )
+        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
+
+    def test_wrong_fileformat(self):
+        tour = Tour(
+            name="mismatched fileformat",
+            steps=[
+                dataset.FilelistStep(StepNames.filelist_step.value),
+                dataset.FilelistFormatStep(StepNames.filelist_format_step.value),
+            ],
+        )
+        filelist = str(self.data_dir / "unit-test-case2.psv")
+
+        filelist_step = tour.steps[0]
+        with monkeypatch(filelist_step, "prompt", Say(filelist)):
+            filelist_step.run()
+        format_step = tour.steps[1]
+        # try with: 1/tsv (wrong), 2/csv (wrong), and finally 0 tsv (right)
+        with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
+            with patch_menu_prompt((1, 2, 0), multi=True):
                 format_step.run()
-            self.assertIsInstance(format_step.children[0], dataset.HeaderStep)
-            self.assertEqual(
-                format_step.children[0].name, StepNames.basename_header_step.value
-            )
-            self.assertIsInstance(format_step.children[1], dataset.HeaderStep)
-            self.assertEqual(
-                format_step.children[1].name, StepNames.text_header_step.value
-            )
-
-            step = format_step.children[0]
-            with patch_menu_prompt(1):  # 1 is second column
-                step.run()
-            self.assertEqual(step.response, 1)
-            self.assertEqual(step.state["filelist_headers"][1], "basename")
-
-            step = tour.steps[2].children[1]
-            with patch_menu_prompt(
-                1
-            ):  # 1 is second remaining column, i.e., third column
-                step.run()
-            # print(step.state["filelist_headers"])
-            self.assertEqual(step.state["filelist_headers"][2], "text")
-
-            speaker_step = find_step(
-                StepNames.data_has_speaker_value_step.value, tour.steps
-            )
-            children_before = len(speaker_step.children)
-            with patch_menu_prompt(1):  # 1 is "no"
-                speaker_step.run()
-            self.assertEqual(len(speaker_step.children), children_before)
-
-            language_step = find_step(
-                StepNames.data_has_language_value_step.value, tour.steps
-            )
-            children_before = len(language_step.children)
-            with patch_menu_prompt(1):  # 1 is "no"
-                language_step.run()
-            self.assertEqual(len(language_step.children), children_before + 1)
-            self.assertIsInstance(language_step.children[0], dataset.SelectLanguageStep)
-
-            select_lang_step = language_step.children[0]
-            with patch_logger(dataset, QUIET):
-                with patch_menu_prompt(15):  # some arbitrary language from the list
-                    select_lang_step.run()
-            # print(select_lang_step.state)
-            self.assertEqual(
-                select_lang_step.state["filelist_headers"],
-                ["unknown_0", "basename", "text", "unknown_3"],
-            )
-
-            text_processing_step = find_step(
-                StepNames.text_processing_step.value, tour.steps
-            )
-            # 0 is lowercase, 1 is NFC Normalization, select both
-            with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
-                with patch_menu_prompt([0, 1]):
-                    text_processing_step.run()
-            # print(text_processing_step.state)
-            self.assertEqual(
-                text_processing_step.state["filelist_data"][2]["text"],
-                "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
-            )
-
-            sox_effects_step = find_step(StepNames.sox_effects_step.value, tour.steps)
-            # 0 is resample to 22050 kHz, 2 is remove silence at start
-            with patch_menu_prompt([0, 2]):
-                sox_effects_step.run()
-            # print(sox_effects_step.state["sox_effects"])
-            self.assertEqual(
-                sox_effects_step.state["sox_effects"],
-                [["channel", "1"], ["rate", "22050"], ["silence", "1", "0.1", "1.0%"]],
-            )
-
-            symbol_set_step = find_step(StepNames.symbol_set_step.value, tour.steps)
-            self.assertEqual(len(symbol_set_step.state["filelist_data"]), 4)
-            with patch_menu_prompt([(0, 1, 2, 3), (11), ()], multi=True):
-                symbol_set_step.run()
-            self.assertEqual(symbol_set_step.state["banned_symbols"], "z")
-            self.assertEqual(
-                symbol_set_step.response.punctuation, ["\t", " ", "-", ":"]
-            )
-            self.assertEqual(
-                symbol_set_step.response.symbol_set,
-                ["a", "c", "d", "e", "f", "n", "o", "r", "s", "t", "x", "à", "é", "ê"],
-            )
-            self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
+        self.assertIn("does not look like a tsv", logs.output[0])
+        self.assertIn("does not look like a csv", logs.output[1])
+        self.assertTrue(format_step.completed)
+        #print(format_step.state)
 
     def test_validate_path(self):
         """Unit testing for validate_path() in isolation."""

@@ -1,6 +1,5 @@
 import os
 import re
-from functools import partial
 from glob import glob
 from pathlib import Path
 from unicodedata import normalize
@@ -79,7 +78,19 @@ class SampleRateConfigStep(Step):
             return False
 
 
+class FilelistStep(Step):
+    def prompt(self):
+        return questionary.path(
+            "Where is your data filelist?", style=CUSTOM_QUESTIONARY_STYLE
+        ).ask()
+
+    def validate(self, response):
+        return validate_path(response, is_file=True, exists=True)
+
+
 class FilelistFormatStep(Step):
+    separators = {"psv": "|", "tsv": "\t", "csv": ","}
+
     def prompt(self):
         return get_response_from_menu_prompt(
             prompt_text="Select which format your filelist is in:",
@@ -89,7 +100,32 @@ class FilelistFormatStep(Step):
             return_indices=False,
         )
 
+    def looks_like_sv(self, file_type, separator) -> bool:
+        filelist_path = self.state.get(StepNames.filelist_step.value)
+        initial_records = generic_csv_reader(
+            filelist_path, delimiter=separator, record_limit=10
+        )
+
+        column_count = len(initial_records[0])
+        if column_count < 2:
+            logger.info(
+                f"File {filelist_path} does not look like a {file_type} file: no record separator found on header line."
+            )
+            return False
+
+        for i, record in enumerate(initial_records):
+            if len(record) != column_count:
+                logger.info(
+                    f"File {filelist_path} does not look like a {file_type} file: the {i}th record has a different number of fields than the header row."
+                )
+                return False
+
+        return True
+
     def validate(self, response):
+        separator = self.separators.get(response, None)
+        if separator:
+            return self.looks_like_sv(response, separator)
         return isinstance(response, str)
 
     def effect(self):
@@ -456,14 +492,11 @@ class SymbolSetStep(Step):
 def return_dataset_steps(dataset_index=0):
     return [
         WavsDirStep(
-            name=StepNames.wavs_dir_step.value, state_subset=f"dataset_{dataset_index}"
+            name=StepNames.wavs_dir_step.value,
+            state_subset=f"dataset_{dataset_index}",
         ),
-        Step(
+        FilelistStep(
             name=StepNames.filelist_step.value,
-            prompt_method=questionary.path(
-                "Where is your data filelist?", style=CUSTOM_QUESTIONARY_STYLE
-            ).ask,
-            validate_method=partial(validate_path, is_file=True, exists=True),
             state_subset=f"dataset_{dataset_index}",
         ),
         FilelistFormatStep(

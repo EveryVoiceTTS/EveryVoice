@@ -4,6 +4,7 @@ import os
 import re
 from contextlib import contextmanager
 from datetime import datetime
+from itertools import islice
 from os.path import dirname, isabs, isfile, splitext
 from pathlib import Path
 from typing import Any, Dict, List, Union
@@ -245,6 +246,7 @@ def generic_csv_reader(
     delimiter=",",
     quoting=csv.QUOTE_NONE,
     escapechar="\\",
+    record_limit: int = 0,  # if non-zero, read only this many records
 ):
     with open(
         path,
@@ -252,6 +254,8 @@ def generic_csv_reader(
         newline="",
         encoding="utf8",
     ) as f:
+        if record_limit:
+            f = islice(f, record_limit)
         reader = csv.reader(
             f,
             delimiter=delimiter,
