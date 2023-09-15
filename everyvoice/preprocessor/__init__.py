@@ -28,8 +28,8 @@ from torchaudio.functional import compute_kaldi_pitch, resample
 from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
-from everyvoice.config import ConfigError
 from everyvoice.config.preprocessing_config import PitchCalculationMethod
+from everyvoice.exceptions import ConfigError
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig

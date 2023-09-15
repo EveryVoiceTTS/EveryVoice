@@ -1,17 +1,23 @@
 #!/usr/bin/env python
 
 import json
+import tempfile
 from pathlib import Path
 from unittest import TestCase, main
 
 import yaml
 
+from everyvoice import exceptions
 from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
-from everyvoice.utils import expand_config_string_syntax, lower
+from everyvoice.utils import (
+    expand_config_string_syntax,
+    load_config_from_json_or_yaml_path,
+    lower,
+)
 
 
 class ConfigTest(TestCase):
@@ -81,6 +87,12 @@ class ConfigTest(TestCase):
         )
         self.assertEqual(self.config.feature_prediction.text.cleaners, [lower])
         self.assertEqual(self.config.feature_prediction.text.symbols.pad, "FOO")
+
+    def test_load_empty_config(self):
+        with tempfile.NamedTemporaryFile(prefix="test", mode="w", suffix=".yaml") as tf:
+            tf.write(" ")
+            with self.assertRaises(exceptions.InvalidConfiguration):
+                load_config_from_json_or_yaml_path(Path(tf.name))
 
     def test_change_with_indices(self):
         """Text the --config-args can also work with arrays"""

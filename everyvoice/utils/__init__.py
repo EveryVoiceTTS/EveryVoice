@@ -16,6 +16,7 @@ from loguru import logger
 from pympi.Praat import TextGrid
 
 import everyvoice
+from everyvoice import exceptions
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
@@ -58,6 +59,8 @@ def load_config_from_json_or_yaml_path(path: Path):
         raise ValueError(f"Config file '{path}' does not exist")
     with open(path, "r", encoding="utf8") as f:
         config = json.load(f) if path.suffix == ".json" else yaml.safe_load(f)
+    if not config:
+        raise exceptions.InvalidConfiguration(f"Your configuration at {path} was empty")
     return config
 
 

@@ -35,39 +35,26 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 
 
 def load_config_base_command(
-    name: Enum,
     model_config: Union[
         DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
     ],
-    configs,
     # Must include the above in model-specific command
     config_args: List[str],
     config_path: Path,
 ):
     from everyvoice.utils import update_config_from_cli_args
 
-    if config_path:
-        config = model_config.load_config_from_path(config_path)
-    elif name:
-        config = model_config.load_config_from_path(configs[name.value])
-    else:
-        logger.error(
-            "You must either choose a <NAME> of a preconfigured dataset, or provide a <CONFIG_PATH> to a preprocessing configuration file."
-        )
-        exit()
+    config = model_config.load_config_from_path(config_path)
 
     config = update_config_from_cli_args(config_args, config)
     return config
 
 
 def preprocess_base_command(
-    name: Enum,
     model_config: Union[
         DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
     ],
-    configs,
-    steps,
-    preprocess_categories,
+    steps: List[str],
     # Must include the above in model-specific command
     config_args: List[str],
     config_path: Path,
@@ -78,34 +65,24 @@ def preprocess_base_command(
 ):
     from everyvoice.preprocessor import Preprocessor
 
-    config = load_config_base_command(
-        name, model_config, configs, config_args, config_path
-    )
-    to_process = [x.name for x in steps]
+    config = load_config_base_command(model_config, config_args, config_path)
     preprocessor = Preprocessor(config)
-    if not steps:
-        logger.info(
-            f"No specific preprocessing data requested, processing everything from dataset '{name}'"
-        )
-        to_process = list(preprocess_categories.__members__.keys())
     if isinstance(config, FastSpeech2Config) and config.model.use_phonological_feats:
-        to_process.append("pfs")
+        steps.append("pfs")
     preprocessor.preprocess(
         output_path=output_path,
         cpus=cpus,
         overwrite=overwrite,
-        to_process=to_process,
+        to_process=steps,
         debug=debug,
     )
-    return preprocessor, config, to_process
+    return preprocessor, config, steps
 
 
 def train_base_command(
-    name: Enum,
     model_config: Union[
         DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
     ],
-    configs,
     data_module: Union[
         AlignerDataModule, E2EDataModule, FastSpeech2DataModule, HiFiGANDataModule
     ],
@@ -119,9 +96,7 @@ def train_base_command(
     nodes: int,
     strategy: str,
 ):
-    config = load_config_base_command(
-        name, model_config, configs, config_args, config_path
-    )
+    config = load_config_base_command(model_config, config_args, config_path)
     logger.info("Loading modules for training...")
     pbar = tqdm(range(4))
     pbar.set_description("Loading pytorch and friends")
