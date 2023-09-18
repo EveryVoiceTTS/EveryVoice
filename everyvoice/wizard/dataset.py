@@ -65,7 +65,7 @@ class SampleRateConfigStep(Step):
     def validate(self, response):
         try:
             self.response = int(response)
-            if self.response < 1 or float(response) != self.response:
+            if self.response < 100 or float(response) != self.response:
                 logger.info(
                     f"{response} is not a valid sample rate. Please enter an integer representing the sample rate in Hertz of your data."
                 )
