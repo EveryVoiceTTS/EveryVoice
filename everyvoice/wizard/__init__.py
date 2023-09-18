@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List
+from typing import List, Union
 
 from anytree import NodeMixin, RenderTree
 from questionary import Style
@@ -64,7 +64,7 @@ class Step(_Step, NodeMixin):
 
     def __init__(
         self,
-        name,
+        name: Union[Enum, str],
         default=None,
         prompt_method=None,
         validate_method=None,
@@ -74,7 +74,7 @@ class Step(_Step, NodeMixin):
         state_subset=None,
     ):
         super(Step, self).__init__()
-        self.name = name
+        self.name = name.value if isinstance(name, Enum) else name
         self.default = default
         self.parent = parent
         self.state_subset = state_subset
@@ -110,10 +110,10 @@ class Step(_Step, NodeMixin):
 
 
 class Tour:
-    def __init__(self, name: str, steps: List[Step], state: dict = {}):
+    def __init__(self, name: str, steps: List[Step], state: dict = None):
         """Create the tour by setting each Step as the child of the previous Step."""
         self.name = name
-        self.state = state
+        self.state = state if state is not None else {}
         for parent, child in zip(steps, steps[1:]):
             child.parent = parent
             self.determine_state(child, self.state)
