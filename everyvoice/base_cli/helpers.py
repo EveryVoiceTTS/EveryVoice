@@ -7,8 +7,10 @@
 import os
 from enum import Enum
 from pathlib import Path
+from pprint import pformat
 from typing import List, Optional, Union
 
+from deepdiff import DeepDiff
 from loguru import logger
 from tqdm import tqdm
 
@@ -147,8 +149,33 @@ def train_base_command(
         and os.path.exists(config.training.finetune_checkpoint)
         else None
     )
-    tensorboard_logger.log_hyperparams(config.dict())
-    trainer.fit(model_obj, data, ckpt_path=last_ckpt)
+    # Train from Scratch
+    if last_ckpt is None:
+        model_obj = model(config)
+        tensorboard_logger.log_hyperparams(config.dict())
+        trainer.fit(model_obj, data)
+    else:
+        model_obj = model.load_from_checkpoint(last_ckpt)
+        # Check if the trainer has changed (but ignore subdir since it is specific to the run)
+        diff = DeepDiff(model_obj.config.training.dict(), config.training.dict())
+        training_config_diff = [
+            item for item in diff["values_changed"].items() if "sub_dir" not in item[0]
+        ]
+        if training_config_diff:
+            model_obj.config.training = config.training
+            tensorboard_logger.log_hyperparams(config.dict())
+            # Finetune from Checkpoint
+            logger.warning(
+                f"""Some of your training hyperparameters have changed from your checkpoint at '{last_ckpt}', so we will override your checkpoint hyperparameters.
+                               Your training logs will start from epoch 0/step 0, but will still use the weights from your checkpoint. Values Changed: {pformat(training_config_diff)}
+                            """
+            )
+            trainer.fit(model_obj, data)
+        else:
+            logger.info(f"Resuming from checkpoint '{last_ckpt}'")
+            # Resume from checkpoint
+            tensorboard_logger.log_hyperparams(config.dict())
+            trainer.fit(model_obj, data, ckpt_path=last_ckpt)
 
 
 def inference_base_command(name: Enum):
