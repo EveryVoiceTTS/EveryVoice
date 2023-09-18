@@ -234,15 +234,21 @@ class WizardTest(TestCase):
         with monkeypatch(
             dataset,
             "questionary",
-            QuestionaryStub(("not an int", "", 3.1415, 512, 1024)),
+            QuestionaryStub(
+                (
+                    "not an int",  # obvious not valid
+                    "",  # ditto
+                    3.1415,  # floats are also not allowed
+                    50,  # this is below the minimum 100 allowed
+                    512,  # yay, a good response!
+                    1024,  # won't get used becasue 512 is good.
+                )
+            ),
         ):
             with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
                 step.run()
-        self.assertIn("not a valid sample rate", logs.output[0])  # "not an int"
-        self.assertIn("not a valid sample rate", logs.output[1])  # "" is not an int
-        self.assertIn(
-            "not a valid sample rate", logs.output[2]
-        )  # 3.1415 is also not an int
+        for i in range(4):
+            self.assertIn("not a valid sample rate", logs.output[i])
         self.assertTrue(step.completed)
         self.assertEqual(step.response, 512)
 
