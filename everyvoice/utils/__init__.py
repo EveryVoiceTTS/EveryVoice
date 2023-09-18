@@ -168,10 +168,16 @@ def load_lj_metadata_hifigan(path):
     return files
 
 
-def read_festival(path):
+def read_festival(
+    path,
+    record_limit: int = 0,  # if non-zero, read only this many records
+):
     """Read Festival format into filelist
     Args:
         path (Path): Path to festival format filelist
+        record_limit: if non-zero, read only that many records
+    Raises:
+        ValueError: the file is not valid festival input
     """
     festival_pattern = re.compile(
         r"""
@@ -185,11 +191,15 @@ def read_festival(path):
     )
     data = []
     with open(path, encoding="utf-8") as f:
+        if record_limit:
+            f = islice(f, record_limit)  # type: ignore[assignment]
         for line in f:
-            match = re.search(festival_pattern, line.strip())
-            basename = match["basename"].strip()
-            text = match["text"].strip()
-            data.append({"basename": basename, "text": text})
+            if match := re.search(festival_pattern, line.strip()):
+                basename = match["basename"].strip()
+                text = match["text"].strip()
+                data.append({"basename": basename, "text": text})
+            else:
+                raise ValueError(f'File {path} is not in the "festival" format.')
     return data
 
 
@@ -255,7 +265,7 @@ def generic_csv_reader(
         encoding="utf8",
     ) as f:
         if record_limit:
-            f = islice(f, record_limit)
+            f = islice(f, record_limit)  # type: ignore[assignment]
         reader = csv.reader(
             f,
             delimiter=delimiter,

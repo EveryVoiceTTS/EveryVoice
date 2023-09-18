@@ -123,10 +123,20 @@ class FilelistFormatStep(Step):
         return True
 
     def validate(self, response):
+        if response == "festival":
+            filelist_path = self.state.get(StepNames.filelist_step.value)
+            try:
+                _ = read_festival(filelist_path, 10)
+                return True
+            except ValueError:
+                logger.info(f"File {filelist_path} is not in the festival format.")
+                return False
+
         separator = self.separators.get(response, None)
         if separator:
             return self.looks_like_sv(response, separator)
-        return isinstance(response, str)
+
+        assert False and "the above code covers all the accepted formats"
 
     def effect(self):
         """

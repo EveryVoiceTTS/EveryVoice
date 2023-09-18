@@ -343,7 +343,7 @@ class WizardTest(TestCase):
         )
         self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
 
-    def test_wrong_fileformat(self):
+    def test_wrong_fileformat_psv(self):
         tour = Tour(
             name="mismatched fileformat",
             steps=[
@@ -357,14 +357,39 @@ class WizardTest(TestCase):
         with monkeypatch(filelist_step, "prompt", Say(filelist)):
             filelist_step.run()
         format_step = tour.steps[1]
-        # try with: 1/tsv (wrong), 2/csv (wrong), and finally 0 tsv (right)
+        # try with: 1/tsv (wrong), 2/csv (wrong), 3/festival (wrong) and finally 0 tsv (right)
         with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
-            with patch_menu_prompt((1, 2, 0), multi=True):
+            with patch_menu_prompt((1, 2, 3, 0), multi=True):
                 format_step.run()
         self.assertIn("does not look like a tsv", logs.output[0])
         self.assertIn("does not look like a csv", logs.output[1])
+        self.assertIn("festival", logs.output[2])
         self.assertTrue(format_step.completed)
-        #print(format_step.state)
+        # print(format_step.state)
+
+    def test_wrong_fileformat_festival(self):
+        tour = Tour(
+            name="mismatched fileformat",
+            steps=[
+                dataset.FilelistStep(StepNames.filelist_step.value),
+                dataset.FilelistFormatStep(StepNames.filelist_format_step.value),
+            ],
+        )
+        filelist = str(self.data_dir / "unit-test-case3.festival")
+
+        filelist_step = tour.steps[0]
+        with monkeypatch(filelist_step, "prompt", Say(filelist)):
+            filelist_step.run()
+        format_step = tour.steps[1]
+        # try with: 0/psv (wrong), 1/tsv (wrong), 2/csv (wrong), and finally 3/festival (right)
+        with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
+            with patch_menu_prompt((0, 1, 2, 3), multi=True):
+                format_step.run()
+        self.assertIn("does not look like a psv", logs.output[0])
+        self.assertIn("does not look like a tsv", logs.output[1])
+        self.assertIn("does not look like a csv", logs.output[2])
+        self.assertTrue(format_step.completed)
+        # print(format_step.state)
 
     def test_validate_path(self):
         """Unit testing for validate_path() in isolation."""
