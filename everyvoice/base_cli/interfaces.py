@@ -12,16 +12,20 @@ import typer
 
 
 def load_config_base_command_interface(
-    config_args: List[str] = typer.Option(None, "--config", "-c"),
-    config_path: Path = typer.Option(
-        None, "--config-path", "-p", exists=True, dir_okay=False, file_okay=True
+    config_file: Path = typer.Argument(
+        ...,
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="The path to your model configuration file.",
     ),
+    config_args: List[str] = typer.Option(None, "--config", "-c"),
 ):
     pass
 
 
 def preprocess_base_command_interface(
-    config_path: Path = typer.Argument(
+    config_file: Path = typer.Argument(
         ...,
         exists=True,
         dir_okay=False,
@@ -50,7 +54,7 @@ def preprocess_base_command_interface(
 
 
 def train_base_command_interface(
-    config_path: Path = typer.Argument(
+    config_file: Path = typer.Argument(
         ...,
         exists=True,
         dir_okay=False,
@@ -83,10 +87,14 @@ def train_base_command_interface(
 
 
 def inference_base_command_interface(
-    config_args: List[str] = typer.Option(None, "--config", "-c"),
-    config_path: Path = typer.Option(
-        None, "--config-path", "-p", exists=True, dir_okay=False, file_okay=True
+    config_file: Path = typer.Argument(
+        ...,
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="The path to your model configuration file.",
     ),
+    config_args: List[str] = typer.Option(None, "--config", "-c"),
     accelerator: str = typer.Option(
         "auto",
         "--accelerator",
