@@ -63,12 +63,16 @@ class Dataset(PartialConfigModel):
     filelist_loader: Callable = generic_dict_loader
     sox_effects: list = [["channels", "1"]]
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("filelist_loader", pre=True, always=True)
     def convert_callable_filelist_loader(cls, v, values):
         func = string_to_callable(v)
         values["filelist_loader"] = func
         return func
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("data_dir", "textgrid_dir", "filelist", pre=True, always=True)
     def convert_paths(cls, v, values, field: ModelField):
         path = rel_path_to_abs_path(v)
@@ -90,6 +94,8 @@ class PreprocessingConfig(PartialConfigModel):
     audio: AudioConfig = Field(default_factory=AudioConfig)
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("save_dir", pre=True, always=True)
     def create_dir(cls, v, values):
         path = rel_path_to_abs_path(v)

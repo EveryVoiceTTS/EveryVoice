@@ -1,7 +1,7 @@
 import contextlib
 from typing import Callable, Dict, List, Union
 
-from pydantic import BaseModel, Extra, Field, validator
+from pydantic import BaseModel, ConfigDict, Extra, Field, validator
 
 from everyvoice.config.shared_types import ConfigModel
 from everyvoice.config.utils import string_to_callable
@@ -12,9 +12,7 @@ class Symbols(BaseModel):
     silence: Union[str, List[str]] = ["<SIL>"]
     pad: str = "_"
     punctuation: Union[str, List[str]] = "-';:,.!?¡¿—…\"«»“” "
-
-    class Config:
-        extra = Extra.allow
+    model_config = ConfigDict(extra=Extra.allow)
 
 
 class TextConfig(ConfigModel):
@@ -22,6 +20,8 @@ class TextConfig(ConfigModel):
     to_replace: Dict[str, str] = {}  # Happens before cleaners
     cleaners: List[Callable] = [lower, collapse_whitespace, nfc_normalize]
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("cleaners", pre=True, always=True)
     def convert_callable_cleaners(cls, v, values):
         with contextlib.suppress(KeyError):

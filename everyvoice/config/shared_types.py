@@ -4,7 +4,15 @@ from types import FunctionType
 from typing import Callable, Tuple, Union
 
 from loguru import logger
-from pydantic import BaseModel, DirectoryPath, Extra, Field, FilePath, validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    DirectoryPath,
+    Extra,
+    Field,
+    FilePath,
+    validator,
+)
 from pydantic.fields import ModelField
 
 from everyvoice.config.utils import string_to_callable
@@ -16,17 +24,19 @@ from everyvoice.utils import (
 
 
 class ConfigModel(BaseModel):
-    class Config:
-        extra = Extra.forbid
-        use_enum_values = True
-        json_encoders = {
-            Callable: lambda fn: ".".join(
-                [fn.__module__, fn.__name__]
-            ),  # This doesn't seem to work for some reason: https://github.com/pydantic/pydantic/issues/4151
+    # TODO[pydantic]: The following keys were removed: `json_encoders`.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
+    model_config = ConfigDict(
+        extra=Extra.forbid,
+        use_enum_values=True,
+        json_encoders={
+            # This doesn't seem to work for some reason: https://github.com/pydantic/pydantic/issues/4151
+            Callable: lambda fn: ".".join([fn.__module__, fn.__name__]),  # type: ignore
             FunctionType: lambda fn: ".".join(
                 [fn.__module__, fn.__name__]
             ),  # But this does
-        }
+        },
+    )
 
     def update_config(self, new_config: dict):
         """Update the config with new values"""
@@ -104,6 +114,8 @@ class LoggerConfig(ConfigModel):
     version: str = "base"
 
     # always=False so that value doesn't get called if using default (i.e. allows config-wizard to work properly)
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("sub_dir", pre=True, always=False)
     def convert_callable_sub_dir(cls, v, values):
         func = string_to_callable(v)
@@ -111,6 +123,8 @@ class LoggerConfig(ConfigModel):
         values["sub_dir"] = called
         return called
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("save_dir", pre=True, always=True)
     def convert_path(cls, v, values):
         path = rel_path_to_abs_path(v)
@@ -140,12 +154,16 @@ class BaseTrainingConfig(ConfigModel):
     val_data_workers: int = 0
     train_data_workers: int = 4
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator("filelist_loader", pre=True, always=True)
     def convert_callable_filelist_loader(cls, v, values):
         func = string_to_callable(v)
         values["filelist_loader"] = func
         return func
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator(
         "finetune_checkpoint",
         "training_filelist",

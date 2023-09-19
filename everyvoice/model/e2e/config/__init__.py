@@ -12,9 +12,11 @@ from everyvoice.utils import load_config_from_json_or_yaml_path, rel_path_to_abs
 
 
 class E2ETrainingConfig(BaseTrainingConfig):
-    feature_prediction_checkpoint: Union[None, FilePath]
-    vocoder_checkpoint: Union[None, FilePath]
+    feature_prediction_checkpoint: Union[None, FilePath] = None
+    vocoder_checkpoint: Union[None, FilePath] = None
 
+    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
+    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
     @validator(
         "feature_prediction_checkpoint", "vocoder_checkpoint", pre=True, always=True
     )
