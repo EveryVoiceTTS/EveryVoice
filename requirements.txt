@@ -15,7 +15,7 @@ pydantic==1.10.2
 pympi-ling
 pysdtw==0.0.5
 pytorch_lightning==1.8.1
-pyworld == 0.2.10
+pyworld==0.3.4
 PyYAML>=5.1
 questionary==1.10.0
 simple-term-menu==1.5.2
