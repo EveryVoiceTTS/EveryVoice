@@ -52,12 +52,30 @@ def _flatten(structure, key="", path="", flattened=None):
     return flattened
 
 
+def config_paths_to_absolute(config, config_path: Path):
+    """
+    When loading a config, convert all paths to absolute.
+    """
+    for p in ("aligner", "feature_prediction", "preprocessing", "text"):
+        if p in config:
+            config[p] = (config_path.parent / config[p]).resolve()
+            #config[p] = str(config[p])
+    if "training" in config:
+        training = config["training"]
+        for p in ("training_filelist", "validation_filelist", "vocoder_path"):
+            if p in training and training[p] is not None:
+                training[p] = (config_path.parent / training[p]).resolve()
+                #training[p] = str(training[p])
+
+    return config
+
+
 def load_config_from_json_or_yaml_path(path: Path):
     if not path.exists():
         raise ValueError(f"Config file '{path}' does not exist")
-    with open(path, "r", encoding="utf8") as f:
+    with path.open("r", encoding="utf8") as f:
         config = json.load(f) if path.suffix == ".json" else yaml.safe_load(f)
-    return config
+    return config_paths_to_absolute(config, path)
 
 
 def expand_config_string_syntax(config_arg: str) -> dict:

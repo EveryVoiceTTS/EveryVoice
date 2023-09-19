@@ -196,7 +196,6 @@ class ConfigFormatStep(Step):
             wavs_dir = (
                 Path(self.state[dataset][StepNames.wavs_dir_step.value])
                 .expanduser()
-                #.absolute()
             )
             if not wavs_dir.is_absolute():
                 wavs_dir = Path("../..") / wavs_dir

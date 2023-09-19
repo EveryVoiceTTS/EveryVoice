@@ -91,4 +91,11 @@ class PreprocessingConfig(PartialConfigModel):
     def load_config_from_path(path: Path) -> "PreprocessingConfig":
         """Load a config from a path"""
         config = load_config_from_json_or_yaml_path(path)
+
+        config["save_dir"] = (path.parent / config["save_dir"]).resolve()
+        for data in source_data:
+            data["data_dir"] = (path.parent / config["data_dir"]).resolve()
+            data["filelist"] = (path.parent / config["filelist"]).resolve()
+            if data["textgrid_dir"] is not None:
+                data["textgrid_dir"] = (path.parent / data["textgrid_dir"]).resolve()
         return PreprocessingConfig(**config)
