@@ -77,7 +77,7 @@ class PartialConfigModel(ConfigModel):
             "vocoder",
         ]
         for k, v in data.items():
-            if k in expandable_keys and isinstance(v, str):
+            if k in expandable_keys and isinstance(v, (str, Path)):
                 data_to_expand[k] = v
             else:
                 config[k] = v

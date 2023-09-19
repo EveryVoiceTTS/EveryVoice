@@ -37,11 +37,15 @@ class EveryVoiceConfig(PartialConfigModel):
     training: E2ETrainingConfig = Field(default_factory=E2ETrainingConfig)
 
     @staticmethod
-    def load_config_from_path(
-        path: Path,
-    ) -> "EveryVoiceConfig":
+    def load_config_from_path(path: Path) -> "EveryVoiceConfig":
         """Load a config from a path"""
         config = load_config_from_json_or_yaml_path(path)
+        #config["aligner"] = (path.parent / config["aligner"]).resolve()
+        #config["feature_prediction"] = (path.parent / config["feature_prediction"]).resolve()
+        #config["training"]["training_filelist"] = (path.parent / config["training"]["training_filelist"]).resolve()
+        #config["training"]["validation_filelist"] = (path.parent / config["training"]["validation_filelist"]).resolve()
+        #if config["training"]["vocoder_path"] is not None:
+        #    config["training"]["vocoder_path"] = (path.parent / config["training"]["vocoder_path"]).resolve()
         return EveryVoiceConfig(**config)
 
 

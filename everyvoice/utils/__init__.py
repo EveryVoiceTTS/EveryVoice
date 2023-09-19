@@ -59,7 +59,7 @@ def config_paths_to_absolute(config, config_path: Path):
     for p in ("aligner", "feature_prediction", "preprocessing", "text"):
         if p in config:
             config[p] = (config_path.parent / config[p]).resolve()
-            #config[p] = str(config[p])
+            config[p] = str(config[p])
     if "training" in config:
         training = config["training"]
         for p in ("training_filelist", "validation_filelist", "vocoder_path"):
