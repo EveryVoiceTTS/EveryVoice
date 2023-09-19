@@ -18,6 +18,8 @@ from everyvoice.wizard.validators import validate_path
 
 
 class DatasetNameStep(Step):
+    default_name = StepNames.dataset_name_step
+
     def prompt(self):
         return input("What would you like to call this dataset? ")
 
@@ -41,6 +43,8 @@ class DatasetNameStep(Step):
 
 
 class WavsDirStep(Step):
+    default_name = StepNames.wavs_dir_step
+
     def prompt(self):
         return questionary.path(
             "Where are your audio files?", style=CUSTOM_QUESTIONARY_STYLE
@@ -56,6 +60,8 @@ class WavsDirStep(Step):
 
 
 class SampleRateConfigStep(Step):
+    default_name = StepNames.sample_rate_config_step
+
     def prompt(self):
         return questionary.text(
             "What is the sample rate (in Hertz) of your data?",
@@ -79,6 +85,8 @@ class SampleRateConfigStep(Step):
 
 
 class FilelistStep(Step):
+    default_name = StepNames.filelist_step
+
     def prompt(self):
         return questionary.path(
             "Where is your data filelist?", style=CUSTOM_QUESTIONARY_STYLE
@@ -89,6 +97,7 @@ class FilelistStep(Step):
 
 
 class FilelistFormatStep(Step):
+    default_name = StepNames.filelist_format_step
     separators = {"psv": "|", "tsv": "\t", "csv": ","}
 
     def prompt(self):
@@ -192,6 +201,8 @@ class FilelistFormatStep(Step):
 
 
 class HeaderStep(Step):
+    default_name = StepNames.text_header_step
+
     def __init__(self, name: str, prompt_text: str, header_name: str, **kwargs):
         super(HeaderStep, self).__init__(name=name, **kwargs)
         self.prompt_text = prompt_text
@@ -234,6 +245,7 @@ class HeaderStep(Step):
 
 
 class HasSpeakerStep(Step):
+    default_name = StepNames.data_has_speaker_value_step
     choices = ("yes", "no")
 
     def prompt(self):
@@ -262,6 +274,7 @@ class HasSpeakerStep(Step):
 
 
 class HasLanguageStep(Step):
+    default_name = StepNames.data_has_language_value_step
     choices = ("yes", "no")
 
     def prompt(self):
@@ -298,6 +311,8 @@ class HasLanguageStep(Step):
 
 
 class SelectLanguageStep(Step):
+    default_name = StepNames.select_language_step
+
     def prompt(self):
         from g2p import get_arpabet_langs
 
@@ -364,6 +379,8 @@ def return_symbols(language):
 
 
 class TextProcessingStep(Step):
+    default_name = StepNames.text_processing_step
+
     def prompt(self):
         return get_response_from_menu_prompt(
             prompt_text="Which of the following text transformations would like to apply before determining the symbol set?",
@@ -396,6 +413,8 @@ class TextProcessingStep(Step):
 
 
 class SoxEffectsStep(Step):
+    default_name = StepNames.sox_effects_step
+
     def prompt(self):
         return get_response_from_menu_prompt(
             prompt_text="Which of the following audio preprocessing options would you like to apply?",
@@ -427,6 +446,8 @@ class SoxEffectsStep(Step):
 
 
 class SymbolSetStep(Step):
+    default_name = StepNames.symbol_set_step
+
     def prompt(self):
         selected_language = get_iso_code(
             self.state.get(StepNames.select_language_step.value, None)
@@ -501,42 +522,15 @@ class SymbolSetStep(Step):
 
 def return_dataset_steps(dataset_index=0):
     return [
-        WavsDirStep(
-            name=StepNames.wavs_dir_step.value,
-            state_subset=f"dataset_{dataset_index}",
-        ),
-        FilelistStep(
-            name=StepNames.filelist_step.value,
-            state_subset=f"dataset_{dataset_index}",
-        ),
-        FilelistFormatStep(
-            name=StepNames.filelist_format_step.value,
-            state_subset=f"dataset_{dataset_index}",
-        ),
-        HasSpeakerStep(
-            name=StepNames.data_has_speaker_value_step.value,
-            state_subset=f"dataset_{dataset_index}",
-        ),
-        HasLanguageStep(
-            name=StepNames.data_has_language_value_step.value,
-            state_subset=f"dataset_{dataset_index}",
-        ),
-        TextProcessingStep(
-            name=StepNames.text_processing_step.value,
-            state_subset=f"dataset_{dataset_index}",
-        ),
-        SymbolSetStep(
-            name=StepNames.symbol_set_step.value,
-            state_subset=f"dataset_{dataset_index}",
-        ),
-        SoxEffectsStep(
-            name=StepNames.sox_effects_step.value,
-            state_subset=f"dataset_{dataset_index}",
-        ),
-        DatasetNameStep(
-            name=StepNames.dataset_name_step.value,
-            state_subset=f"dataset_{dataset_index}",
-        ),
+        WavsDirStep(state_subset=f"dataset_{dataset_index}"),
+        FilelistStep(state_subset=f"dataset_{dataset_index}"),
+        FilelistFormatStep(state_subset=f"dataset_{dataset_index}"),
+        HasSpeakerStep(state_subset=f"dataset_{dataset_index}"),
+        HasLanguageStep(state_subset=f"dataset_{dataset_index}"),
+        TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
+        SymbolSetStep(state_subset=f"dataset_{dataset_index}"),
+        SoxEffectsStep(state_subset=f"dataset_{dataset_index}"),
+        DatasetNameStep(state_subset=f"dataset_{dataset_index}"),
     ]
 
 

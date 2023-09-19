@@ -22,6 +22,8 @@ from everyvoice.wizard.utils import sanitize_path, write_dict_to_config
 
 
 class NameStep(Step):
+    default_name = StepNames.name_step
+
     def prompt(self):
         return input("What would you like to call this project? ")
 
@@ -44,6 +46,8 @@ class NameStep(Step):
 
 
 class OutputPathStep(Step):
+    default_name = StepNames.output_step
+
     def prompt(self):
         return questionary.path(
             "Where should the New Dataset Wizard save your files?",
@@ -75,6 +79,8 @@ class OutputPathStep(Step):
 
 
 class ConfigFormatStep(Step):
+    default_name = StepNames.config_format_step
+
     def prompt(self):
         return get_response_from_menu_prompt(
             "Which format would you like to output the configuration to?",
@@ -235,6 +241,8 @@ class ConfigFormatStep(Step):
 
 
 class MoreDatasetsStep(Step):
+    default_name = StepNames.more_datasets_step
+
     def prompt(self):
         return get_response_from_menu_prompt(
             "Do you have more datasets to process?",

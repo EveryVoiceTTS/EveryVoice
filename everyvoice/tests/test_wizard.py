@@ -143,8 +143,8 @@ class WizardTest(TestCase):
         tour = Tour(
             "testing",
             [
-                basic.NameStep(SN.name_step),
-                basic.OutputPathStep(SN.output_step),
+                basic.NameStep(),
+                basic.OutputPathStep(),
             ],
         )
 
@@ -182,7 +182,7 @@ class WizardTest(TestCase):
 
     def test_more_data_step(self):
         """Exercise giving an invalid response and a yes response to more data."""
-        tour = Tour("testing", [basic.MoreDatasetsStep(name=SN.more_datasets_step)])
+        tour = Tour("testing", [basic.MoreDatasetsStep()])
         step = tour.steps[0]
         self.assertFalse(step.validate("foo"))
         self.assertTrue(step.validate("yes"))
@@ -197,7 +197,7 @@ class WizardTest(TestCase):
         self.assertGreater(len(step.children), 5)
 
     def test_dataset_name(self):
-        step = dataset.DatasetNameStep("")
+        step = dataset.DatasetNameStep()
         with monkeypatch(builtins, "input", Say(("", "bad/name", "good-name"), True)):
             with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
                 step.run()
@@ -344,8 +344,8 @@ class WizardTest(TestCase):
         tour = Tour(
             name="mismatched fileformat",
             steps=[
-                dataset.FilelistStep(SN.filelist_step),
-                dataset.FilelistFormatStep(SN.filelist_format_step),
+                dataset.FilelistStep(),
+                dataset.FilelistFormatStep(),
             ],
         )
         filelist = str(self.data_dir / "unit-test-case2.psv")
@@ -368,8 +368,8 @@ class WizardTest(TestCase):
         tour = Tour(
             name="mismatched fileformat",
             steps=[
-                dataset.FilelistStep(SN.filelist_step),
-                dataset.FilelistFormatStep(SN.filelist_format_step),
+                dataset.FilelistStep(),
+                dataset.FilelistFormatStep(),
             ],
         )
         filelist = str(self.data_dir / "unit-test-case3.festival")
@@ -465,8 +465,8 @@ class WizardTest(TestCase):
             tour = self.monkey_run_tour(
                 "monkey tour 1",
                 [
-                    (basic.NameStep(SN.name_step), "my-dataset-name"),
-                    (basic.OutputPathStep(SN.output_step), tmpdirname),
+                    (basic.NameStep(), "my-dataset-name"),
+                    (basic.OutputPathStep(), tmpdirname),
                 ],
             )
         self.assertEqual(tour.state[SN.name_step.value], "my-dataset-name")
@@ -474,17 +474,18 @@ class WizardTest(TestCase):
 
     def test_monkey_tour_2(self):
         data_dir = Path(__file__).parent / "data"
-        _ = self.monkey_run_tour(
+        tour = self.monkey_run_tour(
             "monkey tour 2",
             [
-                (dataset.WavsDirStep(SN.wavs_dir_step), str(data_dir)),
+                (dataset.WavsDirStep(), str(data_dir)),
                 (
-                    dataset.FilelistStep(SN.filelist_step),
+                    dataset.FilelistStep(),
                     str(data_dir / "unit-test-case1.psv"),
                 ),
-                (dataset.FilelistFormatStep(SN.filelist_format_step), "psv"),
+                (dataset.FilelistFormatStep(), "psv"),
             ],
         )
+        self.assertEqual(len(tour.state["filelist_data"]), 4)
 
 
 if __name__ == "__main__":

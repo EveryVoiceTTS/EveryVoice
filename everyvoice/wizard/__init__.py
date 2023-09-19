@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Union
+from typing import List, Optional, Union
 
 from anytree import NodeMixin, RenderTree
 from questionary import Style
@@ -64,7 +64,7 @@ class Step(_Step, NodeMixin):
 
     def __init__(
         self,
-        name: Union[Enum, str],
+        name: Union[None, Enum, str] = None,
         default=None,
         prompt_method=None,
         validate_method=None,
@@ -74,18 +74,20 @@ class Step(_Step, NodeMixin):
         state_subset=None,
     ):
         super(Step, self).__init__()
-        self.name = name.value if isinstance(name, Enum) else name
+        if name is None:
+            name = getattr(self, "default_name", "default step name missing")
+        self.name: str = name.value if isinstance(name, Enum) else name
         self.default = default
         self.parent = parent
         self.state_subset = state_subset
         self.state = None  # should be added when the Step is added to a Tour
         self.tour = None  # should be added when the Step is added to a Tour
         if effect_method is not None:
-            self.effect = effect_method
+            self.effect = effect_method  # type: ignore[method-assign]
         if prompt_method is not None:
-            self.prompt = prompt_method
+            self.prompt = prompt_method  # type: ignore[method-assign]
         if validate_method is not None:
-            self.validate = validate_method
+            self.validate = validate_method  # type: ignore[method-assign]
         if children:
             self.children = children
 
@@ -110,17 +112,17 @@ class Step(_Step, NodeMixin):
 
 
 class Tour:
-    def __init__(self, name: str, steps: List[Step], state: dict = None):
+    def __init__(self, name: str, steps: List[Step], state: Optional[dict] = None):
         """Create the tour by setting each Step as the child of the previous Step."""
         self.name = name
-        self.state = state if state is not None else {}
+        self.state: dict = state if state is not None else {}
         for parent, child in zip(steps, steps[1:]):
             child.parent = parent
             self.determine_state(child, self.state)
-            child.tour = self
+            child.tour = self  # type: ignore
         self.steps = steps
         self.root = steps[0]
-        self.root.tour = self
+        self.root.tour = self  # type: ignore
         self.determine_state(self.root, self.state)
 
     def determine_state(self, step: Step, state: dict):
@@ -129,11 +131,11 @@ class Tour:
                 state[step.state_subset] = {}
             step.state = state[step.state_subset]
         else:
-            step.state = state
+            step.state = state  # type: ignore
 
     def add_step(self, step: Step, parent: Step, child_index=0):
         self.determine_state(step, self.state)
-        step.tour = self
+        step.tour = self  # type: ignore
         children = list(parent.children)
         children.insert(child_index, step)
         parent.children = children
