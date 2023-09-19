@@ -15,7 +15,7 @@ from everyvoice.text.features import get_features
 class TextProcessor:
     def __init__(self, config: Union[AlignerConfig, FeaturePredictionConfig]):
         self.config = config
-        self._all_symbols = self.config.text.symbols.dict()
+        self._all_symbols = self.config.text.symbols.model_dump()
         if "pad" in self._all_symbols:
             assert isinstance(self._all_symbols["pad"], str)
         self._pad_symbol = self._all_symbols["pad"]
@@ -31,7 +31,7 @@ class TextProcessor:
         )
         self.symbols.insert(0, self._pad_symbol)
 
-        self.to_replace = config.text.dict().get("to_replace", {})
+        self.to_replace = config.text.model_dump().get("to_replace", {})
         self.missing_symbols: Counter[str] = Counter()
         self.duplicate_symbols: Counter[str] = Counter()
 
