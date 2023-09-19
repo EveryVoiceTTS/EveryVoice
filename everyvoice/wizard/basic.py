@@ -149,7 +149,9 @@ class ConfigFormatStep(Step):
             symbols=Symbols(punctuation=list(set(punctuation)), **symbols)
         )
         text_config_path = (config_dir / f"text.{self.response}").absolute()
-        write_dict_to_config(json.loads(text_config.json()), text_config_path)
+        write_dict_to_config(
+            json.loads(text_config.model_dump_json()), text_config_path
+        )
         # Preprocessing Config
         preprocessed_training_filelist_path = (
             output_path / "preprocessed" / "training_filelist.psv"
@@ -166,19 +168,24 @@ class ConfigFormatStep(Step):
             config_dir / f"preprocessing.{self.response}"
         ).absolute()
         write_dict_to_config(
-            json.loads(preprocessing_config.json()), preprocessing_config_path
+            json.loads(preprocessing_config.model_dump_json()),
+            preprocessing_config_path,
         )
         ## Create Aligner Config
-        aligner_logger = LoggerConfig(name="AlignerExperiment", save_dir=log_dir)
+        aligner_logger = LoggerConfig(
+            name="AlignerExperiment", save_dir=log_dir
+        ).model_dump()
         aligner_config = AlignerConfig(
+            # This isn't the actual AlignerTrainingConfig, but we can use it because we just
+            # inherit the defaults if we pass a dict to the AlignerConfig.training field
             training=BaseTrainingConfig(
                 training_filelist=preprocessed_training_filelist_path.absolute(),
                 validation_filelist=preprocessed_validation_filelist_path.absolute(),
                 logger=aligner_logger,
-            )
+            ).model_dump()
         )
         aligner_config_path = (config_dir / f"aligner.{self.response}").absolute()
-        aligner_config_json = json.loads(aligner_config.json())
+        aligner_config_json = json.loads(aligner_config.model_dump_json())
         aligner_config_json["preprocessing"] = str(preprocessing_config_path)
         aligner_config_json["text"] = str(text_config_path)
         write_dict_to_config(aligner_config_json, aligner_config_path)
@@ -189,10 +196,10 @@ class ConfigFormatStep(Step):
                 training_filelist=preprocessed_training_filelist_path.absolute(),
                 validation_filelist=preprocessed_validation_filelist_path.absolute(),
                 logger=fp_logger,
-            )
+            ).model_dump()
         )
         fp_config_path = (config_dir / f"feature_prediction.{self.response}").absolute()
-        fp_config_json = json.loads(fp_config.json())
+        fp_config_json = json.loads(fp_config.model_dump_json())
         fp_config_json["preprocessing"] = str(preprocessing_config_path)
         fp_config_json["text"] = str(text_config_path)
         write_dict_to_config(fp_config_json, fp_config_path)
@@ -203,10 +210,10 @@ class ConfigFormatStep(Step):
                 training_filelist=preprocessed_training_filelist_path.absolute(),
                 validation_filelist=preprocessed_validation_filelist_path.absolute(),
                 logger=vocoder_logger,
-            )
+            ).model_dump()
         )
         vocoder_config_path = (config_dir / f"vocoder.{self.response}").absolute()
-        vocoder_config_json = json.loads(vocoder_config.json())
+        vocoder_config_json = json.loads(vocoder_config.model_dump_json())
         vocoder_config_json["preprocessing"] = str(preprocessing_config_path)
         write_dict_to_config(vocoder_config_json, vocoder_config_path)
         # E2E Config
@@ -216,9 +223,9 @@ class ConfigFormatStep(Step):
                 training_filelist=preprocessed_training_filelist_path.absolute(),
                 validation_filelist=preprocessed_validation_filelist_path.absolute(),
                 logger=e2e_logger,
-            ),
+            ).model_dump(),
         )
-        e2e_config_json = json.loads(e2e_config.json())
+        e2e_config_json = json.loads(e2e_config.model_dump_json())
         e2e_config_json["aligner"] = str(aligner_config_path)
         e2e_config_json["feature_prediction"] = str(fp_config_path)
         e2e_config_json["vocoder"] = str(vocoder_config_path)

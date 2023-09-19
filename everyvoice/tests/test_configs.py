@@ -2,13 +2,17 @@
 
 import json
 import tempfile
+import time
 from pathlib import Path
+from typing import Callable
 from unittest import TestCase, main
 
 import yaml
 
 from everyvoice import exceptions
 from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
+from everyvoice.config.shared_types import LoggerConfig
+from everyvoice.config.text_config import TextConfig
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -17,6 +21,7 @@ from everyvoice.utils import (
     expand_config_string_syntax,
     load_config_from_json_or_yaml_path,
     lower,
+    nfc_normalize,
 )
 
 
@@ -57,6 +62,30 @@ class ConfigTest(TestCase):
         self.config.update_config(update)
         self.assertEqual(self.config.feature_prediction.training.batch_size, 123)
         self.assertEqual(self.config.vocoder.training.batch_size, 456)
+
+    def test_string_to_callable(self):
+        config = FeaturePredictionConfig(
+            text=TextConfig(cleaners=["everyvoice.utils.lower"])
+        )
+        self.assertEqual(config.text.cleaners, [lower])
+        with self.assertRaises(AttributeError):
+            config.update_config({"text": {"cleaners": ["everyvoice.utils.foobarfoo"]}})
+
+    def test_call_sub_dir(self):
+        config = LoggerConfig()
+        # sub_dir should get called from sub_dir_callable and be a string of an int
+        self.assertTrue(isinstance(int(config.sub_dir), int))
+        # Just in case we're super speedy
+        time.sleep(1)
+        self.assertGreater(int(config.sub_dir_callable()), int(config.sub_dir))
+        serialized_config = config.model_dump()
+        # Exclude sub_dir by default when serializing as it should get overriden on each run
+        self.assertTrue("sub_dir" not in serialized_config)
+
+    def test_properly_deserialized_callables(self):
+        config = TextConfig(cleaners=[nfc_normalize, "everyvoice.utils.lower"])
+        for fn in config.cleaners:
+            self.assertTrue(isinstance(fn, Callable))
 
     def test_string_to_dict(self):
         base_config = EveryVoiceConfig()

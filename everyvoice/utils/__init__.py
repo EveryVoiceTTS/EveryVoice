@@ -7,12 +7,13 @@ from datetime import datetime
 from itertools import islice
 from os.path import dirname, isabs, isfile, splitext
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 from unicodedata import normalize
 
 import joblib.parallel
 import yaml
 from loguru import logger
+from pydantic import ValidationInfo
 from pympi.Praat import TextGrid
 
 import everyvoice
@@ -100,14 +101,12 @@ def update_config_from_path(config_path: Path, original_config):
     return original_config.update_config(config_override)
 
 
-def rel_path_to_abs_path(
-    path: Union[None, str], base_path: str = dirname(everyvoice.__file__)
-):
+def rel_path_to_abs_path(path: Union[None, str], info: Optional[ValidationInfo] = None):
     if path is None:
         return None
     if isabs(path):
         return Path(path)
-    base_path = Path(base_path)  # type: ignore
+    base_path = Path(dirname(everyvoice.__file__))  # type: ignore
     path = Path(path)  # type: ignore
     return (base_path / path).resolve()  # type: ignore
 

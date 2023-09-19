@@ -1,19 +1,14 @@
 import contextlib
 from enum import Enum
 from pathlib import Path
-from typing import Callable, List, Union
+from typing import List, Union
 
 from loguru import logger
-from pydantic import DirectoryPath, Field, FilePath, validator
-from pydantic.fields import ModelField
+from pydantic import Field, field_validator
 
 from everyvoice.config.shared_types import ConfigModel, PartialConfigModel
-from everyvoice.config.utils import string_to_callable
-from everyvoice.utils import (
-    generic_dict_loader,
-    load_config_from_json_or_yaml_path,
-    rel_path_to_abs_path,
-)
+from everyvoice.config.utils import PossiblyRelativePath, PossiblySerializedCallable
+from everyvoice.utils import generic_dict_loader, load_config_from_json_or_yaml_path
 
 
 class AudioSpecTypeEnum(Enum):
@@ -53,27 +48,13 @@ class PitchCalculationMethod(Enum):
 
 class Dataset(PartialConfigModel):
     label: str = "YourDataSet"
-    data_dir: Union[DirectoryPath, Path] = Path(
-        "/please/create/a/path/to/your/dataset/data"
-    )
-    textgrid_dir: Union[DirectoryPath, None] = None
-    filelist: Union[FilePath, Path] = Path(
+    data_dir: PossiblyRelativePath = Path("/please/create/a/path/to/your/dataset/data")
+    textgrid_dir: Union[PossiblyRelativePath, None] = None
+    filelist: PossiblyRelativePath = Path(
         "/please/create/a/path/to/your/dataset/filelist"
     )
-    filelist_loader: Callable = generic_dict_loader
+    filelist_loader: PossiblySerializedCallable = generic_dict_loader
     sox_effects: list = [["channels", "1"]]
-
-    @validator("filelist_loader", pre=True, always=True)
-    def convert_callable_filelist_loader(cls, v, values):
-        func = string_to_callable(v)
-        values["filelist_loader"] = func
-        return func
-
-    @validator("data_dir", "textgrid_dir", "filelist", pre=True, always=True)
-    def convert_paths(cls, v, values, field: ModelField):
-        path = rel_path_to_abs_path(v)
-        values[field.name] = path
-        return path
 
 
 class PreprocessingConfig(PartialConfigModel):
@@ -86,20 +67,18 @@ class PreprocessingConfig(PartialConfigModel):
     value_separator: str = "--"
     train_split: float = 0.9
     dataset_split_seed: int = 1234
-    save_dir: DirectoryPath = Path("./preprocessed/YourDataSet")
+    save_dir: PossiblyRelativePath = Path("./preprocessed/YourDataSet")
     audio: AudioConfig = Field(default_factory=AudioConfig)
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
 
-    @validator("save_dir", pre=True, always=True)
-    def create_dir(cls, v, values):
-        path = rel_path_to_abs_path(v)
+    @field_validator("save_dir", mode="after")
+    def create_dir(cls, v: Path):
         # Supress keyerrors because defaults will be used if not supplied
         with contextlib.suppress(KeyError):
-            if not path.exists():
-                logger.info(f"Directory at {path} does not exist. Creating...")
-                path.mkdir(parents=True, exist_ok=True)
-        values["save_dir"] = path
-        return path
+            if not v.exists():
+                logger.info(f"Directory at {v} does not exist. Creating...")
+                v.mkdir(parents=True, exist_ok=True)
+        return v
 
     @staticmethod
     def load_config_from_path(path: Path) -> "PreprocessingConfig":

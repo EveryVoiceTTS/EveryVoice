@@ -118,7 +118,7 @@ def train_base_command(
 
     pbar.update()
     pbar.refresh()
-    tensorboard_logger = TensorBoardLogger(**(config.training.logger.dict()))
+    tensorboard_logger = TensorBoardLogger(**(config.training.logger.model_dump()))
     lr_monitor = LearningRateMonitor(logging_interval="step")
     logger.info("Starting training.")
     ckpt_callback = ModelCheckpoint(
@@ -152,18 +152,20 @@ def train_base_command(
     # Train from Scratch
     if last_ckpt is None:
         model_obj = model(config)
-        tensorboard_logger.log_hyperparams(config.dict())
+        tensorboard_logger.log_hyperparams(config.model_dump())
         trainer.fit(model_obj, data)
     else:
         model_obj = model.load_from_checkpoint(last_ckpt)
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
-        diff = DeepDiff(model_obj.config.training.dict(), config.training.dict())
+        diff = DeepDiff(
+            model_obj.config.training.model_dump(), config.training.model_dump()
+        )
         training_config_diff = [
             item for item in diff["values_changed"].items() if "sub_dir" not in item[0]
         ]
         if training_config_diff:
             model_obj.config.training = config.training
-            tensorboard_logger.log_hyperparams(config.dict())
+            tensorboard_logger.log_hyperparams(config.model_dump())
             # Finetune from Checkpoint
             logger.warning(
                 f"""Some of your training hyperparameters have changed from your checkpoint at '{last_ckpt}', so we will override your checkpoint hyperparameters.
@@ -174,7 +176,7 @@ def train_base_command(
         else:
             logger.info(f"Resuming from checkpoint '{last_ckpt}'")
             # Resume from checkpoint
-            tensorboard_logger.log_hyperparams(config.dict())
+            tensorboard_logger.log_hyperparams(config.model_dump())
             trainer.fit(model_obj, data, ckpt_path=last_ckpt)
 
 
