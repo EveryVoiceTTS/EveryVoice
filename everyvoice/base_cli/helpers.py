@@ -42,11 +42,11 @@ def load_config_base_command(
     ],
     # Must include the above in model-specific command
     config_args: List[str],
-    config_path: Path,
+    config_file: Path,
 ):
     from everyvoice.utils import update_config_from_cli_args
 
-    config = model_config.load_config_from_path(config_path)
+    config = model_config.load_config_from_path(config_file)
 
     config = update_config_from_cli_args(config_args, config)
     return config
@@ -59,7 +59,7 @@ def preprocess_base_command(
     steps: List[str],
     # Must include the above in model-specific command
     config_args: List[str],
-    config_path: Path,
+    config_file: Path,
     output_path: Optional[Path],
     cpus: Optional[int],
     overwrite: bool,
@@ -67,7 +67,7 @@ def preprocess_base_command(
 ):
     from everyvoice.preprocessor import Preprocessor
 
-    config = load_config_base_command(model_config, config_args, config_path)
+    config = load_config_base_command(model_config, config_args, config_file)
     preprocessor = Preprocessor(config)
     if isinstance(config, FastSpeech2Config) and config.model.use_phonological_feats:
         steps.append("pfs")
@@ -92,13 +92,13 @@ def train_base_command(
     monitor: str,
     # Must include the above in model-specific command
     config_args: List[str],
-    config_path: Path,
+    config_file: Path,
     accelerator: str,
     devices: str,
     nodes: int,
     strategy: str,
 ):
-    config = load_config_base_command(model_config, config_args, config_path)
+    config = load_config_base_command(model_config, config_args, config_file)
     logger.info("Loading modules for training...")
     pbar = tqdm(range(4))
     pbar.set_description("Loading pytorch and friends")

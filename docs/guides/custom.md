@@ -59,19 +59,19 @@ cd test
 Your models need to do a number of preprocessing steps in order to prepare for training. To preprocess everything you need, run the following:
 
 ```bash
-everyvoice preprocess -p config/feature_prediction.yaml
+everyvoice preprocess config/feature_prediction.yaml
 ```
 
 ## Step 6: Train your Vocoder
 
 ```bash
-everyvoice train spec-to-wav -p config/vocoder.yaml
+everyvoice train spec-to-wav config/vocoder.yaml
 ```
 
 By default, we run our training with PyTorch Lightning's "auto" strategy. But, if you are on a machine where you know the hardware, you can specify it like:
 
 ```bash
-everyvoice train spec-to-wav -p config/vocoder.yaml -d 1 -a gpu
+everyvoice train spec-to-wav config/vocoder.yaml -d 1 -a gpu
 ```
 
 Which would use the GPU accelerator and specify 1 device/chip.
@@ -85,7 +85,7 @@ At the bottom of that file you'll find a key called vocoder_path. Add the absolu
 Once you've replaced the vocoder_path key, you can train your feature prediction network:
 
 ```bash
-everyvoice train text-to-spec -p config/feature_prediction.yaml
+everyvoice train text-to-spec config/feature_prediction.yaml
 ```
 
 ## Step 8: Synthesize Speech in Your Language!
@@ -102,7 +102,7 @@ everyvoice synthesize text-to-wav logs_and_checkpoints/FeaturePredictionExperime
 
 % .. code-block:: bash
 
-% everyvoice e2e train -p config/e2e.yaml
+% everyvoice train text-to-wav config/e2e.yaml
 
 % Step 11: Synthesize Speech
 
@@ -110,7 +110,7 @@ everyvoice synthesize text-to-wav logs_and_checkpoints/FeaturePredictionExperime
 
 % .. code-block:: bash
 
-% everyvoice e2e synthesize -t "hello world" -c config/e2e.yaml
+% everyvoice synthesize text-to-wav -t "hello world" -c config/e2e.yaml
 
 % .. warning::
 
