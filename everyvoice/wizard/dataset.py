@@ -403,13 +403,14 @@ class TextProcessingStep(Step):
         }
         if self.response is not None and len(self.response):
             for process in self.response:
+                process_fn = process_lookup[process]["fn"]
                 for i in tqdm(
                     range(len(self.state["filelist_data"])),
                     desc=f"Applying {process_lookup[process]['desc']} to data",
                 ):
-                    self.state["filelist_data"][i]["text"] = process_lookup[process][
-                        "fn"
-                    ](self.state["filelist_data"][i]["text"])
+                    self.state["filelist_data"][i]["text"] = process_fn(
+                        self.state["filelist_data"][i]["text"]
+                    )
 
 
 class SoxEffectsStep(Step):

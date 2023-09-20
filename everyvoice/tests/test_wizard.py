@@ -454,10 +454,14 @@ class WizardTest(TestCase):
     def monkey_run_tour(self, name, steps):
         tour = Tour(name, steps=[step for (step, *_) in steps])
         self.assertEqual(tour.state, {})  # fail on accidentally shared initiliazer
-        with patch_logger(dataset, QUIET), patch_logger(basic, QUIET):
-            for (step, answer, *_) in steps:
-                with monkeypatch(step, "prompt", Say(answer)):
-                    step.run()
+        for (step, answer, *_) in steps:
+            if isinstance(answer, Say):
+                monkey = monkeypatch(step, "prompt", answer)
+            else:
+                monkey = answer
+            # print(step.name)
+            with monkey:
+                step.run()
         return tour
 
     def test_monkey_tour_1(self):
@@ -465,8 +469,8 @@ class WizardTest(TestCase):
             tour = self.monkey_run_tour(
                 "monkey tour 1",
                 [
-                    (basic.NameStep(), "my-dataset-name"),
-                    (basic.OutputPathStep(), tmpdirname),
+                    (basic.NameStep(), Say("my-dataset-name")),
+                    (basic.OutputPathStep(), Say(tmpdirname)),
                 ],
             )
         self.assertEqual(tour.state[SN.name_step.value], "my-dataset-name")
@@ -477,15 +481,27 @@ class WizardTest(TestCase):
         tour = self.monkey_run_tour(
             "monkey tour 2",
             [
-                (dataset.WavsDirStep(), str(data_dir)),
+                (dataset.WavsDirStep(), Say(data_dir)),
                 (
                     dataset.FilelistStep(),
-                    str(data_dir / "unit-test-case1.psv"),
+                    Say(str(data_dir / "metadata.csv")),
                 ),
-                (dataset.FilelistFormatStep(), "psv"),
+                (dataset.FilelistFormatStep(), Say("psv")),
+                (dataset.HasSpeakerStep(), Say("yes")),
+                (dataset.HasLanguageStep(), Say("yes")),
+                (dataset.SelectLanguageStep(), Say("eng")),
+                (dataset.TextProcessingStep(), Say([0, 1])),
+                (
+                    dataset.SymbolSetStep(),
+                    patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
+                ),
+                (dataset.SoxEffectsStep(), Say([0])),
+                (dataset.DatasetNameStep(), Say("my-monkey-dataset")),
             ],
         )
-        self.assertEqual(len(tour.state["filelist_data"]), 4)
+
+        # print(tour.state)
+        self.assertEqual(len(tour.state["filelist_data"]), 6)
 
 
 if __name__ == "__main__":
