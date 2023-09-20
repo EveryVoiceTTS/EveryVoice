@@ -1,13 +1,17 @@
 import contextlib
 from enum import Enum
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 from loguru import logger
-from pydantic import Field, field_validator
+from pydantic import Field, FilePath, field_validator, model_validator
 
-from everyvoice.config.shared_types import ConfigModel, PartialConfigModel
-from everyvoice.config.utils import PossiblyRelativePath, PossiblySerializedCallable
+from everyvoice.config.shared_types import ConfigModel
+from everyvoice.config.utils import (
+    PossiblyRelativePath,
+    PossiblySerializedCallable,
+    load_partials,
+)
 from everyvoice.utils import generic_dict_loader, load_config_from_json_or_yaml_path
 
 
@@ -46,7 +50,7 @@ class PitchCalculationMethod(Enum):
     cwt = "cwt"
 
 
-class Dataset(PartialConfigModel):
+class Dataset(ConfigModel):
     label: str = "YourDataSet"
     data_dir: PossiblyRelativePath = Path("/please/create/a/path/to/your/dataset/data")
     textgrid_dir: Union[PossiblyRelativePath, None] = None
@@ -57,7 +61,7 @@ class Dataset(PartialConfigModel):
     sox_effects: list = [["channels", "1"]]
 
 
-class PreprocessingConfig(PartialConfigModel):
+class PreprocessingConfig(ConfigModel):
     dataset: str = "YourDataSet"
     pitch_type: Union[
         PitchCalculationMethod, str
@@ -69,7 +73,12 @@ class PreprocessingConfig(PartialConfigModel):
     dataset_split_seed: int = 1234
     save_dir: PossiblyRelativePath = Path("./preprocessed/YourDataSet")
     audio: AudioConfig = Field(default_factory=AudioConfig)
+    path_to_audio_config_file: Optional[FilePath] = None
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
+
+    @model_validator(mode="before")
+    def load_partials(self):
+        return load_partials(self, ["audio"])
 
     @field_validator("save_dir", mode="after")
     def create_dir(cls, value: Path):

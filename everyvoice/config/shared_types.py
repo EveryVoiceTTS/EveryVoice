@@ -7,12 +7,7 @@ from loguru import logger
 from pydantic import BaseModel, ConfigDict, DirectoryPath, Field, validator
 
 from everyvoice.config.utils import PossiblyRelativePath, PossiblySerializedCallable
-from everyvoice.utils import (
-    generic_dict_loader,
-    get_current_time,
-    load_config_from_json_or_yaml_path,
-    rel_path_to_abs_path,
-)
+from everyvoice.utils import generic_dict_loader, get_current_time, rel_path_to_abs_path
 
 
 class ConfigModel(BaseModel):
@@ -51,44 +46,6 @@ class ConfigModel(BaseModel):
             else:
                 orig_dict[key] = new_dict[key]
         return orig_dict
-
-
-class PartialConfigModel(ConfigModel):
-    def __init__(self, **data) -> None:
-        """Allow for partial configurations"""
-        config = {}
-        data_to_expand = {}
-        # TODO: this is awkward and should be fixed
-        expandable_keys = [
-            "aligner",
-            "audio",
-            "feature_prediction",
-            "preprocessing",
-            "source_data",
-            "sox_effects",
-            "text",
-            "training",
-            "vocoder",
-        ]
-        for k, v in data.items():
-            if k in expandable_keys and isinstance(v, str):
-                data_to_expand[k] = v
-            else:
-                config[k] = v
-        # first extend any paths
-        if "extend_from" in data:
-            path = rel_path_to_abs_path(data["extend_from"])
-            config = load_config_from_json_or_yaml_path(path)
-            data_to_expand = self.combine_configs(config, data["override_with"])
-
-        for key, subconfig in data_to_expand.items():
-            if isinstance(subconfig, str):
-                subconfig = rel_path_to_abs_path(subconfig)
-            if isinstance(subconfig, Path):
-                subconfig = load_config_from_json_or_yaml_path(subconfig)
-            config[key] = subconfig
-
-        super().__init__(**config)
 
 
 class LoggerConfig(ConfigModel):

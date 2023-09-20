@@ -8,10 +8,15 @@ from typing import Callable
 from unittest import TestCase, main
 
 import yaml
+from pydantic import ValidationError
 
 from everyvoice import exceptions
-from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
-from everyvoice.config.shared_types import LoggerConfig
+from everyvoice.config.preprocessing_config import (
+    AudioConfig,
+    Dataset,
+    PreprocessingConfig,
+)
+from everyvoice.config.shared_types import BaseTrainingConfig, LoggerConfig
 from everyvoice.config.text_config import TextConfig
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
@@ -51,6 +56,94 @@ class ConfigTest(TestCase):
         self.assertEqual(config_default.training.batch_size, 16)
         self.assertEqual(config_declared.training.batch_size, 16)
         self.assertEqual(config_32.training.batch_size, 32)
+
+    def test_config_partial(self):
+        def _writer_helper(model, filename):
+            with open(filename, "w", encoding="utf8") as f:
+                f.write(model.model_dump_json())
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            # Preprocessing Config
+            tempdir = Path(tempdir)
+            _writer_helper(AudioConfig(), tempdir / "audio.json")
+            config = PreprocessingConfig(
+                path_to_audio_config_file=(tempdir / "audio.json")
+            )
+            self.assertTrue(isinstance(config.audio, AudioConfig))
+            # bad partial
+            with self.assertRaises(exceptions.InvalidConfiguration):
+                with tempfile.NamedTemporaryFile(
+                    prefix="test", mode="w", suffix=".yaml"
+                ) as tf:
+                    tf.write(" ")
+                    tf.flush()
+                    PreprocessingConfig(path_to_audio_config_file=tf.name)
+            # Write shared:
+            _writer_helper(PreprocessingConfig(), tempdir / "preprocessing.json")
+            _writer_helper(TextConfig(), tempdir / "text.json")
+            _writer_helper(BaseTrainingConfig(), tempdir / "training.json")
+            # Aligner Config
+            _writer_helper(AlignerConfig().training, tempdir / "aligner-training.json")
+            _writer_helper(AlignerConfig().model, tempdir / "aligner-model.json")
+            aligner_config = AlignerConfig(
+                path_to_model_config_file=(tempdir / "aligner-model.json"),
+                path_to_preprocessing_config_file=(tempdir / "preprocessing.json"),
+                path_to_text_config_file=(tempdir / "text.json"),
+                path_to_training_config_file=tempdir / "aligner-training.json",
+            )
+            _writer_helper(aligner_config, tempdir / "aligner.json")
+            self.assertTrue(isinstance(aligner_config, AlignerConfig))
+            # FP Config
+            _writer_helper(
+                FeaturePredictionConfig().training, tempdir / "fp-training.json"
+            )
+            _writer_helper(FeaturePredictionConfig().model, tempdir / "fp-model.json")
+            fp_config = FeaturePredictionConfig(
+                path_to_model_config_file=(tempdir / "fp-model.json"),
+                path_to_preprocessing_config_file=(tempdir / "preprocessing.json"),
+                path_to_text_config_file=(tempdir / "text.json"),
+                path_to_training_config_file=tempdir / "fp-training.json",
+            )
+            _writer_helper(fp_config, tempdir / "fp.json")
+            self.assertTrue(isinstance(fp_config, FeaturePredictionConfig))
+            # Vocoder Config
+            _writer_helper(VocoderConfig().training, tempdir / "vocoder-training.json")
+            _writer_helper(VocoderConfig().model, tempdir / "vocoder-model.json")
+            vocoder_config = VocoderConfig(
+                path_to_model_config_file=(tempdir / "vocoder-model.json"),
+                path_to_preprocessing_config_file=(tempdir / "preprocessing.json"),
+                path_to_training_config_file=tempdir / "vocoder-training.json",
+            )
+            _writer_helper(vocoder_config, tempdir / "vocoder.json")
+            self.assertTrue(isinstance(vocoder_config, VocoderConfig))
+            # E2E Config
+            e2e_config = EveryVoiceConfig(
+                path_to_aligner_config_file=(tempdir / "aligner.json"),
+                path_to_feature_prediction_config_file=(tempdir / "fp.json"),
+                path_to_training_config_file=(tempdir / "training.json"),
+                path_to_vocoder_config_file=(tempdir / "vocoder.json"),
+            )
+            self.assertTrue(isinstance(e2e_config, EveryVoiceConfig))
+
+    def test_config_partial_override(self):
+        """Test override of partial"""
+        with tempfile.NamedTemporaryFile(prefix="test", mode="w", suffix=".yaml") as tf:
+            tf.write(AudioConfig().model_dump_json())
+            tf.flush()
+            # override with actual class
+            config = PreprocessingConfig(
+                path_to_audio_config_file=tf.name,
+                audio=AudioConfig(min_audio_length=1.0),
+            )
+            self.assertEqual(config.audio.min_audio_length, 1.0)
+            # override with dict
+            config = PreprocessingConfig(
+                path_to_audio_config_file=tf.name, audio={"max_audio_length": 1.0}
+            )
+            self.assertEqual(config.audio.max_audio_length, 1.0)
+            # pass something invalid
+            with self.assertRaises(ValidationError):
+                PreprocessingConfig(path_to_audio_config_file=tf.name, audio=1.0)
 
     def test_update_from_file(self):
         """Test that updating the config from yaml/json works"""
@@ -131,6 +224,7 @@ class ConfigTest(TestCase):
     def test_load_empty_config(self):
         with tempfile.NamedTemporaryFile(prefix="test", mode="w", suffix=".yaml") as tf:
             tf.write(" ")
+            tf.flush()
             with self.assertRaises(exceptions.InvalidConfiguration):
                 load_config_from_json_or_yaml_path(Path(tf.name))
 

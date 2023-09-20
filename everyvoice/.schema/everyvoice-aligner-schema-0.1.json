@@ -509,6 +509,19 @@
         "audio": {
           "$ref": "#/$defs/AudioConfig"
         },
+        "path_to_audio_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Audio Config File"
+        },
         "source_data": {
           "items": {
             "$ref": "#/$defs/Dataset"
@@ -597,14 +610,66 @@
     "model": {
       "$ref": "#/$defs/DFAlignerModelConfig"
     },
+    "path_to_model_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Model Config File"
+    },
     "training": {
       "$ref": "#/$defs/DFAlignerTrainingConfig"
+    },
+    "path_to_training_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Training Config File"
     },
     "preprocessing": {
       "$ref": "#/$defs/PreprocessingConfig"
     },
+    "path_to_preprocessing_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Preprocessing Config File"
+    },
     "text": {
       "$ref": "#/$defs/TextConfig"
+    },
+    "path_to_text_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Text Config File"
     }
   },
   "title": "DFAlignerConfig",

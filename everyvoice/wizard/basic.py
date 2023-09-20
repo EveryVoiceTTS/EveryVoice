@@ -165,7 +165,7 @@ class ConfigFormatStep(Step):
             config_dir / f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()
         write_dict_to_config(
-            json.loads(text_config.model_dump_json()), text_config_path
+            json.loads(text_config.model_dump_json(exclude_none=True)), text_config_path
         )
         # Preprocessing Config
         preprocessed_training_filelist_path = (
@@ -183,7 +183,7 @@ class ConfigFormatStep(Step):
             config_dir / f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()
         write_dict_to_config(
-            json.loads(preprocessing_config.model_dump_json()),
+            json.loads(preprocessing_config.model_dump_json(exclude_none=True)),
             preprocessing_config_path,
         )
         ## Create Aligner Config
@@ -202,9 +202,15 @@ class ConfigFormatStep(Step):
         aligner_config_path = (
             config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()
-        aligner_config_json = json.loads(aligner_config.model_dump_json())
-        aligner_config_json["preprocessing"] = str(preprocessing_config_path)
-        aligner_config_json["text"] = str(text_config_path)
+        aligner_config_json = json.loads(
+            aligner_config.model_dump_json(
+                exclude_none=True, exclude={"preprocessing": True, "text": True}
+            )
+        )
+        aligner_config_json["path_to_preprocessing_config_file"] = str(
+            preprocessing_config_path
+        )
+        aligner_config_json["path_to_text_config_file"] = str(text_config_path)
         write_dict_to_config(aligner_config_json, aligner_config_path)
         # Create Feature Prediction Config
         fp_logger = LoggerConfig(name="FeaturePredictionExperiment", save_dir=log_dir)
@@ -218,9 +224,15 @@ class ConfigFormatStep(Step):
         fp_config_path = (
             config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()
-        fp_config_json = json.loads(fp_config.model_dump_json())
-        fp_config_json["preprocessing"] = str(preprocessing_config_path)
-        fp_config_json["text"] = str(text_config_path)
+        fp_config_json = json.loads(
+            fp_config.model_dump_json(
+                exclude_none=True, exclude={"preprocessing": True, "text": True}
+            )
+        )
+        fp_config_json["path_to_preprocessing_config_file"] = str(
+            preprocessing_config_path
+        )
+        fp_config_json["path_to_text_config_file"] = str(text_config_path)
         write_dict_to_config(fp_config_json, fp_config_path)
         # Create Vocoder Config
         vocoder_logger = LoggerConfig(name="VocoderExperiment", save_dir=log_dir)
@@ -234,8 +246,14 @@ class ConfigFormatStep(Step):
         vocoder_config_path = (
             config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()
-        vocoder_config_json = json.loads(vocoder_config.model_dump_json())
-        vocoder_config_json["preprocessing"] = str(preprocessing_config_path)
+        vocoder_config_json = json.loads(
+            vocoder_config.model_dump_json(
+                exclude_none=True, exclude={"preprocessing": True}
+            )
+        )
+        vocoder_config_json["path_to_preprocessing_config_file"] = str(
+            preprocessing_config_path
+        )
         write_dict_to_config(vocoder_config_json, vocoder_config_path)
         # E2E Config
         e2e_logger = LoggerConfig(name="E2E-Experiment", save_dir=log_dir)
@@ -246,10 +264,15 @@ class ConfigFormatStep(Step):
                 logger=e2e_logger,
             ).model_dump(),
         )
-        e2e_config_json = json.loads(e2e_config.model_dump_json())
-        e2e_config_json["aligner"] = str(aligner_config_path)
-        e2e_config_json["feature_prediction"] = str(fp_config_path)
-        e2e_config_json["vocoder"] = str(vocoder_config_path)
+        e2e_config_json = json.loads(
+            e2e_config.model_dump_json(
+                exclude_none=True,
+                exclude={"aligner": True, "feature_prediction": True, "vocoder": True},
+            )
+        )
+        e2e_config_json["path_to_aligner_config_file"] = str(aligner_config_path)
+        e2e_config_json["path_to_feature_prediction_config_file"] = str(fp_config_path)
+        e2e_config_json["path_to_vocoder_config_file"] = str(vocoder_config_path)
         e2e_config_path = (
             config_dir / f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()

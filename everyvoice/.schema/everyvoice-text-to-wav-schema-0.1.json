@@ -219,14 +219,66 @@
         "model": {
           "$ref": "#/$defs/DFAlignerModelConfig"
         },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Model Config File"
+        },
         "training": {
           "$ref": "#/$defs/DFAlignerTrainingConfig"
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Training Config File"
         },
         "preprocessing": {
           "$ref": "#/$defs/PreprocessingConfig"
         },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Preprocessing Config File"
+        },
         "text": {
           "$ref": "#/$defs/TextConfig"
+        },
+        "path_to_text_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Text Config File"
         }
       },
       "title": "DFAlignerConfig",
@@ -600,14 +652,66 @@
         "model": {
           "$ref": "#/$defs/FastSpeech2ModelConfig"
         },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Model Config File"
+        },
         "training": {
           "$ref": "#/$defs/FastSpeech2TrainingConfig"
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Training Config File"
         },
         "preprocessing": {
           "$ref": "#/$defs/PreprocessingConfig"
         },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Preprocessing Config File"
+        },
         "text": {
           "$ref": "#/$defs/TextConfig"
+        },
+        "path_to_text_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Text Config File"
         }
       },
       "title": "FastSpeech2Config",
@@ -861,11 +965,50 @@
         "model": {
           "$ref": "#/$defs/HiFiGANModelConfig"
         },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Model Config File"
+        },
         "training": {
           "$ref": "#/$defs/HiFiGANTrainingConfig"
         },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Training Config File"
+        },
         "preprocessing": {
           "$ref": "#/$defs/PreprocessingConfig"
+        },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Preprocessing Config File"
         }
       },
       "title": "HiFiGANConfig",
@@ -1354,6 +1497,19 @@
         "audio": {
           "$ref": "#/$defs/AudioConfig"
         },
+        "path_to_audio_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Audio Config File"
+        },
         "source_data": {
           "items": {
             "$ref": "#/$defs/Dataset"
@@ -1742,14 +1898,66 @@
     "aligner": {
       "$ref": "#/$defs/DFAlignerConfig"
     },
+    "path_to_aligner_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Aligner Config File"
+    },
     "feature_prediction": {
       "$ref": "#/$defs/FastSpeech2Config"
+    },
+    "path_to_feature_prediction_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Feature Prediction Config File"
     },
     "vocoder": {
       "$ref": "#/$defs/HiFiGANConfig"
     },
+    "path_to_vocoder_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Vocoder Config File"
+    },
     "training": {
       "$ref": "#/$defs/E2ETrainingConfig"
+    },
+    "path_to_training_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Training Config File"
     }
   },
   "title": "EveryVoiceConfig",
