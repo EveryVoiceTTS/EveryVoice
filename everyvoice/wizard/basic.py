@@ -20,9 +20,9 @@ from everyvoice.wizard.dataset import return_dataset_steps
 from everyvoice.wizard.prompts import get_response_from_menu_prompt
 from everyvoice.wizard.utils import sanitize_path, write_dict_to_config
 
-TEXT_CONFIG_FILENAME_PREFIX = "everyvoice-text"
+TEXT_CONFIG_FILENAME_PREFIX = "everyvoice-shared-text"
 ALIGNER_CONFIG_FILENAME_PREFIX = "everyvoice-aligner"
-PREPROCESSING_CONFIG_FILENAME_PREFIX = "everyvoice-preprocessing"
+PREPROCESSING_CONFIG_FILENAME_PREFIX = "everyvoice-shared-data"
 TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-spec"
 SPEC_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-spec-to-wav"
 TEXT_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-wav"
