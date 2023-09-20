@@ -239,6 +239,19 @@
     "audio": {
       "$ref": "#/$defs/AudioConfig"
     },
+    "path_to_audio_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Audio Config File"
+    },
     "source_data": {
       "items": {
         "$ref": "#/$defs/Dataset"
