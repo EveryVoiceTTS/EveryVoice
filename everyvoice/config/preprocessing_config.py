@@ -72,13 +72,13 @@ class PreprocessingConfig(PartialConfigModel):
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
 
     @field_validator("save_dir", mode="after")
-    def create_dir(cls, v: Path):
+    def create_dir(cls, value: Path):
         # Supress keyerrors because defaults will be used if not supplied
         with contextlib.suppress(KeyError):
-            if not v.exists():
-                logger.info(f"Directory at {v} does not exist. Creating...")
-                v.mkdir(parents=True, exist_ok=True)
-        return v
+            if not value.exists():
+                logger.info(f"Directory at {value} does not exist. Creating...")
+                value.mkdir(parents=True, exist_ok=True)
+        return value
 
     @staticmethod
     def load_config_from_path(path: Path) -> "PreprocessingConfig":

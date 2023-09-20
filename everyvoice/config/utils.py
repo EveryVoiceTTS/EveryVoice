@@ -17,7 +17,10 @@ def string_to_callable(string: Union[str, Callable]) -> Callable:
     if "." not in string:
         # Just return a function that returns the string if
         # it's not in the <module>.<function> format
-        return lambda: string
+        def curried(*argv, **kwargs):
+            return string
+
+        return curried
     module_name, function_name = string.rsplit(".", 1)
     try:
         module = import_module(module_name)
