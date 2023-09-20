@@ -5,7 +5,7 @@ import re
 from contextlib import contextmanager
 from datetime import datetime
 from itertools import islice
-from os.path import dirname, isabs, isfile, splitext
+from os.path import isfile, splitext
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from unicodedata import normalize
@@ -16,7 +16,6 @@ from loguru import logger
 from pydantic import ValidationInfo
 from pympi.Praat import TextGrid
 
-import everyvoice
 from everyvoice import exceptions
 
 # Regular expression matching whitespace:
@@ -102,13 +101,12 @@ def update_config_from_path(config_path: Path, original_config):
 
 
 def rel_path_to_abs_path(path: Union[None, str], info: Optional[ValidationInfo] = None):
+    """TODO: This function is intended to process relative paths and either resolve them to
+    absolute paths or resolve them with respect to the configuration file they came
+    from. This does neither at the moment and will need to be updated."""
     if path is None:
         return None
-    if isabs(path):
-        return Path(path)
-    base_path = Path(dirname(everyvoice.__file__))  # type: ignore
-    path = Path(path)  # type: ignore
-    return (base_path / path).resolve()  # type: ignore
+    return Path(path)
 
 
 def original_hifigan_leaky_relu(x):

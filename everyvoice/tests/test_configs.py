@@ -64,12 +64,23 @@ class ConfigTest(TestCase):
         self.assertEqual(self.config.vocoder.training.batch_size, 456)
 
     def test_string_to_callable(self):
+        # Test Basic Functionality
         config = FeaturePredictionConfig(
             text=TextConfig(cleaners=["everyvoice.utils.lower"])
         )
         self.assertEqual(config.text.cleaners, [lower])
+        # Test missing function
         with self.assertRaises(AttributeError):
             config.update_config({"text": {"cleaners": ["everyvoice.utils.foobarfoo"]}})
+        # Test missing module
+        with self.assertRaises(ImportError):
+            config.update_config({"text": {"cleaners": ["foobarfoo.utils.lower"]}})
+        # Test not string
+        with self.assertRaises(ValueError):
+            config.update_config({"text": {"cleaners": [1]}})
+        # Test plain string
+        config = LoggerConfig(sub_dir_callable="foobar")
+        self.assertEqual(config.sub_dir_callable(), "foobar")
 
     def test_call_sub_dir(self):
         config = LoggerConfig()
