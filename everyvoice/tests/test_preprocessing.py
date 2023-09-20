@@ -85,15 +85,13 @@ class PreprocessingTest(TestCase):
         self.assertNotIn("speaker", self.filelist[0].keys())
 
     def test_process_audio_for_alignment(self):
-        self.config = EveryVoiceConfig()
+        config = EveryVoiceConfig()
         for entry in self.filelist[1:]:
             # This just applies the SOX effects
             audio, sr = self.preprocessor.process_audio(
                 self.wavs_dir / (entry["filename"] + ".wav"),
                 use_effects=True,
-                sox_effects=self.config.aligner.preprocessing.source_data[
-                    0
-                ].sox_effects,
+                sox_effects=config.aligner.preprocessing.source_data[0].sox_effects,
             )
             self.assertEqual(sr, 22050)
             self.assertEqual(audio.dtype, float32)

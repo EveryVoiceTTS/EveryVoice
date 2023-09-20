@@ -4,6 +4,7 @@ import builtins
 import os
 import string
 import tempfile
+from enum import Enum
 from pathlib import Path
 from types import MethodType
 from typing import Sequence
@@ -22,7 +23,9 @@ from everyvoice.tests.stubs import (
     patch_logger,
     patch_menu_prompt,
 )
-from everyvoice.wizard import Step, StepNames, Tour, basic, dataset, prompts, validators
+from everyvoice.wizard import Step
+from everyvoice.wizard import StepNames as SN
+from everyvoice.wizard import Tour, basic, dataset, prompts, validators
 
 
 class WizardTest(TestCase):
@@ -51,18 +54,16 @@ class WizardTest(TestCase):
         self.assertTrue(config_step.validate("json"))
         with tempfile.TemporaryDirectory() as tmpdirname:
             config_step.state = {}
-            config_step.state[StepNames.output_step.value] = tmpdirname
-            config_step.state[StepNames.name_step.value] = config_step.name
+            config_step.state[SN.output_step.value] = tmpdirname
+            config_step.state[SN.name_step.value] = config_step.name
             config_step.state["dataset_test"] = {}
-            config_step.state["dataset_test"][
-                StepNames.symbol_set_step.value
-            ] = Symbols(symbol_set=string.ascii_letters)
-            config_step.state["dataset_test"][StepNames.wavs_dir_step.value] = (
+            config_step.state["dataset_test"][SN.symbol_set_step.value] = Symbols(
+                symbol_set=string.ascii_letters
+            )
+            config_step.state["dataset_test"][SN.wavs_dir_step.value] = (
                 Path(tmpdirname) / "test"
             )
-            config_step.state["dataset_test"][
-                StepNames.dataset_name_step.value
-            ] = "test"
+            config_step.state["dataset_test"][SN.dataset_name_step.value] = "test"
             config_step.state["dataset_test"]["filelist_data"] = [
                 {"basename": "0001", "text": "hello"},
                 {"basename": "0002", "text": "hello", None: "test"},
@@ -142,8 +143,8 @@ class WizardTest(TestCase):
         tour = Tour(
             "testing",
             [
-                basic.NameStep(StepNames.name_step.value),
-                basic.OutputPathStep(StepNames.output_step.value),
+                basic.NameStep(),
+                basic.OutputPathStep(),
             ],
         )
 
@@ -157,15 +158,14 @@ class WizardTest(TestCase):
         with tempfile.TemporaryDirectory() as tmpdirname:
             file_path = os.path.join(tmpdirname, "exits-as-file")
             # Bad case 1: output dir exists and is a file
-            with open(file_path, "w") as f:
+            with open(file_path, "w", encoding="utf8") as f:
                 f.write("blah")
-                print("blah", file=f)
             with patch_logger(basic) as logger, self.assertLogs(logger):
                 self.assertFalse(step.validate(file_path))
 
             # Bad case 2: file called the same as the dataset exists in the output dir
             dataset_file = os.path.join(tmpdirname, "myname")
-            with open(dataset_file, "w") as f:
+            with open(dataset_file, "w", encoding="utf8") as f:
                 f.write("blah")
             with patch_logger(basic) as logger, self.assertLogs(logger):
                 self.assertFalse(step.validate(tmpdirname))
@@ -182,9 +182,7 @@ class WizardTest(TestCase):
 
     def test_more_data_step(self):
         """Exercise giving an invalid response and a yes response to more data."""
-        tour = Tour(
-            "testing", [basic.MoreDatasetsStep(name=StepNames.more_datasets_step.value)]
-        )
+        tour = Tour("testing", [basic.MoreDatasetsStep()])
         step = tour.steps[0]
         self.assertFalse(step.validate("foo"))
         self.assertTrue(step.validate("yes"))
@@ -199,7 +197,7 @@ class WizardTest(TestCase):
         self.assertGreater(len(step.children), 5)
 
     def test_dataset_name(self):
-        step = dataset.DatasetNameStep("")
+        step = dataset.DatasetNameStep()
         with monkeypatch(builtins, "input", Say(("", "bad/name", "good-name"), True)):
             with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
                 step.run()
@@ -215,8 +213,8 @@ class WizardTest(TestCase):
 
             has_wavs_dir = os.path.join(tmpdirname, "there-are-wavs-here")
             os.mkdir(has_wavs_dir)
-            with open(os.path.join(has_wavs_dir, "foo.wav"), "w") as f:
-                f.write("A fantastic sounding clip! (or not...)")
+            with open(os.path.join(has_wavs_dir, "foo.wav"), "wb") as f:
+                f.write(b"A fantastic sounding clip! (or not...)")
 
             step = dataset.WavsDirStep("")
             with monkeypatch(
@@ -253,27 +251,26 @@ class WizardTest(TestCase):
         self.assertEqual(step.response, 512)
 
     def test_dataset_subtour(self):
-        def find_step(name: str, steps: Sequence[Step]):
+        def find_step(name: Enum, steps: Sequence[Step]):
             for s in steps:
-                if s.name == name:
+                if s.name == name.value:
                     return s
             raise IndexError(f"Step {name} not found.")  # pragma: no cover
 
         tour = Tour("unit testing", steps=dataset.return_dataset_steps())
         filelist = str(self.data_dir / "unit-test-case1.psv")
 
-        filelist_step = find_step(StepNames.filelist_step.value, tour.steps)
-        with monkeypatch(filelist_step, "prompt", Say(filelist)):
+        filelist_step = find_step(SN.filelist_step, tour.steps)
+        monkey = monkeypatch(filelist_step, "prompt", Say(filelist))
+        with monkey:
             filelist_step.run()
-        format_step = find_step(StepNames.filelist_format_step.value, tour.steps)
+        format_step = find_step(SN.filelist_format_step, tour.steps)
         with patch_menu_prompt(0):  # 0 is "psv"
             format_step.run()
         self.assertIsInstance(format_step.children[0], dataset.HeaderStep)
-        self.assertEqual(
-            format_step.children[0].name, StepNames.basename_header_step.value
-        )
+        self.assertEqual(format_step.children[0].name, SN.basename_header_step.value)
         self.assertIsInstance(format_step.children[1], dataset.HeaderStep)
-        self.assertEqual(format_step.children[1].name, StepNames.text_header_step.value)
+        self.assertEqual(format_step.children[1].name, SN.text_header_step.value)
 
         step = format_step.children[0]
         with patch_menu_prompt(1):  # 1 is second column
@@ -287,17 +284,13 @@ class WizardTest(TestCase):
         # print(step.state["filelist_headers"])
         self.assertEqual(step.state["filelist_headers"][2], "text")
 
-        speaker_step = find_step(
-            StepNames.data_has_speaker_value_step.value, tour.steps
-        )
+        speaker_step = find_step(SN.data_has_speaker_value_step, tour.steps)
         children_before = len(speaker_step.children)
         with patch_menu_prompt(1):  # 1 is "no"
             speaker_step.run()
         self.assertEqual(len(speaker_step.children), children_before)
 
-        language_step = find_step(
-            StepNames.data_has_language_value_step.value, tour.steps
-        )
+        language_step = find_step(SN.data_has_language_value_step, tour.steps)
         children_before = len(language_step.children)
         with patch_menu_prompt(1):  # 1 is "no"
             language_step.run()
@@ -314,9 +307,7 @@ class WizardTest(TestCase):
             ["unknown_0", "basename", "text", "unknown_3"],
         )
 
-        text_processing_step = find_step(
-            StepNames.text_processing_step.value, tour.steps
-        )
+        text_processing_step = find_step(SN.text_processing_step, tour.steps)
         # 0 is lowercase, 1 is NFC Normalization, select both
         with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
             with patch_menu_prompt([0, 1]):
@@ -327,7 +318,7 @@ class WizardTest(TestCase):
             "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
         )
 
-        sox_effects_step = find_step(StepNames.sox_effects_step.value, tour.steps)
+        sox_effects_step = find_step(SN.sox_effects_step, tour.steps)
         # 0 is resample to 22050 kHz, 2 is remove silence at start
         with patch_menu_prompt([0, 2]):
             sox_effects_step.run()
@@ -337,7 +328,7 @@ class WizardTest(TestCase):
             [["channel", "1"], ["rate", "22050"], ["silence", "1", "0.1", "1.0%"]],
         )
 
-        symbol_set_step = find_step(StepNames.symbol_set_step.value, tour.steps)
+        symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
         self.assertEqual(len(symbol_set_step.state["filelist_data"]), 4)
         with patch_menu_prompt([(0, 1, 2, 3), (11), ()], multi=True):
             symbol_set_step.run()
@@ -353,8 +344,8 @@ class WizardTest(TestCase):
         tour = Tour(
             name="mismatched fileformat",
             steps=[
-                dataset.FilelistStep(StepNames.filelist_step.value),
-                dataset.FilelistFormatStep(StepNames.filelist_format_step.value),
+                dataset.FilelistStep(),
+                dataset.FilelistFormatStep(),
             ],
         )
         filelist = str(self.data_dir / "unit-test-case2.psv")
@@ -377,8 +368,8 @@ class WizardTest(TestCase):
         tour = Tour(
             name="mismatched fileformat",
             steps=[
-                dataset.FilelistStep(StepNames.filelist_step.value),
-                dataset.FilelistFormatStep(StepNames.filelist_format_step.value),
+                dataset.FilelistStep(),
+                dataset.FilelistFormatStep(),
             ],
         )
         filelist = str(self.data_dir / "unit-test-case3.festival")
@@ -420,7 +411,7 @@ class WizardTest(TestCase):
                 validate_path(tmpdirname, is_dir=True, is_file=False, exists=False)
             )
             file_name = os.path.join(tmpdirname, "some-file-name")
-            with open(file_name, "w") as f:
+            with open(file_name, "w", encoding="utf8") as f:
                 f.write("foo")
             self.assertTrue(
                 validate_path(file_name, is_dir=False, is_file=True, exists=True)
@@ -459,6 +450,58 @@ class WizardTest(TestCase):
                 choices=("a", "b", "c", "d", "e"), return_indices=True
             )
             self.assertEqual(answer, 1)
+
+    def monkey_run_tour(self, name, steps):
+        tour = Tour(name, steps=[step for (step, *_) in steps])
+        self.assertEqual(tour.state, {})  # fail on accidentally shared initializer
+        for (step, answer, *_) in steps:
+            if isinstance(answer, Say):
+                monkey = monkeypatch(step, "prompt", answer)
+            else:
+                monkey = answer
+            # print(step.name)
+            with monkey:
+                step.run()
+        return tour
+
+    def test_monkey_tour_1(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tour = self.monkey_run_tour(
+                "monkey tour 1",
+                [
+                    (basic.NameStep(), Say("my-dataset-name")),
+                    (basic.OutputPathStep(), Say(tmpdirname)),
+                ],
+            )
+        self.assertEqual(tour.state[SN.name_step.value], "my-dataset-name")
+        self.assertEqual(tour.state[SN.output_step.value], tmpdirname)
+
+    def test_monkey_tour_2(self):
+        data_dir = Path(__file__).parent / "data"
+        tour = self.monkey_run_tour(
+            "monkey tour 2",
+            [
+                (dataset.WavsDirStep(), Say(data_dir)),
+                (
+                    dataset.FilelistStep(),
+                    Say(str(data_dir / "metadata.csv")),
+                ),
+                (dataset.FilelistFormatStep(), Say("psv")),
+                (dataset.HasSpeakerStep(), Say("yes")),
+                (dataset.HasLanguageStep(), Say("yes")),
+                (dataset.SelectLanguageStep(), Say("eng")),
+                (dataset.TextProcessingStep(), Say([0, 1])),
+                (
+                    dataset.SymbolSetStep(),
+                    patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
+                ),
+                (dataset.SoxEffectsStep(), Say([0])),
+                (dataset.DatasetNameStep(), Say("my-monkey-dataset")),
+            ],
+        )
+
+        # print(tour.state)
+        self.assertEqual(len(tour.state["filelist_data"]), 6)
 
 
 if __name__ == "__main__":
