@@ -19,9 +19,9 @@ class AudioSpecTypeEnum(Enum):
 
 
 class AudioConfig(ConfigModel):
-    min_audio_length: float = 0.25
+    min_audio_length: float = 0.4
     max_audio_length: float = 11.0
-    max_wav_value: float = 32768.0
+    max_wav_value: float = 32767.0
     norm_db: float = -3.0
     sil_threshold: float = 1.0
     sil_duration: float = 0.1
@@ -65,7 +65,7 @@ class PreprocessingConfig(PartialConfigModel):
     pitch_phone_averaging: bool = True
     energy_phone_averaging: bool = True
     value_separator: str = "--"
-    train_split: float = 0.9
+    train_split: float = Field(0.9, min=0.0, max=1.0)
     dataset_split_seed: int = 1234
     save_dir: PossiblyRelativePath = Path("./preprocessed/YourDataSet")
     audio: AudioConfig = Field(default_factory=AudioConfig)

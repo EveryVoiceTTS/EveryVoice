@@ -2,14 +2,20 @@ from importlib import import_module
 from pathlib import Path
 from typing import Callable, Union
 
+from pydantic import PlainSerializer, WithJsonSchema
 from pydantic.functional_validators import BeforeValidator
 from typing_extensions import Annotated
 
 from everyvoice.utils import rel_path_to_abs_path
 
 
+def callable_to_string(function: Callable) -> str:
+    """Serialize a Callable to a string-formatted Callable"""
+    return ".".join([function.__module__, function.__name__])
+
+
 def string_to_callable(string: Union[str, Callable]) -> Callable:
-    """Convert a string to a callable"""
+    """De-serialize a string-formatted Callable to a Callable"""
     if callable(string):
         return string
     elif not isinstance(string, str):
@@ -37,5 +43,11 @@ def string_to_callable(string: Union[str, Callable]) -> Callable:
     return function
 
 
-PossiblySerializedCallable = Annotated[Callable, BeforeValidator(string_to_callable)]
+PossiblySerializedCallable = Annotated[
+    Callable,
+    BeforeValidator(string_to_callable),
+    PlainSerializer(callable_to_string, return_type=str),
+    WithJsonSchema({"type": "string"}, mode="serialization"),  # noqa: F821
+    WithJsonSchema({"type": "string"}, mode="validation"),  # noqa: F821
+]
 PossiblyRelativePath = Annotated[Path, BeforeValidator(rel_path_to_abs_path)]

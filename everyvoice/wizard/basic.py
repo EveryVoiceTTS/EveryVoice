@@ -154,7 +154,7 @@ class ConfigFormatStep(Step):
         text_config = TextConfig(
             symbols=Symbols(punctuation=list(set(punctuation)), **symbols)
         )
-        text_config_path = (config_dir / f"text.{self.response}").absolute()
+        text_config_path = (config_dir / f"text-everyvoice.{self.response}").absolute()
         write_dict_to_config(
             json.loads(text_config.model_dump_json()), text_config_path
         )
@@ -171,7 +171,7 @@ class ConfigFormatStep(Step):
             source_data=datasets,
         )
         preprocessing_config_path = (
-            config_dir / f"preprocessing.{self.response}"
+            config_dir / f"preprocessing-everyvoice.{self.response}"
         ).absolute()
         write_dict_to_config(
             json.loads(preprocessing_config.model_dump_json()),
@@ -190,7 +190,9 @@ class ConfigFormatStep(Step):
                 logger=aligner_logger,
             ).model_dump()
         )
-        aligner_config_path = (config_dir / f"aligner.{self.response}").absolute()
+        aligner_config_path = (
+            config_dir / f"aligner-everyvoice.{self.response}"
+        ).absolute()
         aligner_config_json = json.loads(aligner_config.model_dump_json())
         aligner_config_json["preprocessing"] = str(preprocessing_config_path)
         aligner_config_json["text"] = str(text_config_path)
@@ -204,7 +206,9 @@ class ConfigFormatStep(Step):
                 logger=fp_logger,
             ).model_dump()
         )
-        fp_config_path = (config_dir / f"feature_prediction.{self.response}").absolute()
+        fp_config_path = (
+            config_dir / f"feature_prediction-everyvoice.{self.response}"
+        ).absolute()
         fp_config_json = json.loads(fp_config.model_dump_json())
         fp_config_json["preprocessing"] = str(preprocessing_config_path)
         fp_config_json["text"] = str(text_config_path)
@@ -218,7 +222,9 @@ class ConfigFormatStep(Step):
                 logger=vocoder_logger,
             ).model_dump()
         )
-        vocoder_config_path = (config_dir / f"vocoder.{self.response}").absolute()
+        vocoder_config_path = (
+            config_dir / f"vocoder-everyvoice.{self.response}"
+        ).absolute()
         vocoder_config_json = json.loads(vocoder_config.model_dump_json())
         vocoder_config_json["preprocessing"] = str(preprocessing_config_path)
         write_dict_to_config(vocoder_config_json, vocoder_config_path)

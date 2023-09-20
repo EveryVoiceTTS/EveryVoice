@@ -1,0 +1,995 @@
+{
+  "$defs": {
+    "AudioConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "min_audio_length": {
+          "default": 0.4,
+          "title": "Min Audio Length",
+          "type": "number"
+        },
+        "max_audio_length": {
+          "default": 11.0,
+          "title": "Max Audio Length",
+          "type": "number"
+        },
+        "max_wav_value": {
+          "default": 32767.0,
+          "title": "Max Wav Value",
+          "type": "number"
+        },
+        "norm_db": {
+          "default": -3.0,
+          "title": "Norm Db",
+          "type": "number"
+        },
+        "sil_threshold": {
+          "default": 1.0,
+          "title": "Sil Threshold",
+          "type": "number"
+        },
+        "sil_duration": {
+          "default": 0.1,
+          "title": "Sil Duration",
+          "type": "number"
+        },
+        "input_sampling_rate": {
+          "default": 22050,
+          "title": "Input Sampling Rate",
+          "type": "integer"
+        },
+        "output_sampling_rate": {
+          "default": 22050,
+          "title": "Output Sampling Rate",
+          "type": "integer"
+        },
+        "alignment_sampling_rate": {
+          "default": 22050,
+          "title": "Alignment Sampling Rate",
+          "type": "integer"
+        },
+        "target_bit_depth": {
+          "default": 16,
+          "title": "Target Bit Depth",
+          "type": "integer"
+        },
+        "alignment_bit_depth": {
+          "default": 16,
+          "title": "Alignment Bit Depth",
+          "type": "integer"
+        },
+        "fft_window_frames": {
+          "default": 1024,
+          "title": "Fft Window Frames",
+          "type": "integer"
+        },
+        "fft_hop_frames": {
+          "default": 256,
+          "title": "Fft Hop Frames",
+          "type": "integer"
+        },
+        "f_min": {
+          "default": 0,
+          "title": "F Min",
+          "type": "integer"
+        },
+        "f_max": {
+          "default": 8000,
+          "title": "F Max",
+          "type": "integer"
+        },
+        "n_fft": {
+          "default": 1024,
+          "title": "N Fft",
+          "type": "integer"
+        },
+        "n_mels": {
+          "default": 80,
+          "title": "N Mels",
+          "type": "integer"
+        },
+        "spec_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioSpecTypeEnum"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "mel-librosa",
+          "title": "Spec Type"
+        },
+        "vocoder_segment_size": {
+          "default": 8192,
+          "title": "Vocoder Segment Size",
+          "type": "integer"
+        }
+      },
+      "title": "AudioConfig",
+      "type": "object"
+    },
+    "AudioSpecTypeEnum": {
+      "enum": [
+        "mel",
+        "mel-librosa",
+        "linear",
+        "raw"
+      ],
+      "title": "AudioSpecTypeEnum",
+      "type": "string"
+    },
+    "Dataset": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "default": "YourDataSet",
+          "title": "Label",
+          "type": "string"
+        },
+        "data_dir": {
+          "default": "/please/create/a/path/to/your/dataset/data",
+          "format": "path",
+          "title": "Data Dir",
+          "type": "string"
+        },
+        "textgrid_dir": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Textgrid Dir"
+        },
+        "filelist": {
+          "default": "/please/create/a/path/to/your/dataset/filelist",
+          "format": "path",
+          "title": "Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "sox_effects": {
+          "default": [
+            [
+              "channels",
+              "1"
+            ]
+          ],
+          "items": {},
+          "title": "Sox Effects",
+          "type": "array"
+        }
+      },
+      "title": "Dataset",
+      "type": "object"
+    },
+    "EarlyStoppingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "metric": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/EarlyStoppingMetricEnum"
+            }
+          ],
+          "default": "none"
+        },
+        "patience": {
+          "default": 4,
+          "title": "Patience",
+          "type": "integer"
+        }
+      },
+      "title": "EarlyStoppingConfig",
+      "type": "object"
+    },
+    "EarlyStoppingMetricEnum": {
+      "enum": [
+        "none",
+        "mae",
+        "js"
+      ],
+      "title": "EarlyStoppingMetricEnum",
+      "type": "string"
+    },
+    "EmbeddingTypeEnum": {
+      "enum": [
+        "id",
+        "dvector",
+        "none"
+      ],
+      "title": "EmbeddingTypeEnum",
+      "type": "string"
+    },
+    "FastSpeech2FreezeLayersConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "all_layers": {
+          "default": false,
+          "title": "All Layers",
+          "type": "boolean"
+        },
+        "encoder": {
+          "default": false,
+          "title": "Encoder",
+          "type": "boolean"
+        },
+        "decoder": {
+          "default": false,
+          "title": "Decoder",
+          "type": "boolean"
+        },
+        "postnet": {
+          "default": false,
+          "title": "Postnet",
+          "type": "boolean"
+        },
+        "variance": {
+          "$ref": "#/$defs/FastSpeech2Variances"
+        }
+      },
+      "title": "FastSpeech2FreezeLayersConfig",
+      "type": "object"
+    },
+    "FastSpeech2ModelConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "encoder": {
+          "$ref": "#/$defs/TransformerConfig"
+        },
+        "decoder": {
+          "$ref": "#/$defs/TransformerConfig"
+        },
+        "variance_adaptor": {
+          "$ref": "#/$defs/VarianceAdaptorConfig"
+        },
+        "learn_alignment": {
+          "default": true,
+          "title": "Learn Alignment",
+          "type": "boolean"
+        },
+        "max_length": {
+          "default": 1000,
+          "title": "Max Length",
+          "type": "integer"
+        },
+        "mel_loss": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceLossEnum"
+            }
+          ],
+          "default": "mse"
+        },
+        "mel_loss_weight": {
+          "default": 0.5,
+          "title": "Mel Loss Weight",
+          "type": "number"
+        },
+        "phonological_feats_size": {
+          "default": 38,
+          "title": "Phonological Feats Size",
+          "type": "integer"
+        },
+        "use_phonological_feats": {
+          "default": false,
+          "title": "Use Phonological Feats",
+          "type": "boolean"
+        },
+        "use_postnet": {
+          "default": true,
+          "title": "Use Postnet",
+          "type": "boolean"
+        },
+        "multilingual": {
+          "default": false,
+          "title": "Multilingual",
+          "type": "boolean"
+        },
+        "multispeaker": {
+          "$ref": "#/$defs/MultiSpeakerConfig"
+        }
+      },
+      "title": "FastSpeech2ModelConfig",
+      "type": "object"
+    },
+    "FastSpeech2TrainingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "batch_size": {
+          "default": 16,
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "save_top_k_ckpts": {
+          "default": 5,
+          "title": "Save Top K Ckpts",
+          "type": "integer"
+        },
+        "ckpt_steps": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ckpt Steps"
+        },
+        "ckpt_epochs": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1,
+          "title": "Ckpt Epochs"
+        },
+        "max_epochs": {
+          "default": 1000,
+          "title": "Max Epochs",
+          "type": "integer"
+        },
+        "max_steps": {
+          "default": 100000,
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "finetune_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finetune Checkpoint"
+        },
+        "training_filelist": {
+          "default": "path/to/your/preprocessed/training_filelist.psv",
+          "format": "path",
+          "title": "Training Filelist",
+          "type": "string"
+        },
+        "validation_filelist": {
+          "default": "path/to/your/preprocessed/validation_filelist.psv",
+          "format": "path",
+          "title": "Validation Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "logger": {
+          "$ref": "#/$defs/LoggerConfig"
+        },
+        "val_data_workers": {
+          "default": 0,
+          "title": "Val Data Workers",
+          "type": "integer"
+        },
+        "train_data_workers": {
+          "default": 4,
+          "title": "Train Data Workers",
+          "type": "integer"
+        },
+        "use_weighted_sampler": {
+          "default": false,
+          "title": "Use Weighted Sampler",
+          "type": "boolean"
+        },
+        "optimizer": {
+          "$ref": "#/$defs/NoamOptimizer"
+        },
+        "freeze_layers": {
+          "$ref": "#/$defs/FastSpeech2FreezeLayersConfig"
+        },
+        "early_stopping": {
+          "$ref": "#/$defs/EarlyStoppingConfig"
+        },
+        "tf": {
+          "$ref": "#/$defs/TFConfig"
+        },
+        "vocoder_path": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vocoder Path"
+        }
+      },
+      "title": "FastSpeech2TrainingConfig",
+      "type": "object"
+    },
+    "FastSpeech2Variances": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "energy": {
+          "default": false,
+          "title": "Energy",
+          "type": "boolean"
+        },
+        "duration": {
+          "default": false,
+          "title": "Duration",
+          "type": "boolean"
+        },
+        "pitch": {
+          "default": false,
+          "title": "Pitch",
+          "type": "boolean"
+        }
+      },
+      "title": "FastSpeech2Variances",
+      "type": "object"
+    },
+    "LoggerConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "description": "The logger configures all the information needed for where to store your experiment's logs and checkpoints.\nThe structure of your logs will then be:\n<name> / <version> / <sub_dir>\n<sub_dir> will be generated by calling <sub_dir_callable> each time the LoggerConfig is constructed.",
+      "properties": {
+        "name": {
+          "default": "BaseExperiment",
+          "title": "Name",
+          "type": "string"
+        },
+        "save_dir": {
+          "default": "logs_and_checkpoints",
+          "format": "directory-path",
+          "title": "Save Dir",
+          "type": "string"
+        },
+        "sub_dir_callable": {
+          "title": "Sub Dir Callable",
+          "type": "string"
+        },
+        "version": {
+          "default": "base",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "title": "LoggerConfig",
+      "type": "object"
+    },
+    "MultiSpeakerConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "embedding_type": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/EmbeddingTypeEnum"
+            }
+          ],
+          "default": "none"
+        },
+        "every_layer": {
+          "default": false,
+          "title": "Every Layer",
+          "type": "boolean"
+        },
+        "dvector_gmm": {
+          "default": false,
+          "title": "Dvector Gmm",
+          "type": "boolean"
+        }
+      },
+      "title": "MultiSpeakerConfig",
+      "type": "object"
+    },
+    "NoamOptimizer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "learning_rate": {
+          "default": 0.0001,
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "eps": {
+          "default": 1e-08,
+          "title": "Eps",
+          "type": "number"
+        },
+        "weight_decay": {
+          "default": 0.01,
+          "title": "Weight Decay",
+          "type": "number"
+        },
+        "betas": {
+          "default": [
+            0.9,
+            0.98
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Betas",
+          "type": "array"
+        },
+        "name": {
+          "default": "noam",
+          "title": "Name",
+          "type": "string"
+        },
+        "warmup_steps": {
+          "default": 4000,
+          "title": "Warmup Steps",
+          "type": "integer"
+        }
+      },
+      "title": "NoamOptimizer",
+      "type": "object"
+    },
+    "PitchCalculationMethod": {
+      "enum": [
+        "pyworld",
+        "kaldi",
+        "cwt"
+      ],
+      "title": "PitchCalculationMethod",
+      "type": "string"
+    },
+    "PreprocessingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "dataset": {
+          "default": "YourDataSet",
+          "title": "Dataset",
+          "type": "string"
+        },
+        "pitch_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PitchCalculationMethod"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "pyworld",
+          "title": "Pitch Type"
+        },
+        "pitch_phone_averaging": {
+          "default": true,
+          "title": "Pitch Phone Averaging",
+          "type": "boolean"
+        },
+        "energy_phone_averaging": {
+          "default": true,
+          "title": "Energy Phone Averaging",
+          "type": "boolean"
+        },
+        "value_separator": {
+          "default": "--",
+          "title": "Value Separator",
+          "type": "string"
+        },
+        "train_split": {
+          "default": 0.9,
+          "max": 1.0,
+          "min": 0.0,
+          "title": "Train Split",
+          "type": "number"
+        },
+        "dataset_split_seed": {
+          "default": 1234,
+          "title": "Dataset Split Seed",
+          "type": "integer"
+        },
+        "save_dir": {
+          "default": "preprocessed/YourDataSet",
+          "format": "path",
+          "title": "Save Dir",
+          "type": "string"
+        },
+        "audio": {
+          "$ref": "#/$defs/AudioConfig"
+        },
+        "source_data": {
+          "items": {
+            "$ref": "#/$defs/Dataset"
+          },
+          "title": "Source Data",
+          "type": "array"
+        }
+      },
+      "title": "PreprocessingConfig",
+      "type": "object"
+    },
+    "Symbols": {
+      "additionalProperties": true,
+      "properties": {
+        "silence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "default": [
+            "<SIL>"
+          ],
+          "title": "Silence"
+        },
+        "pad": {
+          "default": "_",
+          "title": "Pad",
+          "type": "string"
+        },
+        "punctuation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "default": "-';:,.!?\u00a1\u00bf\u2014\u2026\"\u00ab\u00bb\u201c\u201d ",
+          "title": "Punctuation"
+        }
+      },
+      "title": "Symbols",
+      "type": "object"
+    },
+    "TFConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "ratio": {
+          "default": 1.0,
+          "title": "Ratio",
+          "type": "number"
+        },
+        "linear_schedule": {
+          "default": false,
+          "title": "Linear Schedule",
+          "type": "boolean"
+        },
+        "linear_schedule_start": {
+          "default": 0,
+          "title": "Linear Schedule Start",
+          "type": "integer"
+        },
+        "linear_schedule_end": {
+          "default": 20,
+          "title": "Linear Schedule End",
+          "type": "integer"
+        },
+        "linear_schedule_end_ratio": {
+          "default": 0.0,
+          "title": "Linear Schedule End Ratio",
+          "type": "number"
+        }
+      },
+      "title": "TFConfig",
+      "type": "object"
+    },
+    "TextConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "symbols": {
+          "$ref": "#/$defs/Symbols"
+        },
+        "to_replace": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "title": "To Replace",
+          "type": "object"
+        },
+        "cleaners": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cleaners",
+          "type": "array"
+        }
+      },
+      "title": "TextConfig",
+      "type": "object"
+    },
+    "TransformerConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "layers": {
+          "default": 4,
+          "title": "Layers",
+          "type": "integer"
+        },
+        "heads": {
+          "default": 2,
+          "title": "Heads",
+          "type": "integer"
+        },
+        "hidden_dim": {
+          "default": 256,
+          "title": "Hidden Dim",
+          "type": "integer"
+        },
+        "feedforward_dim": {
+          "default": 1024,
+          "title": "Feedforward Dim",
+          "type": "integer"
+        },
+        "conv_filter_size": {
+          "default": 1024,
+          "title": "Conv Filter Size",
+          "type": "integer"
+        },
+        "conv_kernel_size": {
+          "default": 9,
+          "title": "Conv Kernel Size",
+          "type": "integer"
+        },
+        "dropout": {
+          "default": 0.2,
+          "title": "Dropout",
+          "type": "number"
+        },
+        "depthwise": {
+          "default": true,
+          "title": "Depthwise",
+          "type": "boolean"
+        },
+        "conformer": {
+          "default": true,
+          "title": "Conformer",
+          "type": "boolean"
+        }
+      },
+      "title": "TransformerConfig",
+      "type": "object"
+    },
+    "VarianceAdaptorConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "variance_predictors": {
+          "$ref": "#/$defs/VariancePredictors"
+        }
+      },
+      "title": "VarianceAdaptorConfig",
+      "type": "object"
+    },
+    "VarianceLevelEnum": {
+      "enum": [
+        "phone",
+        "frame"
+      ],
+      "title": "VarianceLevelEnum",
+      "type": "string"
+    },
+    "VarianceLossEnum": {
+      "enum": [
+        "mse",
+        "mae",
+        "l1",
+        "soft_dtw"
+      ],
+      "title": "VarianceLossEnum",
+      "type": "string"
+    },
+    "VariancePredictorBase": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "transform": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceTransformEnum"
+            }
+          ],
+          "default": "none"
+        },
+        "loss": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceLossEnum"
+            }
+          ],
+          "default": "mse"
+        },
+        "n_layers": {
+          "default": 5,
+          "title": "N Layers",
+          "type": "integer"
+        },
+        "loss_weights": {
+          "default": 0.05,
+          "title": "Loss Weights",
+          "type": "number"
+        },
+        "kernel_size": {
+          "default": 3,
+          "title": "Kernel Size",
+          "type": "integer"
+        },
+        "dropout": {
+          "default": 0.5,
+          "title": "Dropout",
+          "type": "number"
+        },
+        "hidden_dim": {
+          "default": 256,
+          "title": "Hidden Dim",
+          "type": "integer"
+        },
+        "n_bins": {
+          "default": 256,
+          "title": "N Bins",
+          "type": "integer"
+        },
+        "depthwise": {
+          "default": true,
+          "title": "Depthwise",
+          "type": "boolean"
+        }
+      },
+      "title": "VariancePredictorBase",
+      "type": "object"
+    },
+    "VariancePredictorConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "transform": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceTransformEnum"
+            }
+          ],
+          "default": "none"
+        },
+        "loss": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceLossEnum"
+            }
+          ],
+          "default": "mse"
+        },
+        "n_layers": {
+          "default": 5,
+          "title": "N Layers",
+          "type": "integer"
+        },
+        "loss_weights": {
+          "default": 0.05,
+          "title": "Loss Weights",
+          "type": "number"
+        },
+        "kernel_size": {
+          "default": 3,
+          "title": "Kernel Size",
+          "type": "integer"
+        },
+        "dropout": {
+          "default": 0.5,
+          "title": "Dropout",
+          "type": "number"
+        },
+        "hidden_dim": {
+          "default": 256,
+          "title": "Hidden Dim",
+          "type": "integer"
+        },
+        "n_bins": {
+          "default": 256,
+          "title": "N Bins",
+          "type": "integer"
+        },
+        "depthwise": {
+          "default": true,
+          "title": "Depthwise",
+          "type": "boolean"
+        },
+        "level": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceLevelEnum"
+            }
+          ],
+          "default": "phone"
+        }
+      },
+      "title": "VariancePredictorConfig",
+      "type": "object"
+    },
+    "VariancePredictors": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "energy": {
+          "$ref": "#/$defs/VariancePredictorConfig"
+        },
+        "duration": {
+          "$ref": "#/$defs/VariancePredictorBase"
+        },
+        "pitch": {
+          "$ref": "#/$defs/VariancePredictorConfig"
+        }
+      },
+      "title": "VariancePredictors",
+      "type": "object"
+    },
+    "VarianceTransformEnum": {
+      "enum": [
+        "log",
+        "cwt",
+        "none"
+      ],
+      "title": "VarianceTransformEnum",
+      "type": "string"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "model": {
+      "$ref": "#/$defs/FastSpeech2ModelConfig"
+    },
+    "training": {
+      "$ref": "#/$defs/FastSpeech2TrainingConfig"
+    },
+    "preprocessing": {
+      "$ref": "#/$defs/PreprocessingConfig"
+    },
+    "text": {
+      "$ref": "#/$defs/TextConfig"
+    }
+  },
+  "title": "FastSpeech2Config",
+  "type": "object"
+}

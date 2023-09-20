@@ -1,7 +1,15 @@
+import json
 from enum import Enum
+from pathlib import Path
 
 import typer
 
+from everyvoice._version import VERSION
+from everyvoice.config.preprocessing_config import PreprocessingConfig
+from everyvoice.config.text_config import TextConfig
+from everyvoice.model.aligner.config import AlignerConfig
+from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
     preprocess as preprocess_fs2,
 )
@@ -11,6 +19,7 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
     train as train_fs2,
 )
+from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
@@ -180,6 +189,38 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
     from everyvoice.run_tests import run_tests
 
     run_tests(suite)
+
+
+@app.command(hidden=True)
+def update_schemas(
+    out_dir: Path = typer.Option(
+        None, "-o", "--out-dir", file_okay=False, dir_okay=True, exists=True
+    )
+):
+    """Update the JSON Schemas. This is hidden because you shouldn't be calling this unless you are
+    a developer for EveryVoice. Note: Pydantic will raise some Warnings related to the Callable fields
+    having string Schemas. These can be ignored.
+    """
+    if out_dir is None:
+        schema_dir_path = Path(__file__).parent / ".schema"
+    else:
+        schema_dir_path = out_dir
+
+    schemas_to_output = {
+        f"aligner-everyvoice-schema-{VERSION}.json": AlignerConfig.model_json_schema(),
+        f"everyvoice-schema-{VERSION}.json": EveryVoiceConfig.model_json_schema(),
+        f"feature_prediction-everyvoice-schema-{VERSION}.json": FeaturePredictionConfig.model_json_schema(),
+        f"preprocessing-everyvoice-schema-{VERSION}.json": PreprocessingConfig.model_json_schema(),
+        f"text-everyvoice-schema-{VERSION}.json": TextConfig.model_json_schema(),
+        f"vocoder-everyvoice-schema-{VERSION}.json": VocoderConfig.model_json_schema(),
+    }
+    for fn, schema in schemas_to_output.items():
+        if (schema_dir_path / fn).exists():
+            raise FileExistsError(
+                f"Sorry a schema already exists for version {fn}. Please bump the minor version number and generate the schema again."
+            )
+        with open(schema_dir_path / fn, "w") as f:
+            json.dump(schema, f, indent=2)
 
 
 CLICK_APP = typer.main.get_group(app)

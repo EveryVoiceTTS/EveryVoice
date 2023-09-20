@@ -50,7 +50,7 @@ model:
 training:
     batch_size: 32
     ...
-preprocessing: "./config/default/preprocessing.yaml"
+preprocessing: "./config/default/preprocessing-everyvoice.yaml"
 text: "./config/default/text_eng.yaml"
 ```
 

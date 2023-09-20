@@ -1,0 +1,734 @@
+{
+  "$defs": {
+    "AdamOptimizer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "learning_rate": {
+          "default": 0.0001,
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "eps": {
+          "default": 1e-08,
+          "title": "Eps",
+          "type": "number"
+        },
+        "weight_decay": {
+          "default": 0.01,
+          "title": "Weight Decay",
+          "type": "number"
+        },
+        "betas": {
+          "default": [
+            0.9,
+            0.98
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Betas",
+          "type": "array"
+        },
+        "name": {
+          "default": "adam",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "title": "AdamOptimizer",
+      "type": "object"
+    },
+    "AdamWOptimizer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "learning_rate": {
+          "default": 0.0001,
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "eps": {
+          "default": 1e-08,
+          "title": "Eps",
+          "type": "number"
+        },
+        "weight_decay": {
+          "default": 0.01,
+          "title": "Weight Decay",
+          "type": "number"
+        },
+        "betas": {
+          "default": [
+            0.9,
+            0.98
+          ],
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Betas",
+          "type": "array"
+        },
+        "name": {
+          "default": "adamw",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "title": "AdamWOptimizer",
+      "type": "object"
+    },
+    "AudioConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "min_audio_length": {
+          "default": 0.4,
+          "title": "Min Audio Length",
+          "type": "number"
+        },
+        "max_audio_length": {
+          "default": 11.0,
+          "title": "Max Audio Length",
+          "type": "number"
+        },
+        "max_wav_value": {
+          "default": 32767.0,
+          "title": "Max Wav Value",
+          "type": "number"
+        },
+        "norm_db": {
+          "default": -3.0,
+          "title": "Norm Db",
+          "type": "number"
+        },
+        "sil_threshold": {
+          "default": 1.0,
+          "title": "Sil Threshold",
+          "type": "number"
+        },
+        "sil_duration": {
+          "default": 0.1,
+          "title": "Sil Duration",
+          "type": "number"
+        },
+        "input_sampling_rate": {
+          "default": 22050,
+          "title": "Input Sampling Rate",
+          "type": "integer"
+        },
+        "output_sampling_rate": {
+          "default": 22050,
+          "title": "Output Sampling Rate",
+          "type": "integer"
+        },
+        "alignment_sampling_rate": {
+          "default": 22050,
+          "title": "Alignment Sampling Rate",
+          "type": "integer"
+        },
+        "target_bit_depth": {
+          "default": 16,
+          "title": "Target Bit Depth",
+          "type": "integer"
+        },
+        "alignment_bit_depth": {
+          "default": 16,
+          "title": "Alignment Bit Depth",
+          "type": "integer"
+        },
+        "fft_window_frames": {
+          "default": 1024,
+          "title": "Fft Window Frames",
+          "type": "integer"
+        },
+        "fft_hop_frames": {
+          "default": 256,
+          "title": "Fft Hop Frames",
+          "type": "integer"
+        },
+        "f_min": {
+          "default": 0,
+          "title": "F Min",
+          "type": "integer"
+        },
+        "f_max": {
+          "default": 8000,
+          "title": "F Max",
+          "type": "integer"
+        },
+        "n_fft": {
+          "default": 1024,
+          "title": "N Fft",
+          "type": "integer"
+        },
+        "n_mels": {
+          "default": 80,
+          "title": "N Mels",
+          "type": "integer"
+        },
+        "spec_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioSpecTypeEnum"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "mel-librosa",
+          "title": "Spec Type"
+        },
+        "vocoder_segment_size": {
+          "default": 8192,
+          "title": "Vocoder Segment Size",
+          "type": "integer"
+        }
+      },
+      "title": "AudioConfig",
+      "type": "object"
+    },
+    "AudioSpecTypeEnum": {
+      "enum": [
+        "mel",
+        "mel-librosa",
+        "linear",
+        "raw"
+      ],
+      "title": "AudioSpecTypeEnum",
+      "type": "string"
+    },
+    "Dataset": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "default": "YourDataSet",
+          "title": "Label",
+          "type": "string"
+        },
+        "data_dir": {
+          "default": "/please/create/a/path/to/your/dataset/data",
+          "format": "path",
+          "title": "Data Dir",
+          "type": "string"
+        },
+        "textgrid_dir": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Textgrid Dir"
+        },
+        "filelist": {
+          "default": "/please/create/a/path/to/your/dataset/filelist",
+          "format": "path",
+          "title": "Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "sox_effects": {
+          "default": [
+            [
+              "channels",
+              "1"
+            ]
+          ],
+          "items": {},
+          "title": "Sox Effects",
+          "type": "array"
+        }
+      },
+      "title": "Dataset",
+      "type": "object"
+    },
+    "HiFiGANDepthwiseBlocks": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "description": "Only currently implemented for the generator",
+      "properties": {
+        "generator": {
+          "default": false,
+          "title": "Generator",
+          "type": "boolean"
+        }
+      },
+      "title": "HiFiGANDepthwiseBlocks",
+      "type": "object"
+    },
+    "HiFiGANFreezingLayers": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "all_layers": {
+          "default": false,
+          "title": "All Layers",
+          "type": "boolean"
+        },
+        "msd": {
+          "default": false,
+          "title": "Msd",
+          "type": "boolean"
+        },
+        "mpd": {
+          "default": false,
+          "title": "Mpd",
+          "type": "boolean"
+        },
+        "generator": {
+          "default": false,
+          "title": "Generator",
+          "type": "boolean"
+        }
+      },
+      "title": "HiFiGANFreezingLayers",
+      "type": "object"
+    },
+    "HiFiGANModelConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "resblock": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANResblock"
+            }
+          ],
+          "default": "1"
+        },
+        "upsample_rates": {
+          "default": [
+            8,
+            8
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "title": "Upsample Rates",
+          "type": "array"
+        },
+        "upsample_kernel_sizes": {
+          "default": [
+            16,
+            16
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "title": "Upsample Kernel Sizes",
+          "type": "array"
+        },
+        "upsample_initial_channel": {
+          "default": 512,
+          "title": "Upsample Initial Channel",
+          "type": "integer"
+        },
+        "resblock_kernel_sizes": {
+          "default": [
+            3,
+            7,
+            11
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "title": "Resblock Kernel Sizes",
+          "type": "array"
+        },
+        "resblock_dilation_sizes": {
+          "default": [
+            [
+              1,
+              3,
+              5
+            ],
+            [
+              1,
+              3,
+              5
+            ],
+            [
+              1,
+              3,
+              5
+            ]
+          ],
+          "items": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "title": "Resblock Dilation Sizes",
+          "type": "array"
+        },
+        "depthwise_separable_convolutions": {
+          "$ref": "#/$defs/HiFiGANDepthwiseBlocks"
+        },
+        "activation_function": {
+          "title": "Activation Function",
+          "type": "string"
+        },
+        "istft_layer": {
+          "default": true,
+          "title": "Istft Layer",
+          "type": "boolean"
+        },
+        "msd_layers": {
+          "default": 3,
+          "title": "Msd Layers",
+          "type": "integer"
+        },
+        "mpd_layers": {
+          "default": [
+            2,
+            3,
+            5,
+            7,
+            11
+          ],
+          "items": {
+            "type": "integer"
+          },
+          "title": "Mpd Layers",
+          "type": "array"
+        }
+      },
+      "title": "HiFiGANModelConfig",
+      "type": "object"
+    },
+    "HiFiGANResblock": {
+      "enum": [
+        "1",
+        "2"
+      ],
+      "title": "HiFiGANResblock",
+      "type": "string"
+    },
+    "HiFiGANTrainTypes": {
+      "enum": [
+        "original",
+        "wgan",
+        "wgan-gp"
+      ],
+      "title": "HiFiGANTrainTypes",
+      "type": "string"
+    },
+    "HiFiGANTrainingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "batch_size": {
+          "default": 16,
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "save_top_k_ckpts": {
+          "default": 5,
+          "title": "Save Top K Ckpts",
+          "type": "integer"
+        },
+        "ckpt_steps": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ckpt Steps"
+        },
+        "ckpt_epochs": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1,
+          "title": "Ckpt Epochs"
+        },
+        "max_epochs": {
+          "default": 1000,
+          "title": "Max Epochs",
+          "type": "integer"
+        },
+        "max_steps": {
+          "default": 100000,
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "finetune_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Finetune Checkpoint"
+        },
+        "training_filelist": {
+          "default": "path/to/your/preprocessed/training_filelist.psv",
+          "format": "path",
+          "title": "Training Filelist",
+          "type": "string"
+        },
+        "validation_filelist": {
+          "default": "path/to/your/preprocessed/validation_filelist.psv",
+          "format": "path",
+          "title": "Validation Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "logger": {
+          "$ref": "#/$defs/LoggerConfig"
+        },
+        "val_data_workers": {
+          "default": 0,
+          "title": "Val Data Workers",
+          "type": "integer"
+        },
+        "train_data_workers": {
+          "default": 4,
+          "title": "Train Data Workers",
+          "type": "integer"
+        },
+        "generator_warmup_steps": {
+          "default": 0,
+          "title": "Generator Warmup Steps",
+          "type": "integer"
+        },
+        "gan_type": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANTrainTypes"
+            }
+          ],
+          "default": "original"
+        },
+        "optimizer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AdamOptimizer"
+            },
+            {
+              "$ref": "#/$defs/AdamWOptimizer"
+            },
+            {
+              "$ref": "#/$defs/RMSOptimizer"
+            }
+          ],
+          "title": "Optimizer"
+        },
+        "wgan_clip_value": {
+          "default": 0.01,
+          "title": "Wgan Clip Value",
+          "type": "number"
+        },
+        "use_weighted_sampler": {
+          "default": false,
+          "title": "Use Weighted Sampler",
+          "type": "boolean"
+        },
+        "freeze_layers": {
+          "$ref": "#/$defs/HiFiGANFreezingLayers"
+        },
+        "finetune": {
+          "default": false,
+          "title": "Finetune",
+          "type": "boolean"
+        }
+      },
+      "title": "HiFiGANTrainingConfig",
+      "type": "object"
+    },
+    "LoggerConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "description": "The logger configures all the information needed for where to store your experiment's logs and checkpoints.\nThe structure of your logs will then be:\n<name> / <version> / <sub_dir>\n<sub_dir> will be generated by calling <sub_dir_callable> each time the LoggerConfig is constructed.",
+      "properties": {
+        "name": {
+          "default": "BaseExperiment",
+          "title": "Name",
+          "type": "string"
+        },
+        "save_dir": {
+          "default": "logs_and_checkpoints",
+          "format": "directory-path",
+          "title": "Save Dir",
+          "type": "string"
+        },
+        "sub_dir_callable": {
+          "title": "Sub Dir Callable",
+          "type": "string"
+        },
+        "version": {
+          "default": "base",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "title": "LoggerConfig",
+      "type": "object"
+    },
+    "PitchCalculationMethod": {
+      "enum": [
+        "pyworld",
+        "kaldi",
+        "cwt"
+      ],
+      "title": "PitchCalculationMethod",
+      "type": "string"
+    },
+    "PreprocessingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "dataset": {
+          "default": "YourDataSet",
+          "title": "Dataset",
+          "type": "string"
+        },
+        "pitch_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PitchCalculationMethod"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "pyworld",
+          "title": "Pitch Type"
+        },
+        "pitch_phone_averaging": {
+          "default": true,
+          "title": "Pitch Phone Averaging",
+          "type": "boolean"
+        },
+        "energy_phone_averaging": {
+          "default": true,
+          "title": "Energy Phone Averaging",
+          "type": "boolean"
+        },
+        "value_separator": {
+          "default": "--",
+          "title": "Value Separator",
+          "type": "string"
+        },
+        "train_split": {
+          "default": 0.9,
+          "max": 1.0,
+          "min": 0.0,
+          "title": "Train Split",
+          "type": "number"
+        },
+        "dataset_split_seed": {
+          "default": 1234,
+          "title": "Dataset Split Seed",
+          "type": "integer"
+        },
+        "save_dir": {
+          "default": "preprocessed/YourDataSet",
+          "format": "path",
+          "title": "Save Dir",
+          "type": "string"
+        },
+        "audio": {
+          "$ref": "#/$defs/AudioConfig"
+        },
+        "source_data": {
+          "items": {
+            "$ref": "#/$defs/Dataset"
+          },
+          "title": "Source Data",
+          "type": "array"
+        }
+      },
+      "title": "PreprocessingConfig",
+      "type": "object"
+    },
+    "RMSOptimizer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "learning_rate": {
+          "default": 0.0001,
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "eps": {
+          "default": 1e-08,
+          "title": "Eps",
+          "type": "number"
+        },
+        "weight_decay": {
+          "default": 0.01,
+          "title": "Weight Decay",
+          "type": "number"
+        },
+        "alpha": {
+          "default": 0.99,
+          "title": "Alpha",
+          "type": "number"
+        },
+        "name": {
+          "default": "rms",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "title": "RMSOptimizer",
+      "type": "object"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "model": {
+      "$ref": "#/$defs/HiFiGANModelConfig"
+    },
+    "training": {
+      "$ref": "#/$defs/HiFiGANTrainingConfig"
+    },
+    "preprocessing": {
+      "$ref": "#/$defs/PreprocessingConfig"
+    }
+  },
+  "title": "HiFiGANConfig",
+  "type": "object"
+}

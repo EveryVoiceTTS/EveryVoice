@@ -1,0 +1,252 @@
+{
+  "$defs": {
+    "AudioConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "min_audio_length": {
+          "default": 0.4,
+          "title": "Min Audio Length",
+          "type": "number"
+        },
+        "max_audio_length": {
+          "default": 11.0,
+          "title": "Max Audio Length",
+          "type": "number"
+        },
+        "max_wav_value": {
+          "default": 32767.0,
+          "title": "Max Wav Value",
+          "type": "number"
+        },
+        "norm_db": {
+          "default": -3.0,
+          "title": "Norm Db",
+          "type": "number"
+        },
+        "sil_threshold": {
+          "default": 1.0,
+          "title": "Sil Threshold",
+          "type": "number"
+        },
+        "sil_duration": {
+          "default": 0.1,
+          "title": "Sil Duration",
+          "type": "number"
+        },
+        "input_sampling_rate": {
+          "default": 22050,
+          "title": "Input Sampling Rate",
+          "type": "integer"
+        },
+        "output_sampling_rate": {
+          "default": 22050,
+          "title": "Output Sampling Rate",
+          "type": "integer"
+        },
+        "alignment_sampling_rate": {
+          "default": 22050,
+          "title": "Alignment Sampling Rate",
+          "type": "integer"
+        },
+        "target_bit_depth": {
+          "default": 16,
+          "title": "Target Bit Depth",
+          "type": "integer"
+        },
+        "alignment_bit_depth": {
+          "default": 16,
+          "title": "Alignment Bit Depth",
+          "type": "integer"
+        },
+        "fft_window_frames": {
+          "default": 1024,
+          "title": "Fft Window Frames",
+          "type": "integer"
+        },
+        "fft_hop_frames": {
+          "default": 256,
+          "title": "Fft Hop Frames",
+          "type": "integer"
+        },
+        "f_min": {
+          "default": 0,
+          "title": "F Min",
+          "type": "integer"
+        },
+        "f_max": {
+          "default": 8000,
+          "title": "F Max",
+          "type": "integer"
+        },
+        "n_fft": {
+          "default": 1024,
+          "title": "N Fft",
+          "type": "integer"
+        },
+        "n_mels": {
+          "default": 80,
+          "title": "N Mels",
+          "type": "integer"
+        },
+        "spec_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioSpecTypeEnum"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "mel-librosa",
+          "title": "Spec Type"
+        },
+        "vocoder_segment_size": {
+          "default": 8192,
+          "title": "Vocoder Segment Size",
+          "type": "integer"
+        }
+      },
+      "title": "AudioConfig",
+      "type": "object"
+    },
+    "AudioSpecTypeEnum": {
+      "enum": [
+        "mel",
+        "mel-librosa",
+        "linear",
+        "raw"
+      ],
+      "title": "AudioSpecTypeEnum",
+      "type": "string"
+    },
+    "Dataset": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "default": "YourDataSet",
+          "title": "Label",
+          "type": "string"
+        },
+        "data_dir": {
+          "default": "/please/create/a/path/to/your/dataset/data",
+          "format": "path",
+          "title": "Data Dir",
+          "type": "string"
+        },
+        "textgrid_dir": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Textgrid Dir"
+        },
+        "filelist": {
+          "default": "/please/create/a/path/to/your/dataset/filelist",
+          "format": "path",
+          "title": "Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "sox_effects": {
+          "default": [
+            [
+              "channels",
+              "1"
+            ]
+          ],
+          "items": {},
+          "title": "Sox Effects",
+          "type": "array"
+        }
+      },
+      "title": "Dataset",
+      "type": "object"
+    },
+    "PitchCalculationMethod": {
+      "enum": [
+        "pyworld",
+        "kaldi",
+        "cwt"
+      ],
+      "title": "PitchCalculationMethod",
+      "type": "string"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "dataset": {
+      "default": "YourDataSet",
+      "title": "Dataset",
+      "type": "string"
+    },
+    "pitch_type": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PitchCalculationMethod"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": "pyworld",
+      "title": "Pitch Type"
+    },
+    "pitch_phone_averaging": {
+      "default": true,
+      "title": "Pitch Phone Averaging",
+      "type": "boolean"
+    },
+    "energy_phone_averaging": {
+      "default": true,
+      "title": "Energy Phone Averaging",
+      "type": "boolean"
+    },
+    "value_separator": {
+      "default": "--",
+      "title": "Value Separator",
+      "type": "string"
+    },
+    "train_split": {
+      "default": 0.9,
+      "max": 1.0,
+      "min": 0.0,
+      "title": "Train Split",
+      "type": "number"
+    },
+    "dataset_split_seed": {
+      "default": 1234,
+      "title": "Dataset Split Seed",
+      "type": "integer"
+    },
+    "save_dir": {
+      "default": "preprocessed/YourDataSet",
+      "format": "path",
+      "title": "Save Dir",
+      "type": "string"
+    },
+    "audio": {
+      "$ref": "#/$defs/AudioConfig"
+    },
+    "source_data": {
+      "items": {
+        "$ref": "#/$defs/Dataset"
+      },
+      "title": "Source Data",
+      "type": "array"
+    }
+  },
+  "title": "PreprocessingConfig",
+  "type": "object"
+}
