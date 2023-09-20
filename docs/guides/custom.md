@@ -59,33 +59,33 @@ cd test
 Your models need to do a number of preprocessing steps in order to prepare for training. To preprocess everything you need, run the following:
 
 ```bash
-everyvoice preprocess config/feature_prediction-everyvoice.yaml
+everyvoice preprocess config/{{ config_filename('text-to-spec') }}
 ```
 
 ## Step 6: Train your Vocoder
 
 ```bash
-everyvoice train spec-to-wav config/vocoder-everyvoice.yaml
+everyvoice train spec-to-wav config/{{ config_filename('spec-to-wav') }}
 ```
 
 By default, we run our training with PyTorch Lightning's "auto" strategy. But, if you are on a machine where you know the hardware, you can specify it like:
 
 ```bash
-everyvoice train spec-to-wav config/vocoder-everyvoice.yaml -d 1 -a gpu
+everyvoice train spec-to-wav config/{{ config_filename('spec-to-wav') }} -d 1 -a gpu
 ```
 
 Which would use the GPU accelerator and specify 1 device/chip.
 
 ## Step 7: Train your Feature Prediction Network
 
-To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the `config/feature_prediction-everyvoice.yaml`
+To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the `config/{{ config_filename('text-to-spec') }}`
 
 At the bottom of that file you'll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be `/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.)
 
 Once you've replaced the vocoder_path key, you can train your feature prediction network:
 
 ```bash
-everyvoice train text-to-spec config/feature_prediction-everyvoice.yaml
+everyvoice train text-to-spec config/{{ config_filename('text-to-spec') }}
 ```
 
 ## Step 8: Synthesize Speech in Your Language!
@@ -102,7 +102,7 @@ everyvoice synthesize text-to-wav logs_and_checkpoints/FeaturePredictionExperime
 
 % .. code-block:: bash
 
-% everyvoice train text-to-wav config/e2e.yaml
+% everyvoice train text-to-wav config/{{ config_filename('text-to-wav') }}
 
 % Step 11: Synthesize Speech
 
@@ -110,7 +110,7 @@ everyvoice synthesize text-to-wav logs_and_checkpoints/FeaturePredictionExperime
 
 % .. code-block:: bash
 
-% everyvoice synthesize text-to-wav -t "hello world" -c config/e2e.yaml
+% everyvoice synthesize text-to-wav -t "hello world" -c config/{{ config_filename('text-to-wav') }}
 
 % .. warning::
 

@@ -20,6 +20,13 @@ from everyvoice.wizard.dataset import return_dataset_steps
 from everyvoice.wizard.prompts import get_response_from_menu_prompt
 from everyvoice.wizard.utils import sanitize_path, write_dict_to_config
 
+TEXT_CONFIG_FILENAME_PREFIX = "everyvoice-text"
+ALIGNER_CONFIG_FILENAME_PREFIX = "everyvoice-aligner"
+PREPROCESSING_CONFIG_FILENAME_PREFIX = "everyvoice-preprocessing"
+TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-spec"
+SPEC_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-spec-to-wav"
+TEXT_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-wav"
+
 
 class NameStep(Step):
     DEFAULT_NAME = StepNames.name_step
@@ -154,7 +161,9 @@ class ConfigFormatStep(Step):
         text_config = TextConfig(
             symbols=Symbols(punctuation=list(set(punctuation)), **symbols)
         )
-        text_config_path = (config_dir / f"text-everyvoice.{self.response}").absolute()
+        text_config_path = (
+            config_dir / f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}"
+        ).absolute()
         write_dict_to_config(
             json.loads(text_config.model_dump_json()), text_config_path
         )
@@ -171,7 +180,7 @@ class ConfigFormatStep(Step):
             source_data=datasets,
         )
         preprocessing_config_path = (
-            config_dir / f"preprocessing-everyvoice.{self.response}"
+            config_dir / f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()
         write_dict_to_config(
             json.loads(preprocessing_config.model_dump_json()),
@@ -191,7 +200,7 @@ class ConfigFormatStep(Step):
             ).model_dump()
         )
         aligner_config_path = (
-            config_dir / f"aligner-everyvoice.{self.response}"
+            config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()
         aligner_config_json = json.loads(aligner_config.model_dump_json())
         aligner_config_json["preprocessing"] = str(preprocessing_config_path)
@@ -207,7 +216,7 @@ class ConfigFormatStep(Step):
             ).model_dump()
         )
         fp_config_path = (
-            config_dir / f"feature_prediction-everyvoice.{self.response}"
+            config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()
         fp_config_json = json.loads(fp_config.model_dump_json())
         fp_config_json["preprocessing"] = str(preprocessing_config_path)
@@ -223,7 +232,7 @@ class ConfigFormatStep(Step):
             ).model_dump()
         )
         vocoder_config_path = (
-            config_dir / f"vocoder-everyvoice.{self.response}"
+            config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
         ).absolute()
         vocoder_config_json = json.loads(vocoder_config.model_dump_json())
         vocoder_config_json["preprocessing"] = str(preprocessing_config_path)
@@ -241,7 +250,9 @@ class ConfigFormatStep(Step):
         e2e_config_json["aligner"] = str(aligner_config_path)
         e2e_config_json["feature_prediction"] = str(fp_config_path)
         e2e_config_json["vocoder"] = str(vocoder_config_path)
-        e2e_config_path = (config_dir / f"e2e.{self.response}").absolute()
+        e2e_config_path = (
+            config_dir / f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
+        ).absolute()
         write_dict_to_config(e2e_config_json, e2e_config_path)
         print(
             Panel(

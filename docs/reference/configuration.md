@@ -50,8 +50,8 @@ model:
 training:
     batch_size: 32
     ...
-preprocessing: "./config/default/preprocessing-everyvoice.yaml"
-text: "./config/default/text_eng.yaml"
+preprocessing: "./config/default/{{ config_filename('preprocessing') }}"
+text: "./config/default/{{ config_filename('text') }}"
 ```
 
 ## Serialization

@@ -1,8 +1,10 @@
 import json
 from enum import Enum
 from pathlib import Path
+from typing import Dict
 
 import typer
+from pydantic import BaseModel
 
 from everyvoice._version import VERSION
 from everyvoice.config.preprocessing_config import PreprocessingConfig
@@ -24,6 +26,14 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
+from everyvoice.wizard.basic import (
+    ALIGNER_CONFIG_FILENAME_PREFIX,
+    PREPROCESSING_CONFIG_FILENAME_PREFIX,
+    SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
+    TEXT_CONFIG_FILENAME_PREFIX,
+    TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
+    TEXT_TO_WAV_CONFIG_FILENAME_PREFIX,
+)
 
 
 # See https://github.com/tiangolo/typer/issues/428#issuecomment-1238866548
@@ -104,12 +114,12 @@ def new_dataset():
 # Add preprocess to root
 app.command(
     short_help="Preprocess your data",
-    help="""
+    help=f"""
     # Preprocess Help
 
     This command will preprocess all of the data you need for use with EveryVoice.
 
-    By default every step of the preprocessor will be done, but you can run specific commands by adding them as options for example: **everyvoice preprocess path/to/config.yaml -s energy -s pitch**
+    By default every step of the preprocessor will be done, but you can run specific commands by adding them as options for example: **everyvoice preprocess path/to/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml -s energy -s pitch**
     """,
 )(preprocess_fs2)
 
@@ -191,6 +201,16 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
     run_tests(suite)
 
 
+SCHEMAS_TO_OUTPUT: Dict[str, BaseModel] = {
+    f"{ALIGNER_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": AlignerConfig,  # type: ignore
+    f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": EveryVoiceConfig,  # type: ignore
+    f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": FeaturePredictionConfig,  # type: ignore
+    f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": PreprocessingConfig,  # type: ignore
+    f"{TEXT_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": TextConfig,  # type: ignore
+    f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": VocoderConfig,  # type: ignore
+}
+
+
 @app.command(hidden=True)
 def update_schemas(
     out_dir: Path = typer.Option(
@@ -206,21 +226,13 @@ def update_schemas(
     else:
         schema_dir_path = out_dir
 
-    schemas_to_output = {
-        f"aligner-everyvoice-schema-{VERSION}.json": AlignerConfig.model_json_schema(),
-        f"everyvoice-schema-{VERSION}.json": EveryVoiceConfig.model_json_schema(),
-        f"feature_prediction-everyvoice-schema-{VERSION}.json": FeaturePredictionConfig.model_json_schema(),
-        f"preprocessing-everyvoice-schema-{VERSION}.json": PreprocessingConfig.model_json_schema(),
-        f"text-everyvoice-schema-{VERSION}.json": TextConfig.model_json_schema(),
-        f"vocoder-everyvoice-schema-{VERSION}.json": VocoderConfig.model_json_schema(),
-    }
-    for fn, schema in schemas_to_output.items():
-        if (schema_dir_path / fn).exists():
+    for filename, schema in SCHEMAS_TO_OUTPUT.items():
+        if (schema_dir_path / filename).exists():
             raise FileExistsError(
-                f"Sorry a schema already exists for version {fn}. Please bump the minor version number and generate the schema again."
+                f"Sorry a schema already exists for version {filename}. Please bump the minor version number and generate the schema again."
             )
-        with open(schema_dir_path / fn, "w") as f:
-            json.dump(schema, f, indent=2)
+        with open(schema_dir_path / filename, "w") as f:
+            json.dump(schema.model_json_schema(), f, indent=2)
 
 
 CLICK_APP = typer.main.get_group(app)

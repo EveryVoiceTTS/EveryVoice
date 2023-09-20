@@ -30,6 +30,7 @@ jobs:
       - name: Install dependencies and package
         run: |
           CUDA_TAG=cu117 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+          pip install -r requirements.test.txt
           pip install cython
           pip install -e .
           pip install coverage

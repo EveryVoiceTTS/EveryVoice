@@ -25,6 +25,8 @@ theme:
     - content.code.select
     - announce.dismiss
 plugins:
+  - search
+  - macros
   - mkdocstrings:
       default_handler: python
       handlers:
