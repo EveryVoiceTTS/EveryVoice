@@ -1,18 +1,11 @@
 from collections.abc import Mapping, Sequence
+from functools import cached_property
 from pathlib import Path
 from types import FunctionType
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Tuple, Union
 
 from loguru import logger
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    DirectoryPath,
-    Field,
-    field_serializer,
-    model_validator,
-    validator,
-)
+from pydantic import BaseModel, ConfigDict, DirectoryPath, Field, validator
 
 from everyvoice.config.utils import PossiblyRelativePath, PossiblySerializedCallable
 from everyvoice.utils import (
@@ -121,24 +114,15 @@ class LoggerConfig(ConfigModel):
     save_dir: DirectoryPath = Path("./logs_and_checkpoints")
     """The directory to save your checkpoints and logs to"""
 
-    sub_dir: Optional[str] = Field(None, exclude=True)
-    """The sub directory within a given version of your experiment (i.e. the run). You do not provide this explicitly since the sub_dir_callable will create it"""
-
     sub_dir_callable: PossiblySerializedCallable = get_current_time
     """The function that generates a string to call your runs - this should include a timestamp of some sort"""
 
     version: str = "base"
     """The version of your experiment"""
 
-    @field_serializer("sub_dir")
-    def output_null(self, sub_dir: str):
-        return None
-
-    @model_validator(mode="after")
-    def assign_subdir(self):
-        if self.sub_dir_callable and self.sub_dir is None:
-            self.sub_dir = self.sub_dir_callable()
-        return self
+    @cached_property
+    def sub_dir(self) -> str:
+        return self.sub_dir_callable()
 
     # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
     # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
