@@ -1,0 +1,72 @@
+{
+  "$defs": {
+    "Symbols": {
+      "additionalProperties": true,
+      "properties": {
+        "silence": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "default": [
+            "<SIL>"
+          ],
+          "title": "Silence"
+        },
+        "pad": {
+          "default": "_",
+          "title": "Pad",
+          "type": "string"
+        },
+        "punctuation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          ],
+          "default": "-';:,.!?\u00a1\u00bf\u2014\u2026\"\u00ab\u00bb\u201c\u201d ",
+          "title": "Punctuation"
+        }
+      },
+      "title": "Symbols",
+      "type": "object"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "symbols": {
+      "$ref": "#/$defs/Symbols"
+    },
+    "to_replace": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {},
+      "title": "To Replace",
+      "type": "object"
+    },
+    "cleaners": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Cleaners",
+      "type": "array"
+    }
+  },
+  "title": "TextConfig",
+  "type": "object"
+}

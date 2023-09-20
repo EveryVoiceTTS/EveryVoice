@@ -1,8 +1,7 @@
 from collections.abc import Mapping, Sequence
 from functools import cached_property
 from pathlib import Path
-from types import FunctionType
-from typing import Callable, Tuple, Union
+from typing import Tuple, Union
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, DirectoryPath, Field, validator
@@ -17,19 +16,10 @@ from everyvoice.utils import (
 
 
 class ConfigModel(BaseModel):
-    # TODO[pydantic]: The following keys were removed: `json_encoders`.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
     model_config = ConfigDict(
         extra="forbid",
         use_enum_values=True,
-        json_encoders={
-            Callable: lambda fn: ".".join(
-                [fn.__module__, fn.__name__]
-            ),  # This doesn't seem to work for some reason: https://github.com/pydantic/pydantic/issues/4151
-            FunctionType: lambda fn: ".".join(
-                [fn.__module__, fn.__name__]
-            ),  # But this does
-        },
+        json_schema_extra={"$schema": "http://json-schema.org/draft-07/schema#"},
     )
 
     def update_config(self, new_config: dict):
