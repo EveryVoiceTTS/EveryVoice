@@ -488,7 +488,7 @@ class WizardTest(TestCase):
                 ),
                 (dataset.FilelistFormatStep(), Say("psv")),
                 (dataset.HasSpeakerStep(), Say("yes")),
-                (dataset.HasLanguageStep(), Say("yes")),
+                (dataset.HasLanguageStep(), Say("no")),
                 (dataset.SelectLanguageStep(), Say("eng")),
                 (dataset.TextProcessingStep(), Say([0, 1])),
                 (
@@ -502,6 +502,53 @@ class WizardTest(TestCase):
 
         # print(tour.state)
         self.assertEqual(len(tour.state["filelist_data"]), 6)
+        self.assertTrue(tour.steps[-1].completed)
+
+    def test_get_iso_code(self):
+        self.assertEqual(dataset.get_iso_code("eng"), "eng")
+        self.assertEqual(dataset.get_iso_code("[eng]"), "eng")
+        self.assertEqual(dataset.get_iso_code("es"), "es")
+        self.assertEqual(dataset.get_iso_code("[es]"), "es")
+
+    def test_with_language_column(self):
+        data_dir = Path(__file__).parent / "data"
+        tour = self.monkey_run_tour(
+            "tour with language column",
+            [
+                (dataset.WavsDirStep(), Say(data_dir)),
+                (
+                    dataset.FilelistStep(),
+                    Say(str(data_dir / "language-col.tsv")),
+                ),
+                (dataset.FilelistFormatStep(), Say("tsv")),
+                (dataset.HasSpeakerStep(), Say("yes")),
+                (
+                    dataset.HeaderStep(
+                        name=SN.speaker_header_step,
+                        prompt_text="foo",
+                        header_name="speaker",
+                    ),
+                    Say(2),
+                ),
+                (dataset.HasLanguageStep(), Say("yes")),
+                (
+                    dataset.HeaderStep(
+                        name=SN.language_header_step.value,
+                        prompt_text="foo",
+                        header_name="language",
+                    ),
+                    Say(3),
+                ),
+                (dataset.TextProcessingStep(), Say([0, 1])),
+                (
+                    dataset.SymbolSetStep(),
+                    patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
+                ),
+                (dataset.SoxEffectsStep(), Say([0])),
+                (dataset.DatasetNameStep(), Say("my-monkey-dataset")),
+            ],
+        )
+        self.assertTrue(tour.steps[-1].completed)
 
 
 if __name__ == "__main__":
