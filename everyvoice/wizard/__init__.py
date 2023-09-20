@@ -75,7 +75,7 @@ class Step(_Step, NodeMixin):
     ):
         super(Step, self).__init__()
         if name is None:
-            name = getattr(self, "default_name", "default step name missing")
+            name = getattr(self, "DEFAULT_NAME", "default step name missing")
         self.name: str = name.value if isinstance(name, Enum) else name
         self.default = default
         self.parent = parent

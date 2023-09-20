@@ -18,7 +18,7 @@ from everyvoice.wizard.validators import validate_path
 
 
 class DatasetNameStep(Step):
-    default_name = StepNames.dataset_name_step
+    DEFAULT_NAME = StepNames.dataset_name_step
 
     def prompt(self):
         return input("What would you like to call this dataset? ")
@@ -43,7 +43,7 @@ class DatasetNameStep(Step):
 
 
 class WavsDirStep(Step):
-    default_name = StepNames.wavs_dir_step
+    DEFAULT_NAME = StepNames.wavs_dir_step
 
     def prompt(self):
         return questionary.path(
@@ -60,7 +60,7 @@ class WavsDirStep(Step):
 
 
 class SampleRateConfigStep(Step):
-    default_name = StepNames.sample_rate_config_step
+    DEFAULT_NAME = StepNames.sample_rate_config_step
 
     def prompt(self):
         return questionary.text(
@@ -85,7 +85,7 @@ class SampleRateConfigStep(Step):
 
 
 class FilelistStep(Step):
-    default_name = StepNames.filelist_step
+    DEFAULT_NAME = StepNames.filelist_step
 
     def prompt(self):
         return questionary.path(
@@ -97,7 +97,7 @@ class FilelistStep(Step):
 
 
 class FilelistFormatStep(Step):
-    default_name = StepNames.filelist_format_step
+    DEFAULT_NAME = StepNames.filelist_format_step
     separators = {"psv": "|", "tsv": "\t", "csv": ","}
 
     def prompt(self):
@@ -201,7 +201,7 @@ class FilelistFormatStep(Step):
 
 
 class HeaderStep(Step):
-    default_name = StepNames.text_header_step
+    DEFAULT_NAME = StepNames.text_header_step
 
     def __init__(self, name: str, prompt_text: str, header_name: str, **kwargs):
         super(HeaderStep, self).__init__(name=name, **kwargs)
@@ -245,7 +245,7 @@ class HeaderStep(Step):
 
 
 class HasSpeakerStep(Step):
-    default_name = StepNames.data_has_speaker_value_step
+    DEFAULT_NAME = StepNames.data_has_speaker_value_step
     choices = ("yes", "no")
 
     def prompt(self):
@@ -274,7 +274,7 @@ class HasSpeakerStep(Step):
 
 
 class HasLanguageStep(Step):
-    default_name = StepNames.data_has_language_value_step
+    DEFAULT_NAME = StepNames.data_has_language_value_step
     choices = ("yes", "no")
 
     def prompt(self):
@@ -311,7 +311,7 @@ class HasLanguageStep(Step):
 
 
 class SelectLanguageStep(Step):
-    default_name = StepNames.select_language_step
+    DEFAULT_NAME = StepNames.select_language_step
 
     def prompt(self):
         from g2p import get_arpabet_langs
@@ -379,7 +379,7 @@ def return_symbols(language):
 
 
 class TextProcessingStep(Step):
-    default_name = StepNames.text_processing_step
+    DEFAULT_NAME = StepNames.text_processing_step
 
     def prompt(self):
         return get_response_from_menu_prompt(
@@ -414,7 +414,7 @@ class TextProcessingStep(Step):
 
 
 class SoxEffectsStep(Step):
-    default_name = StepNames.sox_effects_step
+    DEFAULT_NAME = StepNames.sox_effects_step
 
     def prompt(self):
         return get_response_from_menu_prompt(
@@ -447,7 +447,7 @@ class SoxEffectsStep(Step):
 
 
 class SymbolSetStep(Step):
-    default_name = StepNames.symbol_set_step
+    DEFAULT_NAME = StepNames.symbol_set_step
 
     def prompt(self):
         selected_language = get_iso_code(

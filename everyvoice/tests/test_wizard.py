@@ -453,7 +453,7 @@ class WizardTest(TestCase):
 
     def monkey_run_tour(self, name, steps):
         tour = Tour(name, steps=[step for (step, *_) in steps])
-        self.assertEqual(tour.state, {})  # fail on accidentally shared initiliazer
+        self.assertEqual(tour.state, {})  # fail on accidentally shared initializer
         for (step, answer, *_) in steps:
             if isinstance(answer, Say):
                 monkey = monkeypatch(step, "prompt", answer)
