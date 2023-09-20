@@ -110,7 +110,7 @@ class FilelistFormatStep(Step):
         )
 
     def looks_like_sv(self, file_type, separator) -> bool:
-        filelist_path = self.state.get(StepNames.filelist_step.value)
+        filelist_path = self.state.get(StepNames.filelist_step.value)  # type: ignore
         initial_records = generic_csv_reader(
             filelist_path, delimiter=separator, record_limit=10
         )
@@ -340,27 +340,42 @@ class SelectLanguageStep(Step):
             if header not in ["basename", "text", "speaker", "language"]:
                 self.state["filelist_headers"][i] = f"unknown_{i}"
         # re-parse data:
-        filelist_path = self.state.get(StepNames.filelist_step.value)
-        if not isinstance(filelist_path, Path):
-            filelist_path = Path(filelist_path).expanduser()
-        if self.state.get(StepNames.filelist_format_step.value, None) in [
-            "psv",
-            "tsv",
-            "csv",
-        ]:
-            self.state["filelist_data"] = generic_dict_loader(
-                filelist_path,
-                delimiter=self.state.get("filelist_delimiter"),
-                fieldnames=self.state["filelist_headers"],
-            )
-        else:
-            self.state["filelist_data"] = read_festival(filelist_path)
+        reload_filelist_data_as_dict(self.state)
+        # Apply the language code:
         isocode = get_iso_code(self.response)
         for item in self.state["filelist_data"]:
             item["language"] = isocode
 
 
+def reload_filelist_data_as_dict(state):
+    """Given a tour or step's state, reload the filelist_data as a dict if
+    that was not already done."""
+    data = state.get("filelist_data", None)
+    if data and isinstance(data[0], dict):
+        # data is already a dict, no need to do anything
+        return
+
+    # reparse data
+    filelist_path = state.get(StepNames.filelist_step.value)
+    if not isinstance(filelist_path, Path):
+        filelist_path = Path(filelist_path).expanduser()
+    if state.get(StepNames.filelist_format_step.value, None) in [
+        "psv",
+        "tsv",
+        "csv",
+    ]:
+        state["filelist_data"] = generic_dict_loader(
+            filelist_path,
+            delimiter=state.get("filelist_delimiter"),
+            fieldnames=state["filelist_headers"],
+        )
+    else:
+        state["filelist_data"] = read_festival(filelist_path)
+
+
 def get_iso_code(language):
+    if language is None:
+        return None
     result = re.search(r"\[[\w-]*\]", language)
     if result is None:
         return language
@@ -397,6 +412,10 @@ class TextProcessingStep(Step):
         return True
 
     def effect(self):
+        # re-parse data if necessary:
+        reload_filelist_data_as_dict(self.state)
+
+        # Apply the selected text processing processes
         process_lookup = {
             0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
             1: {"fn": lambda x: normalize("NFC", x), "desc": ""},
