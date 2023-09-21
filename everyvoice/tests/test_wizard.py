@@ -7,7 +7,7 @@ import tempfile
 from enum import Enum
 from pathlib import Path
 from types import MethodType
-from typing import Sequence
+from typing import Iterable, Sequence
 from unittest import TestCase, main
 
 from anytree import RenderTree
@@ -451,17 +451,42 @@ class WizardTest(TestCase):
             )
             self.assertEqual(answer, 1)
 
-    def monkey_run_tour(self, name, steps):
-        tour = Tour(name, steps=[step for (step, *_) in steps])
+    def monkey_run_tour(self, name: str, steps_and_answers: list[tuple]):
+        """Create and run a turn with the monkey answers given
+        Args:
+            name: Name to give the tour when creating it
+            steps_and_answers: a list of tuples of the form
+                (Step, Answer/Monkey, optional [children answers/monkeys])
+                where
+                 - Step is an instantiated subclass if Step
+                 - either:
+                   - Answer is an instance of Say to get patched in for Step's prompt method
+                   or
+                   - Monkey is an instantiated monkeypatch context to use
+                 - [children answers/monkeys] is an optional list of tuples
+                   (Answer/Monkey, optional recursive [chidren answer/monkeys])
+                   to be used recursively for the children of Step.
+                   This must align with what Step.effect() adds as children.
+        """
+
+        def recursive_helper(steps_and_answers: Iterable[tuple]):
+            for (step, answer, *children_answers) in steps_and_answers:
+                if isinstance(answer, Say):
+                    monkey = monkeypatch(step, "prompt", answer)
+                else:
+                    monkey = answer
+                # print(step.name)
+                with monkey:
+                    step.run()
+                if len(step.children) > 1 and children_answers:
+                    recursive_helper(
+                        (step, *answers)
+                        for step, answers in zip(step.children, children_answers[0])
+                    )
+
+        tour = Tour(name, steps=[step for (step, *_) in steps_and_answers])
         self.assertEqual(tour.state, {})  # fail on accidentally shared initializer
-        for (step, answer, *_) in steps:
-            if isinstance(answer, Say):
-                monkey = monkeypatch(step, "prompt", answer)
-            else:
-                monkey = answer
-            # print(step.name)
-            with monkey:
-                step.run()
+        recursive_helper(steps_and_answers)
         return tour
 
     def test_monkey_tour_1(self):
@@ -487,9 +512,8 @@ class WizardTest(TestCase):
                     Say(str(data_dir / "metadata.csv")),
                 ),
                 (dataset.FilelistFormatStep(), Say("psv")),
-                (dataset.HasSpeakerStep(), Say("yes")),
-                (dataset.HasLanguageStep(), Say("no")),
-                (dataset.SelectLanguageStep(), Say("eng")),
+                (dataset.HasSpeakerStep(), Say("yes"), [(Say(3),)]),
+                (dataset.HasLanguageStep(), Say("no"), [(Say("eng"),)]),
                 (dataset.TextProcessingStep(), Say([0, 1])),
                 (
                     dataset.SymbolSetStep(),
@@ -509,6 +533,7 @@ class WizardTest(TestCase):
         self.assertEqual(dataset.get_iso_code("[eng]"), "eng")
         self.assertEqual(dataset.get_iso_code("es"), "es")
         self.assertEqual(dataset.get_iso_code("[es]"), "es")
+        self.assertIs(dataset.get_iso_code(None), None)
 
     def test_with_language_column(self):
         data_dir = Path(__file__).parent / "data"
@@ -521,24 +546,8 @@ class WizardTest(TestCase):
                     Say(str(data_dir / "language-col.tsv")),
                 ),
                 (dataset.FilelistFormatStep(), Say("tsv")),
-                (dataset.HasSpeakerStep(), Say("yes")),
-                (
-                    dataset.HeaderStep(
-                        name=SN.speaker_header_step,
-                        prompt_text="foo",
-                        header_name="speaker",
-                    ),
-                    Say(2),
-                ),
-                (dataset.HasLanguageStep(), Say("yes")),
-                (
-                    dataset.HeaderStep(
-                        name=SN.language_header_step.value,
-                        prompt_text="foo",
-                        header_name="language",
-                    ),
-                    Say(3),
-                ),
+                (dataset.HasSpeakerStep(), Say("yes"), [(Say(2),)]),
+                (dataset.HasLanguageStep(), Say("yes"), [(Say(3),)]),
                 (dataset.TextProcessingStep(), Say([0, 1])),
                 (
                     dataset.SymbolSetStep(),
@@ -548,6 +557,8 @@ class WizardTest(TestCase):
                 (dataset.DatasetNameStep(), Say("my-monkey-dataset")),
             ],
         )
+        self.assertEqual(tour.state[SN.speaker_header_step.value], 2)
+        self.assertEqual(tour.state[SN.language_header_step.value], 3)
         self.assertTrue(tour.steps[-1].completed)
 
 
