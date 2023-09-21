@@ -5,7 +5,6 @@ from pathlib import Path
 from unicodedata import normalize
 
 import questionary
-from loguru import logger
 from tqdm import tqdm
 
 from everyvoice.config.text_config import Symbols
@@ -25,19 +24,19 @@ class DatasetNameStep(Step):
 
     def validate(self, response):
         if len(response) == 0:
-            logger.info("Sorry, you have to put something here")
+            print("Sorry, your dataset needs a name.")
             return False
         special_chars = re.compile(r"[\W]+")
         slug = re.sub(special_chars, "-", response)
         if not slug == response:
-            logger.info(
+            print(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."
             )
             return False
         return True
 
     def effect(self):
-        logger.info(
+        print(
             f"Great! New Dataset Wizard 🧙 finished the configuration for your dataset named '{self.response}'"
         )
 
@@ -56,6 +55,10 @@ class WavsDirStep(Step):
             return False
         valid_path = Path(response).expanduser()
         contains_wavs = glob(os.path.join(valid_path, "**/*.wav"), recursive=True)
+        if not contains_wavs:
+            print(
+                f"Sorry, no .wav files were found in '{valid_path}'. Please choose a directory with audio files."
+            )
         return valid_path and contains_wavs
 
 
@@ -72,13 +75,13 @@ class SampleRateConfigStep(Step):
         try:
             self.response = int(response)
             if self.response < 100 or float(response) != self.response:
-                logger.info(
+                print(
                     f"{response} is not a valid sample rate. Please enter an integer representing the sample rate in Hertz of your data."
                 )
                 return False
             return True
         except ValueError:
-            logger.info(
+            print(
                 f"{response} is not a valid sample rate. Please enter an integer representing the sample rate in Hertz of your data."
             )
             return False
@@ -117,15 +120,15 @@ class FilelistFormatStep(Step):
 
         column_count = len(initial_records[0])
         if column_count < 2:
-            logger.info(
-                f"File {filelist_path} does not look like a {file_type} file: no record separator found on header line."
+            print(
+                f"File '{filelist_path}' does not look like a '{file_type}' file: no record separator found on header line."
             )
             return False
 
         for i, record in enumerate(initial_records):
             if len(record) != column_count:
-                logger.info(
-                    f"File {filelist_path} does not look like a {file_type} file: the {i}th record has a different number of fields than the header row."
+                print(
+                    f"File '{filelist_path}' does not look like a '{file_type}' file: the {i}th record has a different number of fields than the header row."
                 )
                 return False
 
@@ -138,7 +141,7 @@ class FilelistFormatStep(Step):
                 _ = read_festival(filelist_path, 10)
                 return True
             except ValueError:
-                logger.info(f"File {filelist_path} is not in the festival format.")
+                print(f"File '{filelist_path}' is not in the festival format.")
                 return False
 
         separator = self.separators.get(response, None)
@@ -316,7 +319,7 @@ class SelectLanguageStep(Step):
     def prompt(self):
         from g2p import get_arpabet_langs
 
-        logger.info(
+        print(
             "Note: if your dataset has more than one language in it, you will have to add this information to your filelist, because the new dataset wizard can't guess!"
         )
         # TODO: currently we only support the languages from g2p, but we should add more
@@ -476,14 +479,14 @@ class SymbolSetStep(Step):
         all_tokens = None
         found_symbols = set(" ".join([x["text"] for x in self.state["filelist_data"]]))
         if all_tokens is None:
-            logger.info(
+            print(
                 "We will now present all the symbols found in your data. You will have to answer which ones are punctuation, orthographic characters, and which ones can be ignored."
             )
             symbols = found_symbols
         else:
             symbols = found_symbols - symbols_from_language
             if symbols > 0:
-                logger.info(
+                print(
                     f"We found some characters that are not part of the standard symbol set for {selected_language}. You will have to answer which ones are punctuation, orthographic characters, and which ones can be ignored."
                 )
         symbols = sorted(list(symbols))
@@ -535,7 +538,7 @@ class SymbolSetStep(Step):
                 if re.match(banned_regexp, item["text"]):
                     del self.state["filelist_data"][i]
                     removed += 1
-            logger.info(
+            print(
                 f"Removed {removed} samples from your data because they contained one of the following symbols: {self.state['banned_symbols']}"
             )
 
