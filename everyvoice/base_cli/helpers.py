@@ -118,7 +118,12 @@ def train_base_command(
 
     pbar.update()
     pbar.refresh()
-    tensorboard_logger = TensorBoardLogger(**(config.training.logger.model_dump()))
+    tensorboard_logger = TensorBoardLogger(
+        **{
+            **(config.training.logger.model_dump(exclude={"sub_dir_callable": True})),
+            **{"sub_dir": config.training.logger.sub_dir},
+        }
+    )
     lr_monitor = LearningRateMonitor(logging_interval="step")
     logger.info("Starting training.")
     ckpt_callback = ModelCheckpoint(
