@@ -1,3 +1,4 @@
+import sys
 from enum import Enum
 from typing import List, Optional, Union
 
@@ -99,6 +100,10 @@ class Step(_Step, NodeMixin):
         If this method returns something truthy, continue, otherwise ask the prompt again.
         """
         self.response = self.prompt()
+        if self.response is None:
+            # This is what happens when the user hits Ctrl-C
+            print("Aborted.")
+            sys.exit(1)
         if self.validate(self.response):
             self.completed = True
             try:

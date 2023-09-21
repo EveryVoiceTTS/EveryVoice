@@ -420,7 +420,7 @@ class TextProcessingStep(Step):
             0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
             1: {"fn": lambda x: normalize("NFC", x), "desc": ""},
         }
-        if self.response is not None and len(self.response):
+        if self.response:
             for process in self.response:
                 process_fn = process_lookup[process]["fn"]
                 for i in tqdm(
@@ -460,7 +460,7 @@ class SoxEffectsStep(Step):
             3: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
         }
         self.state["sox_effects"] = [["channel", "1"]]
-        if self.response is not None and len(self.response):
+        if self.response:
             for effect in self.response:
                 self.state["sox_effects"].append(audio_effects[effect])
 
@@ -496,7 +496,7 @@ class SymbolSetStep(Step):
             search=True,
         )
         if punctuation is None:
-            punctuation = []
+            return None
         symbols = tuple(x for x in symbols if x not in punctuation)
         banned_symbols = get_response_from_menu_prompt(  # type: ignore
             title="Ignore utterances that contain any of the following characters:",
@@ -505,7 +505,7 @@ class SymbolSetStep(Step):
             search=True,
         )
         if banned_symbols is None:
-            banned_symbols = []
+            return None
         self.state["banned_symbols"] = banned_symbols
         symbols = tuple(x for x in symbols if x not in banned_symbols)
         ignored_symbols = get_response_from_menu_prompt(  # type: ignore
@@ -515,7 +515,7 @@ class SymbolSetStep(Step):
             search=True,
         )
         if ignored_symbols is None:
-            ignored_symbols = []
+            return None
         return Symbols(
             punctuation=punctuation,
             symbol_set=[x for x in symbols if x not in ignored_symbols],
