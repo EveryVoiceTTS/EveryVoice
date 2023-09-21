@@ -144,32 +144,36 @@ class WizardTest(TestCase):
         # got several steps.
 
     def test_name_step(self):
-        """Exercise provide a valid dataset name."""
+        """Exercise providing a valid dataset name."""
         step = basic.NameStep()
-        with patch_logger(basic) as logger, self.assertLogs(logger) as logs:
+        with capture_stdout() as stdout:
             with monkeypatch(builtins, "input", Say("myname")):
                 step.run()
         self.assertEqual(step.response, "myname")
-        self.assertIn("named 'myname'", logs.output[0])
+        self.assertIn("'myname'", stdout.getvalue())
         self.assertTrue(step.completed)
 
     def test_bad_name_step(self):
-        """Exercise provide an invalid dataset name."""
+        """Exercise providing an invalid dataset name."""
         step = basic.NameStep("")
         # For unit testing, we cannot call step.run() if we patch a response
         # that will fail validation, because that would cause infinite
         # recursion.
-        with patch_logger(basic) as logger, self.assertLogs(logger) as logs:
+        with capture_stdout() as stdout:
             self.assertFalse(step.validate("foo/bar"))
             self.assertFalse(step.validate(""))
-        self.assertIn("'foo/bar' is not valid", logs.output[0])
-        self.assertIn("you have to put something", logs.output[1])
+        output = stdout.getvalue()
+        self.assertIn("'foo/bar'", output)
+        self.assertIn("is not valid", output)
+        self.assertIn("your project needs a name", output)
 
         step = basic.NameStep("")
-        with patch_logger(basic) as logger, self.assertLogs(logger) as logs:
+        with capture_stdout() as stdout:
             with monkeypatch(builtins, "input", Say(("bad/name", "good-name"), True)):
                 step.run()
-        self.assertIn("'bad/name' is not valid", logs.output[0])
+        output = stdout.getvalue()
+        self.assertIn("'bad/name'", stdout.getvalue())
+        self.assertIn("is not valid", stdout.getvalue())
         self.assertEqual(step.response, "good-name")
 
     def test_output_path_step(self):
@@ -184,7 +188,7 @@ class WizardTest(TestCase):
 
         # We need to answer the name step before we can validate the output path step
         step = tour.steps[0]
-        with patch_logger(basic, level=QUIET) as logger:
+        with capture_stdout():
             with monkeypatch(builtins, "input", Say("myname")):
                 step.run()
 
@@ -194,22 +198,22 @@ class WizardTest(TestCase):
             # Bad case 1: output dir exists and is a file
             with open(file_path, "w", encoding="utf8") as f:
                 f.write("blah")
-            with patch_logger(basic) as logger, self.assertLogs(logger):
+            with capture_stdout():
                 self.assertFalse(step.validate(file_path))
 
             # Bad case 2: file called the same as the dataset exists in the output dir
             dataset_file = os.path.join(tmpdirname, "myname")
             with open(dataset_file, "w", encoding="utf8") as f:
                 f.write("blah")
-            with patch_logger(basic) as logger, self.assertLogs(logger):
+            with capture_stdout():
                 self.assertFalse(step.validate(tmpdirname))
             os.unlink(dataset_file)
 
             # Good case
-            with patch_logger(basic) as logger, self.assertLogs(logger) as logs:
+            with capture_stdout() as stdout:
                 with monkeypatch(step, "prompt", Say(tmpdirname)):
                     step.run()
-            self.assertIn("will put your files", logs.output[0])
+            self.assertIn("will put your files", stdout.getvalue())
             output_dir = Path(tmpdirname) / "myname"
             self.assertTrue(output_dir.exists())
             self.assertTrue(output_dir.is_dir())
@@ -233,11 +237,12 @@ class WizardTest(TestCase):
     def test_dataset_name(self):
         step = dataset.DatasetNameStep()
         with monkeypatch(builtins, "input", Say(("", "bad/name", "good-name"), True)):
-            with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
+            with capture_stdout() as stdout:
                 step.run()
-        self.assertIn("you have to put something here", logs.output[0])
-        self.assertIn("is not valid", logs.output[1])
-        self.assertIn("finished the configuration", logs.output[2])
+        output = stdout.getvalue().split("\n")
+        self.assertIn("your dataset needs a name", output[0])
+        self.assertIn("is not valid", output[1])
+        self.assertIn("finished the configuration", output[2])
         self.assertTrue(step.completed)
 
     def test_wavs_dir(self):
@@ -277,10 +282,11 @@ class WizardTest(TestCase):
                 )
             ),
         ):
-            with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
+            with capture_stdout() as stdout:
                 step.run()
+        output = stdout.getvalue().split("\n")
         for i in range(4):
-            self.assertIn("not a valid sample rate", logs.output[i])
+            self.assertIn("not a valid sample rate", output[i])
         self.assertTrue(step.completed)
         self.assertEqual(step.response, 512)
 
@@ -389,12 +395,12 @@ class WizardTest(TestCase):
             filelist_step.run()
         format_step = tour.steps[1]
         # try with: 1/tsv (wrong), 2/csv (wrong), 3/festival (wrong) and finally 0 tsv (right)
-        with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
-            with patch_menu_prompt((1, 2, 3, 0), multi=True):
-                format_step.run()
-        self.assertIn("does not look like a tsv", logs.output[0])
-        self.assertIn("does not look like a csv", logs.output[1])
-        self.assertIn("festival", logs.output[2])
+        with patch_menu_prompt((1, 2, 3, 0), multi=True) as stdout:
+            format_step.run()
+        output = stdout.getvalue()
+        self.assertIn("does not look like a 'tsv'", output)
+        self.assertIn("does not look like a 'csv'", output)
+        self.assertIn("is not in the festival format", output)
         self.assertTrue(format_step.completed)
         # print(format_step.state)
 
@@ -413,12 +419,12 @@ class WizardTest(TestCase):
             filelist_step.run()
         format_step = tour.steps[1]
         # try with: 0/psv (wrong), 1/tsv (wrong), 2/csv (wrong), and finally 3/festival (right)
-        with patch_logger(dataset) as logger, self.assertLogs(logger) as logs:
-            with patch_menu_prompt((0, 1, 2, 3), multi=True):
-                format_step.run()
-        self.assertIn("does not look like a psv", logs.output[0])
-        self.assertIn("does not look like a tsv", logs.output[1])
-        self.assertIn("does not look like a csv", logs.output[2])
+        with patch_menu_prompt((0, 1, 2, 3), multi=True) as stdout:
+            format_step.run()
+        output = stdout.getvalue()
+        self.assertIn("does not look like a 'psv'", output)
+        self.assertIn("does not look like a 'tsv'", output)
+        self.assertIn("does not look like a 'csv'", output)
         self.assertTrue(format_step.completed)
         # print(format_step.state)
 
