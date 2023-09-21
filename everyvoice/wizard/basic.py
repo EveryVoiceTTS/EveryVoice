@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import questionary
-from loguru import logger
 from rich import print
 from rich.panel import Panel
 from rich.style import Style
@@ -36,19 +35,19 @@ class NameStep(Step):
 
     def validate(self, response):
         if len(response) == 0:
-            logger.info("Sorry, you have to put something here")
+            print("Sorry, your project needs a name.")
             return False
         sanitized_path = sanitize_path(response)
         if not sanitized_path == response:
-            logger.info(
-                f"Sorry, your name: '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like '{sanitized_path}' instead."
+            print(
+                f"Sorry, the project name '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like '{sanitized_path}' instead."
             )
             return False
         return True
 
     def effect(self):
-        logger.info(
-            f"Great! Launching New Dataset Wizard 🧙 for project named '{self.response}'"
+        print(
+            f"Great! Launching New Dataset Wizard 🧙 for project named '{self.response}'."
         )
 
 
@@ -65,14 +64,12 @@ class OutputPathStep(Step):
     def validate(self, response):
         path = Path(response)
         if path.is_file():
-            logger.warning(
-                f"Sorry, the path at '{path.absolute()}' is a file. Please select a directory."
-            )
+            print(f"Sorry, '{path}' is a file. Please select a directory.")
             return False
-        path = path / sanitize_path(self.state.get(StepNames.name_step.value))
-        if path.exists():
-            logger.warning(
-                f"Sorry, the path at '{path.absolute()}' already exists. Please choose another output directory."
+        output_path = path / self.state.get(StepNames.name_step.value)
+        if output_path.exists():
+            print(
+                f"Sorry, '{output_path}' already exists. Please choose another output directory or start again and choose a different project name."
             )
             return False
         return True
@@ -80,9 +77,7 @@ class OutputPathStep(Step):
     def effect(self):
         output_path = Path(self.response) / self.state.get(StepNames.name_step.value)
         output_path.mkdir(parents=True, exist_ok=True)
-        logger.info(
-            f"New Dataset Wizard 🧙 will put your files here: '{output_path.absolute()}'"
-        )
+        print(f"New Dataset Wizard 🧙 will put your files here: '{output_path}'")
 
 
 class ConfigFormatStep(Step):
