@@ -60,7 +60,7 @@ class OutputPathStep(Step):
             "Where should the New Dataset Wizard save your files?",
             default=".",
             style=CUSTOM_QUESTIONARY_STYLE,
-        ).ask()
+        ).unsafe_ask()
 
     def validate(self, response):
         path = Path(response)

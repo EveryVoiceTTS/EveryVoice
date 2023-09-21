@@ -32,6 +32,7 @@ def get_response_from_menu_prompt(
         multi_select=multi,
         multi_select_select_on_accept=(not multi),
         multi_select_empty_ok=multi,
+        raise_error_on_interrupt=True,
         show_multi_select_hint=multi,
         show_search_hint=search,
         status_bar_style=("fg_gray", "bg_black"),

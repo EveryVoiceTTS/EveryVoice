@@ -99,9 +99,12 @@ class Say:
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         if self.multi:
             self.last_index += 1
-            return self.response[self.last_index]
+            response = self.response[self.last_index]
         else:
-            return self.response
+            response = self.response
+        if isinstance(response, BaseException):
+            raise response
+        return response
 
 
 class SimpleTermMenuStub:
@@ -118,15 +121,22 @@ class SimpleTermMenuStub:
         self.response = response
 
     def TerminalMenu(self, *args, **kwargs):
+        if not kwargs.get("raise_error_on_interrupt", False):  # pragma: no cover
+            raise Exception(
+                "raise_error_on_interrupt=True is required for TerminalMenu so we can receive and handle KeyboardInterrupt correctly"
+            )
         return self
 
     def show(self):
         if self.multi:
             print("term stub", self.last_index, self.response[self.last_index + 1])
             self.last_index += 1
-            return self.response[self.last_index]
+            response = self.response[self.last_index]
         else:
-            return self.response
+            response = self.response
+        if isinstance(response, BaseException):
+            raise response
+        return response
 
 
 class QuestionaryStub:
@@ -146,6 +156,15 @@ class QuestionaryStub:
 
     text = path
 
-    def ask(self):
+    def ask(self):  # pragma: no cover
+        # This will trigger a unit test failure if we use .ask()
+        raise Exception(
+            "Always use unsafe_ask() for questionary instances so that KeyboardInterrupt gets passed up to us."
+        )
+
+    def unsafe_ask(self):
         self.last_index += 1
-        return self.responses[self.last_index]
+        response = self.responses[self.last_index]
+        if isinstance(response, BaseException):
+            raise response
+        return response
