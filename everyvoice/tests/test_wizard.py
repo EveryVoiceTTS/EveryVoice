@@ -7,7 +7,7 @@ import tempfile
 from enum import Enum
 from pathlib import Path
 from types import MethodType
-from typing import Sequence
+from typing import Callable, Iterable, NamedTuple, Optional, Sequence, Union
 from unittest import TestCase, main
 
 from anytree import RenderTree
@@ -26,6 +26,40 @@ from everyvoice.tests.stubs import (
 from everyvoice.wizard import Step
 from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard import Tour, basic, dataset, prompts, validators
+
+
+class RecursiveAnswers(NamedTuple):
+    """Recursive answer for StepAndAnswer.children_answers, see StepAndAnswer
+    documentation for a description of the fields here."""
+
+    answer_or_monkey: Union[Say, Callable]
+    children_answers: Optional[list["RecursiveAnswers"]] = None
+
+
+class StepAndAnswer(NamedTuple):
+    """named tuples to group together a step, its answer, and the answers of its children
+    Members:
+        step: an instance of a subclass of Step
+        answer_or_monkey: either:
+            - an instance of Say to get patched in for Step's prompt method
+            or
+            - a pre-instantiated monkeypatch context to use
+        children_answers: an optional list of RecursiveAnswers to be used for
+            the children of step this must align with what step.effect() will
+            add as children given answer_or_monkey
+    """
+
+    step: Step
+    answer_or_monkey: Union[Say, Callable]
+    children_answers: Optional[list[RecursiveAnswers]] = None
+
+    @property
+    def monkey(self):
+        """Return the monkey to use as a context manager"""
+        if isinstance(self.answer_or_monkey, Say):
+            return monkeypatch(self.step, "prompt", self.answer_or_monkey)
+        else:
+            return self.answer_or_monkey
 
 
 class WizardTest(TestCase):
@@ -451,17 +485,46 @@ class WizardTest(TestCase):
             )
             self.assertEqual(answer, 1)
 
-    def monkey_run_tour(self, name, steps):
-        tour = Tour(name, steps=[step for (step, *_) in steps])
+    def monkey_run_tour(self, name: str, steps_and_answers: list[StepAndAnswer]):
+        """Create and run a tour with the monkey answers given
+        Args:
+            name: Name to give the tour when creating it
+            steps_and_answers: a list of steps, answers, and optional recursive answers
+                (Step, Answer/Monkey, optional [children answers/monkeys])
+                where
+                 - Step is an instantiated subclass if Step
+                 - either:
+                   - Answer is an instance of Say to get patched in for Step's prompt method
+                   or
+                   - Monkey is an instantiated monkeypatch context to use
+                 - [children answers/monkeys] is an optional list of tuples
+                   (Answer/Monkey, optional recursive [chidren answer/monkeys])
+                   to be used recursively for the children of Step.
+                   This must align with what Step.effect() adds as children.
+        """
+
+        def recursive_helper(steps_and_answers: Iterable[StepAndAnswer]):
+            for step_and_answer in steps_and_answers:
+                step = step_and_answer.step
+                # print(step.name)
+                with step_and_answer.monkey:
+                    step.run()
+                if len(step.children) > 1 and step_and_answer.children_answers:
+                    recursive_helper(
+                        StepAndAnswer(
+                            child_step,
+                            answer_or_monkey=recursive_answers.answer_or_monkey,
+                            children_answers=recursive_answers.children_answers,
+                        )
+                        for child_step, recursive_answers in zip(
+                            step.children,
+                            step_and_answer.children_answers,
+                        )
+                    )
+
+        tour = Tour(name, steps=[step for (step, *_) in steps_and_answers])
         self.assertEqual(tour.state, {})  # fail on accidentally shared initializer
-        for (step, answer, *_) in steps:
-            if isinstance(answer, Say):
-                monkey = monkeypatch(step, "prompt", answer)
-            else:
-                monkey = answer
-            # print(step.name)
-            with monkey:
-                step.run()
+        recursive_helper(steps_and_answers)
         return tour
 
     def test_monkey_tour_1(self):
@@ -469,8 +532,8 @@ class WizardTest(TestCase):
             tour = self.monkey_run_tour(
                 "monkey tour 1",
                 [
-                    (basic.NameStep(), Say("my-dataset-name")),
-                    (basic.OutputPathStep(), Say(tmpdirname)),
+                    StepAndAnswer(basic.NameStep(), Say("my-dataset-name")),
+                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdirname)),
                 ],
             )
         self.assertEqual(tour.state[SN.name_step.value], "my-dataset-name")
@@ -481,22 +544,29 @@ class WizardTest(TestCase):
         tour = self.monkey_run_tour(
             "monkey tour 2",
             [
-                (dataset.WavsDirStep(), Say(data_dir)),
-                (
+                StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
+                StepAndAnswer(
                     dataset.FilelistStep(),
                     Say(str(data_dir / "metadata.csv")),
                 ),
-                (dataset.FilelistFormatStep(), Say("psv")),
-                (dataset.HasSpeakerStep(), Say("yes")),
-                (dataset.HasLanguageStep(), Say("no")),
-                (dataset.SelectLanguageStep(), Say("eng")),
-                (dataset.TextProcessingStep(), Say([0, 1])),
-                (
+                StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
+                StepAndAnswer(
+                    dataset.HasSpeakerStep(),
+                    Say("yes"),
+                    children_answers=[RecursiveAnswers(Say(3))],
+                ),
+                StepAndAnswer(
+                    dataset.HasLanguageStep(),
+                    Say("no"),
+                    children_answers=[RecursiveAnswers(Say("eng"))],
+                ),
+                StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
+                StepAndAnswer(
                     dataset.SymbolSetStep(),
                     patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
                 ),
-                (dataset.SoxEffectsStep(), Say([0])),
-                (dataset.DatasetNameStep(), Say("my-monkey-dataset")),
+                StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
+                StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
             ],
         )
 
@@ -509,45 +579,40 @@ class WizardTest(TestCase):
         self.assertEqual(dataset.get_iso_code("[eng]"), "eng")
         self.assertEqual(dataset.get_iso_code("es"), "es")
         self.assertEqual(dataset.get_iso_code("[es]"), "es")
+        self.assertIs(dataset.get_iso_code(None), None)
 
     def test_with_language_column(self):
         data_dir = Path(__file__).parent / "data"
         tour = self.monkey_run_tour(
             "tour with language column",
             [
-                (dataset.WavsDirStep(), Say(data_dir)),
-                (
+                StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
+                StepAndAnswer(
                     dataset.FilelistStep(),
                     Say(str(data_dir / "language-col.tsv")),
                 ),
-                (dataset.FilelistFormatStep(), Say("tsv")),
-                (dataset.HasSpeakerStep(), Say("yes")),
-                (
-                    dataset.HeaderStep(
-                        name=SN.speaker_header_step,
-                        prompt_text="foo",
-                        header_name="speaker",
-                    ),
-                    Say(2),
+                StepAndAnswer(dataset.FilelistFormatStep(), Say("tsv")),
+                StepAndAnswer(
+                    dataset.HasSpeakerStep(),
+                    Say("yes"),
+                    children_answers=[RecursiveAnswers(Say(2))],
                 ),
-                (dataset.HasLanguageStep(), Say("yes")),
-                (
-                    dataset.HeaderStep(
-                        name=SN.language_header_step.value,
-                        prompt_text="foo",
-                        header_name="language",
-                    ),
-                    Say(3),
+                StepAndAnswer(
+                    dataset.HasLanguageStep(),
+                    Say("yes"),
+                    children_answers=[RecursiveAnswers(Say(3))],
                 ),
-                (dataset.TextProcessingStep(), Say([0, 1])),
-                (
+                StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
+                StepAndAnswer(
                     dataset.SymbolSetStep(),
                     patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
                 ),
-                (dataset.SoxEffectsStep(), Say([0])),
-                (dataset.DatasetNameStep(), Say("my-monkey-dataset")),
+                StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
+                StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
             ],
         )
+        self.assertEqual(tour.state[SN.speaker_header_step.value], 2)
+        self.assertEqual(tour.state[SN.language_header_step.value], 3)
         self.assertTrue(tour.steps[-1].completed)
 
 
