@@ -537,7 +537,8 @@ class Preprocessor:
            - item if it is found and processed successfully
            - None otherwise, indicating it should be skipped from further processing
         """
-        audio_path = data_dir / (item["basename"] + ".wav")
+        extension = "" if item["basename"].endswith(".wav") else ".wav"
+        audio_path = data_dir / (item["basename"] + extension)
         if not audio_path.exists():
             logger.warning(f"File '{item}' is missing and will not be processed.")
             self.counters.increment("missing_files")
