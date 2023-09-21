@@ -504,22 +504,29 @@ class WizardTest(TestCase):
         """
 
         def recursive_helper(steps_and_answers: Iterable[StepAndAnswer]):
+            """Run all the steps with the patched answers, recursively running children
+            steps that get added, if requested by the specification of children_answers.
+            """
             for step_and_answer in steps_and_answers:
                 step = step_and_answer.step
                 # print(step.name)
                 with step_and_answer.monkey:
                     step.run()
                 if len(step.children) > 1 and step_and_answer.children_answers:
+                    # Here we assemble steps_and_answers for the recursive call from
+                    # the actual children of step and the provided children_answers.
                     recursive_helper(
-                        StepAndAnswer(
-                            child_step,
-                            answer_or_monkey=recursive_answers.answer_or_monkey,
-                            children_answers=recursive_answers.children_answers,
-                        )
-                        for child_step, recursive_answers in zip(
-                            step.children,
-                            step_and_answer.children_answers,
-                        )
+                        steps_and_answers=[
+                            StepAndAnswer(
+                                child_step,
+                                answer_or_monkey=recursive_answers.answer_or_monkey,
+                                children_answers=recursive_answers.children_answers,
+                            )
+                            for child_step, recursive_answers in zip(
+                                step.children,
+                                step_and_answer.children_answers,
+                            )
+                        ]
                     )
 
         tour = Tour(name, steps=[step for (step, *_) in steps_and_answers])
