@@ -48,7 +48,7 @@ class WavsDirStep(Step):
     def prompt(self):
         return questionary.path(
             "Where are your audio files?", style=CUSTOM_QUESTIONARY_STYLE
-        ).ask()
+        ).unsafe_ask()
 
     def validate(self, response):
         valid_path = validate_path(response, is_dir=True, exists=True)
@@ -66,7 +66,7 @@ class SampleRateConfigStep(Step):
         return questionary.text(
             "What is the sample rate (in Hertz) of your data?",
             style=CUSTOM_QUESTIONARY_STYLE,
-        ).ask()
+        ).unsafe_ask()
 
     def validate(self, response):
         try:
@@ -90,7 +90,7 @@ class FilelistStep(Step):
     def prompt(self):
         return questionary.path(
             "Where is your data filelist?", style=CUSTOM_QUESTIONARY_STYLE
-        ).ask()
+        ).unsafe_ask()
 
     def validate(self, response):
         return validate_path(response, is_file=True, exists=True)
@@ -420,7 +420,7 @@ class TextProcessingStep(Step):
             0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
             1: {"fn": lambda x: normalize("NFC", x), "desc": ""},
         }
-        if self.response is not None and len(self.response):
+        if self.response:
             for process in self.response:
                 process_fn = process_lookup[process]["fn"]
                 for i in tqdm(
@@ -460,7 +460,7 @@ class SoxEffectsStep(Step):
             3: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
         }
         self.state["sox_effects"] = [["channel", "1"]]
-        if self.response is not None and len(self.response):
+        if self.response:
             for effect in self.response:
                 self.state["sox_effects"].append(audio_effects[effect])
 

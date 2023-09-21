@@ -145,7 +145,7 @@ class WizardTest(TestCase):
 
     def test_name_step(self):
         """Exercise provide a valid dataset name."""
-        step = basic.NameStep("")
+        step = basic.NameStep()
         with patch_logger(basic) as logger, self.assertLogs(logger) as logs:
             with monkeypatch(builtins, "input", Say("myname")):
                 step.run()
@@ -621,6 +621,24 @@ class WizardTest(TestCase):
         self.assertEqual(tour.state[SN.speaker_header_step.value], 2)
         self.assertEqual(tour.state[SN.language_header_step.value], 3)
         self.assertTrue(tour.steps[-1].completed)
+
+    def test_keyboard_interrupt(self):
+        step = basic.NameStep()
+        with self.assertRaises(KeyboardInterrupt):
+            with monkeypatch(builtins, "input", Say(KeyboardInterrupt())):
+                step.run()
+
+        step = dataset.WavsDirStep()
+        with self.assertRaises(KeyboardInterrupt):
+            with monkeypatch(
+                dataset, "questionary", QuestionaryStub([KeyboardInterrupt()])
+            ):
+                step.run()
+
+        step = basic.MoreDatasetsStep()
+        with self.assertRaises(KeyboardInterrupt):
+            with patch_menu_prompt(KeyboardInterrupt()):
+                step.run()
 
 
 if __name__ == "__main__":
