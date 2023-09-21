@@ -1,8 +1,7 @@
 name: Run Tests
 on:
-  pull_request:
-    types: [review_requested]
-  push:
+  - push
+  - pull_request
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
