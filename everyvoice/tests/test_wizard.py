@@ -98,10 +98,15 @@ class WizardTest(TestCase):
             config_step.state["dataset_test"]["filelist_data"] = [
                 {"basename": "0001", "text": "hello"},
                 {"basename": "0002", "text": "hello", None: "test"},
+                {"basename": "0003.wav", "text": "hello", None: "test"},
             ]
             config_step.state["dataset_test"]["sox_effects"] = []
             with capture_stdout() as stdout:
                 config_step.effect()
+            with open(Path(tmpdirname) / "Config Step" / "test-filelist.psv") as f:
+                self.assertEqual(
+                    f.read(), "basename|text\n0001|hello\n0002|hello\n0003|hello\n"
+                )
             self.assertIn("Congratulations", stdout.getvalue())
             self.assertTrue(
                 (Path(tmpdirname) / config_step.name / "logs_and_checkpoints").exists()
