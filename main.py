@@ -17,16 +17,16 @@ def define_env(env):
 
     @env.macro
     def config_filename(filetype):
-        if "aligner":
+        if filetype == "aligner":
             return f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
-        if "preprocessing":
+        if filetype == "preprocessing":
             return f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.yaml"
-        if "spec-to-wav":
+        if filetype == "spec-to-wav":
             return f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-        if "text-to-wav":
+        if filetype == "text-to-wav":
             return f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-        if "text-to-spec":
+        if filetype == "text-to-spec":
             return f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
-        if "text":
+        if filetype == "text":
             return f"{TEXT_CONFIG_FILENAME_PREFIX}.yaml"
         raise ValueError(f"filetype: {filetype} does not exist.")
