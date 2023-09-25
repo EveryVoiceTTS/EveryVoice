@@ -1,0 +1,54 @@
+model:
+  decoder: {conformer: true, conv_filter_size: 1024, conv_kernel_size: 9, depthwise: true,
+    dropout: 0.2, feedforward_dim: 1024, heads: 2, hidden_dim: 256, layers: 4}
+  encoder: {conformer: true, conv_filter_size: 1024, conv_kernel_size: 9, depthwise: true,
+    dropout: 0.2, feedforward_dim: 1024, heads: 2, hidden_dim: 256, layers: 4}
+  learn_alignment: true
+  max_length: 1000
+  mel_loss: mse
+  mel_loss_weight: 0.5
+  multilingual: false
+  multispeaker: {dvector_gmm: false, embedding_type: none, every_layer: false}
+  phonological_feats_size: 38
+  use_phonological_feats: false
+  use_postnet: true
+  variance_adaptor:
+    variance_predictors:
+      duration: {depthwise: true, dropout: 0.5, hidden_dim: 256, kernel_size: 3, loss: mse,
+        loss_weights: 0.05, n_bins: 256, n_layers: 5, transform: none}
+      energy: {depthwise: true, dropout: 0.5, hidden_dim: 256, kernel_size: 3, level: phone,
+        loss: mse, loss_weights: 0.05, n_bins: 256, n_layers: 5, transform: none}
+      pitch: {depthwise: true, dropout: 0.5, hidden_dim: 256, kernel_size: 3, level: phone,
+        loss: mse, loss_weights: 0.05, n_bins: 256, n_layers: 5, transform: none}
+path_to_preprocessing_config_file: everyvoice-shared-data.yaml
+path_to_text_config_file: everyvoice-shared-text.yaml
+training:
+  batch_size: 16
+  ckpt_epochs: 1
+  early_stopping: {metric: none, patience: 4}
+  filelist_loader: everyvoice.utils.generic_dict_loader
+  freeze_layers:
+    all_layers: false
+    decoder: false
+    encoder: false
+    postnet: false
+    variance: {duration: false, energy: false, pitch: false}
+  logger: {name: FeaturePredictionExperiment, save_dir: ../logs_and_checkpoints, sub_dir_callable: everyvoice.utils.get_current_time,
+    version: base}
+  max_epochs: 1000
+  max_steps: 100000
+  optimizer:
+    betas: [0.9, 0.98]
+    eps: 1.0e-08
+    learning_rate: 0.0001
+    name: noam
+    warmup_steps: 4000
+    weight_decay: 0.01
+  save_top_k_ckpts: 5
+  tf: {linear_schedule: false, linear_schedule_end: 20, linear_schedule_end_ratio: 0.0,
+    linear_schedule_start: 0, ratio: 1.0}
+  train_data_workers: 4
+  training_filelist: ../preprocessed/training_filelist.psv
+  use_weighted_sampler: false
+  val_data_workers: 0
+  validation_filelist: ../preprocessed/validation_filelist.psv

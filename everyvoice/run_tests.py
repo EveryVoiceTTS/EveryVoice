@@ -10,7 +10,7 @@ from unittest import TestLoader, TestSuite, TextTestRunner
 from loguru import logger
 
 from everyvoice.tests.test_cli import CLITest
-from everyvoice.tests.test_configs import ConfigTest
+from everyvoice.tests.test_configs import ConfigTest, LoadConfigTest
 from everyvoice.tests.test_dataloader import DataLoaderTest
 from everyvoice.tests.test_model import ModelTest
 from everyvoice.tests.test_preprocessing import (
@@ -25,7 +25,9 @@ from everyvoice.tests.test_wizard import WizardTest
 
 LOADER = TestLoader()
 
-CONFIG_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [ConfigTest]]
+CONFIG_TESTS = [
+    LOADER.loadTestsFromTestCase(test) for test in [ConfigTest, LoadConfigTest]
+]
 
 DATALOADER_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [DataLoaderTest]]
 

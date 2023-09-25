@@ -1,13 +1,34 @@
 from collections.abc import Mapping, Sequence
+from contextlib import contextmanager
+from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Any, Dict, Iterator, Tuple, Union
 
 from loguru import logger
-from pydantic import BaseModel, ConfigDict, DirectoryPath, Field, validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    DirectoryPath,
+    Field,
+    ValidationInfo,
+    field_validator,
+    validator,
+)
 
 from everyvoice.config.utils import PossiblyRelativePath, PossiblySerializedCallable
 from everyvoice.utils import generic_dict_loader, get_current_time, rel_path_to_abs_path
+
+_init_context_var = ContextVar("_init_context_var", default=None)
+
+
+@contextmanager
+def init_context(value: Dict[str, Any]) -> Iterator[None]:
+    token = _init_context_var.set(value)  # type: ignore
+    try:
+        yield
+    finally:
+        _init_context_var.reset(token)
 
 
 class ConfigModel(BaseModel):
@@ -48,7 +69,26 @@ class ConfigModel(BaseModel):
         return orig_dict
 
 
-class LoggerConfig(ConfigModel):
+class PartialLoadConfig(ConfigModel):
+    """Models that have partial models which requires a context to properly load."""
+
+    # [Using validation context with BaseModel initialization](https://docs.pydantic.dev/2.3/usage/validators/#using-validation-context-with-basemodel-initialization)
+    def __init__(__pydantic_self__, **data: Any) -> None:
+        __pydantic_self__.__pydantic_validator__.validate_python(
+            data,
+            self_instance=__pydantic_self__,
+            context=_init_context_var.get(),
+        )
+
+    @classmethod
+    def path_relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
+        if info.context and value is not None and not value.is_absolute():
+            config_path = info.context.get("config_path", Path("."))
+            value = (config_path / value).resolve()
+        return value
+
+
+class LoggerConfig(PartialLoadConfig):
     """The logger configures all the information needed for where to store your experiment's logs and checkpoints.
     The structure of your logs will then be:
     <name> / <version> / <sub_dir>
@@ -67,6 +107,11 @@ class LoggerConfig(ConfigModel):
     version: str = "base"
     """The version of your experiment"""
 
+    @field_validator("save_dir")
+    @classmethod
+    def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
+        return PartialLoadConfig.path_relative_to_absolute(value, info)
+
     @cached_property
     def sub_dir(self) -> str:
         return self.sub_dir_callable()
@@ -83,7 +128,7 @@ class LoggerConfig(ConfigModel):
         return path
 
 
-class BaseTrainingConfig(ConfigModel):
+class BaseTrainingConfig(PartialLoadConfig):
     batch_size: int = 16
     save_top_k_ckpts: int = 5
     ckpt_steps: Union[int, None] = None
@@ -101,6 +146,11 @@ class BaseTrainingConfig(ConfigModel):
     logger: LoggerConfig = Field(default_factory=LoggerConfig)
     val_data_workers: int = 0
     train_data_workers: int = 4
+
+    @field_validator("training_filelist", "validation_filelist")
+    @classmethod
+    def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
+        return PartialLoadConfig.path_relative_to_absolute(value, info)
 
 
 class BaseOptimizer(ConfigModel):

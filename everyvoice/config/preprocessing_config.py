@@ -4,9 +4,9 @@ from pathlib import Path
 from typing import List, Optional, Union
 
 from loguru import logger
-from pydantic import Field, FilePath, field_validator, model_validator
+from pydantic import Field, FilePath, ValidationInfo, field_validator, model_validator
 
-from everyvoice.config.shared_types import ConfigModel
+from everyvoice.config.shared_types import ConfigModel, PartialLoadConfig, init_context
 from everyvoice.config.utils import (
     PossiblyRelativePath,
     PossiblySerializedCallable,
@@ -50,7 +50,7 @@ class PitchCalculationMethod(Enum):
     cwt = "cwt"
 
 
-class Dataset(ConfigModel):
+class Dataset(PartialLoadConfig):
     label: str = "YourDataSet"
     data_dir: PossiblyRelativePath = Path("/please/create/a/path/to/your/dataset/data")
     textgrid_dir: Union[PossiblyRelativePath, None] = None
@@ -60,8 +60,17 @@ class Dataset(ConfigModel):
     filelist_loader: PossiblySerializedCallable = generic_dict_loader
     sox_effects: list = [["channels", "1"]]
 
+    @field_validator(
+        "data_dir",
+        "textgrid_dir",
+        "filelist",
+    )
+    @classmethod
+    def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
+        return PartialLoadConfig.path_relative_to_absolute(value, info)
 
-class PreprocessingConfig(ConfigModel):
+
+class PreprocessingConfig(PartialLoadConfig):
     dataset: str = "YourDataSet"
     pitch_type: Union[
         PitchCalculationMethod, str
@@ -76,9 +85,16 @@ class PreprocessingConfig(ConfigModel):
     path_to_audio_config_file: Optional[FilePath] = None
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
 
-    @model_validator(mode="before")
-    def load_partials(self):
-        return load_partials(self, ["audio"])
+    @model_validator(mode="before")  # type: ignore
+    def load_partials(self, info: ValidationInfo):
+        config_path = (
+            info.context.get("config_path", None) if info.context is not None else None
+        )
+        return load_partials(
+            self,  # type: ignore
+            ("audio",),
+            config_path=config_path,
+        )
 
     @field_validator("save_dir", mode="after")
     def create_dir(cls, value: Path):
@@ -93,4 +109,6 @@ class PreprocessingConfig(ConfigModel):
     def load_config_from_path(path: Path) -> "PreprocessingConfig":
         """Load a config from a path"""
         config = load_config_from_json_or_yaml_path(path)
-        return PreprocessingConfig(**config)
+        with init_context({"config_path": path}):
+            config = PreprocessingConfig(**config)
+        return config

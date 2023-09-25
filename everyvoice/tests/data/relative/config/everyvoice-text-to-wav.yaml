@@ -1,0 +1,16 @@
+path_to_aligner_config_file: everyvoice-aligner.yaml
+path_to_feature_prediction_config_file: everyvoice-text-to-spec.yaml
+path_to_vocoder_config_file: everyvoice-spec-to-wav.yaml
+training:
+  batch_size: 16
+  ckpt_epochs: 1
+  filelist_loader: everyvoice.utils.generic_dict_loader
+  logger: {name: E2E-Experiment, save_dir: ../logs_and_checkpoints, sub_dir_callable: everyvoice.utils.get_current_time,
+    version: base}
+  max_epochs: 1000
+  max_steps: 100000
+  save_top_k_ckpts: 5
+  train_data_workers: 4
+  training_filelist: ../preprocessed/training_filelist.psv
+  val_data_workers: 0
+  validation_filelist: ../preprocessed/validation_filelist.psv
