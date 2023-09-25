@@ -857,8 +857,8 @@ To achieve that, each model configuration can also be defined as a path to a con
 <span class="nt">training</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
-<span class="hll"><span class="nt">preprocessing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-aligner.yaml&quot;</span>
-</span><span class="hll"><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-aligner.yaml&quot;</span>
+<span class="hll"><span class="nt">preprocessing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-shared-data.yaml&quot;</span>
+</span><span class="hll"><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-shared-text.yaml&quot;</span>
 </span></code></pre></div>
 <h2 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h2>
 <p>By default configuration objects are serialized as dictionaries, which works as expected with integers, floats, lists, booleans, dicts etc. But there are some cases where you need to specify a Callable in your configuration. For example the {ref}<code>TextConfig</code> has a <code>cleaners</code> field that takes a list of Callables to apply in order to raw text.
