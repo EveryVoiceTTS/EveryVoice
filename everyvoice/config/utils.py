@@ -1,6 +1,6 @@
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Union
+from typing import Any, Callable, Dict, Optional, Sequence, Union
 
 from loguru import logger
 from pydantic import PlainSerializer, WithJsonSchema
@@ -10,10 +10,15 @@ from typing_extensions import Annotated
 from everyvoice.utils import load_config_from_json_or_yaml_path, rel_path_to_abs_path
 
 
-def load_partials(pre_validated_model_dict: Dict[Any, Any], partial_keys: List[str]):
-    """Loads all partials based on a list of partial keys. For this to work, your model
-    must have a {key}_config_file: Optional[FilePath] = None field defined, and you must
-    have a model_validator(mode="before") that runs this function.
+def load_partials(
+    pre_validated_model_dict: Dict[Any, Any],
+    partial_keys: Sequence[str],
+    config_path: Optional[Path] = None,
+):
+    """Loads all partials based on a list of partial keys. For this to work,
+    your model must have a {key}_config_file: Optional[FilePath] = None field
+    defined, and you must have a model_validator(mode="before") that runs this
+    function.
     """
     # If there's nothing there, just return the dict
     if not pre_validated_model_dict:
@@ -25,9 +30,10 @@ def load_partials(pre_validated_model_dict: Dict[Any, Any], partial_keys: List[s
             key_for_path_to_partial in pre_validated_model_dict
             and pre_validated_model_dict[key_for_path_to_partial]
         ):
-            subconfig_path = rel_path_to_abs_path(
-                pre_validated_model_dict[key_for_path_to_partial]
-            )
+            subconfig_path = Path(pre_validated_model_dict[key_for_path_to_partial])
+            if not subconfig_path.is_absolute() and config_path is not None:
+                subconfig_path = (config_path.parent / subconfig_path).resolve()
+            pre_validated_model_dict[key_for_path_to_partial] = subconfig_path
             # anything defined in the key will override the path
             # so audio would override any values in path_to_audio_config_file
             if key in pre_validated_model_dict:

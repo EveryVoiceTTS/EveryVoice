@@ -28,6 +28,18 @@ from everyvoice.utils import (
     lower,
     nfc_normalize,
 )
+from everyvoice.wizard.basic import (
+    ALIGNER_CONFIG_FILENAME_PREFIX,
+    PREPROCESSING_CONFIG_FILENAME_PREFIX,
+    SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
+    TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
+    TEXT_TO_WAV_CONFIG_FILENAME_PREFIX,
+)
+
+
+def _writer_helper(model, filename):
+    with open(filename, "w", encoding="utf8") as f:
+        f.write(model.model_dump_json())
 
 
 class ConfigTest(TestCase):
@@ -58,10 +70,6 @@ class ConfigTest(TestCase):
         self.assertEqual(config_32.training.batch_size, 32)
 
     def test_config_partial(self):
-        def _writer_helper(model, filename):
-            with open(filename, "w", encoding="utf8") as f:
-                f.write(model.model_dump_json())
-
         with tempfile.TemporaryDirectory() as tempdir:
             # Preprocessing Config
             tempdir = Path(tempdir)
@@ -262,6 +270,188 @@ class ConfigTest(TestCase):
         self.assertIsInstance(batch_size, float)
         self.assertEqual(config.training.batch_size, 64)
         self.assertIsInstance(config.feature_prediction.training.batch_size, int)
+
+
+class LoadConfigTest(TestCase):
+    """Load configs that contains relative paths."""
+
+    DATA_DIR = Path(__file__).parent / "data" / "relative" / "config"
+    DATASET_NAME: str = "relative"
+
+    def test_aligner_config(self):
+        """Create a AlignerConfig which pydantic will validate for us."""
+        config_path = self.DATA_DIR / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
+        with config_path.open("r", encoding="utf8") as f:
+            pre_test = yaml.safe_load(f)
+            self.assertFalse(
+                Path(pre_test["path_to_preprocessing_config_file"]).is_absolute()
+            )
+            self.assertFalse(Path(pre_test["path_to_text_config_file"]).is_absolute())
+            self.assertFalse(
+                Path(pre_test["training"]["logger"]["save_dir"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["training_filelist"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["validation_filelist"]).is_absolute()
+            )
+        config = AlignerConfig.load_config_from_path(config_path)
+        self.assertTrue(isinstance(config, AlignerConfig))
+        self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
+
+    def test_preprocessing_config(self):
+        """Create a PreprocessingConfig which pydantic will validate for us."""
+        config_path = self.DATA_DIR / f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.yaml"
+        with config_path.open("r", encoding="utf8") as f:
+            pre_test = yaml.safe_load(f)
+            self.assertFalse(Path(pre_test["save_dir"]).is_absolute())
+            self.assertEqual(len(pre_test["source_data"]), 1)
+            self.assertFalse(Path(pre_test["source_data"][0]["data_dir"]).is_absolute())
+            self.assertFalse(Path(pre_test["source_data"][0]["filelist"]).is_absolute())
+        config = PreprocessingConfig.load_config_from_path(config_path)
+        self.assertTrue(isinstance(config, PreprocessingConfig))
+        self.assertEqual(config.dataset, self.DATASET_NAME)
+
+    def test_feature_prediction_config(self):
+        """Create a FeaturePredictionConfig which pydantic will validate for us."""
+        config_path = self.DATA_DIR / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+        with config_path.open("r", encoding="utf8") as f:
+            pre_test = yaml.safe_load(f)
+            self.assertFalse(
+                Path(pre_test["path_to_preprocessing_config_file"]).is_absolute()
+            )
+            self.assertFalse(Path(pre_test["path_to_text_config_file"]).is_absolute())
+            self.assertFalse(
+                Path(pre_test["training"]["logger"]["save_dir"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["training_filelist"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["validation_filelist"]).is_absolute()
+            )
+        config = FeaturePredictionConfig.load_config_from_path(config_path)
+        # Dummy test as the real test is done during load_config_from_path().
+        self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
+
+    def test_vocoder_config(self):
+        """Create a VocoderConfig which pydantic will validate for us."""
+        config_path = self.DATA_DIR / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+        with config_path.open("r", encoding="utf8") as f:
+            pre_test = yaml.safe_load(f)
+            self.assertFalse(
+                Path(pre_test["path_to_preprocessing_config_file"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["logger"]["save_dir"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["training_filelist"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["validation_filelist"]).is_absolute()
+            )
+        config = VocoderConfig.load_config_from_path(config_path)
+        self.assertTrue(isinstance(config, VocoderConfig))
+        self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
+
+    def test_everyvoice_config(self):
+        """Create a EveryVoiceConfig which pydantic will validate for us."""
+        config_path = self.DATA_DIR / f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+        with config_path.open("r", encoding="utf8") as f:
+            pre_test = yaml.safe_load(f)
+            self.assertFalse(
+                Path(pre_test["path_to_aligner_config_file"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["path_to_feature_prediction_config_file"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["path_to_vocoder_config_file"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["logger"]["save_dir"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["training_filelist"]).is_absolute()
+            )
+            self.assertFalse(
+                Path(pre_test["training"]["validation_filelist"]).is_absolute()
+            )
+        config = EveryVoiceConfig.load_config_from_path(config_path)
+        self.assertTrue(isinstance(config, EveryVoiceConfig))
+        self.assertEqual(
+            config.feature_prediction.preprocessing.dataset, self.DATASET_NAME
+        )
+
+    def test_absolute_path(self):
+        """Load a config that has absolute paths."""
+        with tempfile.TemporaryDirectory() as tempdir:
+            tempdir = Path(tempdir)
+            _writer_helper(AudioConfig(), tempdir / "audio.json")
+            config = PreprocessingConfig(
+                path_to_audio_config_file=(tempdir / "audio.json")
+            )
+            self.assertTrue(isinstance(config.audio, AudioConfig))
+            # Write shared:
+            _writer_helper(
+                PreprocessingConfig(dataset=self.DATASET_NAME),
+                tempdir / "preprocessing.json",
+            )
+            _writer_helper(TextConfig(), tempdir / "text.json")
+            _writer_helper(BaseTrainingConfig(), tempdir / "training.json")
+            # Aligner Config
+            _writer_helper(AlignerConfig().training, tempdir / "aligner-training.json")
+            _writer_helper(AlignerConfig().model, tempdir / "aligner-model.json")
+            aligner_config = AlignerConfig(
+                path_to_model_config_file=tempdir / "aligner-model.json",
+                path_to_preprocessing_config_file=tempdir / "preprocessing.json",
+                path_to_text_config_file=tempdir / "text.json",
+                path_to_training_config_file=tempdir / "aligner-training.json",
+            )
+            _writer_helper(aligner_config, tempdir / "aligner.json")
+            self.assertTrue(isinstance(aligner_config, AlignerConfig))
+            config = AlignerConfig.load_config_from_path(tempdir / "aligner.json")
+            self.assertTrue(isinstance(config, AlignerConfig))
+            self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
+            self.assertTrue(config.path_to_model_config_file.is_absolute())
+            self.assertTrue(config.path_to_preprocessing_config_file.is_absolute())
+            self.assertTrue(config.path_to_text_config_file.is_absolute())
+            self.assertTrue(config.path_to_training_config_file.is_absolute())
+
+    def test_missing_path(self):
+        """Load a config that is missing a partial config file."""
+        with tempfile.TemporaryDirectory() as tempdir:
+            tempdir = Path(tempdir)
+            _writer_helper(AudioConfig(), tempdir / "audio.json")
+            config = PreprocessingConfig(
+                path_to_audio_config_file=(tempdir / "audio.json")
+            )
+            self.assertTrue(isinstance(config.audio, AudioConfig))
+            # Write shared:
+            _writer_helper(
+                PreprocessingConfig(dataset=self.DATASET_NAME),
+                tempdir / "preprocessing.json",
+            )
+            _writer_helper(TextConfig(), tempdir / "text.json")
+            _writer_helper(BaseTrainingConfig(), tempdir / "training.json")
+            # Aligner Config
+            _writer_helper(AlignerConfig().training, tempdir / "aligner-training.json")
+            _writer_helper(AlignerConfig().model, tempdir / "aligner-model.json")
+            aligner_config = AlignerConfig(
+                path_to_model_config_file=tempdir / "aligner-model.json",
+                path_to_preprocessing_config_file=tempdir / "preprocessing.json",
+                path_to_text_config_file=tempdir / "text.json",
+                path_to_training_config_file=tempdir / "aligner-training.json",
+            )
+            _writer_helper(aligner_config, tempdir / "aligner.json")
+            self.assertTrue(isinstance(aligner_config, AlignerConfig))
+            # Create the missing partial config file by deleting.
+            # NOTE, we need the file to exists if we want to write its parent config to disk.
+            (tempdir / "preprocessing.json").unlink()
+            with self.assertRaises(ValidationError):
+                config = AlignerConfig.load_config_from_path(tempdir / "aligner.json")
 
 
 if __name__ == "__main__":

@@ -99,15 +99,15 @@ class ConfigFormatStep(Step):
                 / self.state[StepNames.name_step.value]
             )
             .expanduser()
-            .absolute()
         )
         # create_config_files
-        config_dir = (output_path / "config").absolute()
-        config_dir.mkdir(exist_ok=True, parents=True)
+        config_dir = output_path / "config"
+        config_dir.absolute().mkdir(exist_ok=True, parents=True)
+        (config_dir / "../preprocessed").absolute().mkdir(parents=True, exist_ok=True)
         # log dir
         log_dir = LoggerConfig().save_dir.stem
-        log_dir = (output_path / log_dir).absolute()
-        log_dir.mkdir(parents=True, exist_ok=True)
+        log_dir = Path("..") / log_dir
+        (config_dir / log_dir).absolute().mkdir(parents=True, exist_ok=True)
         datasets = []
         # Text Configuration
         punctuation = []
@@ -124,15 +124,15 @@ class ConfigFormatStep(Step):
             wavs_dir = (
                 Path(self.state[dataset][StepNames.wavs_dir_step.value])
                 .expanduser()
-                .absolute()
             )
+            if not wavs_dir.is_absolute():
+                wavs_dir = Path("../..") / wavs_dir
             new_filelist_path = (
                 (
-                    output_path
+                    Path("..")
                     / f"{self.state[dataset][StepNames.dataset_name_step.value]}-filelist.psv"
                 )
                 .expanduser()
-                .absolute()
             )
             for entry_i in range(len(self.state[dataset]["filelist_data"])):
                 self.state[dataset]["filelist_data"][entry_i] = {
@@ -140,7 +140,10 @@ class ConfigFormatStep(Step):
                     for k, v in self.state[dataset]["filelist_data"][entry_i].items()
                     if k is not None and not k.startswith("unknown")
                 }
-            write_filelist(self.state[dataset]["filelist_data"], new_filelist_path)
+            write_filelist(
+                    self.state[dataset]["filelist_data"],
+                    (config_dir / new_filelist_path).absolute(),
+                    )
             sox_effects = self.state[dataset]["sox_effects"]
             filelist_loader = generic_psv_dict_reader
 
@@ -156,30 +159,27 @@ class ConfigFormatStep(Step):
         text_config = TextConfig(
             symbols=Symbols(punctuation=list(set(punctuation)), **symbols)
         )
-        text_config_path = (
-            config_dir / f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}"
-        ).absolute()
+        text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
         write_dict_to_config(
-            json.loads(text_config.model_dump_json(exclude_none=True)), text_config_path
+            json.loads(text_config.model_dump_json(exclude_none=True)),
+            (config_dir / text_config_path).absolute(),
         )
         # Preprocessing Config
         preprocessed_training_filelist_path = (
-            output_path / "preprocessed" / "training_filelist.psv"
+            Path("..") / "preprocessed" / "training_filelist.psv"
         )
         preprocessed_validation_filelist_path = (
-            output_path / "preprocessed" / "validation_filelist.psv"
+            Path("..") / "preprocessed" / "validation_filelist.psv"
         )
         preprocessing_config = PreprocessingConfig(
             dataset=self.state[StepNames.name_step.value],
-            save_dir=(output_path / "preprocessed").absolute(),
+            save_dir=Path("..") / "preprocessed",
             source_data=datasets,
         )
-        preprocessing_config_path = (
-            config_dir / f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.{self.response}"
-        ).absolute()
+        preprocessing_config_path = Path(f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.{self.response}")
         write_dict_to_config(
             json.loads(preprocessing_config.model_dump_json(exclude_none=True)),
-            preprocessing_config_path,
+            (config_dir / preprocessing_config_path).absolute(),
         )
         ## Create Aligner Config
         aligner_logger = LoggerConfig(
@@ -189,14 +189,12 @@ class ConfigFormatStep(Step):
             # This isn't the actual AlignerTrainingConfig, but we can use it because we just
             # inherit the defaults if we pass a dict to the AlignerConfig.training field
             training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path.absolute(),
-                validation_filelist=preprocessed_validation_filelist_path.absolute(),
+                training_filelist=preprocessed_training_filelist_path,
+                validation_filelist=preprocessed_validation_filelist_path,
                 logger=aligner_logger,
             ).model_dump()
         )
-        aligner_config_path = (
-            config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.{self.response}"
-        ).absolute()
+        aligner_config_path = Path(f"{ALIGNER_CONFIG_FILENAME_PREFIX}.{self.response}")
         aligner_config_json = json.loads(
             aligner_config.model_dump_json(
                 exclude_none=True, exclude={"preprocessing": True, "text": True}
@@ -206,19 +204,20 @@ class ConfigFormatStep(Step):
             preprocessing_config_path
         )
         aligner_config_json["path_to_text_config_file"] = str(text_config_path)
-        write_dict_to_config(aligner_config_json, aligner_config_path)
+        write_dict_to_config(
+                aligner_config_json,
+                (config_dir / aligner_config_path).absolute(),
+                )
         # Create Feature Prediction Config
         fp_logger = LoggerConfig(name="FeaturePredictionExperiment", save_dir=log_dir)
         fp_config = FeaturePredictionConfig(
             training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path.absolute(),
-                validation_filelist=preprocessed_validation_filelist_path.absolute(),
+                training_filelist=preprocessed_training_filelist_path,
+                validation_filelist=preprocessed_validation_filelist_path,
                 logger=fp_logger,
             ).model_dump()
         )
-        fp_config_path = (
-            config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}"
-        ).absolute()
+        fp_config_path = Path(f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}")
         fp_config_json = json.loads(
             fp_config.model_dump_json(
                 exclude_none=True, exclude={"preprocessing": True, "text": True}
@@ -228,19 +227,20 @@ class ConfigFormatStep(Step):
             preprocessing_config_path
         )
         fp_config_json["path_to_text_config_file"] = str(text_config_path)
-        write_dict_to_config(fp_config_json, fp_config_path)
+        write_dict_to_config(
+                fp_config_json,
+                (config_dir / fp_config_path).absolute(),
+                )
         # Create Vocoder Config
         vocoder_logger = LoggerConfig(name="VocoderExperiment", save_dir=log_dir)
         vocoder_config = VocoderConfig(
             training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path.absolute(),
-                validation_filelist=preprocessed_validation_filelist_path.absolute(),
+                training_filelist=preprocessed_training_filelist_path,
+                validation_filelist=preprocessed_validation_filelist_path,
                 logger=vocoder_logger,
             ).model_dump()
         )
-        vocoder_config_path = (
-            config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
-        ).absolute()
+        vocoder_config_path = Path(f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}")
         vocoder_config_json = json.loads(
             vocoder_config.model_dump_json(
                 exclude_none=True, exclude={"preprocessing": True}
@@ -249,13 +249,16 @@ class ConfigFormatStep(Step):
         vocoder_config_json["path_to_preprocessing_config_file"] = str(
             preprocessing_config_path
         )
-        write_dict_to_config(vocoder_config_json, vocoder_config_path)
+        write_dict_to_config(
+                vocoder_config_json,
+                (config_dir / vocoder_config_path).absolute(),
+                )
         # E2E Config
         e2e_logger = LoggerConfig(name="E2E-Experiment", save_dir=log_dir)
         e2e_config = EveryVoiceConfig(
             training=BaseTrainingConfig(
-                training_filelist=preprocessed_training_filelist_path.absolute(),
-                validation_filelist=preprocessed_validation_filelist_path.absolute(),
+                training_filelist=preprocessed_training_filelist_path,
+                validation_filelist=preprocessed_validation_filelist_path,
                 logger=e2e_logger,
             ).model_dump(),
         )
@@ -268,10 +271,11 @@ class ConfigFormatStep(Step):
         e2e_config_json["path_to_aligner_config_file"] = str(aligner_config_path)
         e2e_config_json["path_to_feature_prediction_config_file"] = str(fp_config_path)
         e2e_config_json["path_to_vocoder_config_file"] = str(vocoder_config_path)
-        e2e_config_path = (
-            config_dir / f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
-        ).absolute()
-        write_dict_to_config(e2e_config_json, e2e_config_path)
+        e2e_config_path = Path(f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}")
+        write_dict_to_config(
+                e2e_config_json,
+                (config_dir / e2e_config_path).absolute(),
+                )
         print(
             Panel(
                 f"You've finished configuring your dataset. Your files are located at {config_dir.absolute()}",
