@@ -84,7 +84,7 @@ class PartialLoadConfig(ConfigModel):
     def path_relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
         if info.context and value is not None and not value.is_absolute():
             config_path = info.context.get("config_path", Path("."))
-            value = (config_path / value).resolve()
+            value = (config_path.parent / value).resolve()
         return value
 
 

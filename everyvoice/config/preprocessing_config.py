@@ -85,6 +85,11 @@ class PreprocessingConfig(PartialLoadConfig):
     path_to_audio_config_file: Optional[FilePath] = None
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
 
+    @field_validator("save_dir")
+    @classmethod
+    def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
+        return PartialLoadConfig.path_relative_to_absolute(value, info)
+
     @model_validator(mode="before")  # type: ignore
     def load_partials(self, info: ValidationInfo):
         config_path = (
