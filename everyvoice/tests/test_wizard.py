@@ -12,20 +12,17 @@ from unittest import TestCase, main
 
 from anytree import RenderTree
 
-from everyvoice.config import preprocessing_config
 from everyvoice.config.text_config import Symbols
 from everyvoice.tests.stubs import (
-    QUIET,
     QuestionaryStub,
     Say,
     capture_stdout,
     monkeypatch,
-    patch_logger,
     patch_menu_prompt,
 )
 from everyvoice.wizard import Step
 from everyvoice.wizard import StepNames as SN
-from everyvoice.wizard import Tour, basic, dataset, prompts, validators
+from everyvoice.wizard import Tour, basic, dataset, prompts
 
 
 class RecursiveAnswers(NamedTuple):
@@ -103,9 +100,8 @@ class WizardTest(TestCase):
                 {"basename": "0002", "text": "hello", None: "test"},
             ]
             config_step.state["dataset_test"]["sox_effects"] = []
-            with patch_logger(preprocessing_config, QUIET):
-                with capture_stdout() as stdout:
-                    config_step.effect()
+            with capture_stdout() as stdout:
+                config_step.effect()
             self.assertIn("Congratulations", stdout.getvalue())
             self.assertTrue(
                 (Path(tmpdirname) / config_step.name / "logs_and_checkpoints").exists()
@@ -261,7 +257,7 @@ class WizardTest(TestCase):
                 "questionary",
                 QuestionaryStub(("not-a-path", no_wavs_dir, has_wavs_dir)),
             ):
-                with patch_logger(validators, QUIET):
+                with capture_stdout():
                     step.run()
             self.assertTrue(step.completed)
             self.assertEqual(step.response, has_wavs_dir)
@@ -338,7 +334,7 @@ class WizardTest(TestCase):
         self.assertIsInstance(language_step.children[0], dataset.SelectLanguageStep)
 
         select_lang_step = language_step.children[0]
-        with patch_logger(dataset, QUIET):
+        with capture_stdout():
             with patch_menu_prompt(15):  # some arbitrary language from the list
                 select_lang_step.run()
         # print(select_lang_step.state)
@@ -354,7 +350,7 @@ class WizardTest(TestCase):
                 text_processing_step.run()
         # print(text_processing_step.state)
         self.assertEqual(
-            text_processing_step.state["filelist_data"][2]["text"],
+            text_processing_step.state["filelist_data"][1]["text"],
             "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
         )
 
@@ -369,16 +365,17 @@ class WizardTest(TestCase):
         )
 
         symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
-        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 4)
-        with patch_menu_prompt([(0, 1, 2, 3), (11), ()], multi=True):
+        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
+        with patch_menu_prompt([(0, 1, 2), (9), ()], multi=True):
             symbol_set_step.run()
+        # print(symbol_set_step.state)
         self.assertEqual(symbol_set_step.state["banned_symbols"], "z")
-        self.assertEqual(symbol_set_step.response.punctuation, ["\t", " ", "-", ":"])
+        self.assertEqual(symbol_set_step.response.punctuation, ["\t", " ", ":"])
         self.assertEqual(
             symbol_set_step.response.symbol_set,
-            ["a", "c", "d", "e", "f", "n", "o", "r", "s", "t", "x", "à", "é", "ê"],
+            ["a", "c", "d", "e", "f", "n", "s", "t", "x", "à", "é", "ê"],
         )
-        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
+        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 2)
 
     def test_wrong_fileformat_psv(self):
         tour = Tour(
@@ -438,9 +435,7 @@ class WizardTest(TestCase):
             validate_path("", is_dir=True, is_file=True)
         with self.assertRaises(ValueError):
             validate_path("")
-        with tempfile.TemporaryDirectory() as tmpdirname, patch_logger(
-            validators, QUIET
-        ):
+        with tempfile.TemporaryDirectory() as tmpdirname, capture_stdout():
             self.assertTrue(
                 validate_path(tmpdirname, is_dir=True, is_file=False, exists=True)
             )
@@ -541,7 +536,7 @@ class WizardTest(TestCase):
         return tour
 
     def test_monkey_tour_1(self):
-        with tempfile.TemporaryDirectory() as tmpdirname:
+        with tempfile.TemporaryDirectory() as tmpdirname, capture_stdout():
             tour = self.monkey_run_tour(
                 "monkey tour 1",
                 [
@@ -554,37 +549,38 @@ class WizardTest(TestCase):
 
     def test_monkey_tour_2(self):
         data_dir = Path(__file__).parent / "data"
-        tour = self.monkey_run_tour(
-            "monkey tour 2",
-            [
-                StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
-                StepAndAnswer(
-                    dataset.FilelistStep(),
-                    Say(str(data_dir / "metadata.csv")),
-                ),
-                StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
-                StepAndAnswer(
-                    dataset.HasSpeakerStep(),
-                    Say("yes"),
-                    children_answers=[RecursiveAnswers(Say(3))],
-                ),
-                StepAndAnswer(
-                    dataset.HasLanguageStep(),
-                    Say("no"),
-                    children_answers=[RecursiveAnswers(Say("eng"))],
-                ),
-                StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
-                StepAndAnswer(
-                    dataset.SymbolSetStep(),
-                    patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
-                ),
-                StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
-                StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
-            ],
-        )
+        with capture_stdout():
+            tour = self.monkey_run_tour(
+                "monkey tour 2",
+                [
+                    StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
+                    StepAndAnswer(
+                        dataset.FilelistStep(),
+                        Say(str(data_dir / "metadata.csv")),
+                    ),
+                    StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
+                    StepAndAnswer(
+                        dataset.HasSpeakerStep(),
+                        Say("yes"),
+                        children_answers=[RecursiveAnswers(Say(3))],
+                    ),
+                    StepAndAnswer(
+                        dataset.HasLanguageStep(),
+                        Say("no"),
+                        children_answers=[RecursiveAnswers(Say("eng"))],
+                    ),
+                    StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
+                    StepAndAnswer(
+                        dataset.SymbolSetStep(),
+                        patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
+                    ),
+                    StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
+                    StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
+                ],
+            )
 
         # print(tour.state)
-        self.assertEqual(len(tour.state["filelist_data"]), 6)
+        self.assertEqual(len(tour.state["filelist_data"]), 5)
         self.assertTrue(tour.steps[-1].completed)
 
     def test_get_iso_code(self):
@@ -596,34 +592,35 @@ class WizardTest(TestCase):
 
     def test_with_language_column(self):
         data_dir = Path(__file__).parent / "data"
-        tour = self.monkey_run_tour(
-            "tour with language column",
-            [
-                StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
-                StepAndAnswer(
-                    dataset.FilelistStep(),
-                    Say(str(data_dir / "language-col.tsv")),
-                ),
-                StepAndAnswer(dataset.FilelistFormatStep(), Say("tsv")),
-                StepAndAnswer(
-                    dataset.HasSpeakerStep(),
-                    Say("yes"),
-                    children_answers=[RecursiveAnswers(Say(2))],
-                ),
-                StepAndAnswer(
-                    dataset.HasLanguageStep(),
-                    Say("yes"),
-                    children_answers=[RecursiveAnswers(Say(3))],
-                ),
-                StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
-                StepAndAnswer(
-                    dataset.SymbolSetStep(),
-                    patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
-                ),
-                StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
-                StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
-            ],
-        )
+        with capture_stdout():
+            tour = self.monkey_run_tour(
+                "tour with language column",
+                [
+                    StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
+                    StepAndAnswer(
+                        dataset.FilelistStep(),
+                        Say(str(data_dir / "language-col.tsv")),
+                    ),
+                    StepAndAnswer(dataset.FilelistFormatStep(), Say("tsv")),
+                    StepAndAnswer(
+                        dataset.HasSpeakerStep(),
+                        Say("yes"),
+                        children_answers=[RecursiveAnswers(Say(2))],
+                    ),
+                    StepAndAnswer(
+                        dataset.HasLanguageStep(),
+                        Say("yes"),
+                        children_answers=[RecursiveAnswers(Say(3))],
+                    ),
+                    StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
+                    StepAndAnswer(
+                        dataset.SymbolSetStep(),
+                        patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
+                    ),
+                    StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
+                    StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
+                ],
+            )
         self.assertEqual(tour.state[SN.speaker_header_step.value], 2)
         self.assertEqual(tour.state[SN.language_header_step.value], 3)
         self.assertTrue(tour.steps[-1].completed)
