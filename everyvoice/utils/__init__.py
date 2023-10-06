@@ -244,6 +244,10 @@ def generic_dict_loader(
             quoting=quoting,
             escapechar=escapechar,
         )
+        # When fieldnames is given, csv.DictReader treats the header line as a
+        # data line, but we don't want that, so skip it.
+        if fieldnames:
+            next(reader)
         files = list(reader)
     return files
 

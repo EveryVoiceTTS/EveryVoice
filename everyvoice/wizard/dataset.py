@@ -178,6 +178,15 @@ class FilelistFormatStep(Step):
                 filelist_path, delimiter=self.state.get("filelist_delimiter")
             )
             self.state["filelist_headers"] = list(self.state["filelist_data"][0])
+            if (
+                "text" not in self.state["filelist_headers"]
+                and "basename" not in self.state["filelist_headers"]
+            ):
+                print(
+                    "Warning: we assume the filelist's first line has header names, but "
+                    'your filelist does not have the standard "basename" and "text" headers. '
+                    "The first line will be replaced by headers based on your next answers."
+                )
             if "text" not in self.state["filelist_headers"]:
                 self.tour.add_step(
                     HeaderStep(
