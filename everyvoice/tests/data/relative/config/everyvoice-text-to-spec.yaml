@@ -8,7 +8,7 @@ model:
   mel_loss: mse
   mel_loss_weight: 0.5
   multilingual: false
-  multispeaker: {dvector_gmm: false, embedding_type: none, every_layer: false}
+  multispeaker: false
   phonological_feats_size: 38
   use_phonological_feats: false
   use_postnet: true
