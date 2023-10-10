@@ -97,6 +97,7 @@ def train_base_command(
     devices: str,
     nodes: int,
     strategy: str,
+    gradient_clip_val: float,
 ):
     config = load_config_base_command(model_config, config_args, config_file)
     logger.info("Loading modules for training...")
@@ -135,7 +136,6 @@ def train_base_command(
         every_n_epochs=config.training.ckpt_epochs,
     )
     trainer = Trainer(
-        gradient_clip_val=1.0,
         logger=tensorboard_logger,
         accelerator=accelerator,
         devices=devices,
@@ -145,6 +145,7 @@ def train_base_command(
         strategy=strategy,
         num_nodes=nodes,
         detect_anomaly=False,  # used for debugging, but triples training time
+        gradient_clip_val=gradient_clip_val,
     )
     model_obj = model(config)
     data = data_module(config)  # type: ignore
@@ -165,9 +166,15 @@ def train_base_command(
         diff = DeepDiff(
             model_obj.config.training.model_dump(), config.training.model_dump()
         )
-        training_config_diff = [
-            item for item in diff["values_changed"].items() if "sub_dir" not in item[0]
-        ]
+        training_config_diff = []
+        if "values_changed" in diff:
+            training_config_diff += [
+                item
+                for item in diff["values_changed"].items()
+                if "sub_dir" not in item[0]
+            ]
+        if "types_changed" in diff:
+            training_config_diff += list(diff["types_changes"].items())
         if training_config_diff:
             model_obj.config.training = config.training
             tensorboard_logger.log_hyperparams(config.model_dump())

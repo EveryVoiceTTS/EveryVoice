@@ -58,7 +58,7 @@ class EveryVoice(pl.LightningModule):
 
     def forward(self, batch, inference=False):
         feature_prediction = self.feature_prediction.forward(batch)
-        vocoder_x = feature_prediction["postnet_output"]
+        vocoder_x = feature_prediction[self.feature_prediction.output_key]
         if not inference and self.use_segments:
             vocoder_x = torch.stack(
                 [
@@ -232,7 +232,11 @@ class EveryVoice(pl.LightningModule):
                         },
                         {
                             "mel": np.swapaxes(
-                                fp_output["postnet_output"][0].cpu().numpy(), 0, 1
+                                fp_output[self.feature_prediction.output_key][0]
+                                .cpu()
+                                .numpy(),
+                                0,
+                                1,
                             ),
                             "pitch": expand(
                                 fp_output["pitch_prediction"][0].cpu().numpy(),
