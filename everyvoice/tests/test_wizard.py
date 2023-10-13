@@ -10,6 +10,7 @@ from types import MethodType
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence, Union
 from unittest import TestCase, main
 
+import yaml
 from anytree import RenderTree
 
 from everyvoice.config.text_config import Symbols
@@ -23,6 +24,7 @@ from everyvoice.tests.stubs import (
 from everyvoice.wizard import Step
 from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard import Tour, basic, dataset, prompts
+from everyvoice.wizard.basic import ConfigFormatStep
 
 
 class RecursiveAnswers(NamedTuple):
@@ -642,6 +644,226 @@ class WizardTest(TestCase):
         with self.assertRaises(KeyboardInterrupt):
             with patch_menu_prompt(KeyboardInterrupt()):
                 step.run()
+
+
+class WavFileDirectoryRelativePathTest(TestCase):
+    """
+    Make sure the wav files directory path is correctly handle when transformed
+    to a relative path.
+    """
+
+    def setUp(self):
+        """
+        Create a mock state instead of doing all prior steps to ConfigFormatStep.
+        """
+        state = {
+            SN.output_step.value: "John/Smith",
+            SN.name_step.value: "Unittest",
+            "dataset_0": {
+                SN.dataset_name_step.value: "unit",
+                SN.wavs_dir_step.value: "Common-Voice",
+                SN.symbol_set_step.value: Symbols(
+                    silence=["<SIL>"],
+                    pad="_",
+                    punctuation=[],
+                    symbol_set=[
+                        " ",
+                        ",",
+                        ".",
+                        "A",
+                        "D",
+                        "E",
+                        "H",
+                        "I",
+                        "J",
+                        "K",
+                    ],
+                ),
+                "filelist_data": [
+                    {
+                        "text": "SU ḰÁLS TŦE NOȾE KÁṈI.",
+                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/dd50ed81b889047cb4399e34b650a91fcbd3b2a5e36cf0068251d64274bffb61",
+                        "language": "und",
+                    },
+                    {
+                        "text": "I, ȻȽ ȻIL TŦE ĆÁSE SWOU,LES.",
+                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/6c45ab8c6e2454142c95319ca37f7e4ff6526dddbcc7fc540572e4e53264ec47",
+                        "language": "und",
+                    },
+                    {
+                        "text": "ENÁN U, ṈEN XAXE SĆÁ,Is.",
+                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/3947ae033faeb793e00f836648e240bc91c821798bccc76656ad3e7030b38878",
+                        "language": "und",
+                    },
+                    {
+                        "text": "SU ḰÁLs “U ĆESE OL TŦE NE SXENE I, SQȺ ȻNES U MEQ EXIN ĆȺ.”",
+                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/65b61440f9621084a1a1d8c461d177c765fad3aff91e0077296081931929629b",
+                        "language": "und",
+                    },
+                    {
+                        "text": "DON,EYE EṮ SXÍEQES.",
+                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/8a124117481eaf8f91d23aa3acda301e7fae7de85e98c016383381d54a3d5049",
+                        "language": "und",
+                    },
+                ],
+                "sox_effects": [["channel", "1"]],
+            },
+        }
+        self.config = ConfigFormatStep()
+        self.config.response = "yaml"
+        self.config.state = state
+
+    def test_wav_file_directory_local(self):
+        """
+        output directory is `.`
+        wav files directory locate in `.`
+        """
+        self.config.state[SN.output_step.value] = "."
+        self.config.state[SN.name_step.value] = "Unittest"
+        with capture_stdout():
+            with tempfile.TemporaryDirectory() as tmpdir:
+                os.chdir(tmpdir)
+                tmpdir = Path(tmpdir)
+                self.config.effect()
+                data_file = (
+                    tmpdir
+                    / self.config.state[SN.name_step.value]
+                    / "config/everyvoice-shared-data.yaml"
+                )
+                with data_file.open() as fin:
+                    config = yaml.load(fin, Loader=yaml.FullLoader)
+        self.assertEqual(
+            Path(config["source_data"][0]["data_dir"]), Path("../../Common-Voice")
+        )
+
+    def test_wav_file_directory_under_wavs_directory(self):
+        """
+        output directory is `.`
+        wav files directory locate in `wavs/`
+        """
+        self.config.state[SN.output_step.value] = "."
+        self.config.state[SN.name_step.value] = "Unittest"
+        wavs_dir = "wavs/Common-Voice"
+        self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
+        with capture_stdout():
+            with tempfile.TemporaryDirectory() as tmpdir:
+                os.chdir(tmpdir)
+                tmpdir = Path(tmpdir)
+                self.config.effect()
+                data_file = (
+                    tmpdir
+                    / self.config.state[SN.name_step.value]
+                    / "config/everyvoice-shared-data.yaml"
+                )
+                with data_file.open() as fin:
+                    config = yaml.load(fin, Loader=yaml.FullLoader)
+        self.assertEqual(
+            Path(config["source_data"][0]["data_dir"]), Path("../..") / wavs_dir
+        )
+
+    def test_output_not_local_and_wav_file_directory_local(self):
+        """
+        output directory is NOT `.`
+        wav files directory locate in `.`
+        """
+        self.config.state[SN.output_step.value] = "John/Smith"
+        self.config.state[SN.name_step.value] = "Unittest"
+        with capture_stdout():
+            with tempfile.TemporaryDirectory() as tmpdir:
+                os.chdir(tmpdir)
+                tmpdir = Path(tmpdir)
+                self.config.effect()
+                data_file = (
+                    tmpdir
+                    / self.config.state[SN.output_step.value]
+                    / self.config.state[SN.name_step.value]
+                    / "config/everyvoice-shared-data.yaml"
+                )
+                with data_file.open() as fin:
+                    config = yaml.load(fin, Loader=yaml.FullLoader)
+        self.assertEqual(
+            Path(config["source_data"][0]["data_dir"]), Path("../../../../Common-Voice")
+        )
+
+    def test_output_not_local_and_wav_file_directory_under_hierarchy(self):
+        """
+        output directory is NOT `.`
+        wav files directory locate in `wavs/`
+        """
+        self.config.state[SN.output_step.value] = "John/Smith"
+        self.config.state[SN.name_step.value] = "Unittest"
+        wavs_dir = "wavs/Common-Voice"
+        self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
+        with capture_stdout():
+            with tempfile.TemporaryDirectory() as tmpdir:
+                os.chdir(tmpdir)
+                tmpdir = Path(tmpdir)
+                self.config.effect()
+                data_file = (
+                    tmpdir
+                    / self.config.state[SN.output_step.value]
+                    / self.config.state[SN.name_step.value]
+                    / "config/everyvoice-shared-data.yaml"
+                )
+                with data_file.open() as fin:
+                    config = yaml.load(fin, Loader=yaml.FullLoader)
+        self.assertEqual(
+            Path(config["source_data"][0]["data_dir"]),
+            Path("../../../..") / wavs_dir,
+        )
+
+    def test_absolute_wav_file_directory_and_local_experiment(self):
+        """
+        output directory is `.`
+        wav files directory locate in `/ABSOLUTE/wavs/`
+        """
+        self.config.state[SN.output_step.value] = "."
+        self.config.state[SN.name_step.value] = "Unittest"
+        with capture_stdout():
+            with tempfile.TemporaryDirectory() as tmpdir:
+                os.chdir(tmpdir)
+                tmpdir = Path(tmpdir)
+                wavs_dir = tmpdir / "wavs/Common-Voice"
+                self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
+                self.config.effect()
+                data_file = (
+                    tmpdir
+                    / self.config.state[SN.name_step.value]
+                    / "config/everyvoice-shared-data.yaml"
+                )
+                with data_file.open() as fin:
+                    config = yaml.load(fin, Loader=yaml.FullLoader)
+        self.assertEqual(
+            Path(config["source_data"][0]["data_dir"]),
+            wavs_dir,
+        )
+
+    def test_absolute_wav_file_directory_and_nested_experiment(self):
+        """
+        output directory is NOT `.`
+        wav files directory locate in `/ABSOLUTE/wavs/`
+        """
+        self.config.state[SN.output_step.value] = "John/Smith"
+        self.config.state[SN.name_step.value] = "Unittest"
+        with capture_stdout():
+            with tempfile.TemporaryDirectory() as tmpdir:
+                os.chdir(tmpdir)
+                tmpdir = Path(tmpdir)
+                wavs_dir = tmpdir / "wavs/Common-Voice"
+                self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
+                self.config.effect()
+                data_file = (
+                    tmpdir
+                    / self.config.state[SN.output_step.value]
+                    / self.config.state[SN.name_step.value]
+                    / "config/everyvoice-shared-data.yaml"
+                )
+                with data_file.open() as fin:
+                    config = yaml.load(fin, Loader=yaml.FullLoader)
+        self.assertEqual(
+            Path(config["source_data"][0]["data_dir"]),
+            wavs_dir,
+        )
 
 
 if __name__ == "__main__":
