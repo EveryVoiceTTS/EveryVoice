@@ -217,8 +217,24 @@ class Preprocessor:
         Returns:
             [Tensor, int]: audio Tensor, sampling rate
         """
-
         audio, sr = load_audio(wav_path)
+        seconds = len(audio[0]) / sr
+
+        if seconds > self.audio_config.max_audio_length:
+            logger.warning(
+                f"Audio too long: {wav_path} ({seconds} seconds - we will skip this file)"
+            )
+            if update_counters:
+                self.counters.increment("audio_too_long")
+            return None, None
+        if seconds < self.audio_config.min_audio_length:
+            logger.warning(
+                f"Audio too short: {wav_path} ({seconds} seconds - we will skip this file)"
+            )
+            if update_counters:
+                self.counters.increment("audio_too_short")
+            return None, None
+
         loudness_transform = transforms.Loudness(sr)
         loudness = loudness_transform(audio)
         if (
@@ -240,21 +256,7 @@ class Preprocessor:
         if normalize:
             audio /= torch.max(torch.abs(audio))
             audio *= 0.95
-        seconds = len(audio[0]) / sr
-        if seconds > self.audio_config.max_audio_length:
-            logger.warning(
-                f"Audio too long: {wav_path} ({seconds} seconds - we will skip this file)"
-            )
-            if update_counters:
-                self.counters.increment("audio_too_long")
-            return None, None
-        if seconds < self.audio_config.min_audio_length:
-            logger.warning(
-                f"Audio too short: {wav_path} ({seconds} seconds - we will skip this file)"
-            )
-            if update_counters:
-                self.counters.increment("audio_too_short")
-            return None, None
+
         if update_counters:
             self.counters.increment("duration", seconds)
         if save_wave:
