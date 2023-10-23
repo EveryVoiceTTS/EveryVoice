@@ -59,32 +59,39 @@ else
     exit 1
 fi
 
+r() {
+    cmd=$*
+    echo "\$ $cmd"
+    eval $cmd
+    return $?
+}
+
 set -o errexit
 
-conda create -y --name "$ENV_NAME" python=3.9
+r conda create -y --name "$ENV_NAME" python=3.9
 eval "$(conda shell.bash hook)"
-conda activate "$ENV_NAME"
+r conda activate "$ENV_NAME"
 
 # Recent versions of lit do not always compile cleanly, but we can fall back to
 # the one with a wheel on pytorch.org if necessary
-if ! pip install lit --find-links https://download.pytorch.org/whl/torch_stable.html; then
-    echo Falling back to older lit
-    pip install lit==15.0.7 --find-links https://download.pytorch.org/whl/torch_stable.html
+if ! r pip install lit --find-links https://download.pytorch.org/whl/torch_stable.html; then
+    echo Falling back to installing an older lit with a known pre-compiled wheel
+    r pip install lit==15.0.7 --find-links https://download.pytorch.org/whl/torch_stable.html
 fi
 
-CUDA_TAG=$CUDA_TAG pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-pip install cython
+r CUDA_TAG=$CUDA_TAG pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+r pip install cython
 
 # pycountry and pyworld don't always compile cleanly, but we can fall back to
 # using conda-forge if necessary
 PY_COUNTRY_WORLD=$(grep "pycountry\|pyworld" requirements.txt)
-if ! pip install $PY_COUNTRY_WORLD; then
-    echo Falling back to install pycountry and pyworld from conda-forge
-    conda install -y $PY_COUNTRY_WORLD -c conda-forge
+if ! r pip install $PY_COUNTRY_WORLD; then
+    echo Falling back to installing pycountry and pyworld from conda-forge
+    r conda install -y $PY_COUNTRY_WORLD -c conda-forge
 fi
 
-pip install -e .
-pip install -r requirements.dev.txt
+r pip install -e .
+r pip install -r requirements.dev.txt
 echo ""
 echo "Environment creation completed with success"
 
