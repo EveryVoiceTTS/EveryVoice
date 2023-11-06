@@ -73,7 +73,7 @@ def train_base_command_interface(
     devices: str = typer.Option(
         "auto", "--devices", "-d", help="The number of GPUs on each node"
     ),
-    nodes: str = typer.Option(
+    nodes: int = typer.Option(
         1, "--nodes", "-n", help="The number of nodes on your machine"
     ),
     strategy: str = typer.Option(
