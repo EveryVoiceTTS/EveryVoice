@@ -681,27 +681,27 @@ class WavFileDirectoryRelativePathTest(TestCase):
                 ),
                 "filelist_data": [
                     {
-                        "text": "SU ḰÁLS TŦE NOȾE KÁṈI.",
+                        "text": "Sentence 1",
                         "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/dd50ed81b889047cb4399e34b650a91fcbd3b2a5e36cf0068251d64274bffb61",
                         "language": "und",
                     },
                     {
-                        "text": "I, ȻȽ ȻIL TŦE ĆÁSE SWOU,LES.",
+                        "text": "Sentence 2",
                         "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/6c45ab8c6e2454142c95319ca37f7e4ff6526dddbcc7fc540572e4e53264ec47",
                         "language": "und",
                     },
                     {
-                        "text": "ENÁN U, ṈEN XAXE SĆÁ,Is.",
+                        "text": "Sentence 3",
                         "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/3947ae033faeb793e00f836648e240bc91c821798bccc76656ad3e7030b38878",
                         "language": "und",
                     },
                     {
-                        "text": "SU ḰÁLs “U ĆESE OL TŦE NE SXENE I, SQȺ ȻNES U MEQ EXIN ĆȺ.”",
+                        "text": "Sentence 4",
                         "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/65b61440f9621084a1a1d8c461d177c765fad3aff91e0077296081931929629b",
                         "language": "und",
                     },
                     {
-                        "text": "DON,EYE EṮ SXÍEQES.",
+                        "text": "Sentence 5",
                         "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/8a124117481eaf8f91d23aa3acda301e7fae7de85e98c016383381d54a3d5049",
                         "language": "und",
                     },
