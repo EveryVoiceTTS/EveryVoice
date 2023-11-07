@@ -18,7 +18,7 @@ from everyvoice.tests.test_preprocessing import (
     PreprocessingTest,
 )
 from everyvoice.tests.test_text import TextTest
-from everyvoice.tests.test_wizard import WizardTest
+from everyvoice.tests.test_wizard import WavFileDirectoryRelativePathTest, WizardTest
 
 # Unit tests
 
@@ -40,7 +40,10 @@ PREPROCESSING_TESTS = [
 
 MODEL_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [ModelTest]]
 
-CLI_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [WizardTest, CLITest]]
+CLI_TESTS = [
+    LOADER.loadTestsFromTestCase(test)
+    for test in [WizardTest, CLITest, WavFileDirectoryRelativePathTest]
+]
 
 DEV_TESTS = (
     CONFIG_TESTS
