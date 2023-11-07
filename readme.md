@@ -3,21 +3,19 @@
 [![codecov](https://codecov.io/gh/roedoejet/EveryVoice/branch/main/graph/badge.svg?token=yErCxf64IU)](https://codecov.io/gh/roedoejet/EveryVoice)
 [![license](https://img.shields.io/badge/Licence-MIT-green)](LICENSE)
 
-This is an implementation of the Text-to-Speech (TTS) model used by the Small Teams "Speech Generation for Indigenous Language Education" project.
-
-It is largely based off the FastSpeech2/Fastpitch models.
+This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generation for Indigenous Language Education" project.
 
 ## Quickstart
 
 ### Environment
 We recommend using Conda and Python 3.9. To do that, create a new environment,
-replacing cu117 (for CUDA 11.7) by your actual CUDA version's tag:
+replacing cu117 (for CUDA 11.7) by your actual CUDA version's tag. These steps have been automated and can be triggered with:
 
 ```sh
-conda create --name EveryVoice python=3.9
-conda activate EveryVoice
-CUDA_TAG=cu117 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-pip install cython
+git clone --recursive https://github.com/roedoejet/EveryVoice.git
+cd EveryVoice
+bash make-fresh-env.sh <env-name-of-your-choice>
+conda activate <env-name-of-your-choice>
 ```
 
 Installation will require a fair bit of space on `~/.cache` and your `$TMPDIR`
@@ -26,17 +24,6 @@ Installation will require a fair bit of space on `~/.cache` and your `$TMPDIR`
 to do one or both of these operations:
  - `export TMPDIR=/path/to/a/large/tmp/space` (or maybe `export TMPDIR=.`)
  - `mkdir /path/to/a/large/filesystem/.cache; ln -s /path/to/a/large/filesystem/.cache ~/.cache`
-
-### Install
-
-Clone the repository and `pip` install it locally:
-
-```sh
-git clone https://github.com/roedoejet/EveryVoice.git
-cd EveryVoice
-git submodule update --init
-pip install -e .
-```
 
 ### Documentation
 
@@ -50,7 +37,7 @@ Feel free to dive in! [Open an issue](https://github.com/roedoejet/EveryVoice/is
 
 This repo follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
-You can install our standard Git hooks by running these commands in your sandbox:
+Make sure our standard Git hooks are running these commands in your sandbox (if you used our `make-fresh-env.sh` script then this step is already done for you.):
 
 ```sh
 pip install -r requirements.dev.txt
@@ -61,24 +48,6 @@ gitlint install-hook
 Have a look at [Contributing.md](Contributing.md) for the full details on the
 Conventional Commit messages we prefer, our code formatting conventions, and
 our Git hooks.
-
-You can then interactively install the package by running the following command from the project root:
-
-```sh
-pip install -e .
-```
-
-## Automated installation
-
-All the installation steps documented here have been automated and can be triggered with:
-
-```sh
-git clone https://github.com/roedoejet/EveryVoice.git
-cd EveryVoice
-git submodule update --init
-bash make-fresh-env.sh <env-name-of-your-choice>
-conda activate <env-name-of-your-choice>
-```
 
 ## Acknowledgements
 
