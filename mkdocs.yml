@@ -53,6 +53,8 @@ nav:
     - Background to TTS: guides/background.md
     - Customize to your language: guides/custom.md
     - How to fine-tune: guides/finetune.md
+  - Advanced:
+    - How to Setup Code Completion for Schemas in vim: guides/schemas.md
   - Reference:
     - How to use: reference/index.md
     - Configuration: reference/configuration.md
