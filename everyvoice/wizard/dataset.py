@@ -258,7 +258,7 @@ class HeaderStep(Step):
 
 class HasSpeakerStep(Step):
     DEFAULT_NAME = StepNames.data_has_speaker_value_step
-    choices = ("yes", "no")
+    choices = ("no", "yes")
 
     def prompt(self):
         if self.state[StepNames.filelist_format_step.value] == "festival":
@@ -287,7 +287,7 @@ class HasSpeakerStep(Step):
 
 class HasLanguageStep(Step):
     DEFAULT_NAME = StepNames.data_has_language_value_step
-    choices = ("yes", "no")
+    choices = ("no", "yes")
 
     def prompt(self):
         if self.state[StepNames.filelist_format_step.value] == "festival":
