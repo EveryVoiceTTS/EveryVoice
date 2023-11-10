@@ -453,7 +453,7 @@ class SoxEffectsStep(Step):
             choices=(
                 "Resample to suggested sample rate: 22050 kHz",
                 "Normalization (-3.0dB)",
-                "Remove Silence at Start",
+                "Remove Silence at start and end",
                 "Remove Silence throughout",
             ),
             multi=True,
@@ -468,7 +468,18 @@ class SoxEffectsStep(Step):
         audio_effects = {
             0: ["rate", "22050"],
             1: ["norm", "-3.0"],
-            2: ["silence", "1", "0.1", "1.0%"],
+            2: [
+                "silence",
+                "1",
+                "0.1",
+                "0.1%",
+                "reverse",  # reverse the clip to trim silence from end
+                "silence",
+                "1",
+                "0.1",
+                "0.1%",
+                "reverse",  # reverse the clip again to revert to the right direction :)
+            ],
             3: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
         }
         self.state["sox_effects"] = [["channel", "1"]]
