@@ -7,3 +7,6 @@
 [submodule "everyvoice/model/vocoder/HiFiGAN_iSTFT_lightning"]
 	path = everyvoice/model/vocoder/HiFiGAN_iSTFT_lightning
 	url = ../HiFiGAN_iSTFT_lightning.git
+[submodule "everyvoice/model/aligner/wav2vec2aligner"]
+	path = everyvoice/model/aligner/wav2vec2aligner
+	url = ../wav2vec2aligner.git

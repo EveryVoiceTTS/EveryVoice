@@ -10,6 +10,9 @@ from everyvoice._version import VERSION
 from everyvoice.config.preprocessing_config import PreprocessingConfig
 from everyvoice.config.text_config import TextConfig
 from everyvoice.model.aligner.config import AlignerConfig
+from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
+    align_single as ctc_segment,
+)
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
@@ -56,6 +59,11 @@ app = typer.Typer(
 
     To run the new dataset wizard please use the following command: everyvoice new-dataset
 
+    ## Segment long files in your dataset
+
+    If you have long audio files that contain more than one utterance,
+    you can use the segmentation tool by running everyvoice segment [OPTIONS]
+
     ## Preprocess
 
     Once you have a configuration, preprocess your data by running everyvoice preprocess [OPTIONS]
@@ -79,6 +87,18 @@ app = typer.Typer(
 class ModelTypes(str, Enum):
     text_to_spec = "text-to-spec"
     spec_to_wav = "spec-to-wav"
+
+
+app.command(
+    short_help="Segment a long audio file",
+    name="segment",
+    help="""
+    # Segmentation help
+
+    This command will segment a long audio file into multiple utterances which is required for training a TTS system.
+    This command should work on most languages and you should run it before running the new dataset or preprocessing steps.
+    """,
+)(ctc_segment)
 
 
 @app.command(

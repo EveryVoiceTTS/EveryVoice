@@ -11,9 +11,12 @@ import sys
 sys.path.append(
     os.path.join(parent_folder_path, "model", "aligner", "DeepForcedAligner")
 )
+sys.path.append(os.path.join(parent_folder_path, "model", "aligner", "wav2vec2aligner"))
 sys.path.append(
-    os.path.join(parent_folder_path, "model", "aligner", "FastSpeech2_lightning")
+    os.path.join(
+        parent_folder_path, "model", "feature_prediction", "FastSpeech2_lightning"
+    )
 )
 sys.path.append(
-    os.path.join(parent_folder_path, "model", "aligner", "HiFiGAN_iSTFT_lightning")
+    os.path.join(parent_folder_path, "model", "vocoder", "HiFiGAN_iSTFT_lightning")
 )
