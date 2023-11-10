@@ -35,12 +35,6 @@ def preprocess_base_command_interface(
     config_args: List[str] = typer.Option(
         None, "-c", "--config-args", help="Overwrite the configuration"
     ),
-    output_path: Optional[Path] = typer.Option(
-        "filelist.psv",
-        "-o",
-        "--output",
-        help="The path to where the processed data filelist should be written",
-    ),
     cpus: Optional[int] = typer.Option(
         min(4, mp.cpu_count()),
         "-C",
