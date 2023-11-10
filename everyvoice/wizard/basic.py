@@ -10,7 +10,7 @@ from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
 from everyvoice.config.shared_types import BaseTrainingConfig, LoggerConfig
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.aligner.config import AlignerConfig
-from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import generic_psv_dict_reader, write_filelist
@@ -102,9 +102,8 @@ class ConfigFormatStep(Step):
         config_dir.absolute().mkdir(exist_ok=True, parents=True)
         (config_dir / "../preprocessed").absolute().mkdir(parents=True, exist_ok=True)
         # log dir
-        log_dir = LoggerConfig().save_dir.stem
-        log_dir = Path("..") / log_dir
-        (config_dir / log_dir).absolute().mkdir(parents=True, exist_ok=True)
+        log_dir = config_dir / ".." / "logs_and_checkpoints"
+        log_dir.absolute().mkdir(parents=True, exist_ok=True)
         datasets = []
         # Text Configuration
         punctuation = []
@@ -258,9 +257,13 @@ class ConfigFormatStep(Step):
             (config_dir / vocoder_config_path).absolute(),
         )
         # E2E Config
+
         e2e_logger = LoggerConfig(name="E2E-Experiment", save_dir=log_dir)
         e2e_config = EveryVoiceConfig(
-            training=BaseTrainingConfig(
+            aligner=aligner_config,
+            feature_prediction=fp_config,
+            vocoder=vocoder_config,
+            training=E2ETrainingConfig(
                 training_filelist=preprocessed_training_filelist_path,
                 validation_filelist=preprocessed_validation_filelist_path,
                 logger=e2e_logger,
