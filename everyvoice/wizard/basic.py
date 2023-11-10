@@ -132,8 +132,16 @@ class ConfigFormatStep(Step):
             ).expanduser()
             for entry_i in range(len(self.state[dataset]["filelist_data"])):
                 # Remove .wav if it was added to the basename
-                if self.state[dataset]["filelist_data"][entry_i]["basename"].endswith(".wav"):
-                    self.state[dataset]["filelist_data"][entry_i]["basename"] = self.state[dataset]["filelist_data"][entry_i]["basename"].replace('.wav', '')
+                if self.state[dataset]["filelist_data"][entry_i]["basename"].endswith(
+                    ".wav"
+                ):
+                    self.state[dataset]["filelist_data"][entry_i][
+                        "basename"
+                    ] = self.state[dataset]["filelist_data"][entry_i][
+                        "basename"
+                    ].replace(
+                        ".wav", ""
+                    )
                 self.state[dataset]["filelist_data"][entry_i] = {
                     k: v
                     for k, v in self.state[dataset]["filelist_data"][entry_i].items()
@@ -299,7 +307,7 @@ class MoreDatasetsStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
             "Do you have more datasets to process?",
-            ["yes", "no"],
+            ["no", "yes"],
         )
 
     def validate(self, response):
