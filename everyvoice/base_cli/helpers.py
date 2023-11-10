@@ -60,7 +60,6 @@ def preprocess_base_command(
     # Must include the above in model-specific command
     config_args: List[str],
     config_file: Path,
-    output_path: Optional[Path],
     cpus: Optional[int],
     overwrite: bool,
     debug: bool,
@@ -72,7 +71,6 @@ def preprocess_base_command(
     if isinstance(config, FastSpeech2Config) and config.model.use_phonological_feats:
         steps.append("pfs")
     preprocessor.preprocess(
-        output_path=output_path,
         cpus=cpus,
         overwrite=overwrite,
         to_process=steps,
