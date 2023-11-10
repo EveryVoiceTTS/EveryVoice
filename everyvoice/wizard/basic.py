@@ -31,7 +31,9 @@ class NameStep(Step):
     DEFAULT_NAME = StepNames.name_step
 
     def prompt(self):
-        return input("What would you like to call this project? ")
+        return input(
+            "What would you like to call this project? This name should reflect the model you intend to train, e.g. 'my-sinhala-project' or 'english-french-model' or something similarly descriptive of your project: "
+        )
 
     def validate(self, response):
         if len(response) == 0:
