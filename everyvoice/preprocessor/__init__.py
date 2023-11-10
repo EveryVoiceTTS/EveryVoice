@@ -24,7 +24,7 @@ from tabulate import tabulate
 from torchaudio import load as load_audio
 from torchaudio import save as save_audio
 from torchaudio import transforms
-from torchaudio.functional import compute_kaldi_pitch, resample
+from torchaudio.functional import resample
 from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
@@ -332,21 +332,6 @@ class Preprocessor:
             pitch[pitch == 0] = np.nan
             pitch = self._interpolate(pitch)
             pitch = torch.tensor(pitch).float()
-        elif self.config.preprocessing.pitch_type == PitchCalculationMethod.kaldi.value:
-            pitch = compute_kaldi_pitch(
-                waveform=audio_tensor,
-                sample_rate=self.input_sampling_rate,
-                frame_length=self.audio_config.fft_window_frames
-                / self.input_sampling_rate
-                * 1000,
-                frame_shift=self.audio_config.fft_hop_frames
-                / self.input_sampling_rate
-                * 1000,
-                min_f0=50,
-                max_f0=400,
-            )[0][
-                ..., 1
-            ]  # TODO: the docs and C Minxhoffer implementation take [..., 0] but this doesn't appear to be the pitch, at least for this version of torchaudio.
         else:
             raise ConfigError(
                 f"Sorry, the pitch estimation type '{self.config.preprocessing.pitch_type}' is not supported. Please edit your config file."

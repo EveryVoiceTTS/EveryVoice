@@ -636,15 +636,6 @@
       "title": "EarlyStoppingMetricEnum",
       "type": "string"
     },
-    "EmbeddingTypeEnum": {
-      "enum": [
-        "id",
-        "dvector",
-        "none"
-      ],
-      "title": "EmbeddingTypeEnum",
-      "type": "string"
-    },
     "FastSpeech2Config": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -805,7 +796,9 @@
           "type": "boolean"
         },
         "multispeaker": {
-          "$ref": "#/$defs/MultiSpeakerConfig"
+          "default": false,
+          "title": "Multispeaker",
+          "type": "boolean"
         }
       },
       "title": "FastSpeech2ModelConfig",
@@ -1354,32 +1347,6 @@
       "title": "LoggerConfig",
       "type": "object"
     },
-    "MultiSpeakerConfig": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "embedding_type": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/EmbeddingTypeEnum"
-            }
-          ],
-          "default": "none"
-        },
-        "every_layer": {
-          "default": false,
-          "title": "Every Layer",
-          "type": "boolean"
-        },
-        "dvector_gmm": {
-          "default": false,
-          "title": "Dvector Gmm",
-          "type": "boolean"
-        }
-      },
-      "title": "MultiSpeakerConfig",
-      "type": "object"
-    },
     "NoamOptimizer": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -1434,7 +1401,6 @@
     "PitchCalculationMethod": {
       "enum": [
         "pyworld",
-        "kaldi",
         "cwt"
       ],
       "title": "PitchCalculationMethod",
