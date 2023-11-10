@@ -90,6 +90,7 @@ if ! r pip install $PY_COUNTRY_WORLD; then
     r conda install -y $PY_COUNTRY_WORLD -c conda-forge
 fi
 
+r conda install -y sox -c conda-forge
 r pip install -e .
 r pip install -r requirements.dev.txt
 echo ""
