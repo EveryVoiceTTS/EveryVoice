@@ -217,7 +217,7 @@ class Preprocessor:
         Returns:
             [Tensor, int]: audio Tensor, sampling rate
         """
-        audio, sr = load_audio(wav_path)
+        audio, sr = load_audio(str(wav_path))
         seconds = len(audio[0]) / sr
 
         if seconds > self.audio_config.max_audio_length:
