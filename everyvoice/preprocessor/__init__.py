@@ -164,12 +164,11 @@ class Preprocessor:
         )
         # Define Spectral Transform
         # Gah, so many ways to do this: https://github.com/CookiePPP/VocoderComparisons/issues/3
-
         self.input_spectral_transform = get_spectral_transform(
             self.audio_config.spec_type,
             self.audio_config.n_fft,
-            self.audio_config.fft_window_frames,
-            self.audio_config.fft_hop_frames,
+            self.audio_config.fft_window_size,
+            self.audio_config.fft_hop_size,
             sample_rate=self.input_sampling_rate,
             n_mels=self.audio_config.n_mels,
             f_min=self.audio_config.f_min,
@@ -178,8 +177,8 @@ class Preprocessor:
         self.output_spectral_transform = get_spectral_transform(
             self.audio_config.spec_type,
             self.audio_config.n_fft * self.sampling_rate_change,
-            self.audio_config.fft_window_frames * self.sampling_rate_change,
-            self.audio_config.fft_hop_frames * self.sampling_rate_change,
+            self.audio_config.fft_window_size * self.sampling_rate_change,
+            self.audio_config.fft_hop_size * self.sampling_rate_change,
             sample_rate=self.input_sampling_rate,
             n_mels=self.audio_config.n_mels,
             f_min=self.audio_config.f_min,
@@ -273,7 +272,7 @@ class Preprocessor:
                 audio,
                 sr,
                 encoding="PCM_S",
-                bits_per_sample=self.audio_config.alignment_bit_depth,
+                bits_per_sample=self.audio_config.target_bit_depth,
             )
         audio = audio.squeeze()  # get rid of channels dimension
         return audio, sr
@@ -326,7 +325,7 @@ class Preprocessor:
                     np.float64
                 ),  # TODO: why are these np.float64, maybe it's just what pw expects?
                 self.input_sampling_rate,
-                frame_period=self.audio_config.fft_hop_frames
+                frame_period=self.audio_config.fft_hop_size
                 / self.input_sampling_rate
                 * 1000,
                 speed=4,

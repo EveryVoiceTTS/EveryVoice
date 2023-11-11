@@ -34,7 +34,7 @@ class E2EDataset(Dataset):
             self.output_sampling_rate // self.input_sampling_rate
         )
         self.output_hop_size = (
-            self.config.vocoder.preprocessing.audio.fft_hop_frames
+            self.config.vocoder.preprocessing.audio.fft_hop_size
             * self.sampling_rate_change
         )
         self.frame_segment_size = (

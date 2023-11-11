@@ -52,7 +52,7 @@ class EveryVoice(pl.LightningModule):
             self.stats: Stats = Stats(**json.load(f))
         self.input_frame_segment_size = (
             self.config.vocoder.preprocessing.audio.vocoder_segment_size
-            // self.config.vocoder.preprocessing.audio.fft_hop_frames
+            // self.config.vocoder.preprocessing.audio.fft_hop_size
         )
         self.use_segments = True
 
