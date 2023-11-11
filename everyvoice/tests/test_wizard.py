@@ -228,12 +228,12 @@ class WizardTest(TestCase):
         self.assertFalse(step.validate("foo"))
         self.assertTrue(step.validate("yes"))
         self.assertEqual(len(step.children), 0)
-        with patch_menu_prompt(1):  # answer 1 is "no"
+        with patch_menu_prompt(0):  # answer 0 is "no"
             step.run()
         self.assertEqual(len(step.children), 1)
         self.assertIsInstance(step.children[0], basic.ConfigFormatStep)
 
-        with patch_menu_prompt(0):  # answer 0 is "yes"
+        with patch_menu_prompt(1):  # answer 1 is "yes"
             step.run()
         self.assertGreater(len(step.children), 5)
 
@@ -329,13 +329,13 @@ class WizardTest(TestCase):
 
         speaker_step = find_step(SN.data_has_speaker_value_step, tour.steps)
         children_before = len(speaker_step.children)
-        with patch_menu_prompt(1):  # 1 is "no"
+        with patch_menu_prompt(0):  # 0 is "no"
             speaker_step.run()
         self.assertEqual(len(speaker_step.children), children_before)
 
         language_step = find_step(SN.data_has_language_value_step, tour.steps)
         children_before = len(language_step.children)
-        with patch_menu_prompt(1):  # 1 is "no"
+        with patch_menu_prompt(0):  # 0 is "no"
             language_step.run()
         self.assertEqual(len(language_step.children), children_before + 1)
         self.assertIsInstance(language_step.children[0], dataset.SelectLanguageStep)
@@ -362,13 +362,28 @@ class WizardTest(TestCase):
         )
 
         sox_effects_step = find_step(SN.sox_effects_step, tour.steps)
-        # 0 is resample to 22050 kHz, 2 is remove silence at start
+        # 0 is resample to 22050 kHz, 2 is remove silence at start and end
         with patch_menu_prompt([0, 2]):
             sox_effects_step.run()
         # print(sox_effects_step.state["sox_effects"])
         self.assertEqual(
             sox_effects_step.state["sox_effects"],
-            [["channel", "1"], ["rate", "22050"], ["silence", "1", "0.1", "1.0%"]],
+            [
+                ["channel", "1"],
+                ["rate", "22050"],
+                [
+                    "silence",
+                    "1",
+                    "0.1",
+                    "0.1%",
+                    "reverse",
+                    "silence",
+                    "1",
+                    "0.1",
+                    "0.1%",
+                    "reverse",
+                ],
+            ],
         )
 
         symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
