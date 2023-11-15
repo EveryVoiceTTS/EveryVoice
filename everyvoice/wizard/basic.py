@@ -170,7 +170,7 @@ class ConfigFormatStep(Step):
         )
         text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
         write_dict_to_config(
-            json.loads(text_config.model_dump_json(exclude_none=True)),
+            json.loads(text_config.model_dump_json(exclude_none=False)),
             (config_dir / text_config_path).absolute(),
         )
         # Preprocessing Config
@@ -189,7 +189,7 @@ class ConfigFormatStep(Step):
             f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.{self.response}"
         )
         write_dict_to_config(
-            json.loads(preprocessing_config.model_dump_json(exclude_none=True)),
+            json.loads(preprocessing_config.model_dump_json(exclude_none=False)),
             (config_dir / preprocessing_config_path).absolute(),
         )
         ## Create Aligner Config
@@ -208,7 +208,7 @@ class ConfigFormatStep(Step):
         aligner_config_path = Path(f"{ALIGNER_CONFIG_FILENAME_PREFIX}.{self.response}")
         aligner_config_json = json.loads(
             aligner_config.model_dump_json(
-                exclude_none=True, exclude={"preprocessing": True, "text": True}
+                exclude_none=False, exclude={"preprocessing": True, "text": True}
             )
         )
         aligner_config_json["path_to_preprocessing_config_file"] = str(
@@ -231,7 +231,7 @@ class ConfigFormatStep(Step):
         fp_config_path = Path(f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}")
         fp_config_json = json.loads(
             fp_config.model_dump_json(
-                exclude_none=True, exclude={"preprocessing": True, "text": True}
+                exclude_none=False, exclude={"preprocessing": True, "text": True}
             )
         )
         fp_config_json["path_to_preprocessing_config_file"] = str(
@@ -256,7 +256,7 @@ class ConfigFormatStep(Step):
         )
         vocoder_config_json = json.loads(
             vocoder_config.model_dump_json(
-                exclude_none=True, exclude={"preprocessing": True}
+                exclude_none=False, exclude={"preprocessing": True}
             )
         )
         vocoder_config_json["path_to_preprocessing_config_file"] = str(
@@ -281,7 +281,7 @@ class ConfigFormatStep(Step):
         )
         e2e_config_json = json.loads(
             e2e_config.model_dump_json(
-                exclude_none=True,
+                exclude_none=False,
                 exclude={"aligner": True, "feature_prediction": True, "vocoder": True},
             )
         )
