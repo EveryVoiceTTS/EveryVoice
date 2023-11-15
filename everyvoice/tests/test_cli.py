@@ -3,16 +3,24 @@
 import json
 import tempfile
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest import TestCase, main
 
 import jsonschema
+import yaml
 from typer.testing import CliRunner
+from yaml import CLoader as Loader
 
 # required for `./run_tests.py cli` to work, otherwise test_inspect_checkpoint
 # fails with an Intel MKL FATAL ERROR saying it cannot load libtorch_cpu.so
 import everyvoice.tests.test_model  # noqa
 from everyvoice import __file__ as EV_FILE
+from everyvoice.base_cli.helpers import save_configuration_to_log_dir
 from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
+    FastSpeech2Config,
+)
+from everyvoice.tests.stubs import mute_logger
 
 EV_DIR = Path(EV_FILE).parent
 
@@ -76,6 +84,45 @@ class CLITest(TestCase):
         )
         self.assertIn("It appears to have 0.0 M parameters.", result.stdout)
         self.assertIn("Number of Parameters", result.stdout)
+
+
+class TestBaseCLIHelper(TestCase):
+    """ """
+
+    def test_save_configuration_to_log_dir(self):
+        """ """
+        with TemporaryDirectory() as tempdir, mute_logger(
+            "everyvoice.base_cli.helpers"
+        ):
+            tempdir = Path(tempdir)
+            config = FastSpeech2Config(
+                **{
+                    "training": {
+                        "logger": {
+                            "save_dir": tempdir / "log",
+                            "name": "unittest",
+                        },
+                    },
+                }
+            )
+            save_configuration_to_log_dir(config)
+
+            log_dir = config.training.logger.save_dir / config.training.logger.name
+            log = log_dir / "log"
+            self.assertTrue(log.exists())
+
+            hparams = log_dir / "hparams.yaml"
+            self.assertTrue(hparams.exists())
+            with hparams.open(mode="r", encoding="UTF8") as f:
+                config_reloaded = yaml.load(f, Loader=Loader)
+                self.assertEqual(
+                    config.training.logger.save_dir,
+                    Path(config_reloaded["training"]["logger"]["save_dir"]),
+                )
+                self.assertEqual(
+                    config.training.logger.name,
+                    config_reloaded["training"]["logger"]["name"],
+                )
 
 
 if __name__ == "__main__":
