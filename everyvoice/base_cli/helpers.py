@@ -4,12 +4,14 @@
     We want to do it this way to preserve the functionality from typer's command() decorator
     inferring information from the function signature while still keeping code DRY.
 """
+import json
 import os
 from enum import Enum
 from pathlib import Path
 from pprint import pformat
 from typing import List, Optional, Union
 
+import yaml
 from deepdiff import DeepDiff
 from loguru import logger
 from tqdm import tqdm
@@ -79,6 +81,27 @@ def preprocess_base_command(
     return preprocessor, config, steps
 
 
+def save_configuration_to_log_dir(
+    config: Union[DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig]
+):
+    """
+    Adds a logging file to the module's logger.
+    Records to hparams.yaml the function's configuration.
+    """
+    log_dir = config.training.logger.save_dir / config.training.logger.name
+    log_dir.mkdir(exist_ok=True, parents=True)
+    logger.add(log_dir / "log")
+
+    hyperparameters_log = log_dir / "hparams.yaml"
+    hyperparameters_log.parent.mkdir(parents=True, exist_ok=True)
+    logger.info(
+        f"Configuration\n{config.model_dump_json(indent=3)}"
+    )  # Once to be logged
+    with hyperparameters_log.open(mode="w", encoding="UTF-8") as cout:
+        output = json.loads(config.model_dump_json())
+        yaml.dump(output, stream=cout)
+
+
 def train_base_command(
     model_config: Union[
         DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
@@ -98,6 +121,9 @@ def train_base_command(
     gradient_clip_val: float,
 ):
     config = load_config_base_command(model_config, config_args, config_file)
+
+    save_configuration_to_log_dir(config)
+
     logger.info("Loading modules for training...")
     pbar = tqdm(range(4))
     pbar.set_description("Loading pytorch and friends")
@@ -146,6 +172,7 @@ def train_base_command(
         gradient_clip_val=gradient_clip_val,
     )
     model_obj = model(config)
+    logger.info(f"Model's architecture\n{model_obj}")
     data = data_module(config)  # type: ignore
     last_ckpt = (
         config.training.finetune_checkpoint

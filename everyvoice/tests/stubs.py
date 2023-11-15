@@ -3,6 +3,8 @@ import logging
 from contextlib import contextmanager, redirect_stdout
 from typing import Any, Generator, Sequence, Union
 
+from loguru import logger
+
 from everyvoice.wizard import prompts
 
 _NOTSET = object()  # Sentinel object for monkeypatch()
@@ -41,6 +43,19 @@ def patch_logger(
     with monkeypatch(module, "logger", logging.getLogger("UnitTesting")) as logger:
         logger.setLevel(level)
         yield logger
+
+
+@contextmanager
+def mute_logger(module) -> Generator[None, None, None]:
+    """
+    Temporarily mutes a module's `logger`.
+
+    with mute_logger("everyvoice.base_cli.helpers"):
+        config = FastSpeech2Config()
+    """
+    logger.disable(module)
+    yield
+    logger.enable(module)
 
 
 @contextmanager
