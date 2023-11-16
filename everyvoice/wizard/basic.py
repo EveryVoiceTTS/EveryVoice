@@ -88,11 +88,11 @@ class ConfigFormatStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
             "Which format would you like to output the configuration to?",
-            ["yaml", "json"],
+            ("yaml", "json"),
         )
 
     def validate(self, response):
-        return response in ["yaml", "json"]
+        return response in ("yaml", "json")
 
     def effect(self):
         output_path = (
@@ -309,11 +309,11 @@ class MoreDatasetsStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
             "Do you have more datasets to process?",
-            ["no", "yes"],
+            ("no", "yes"),
         )
 
     def validate(self, response):
-        return response in ["yes", "no"]
+        return response in ("yes", "no")
 
     def effect(self):
         if self.response == "yes":
