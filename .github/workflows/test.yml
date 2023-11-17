@@ -22,7 +22,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.9
-      - name: Install libsndfile & sox
+      - name: Install sox
         run: |
           conda install -y sox -c conda-forge
       - name: Install dependencies and package

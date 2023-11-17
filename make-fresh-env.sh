@@ -3,7 +3,7 @@
 
 # Edit this line to match your CUDA version or set CUDA_VERSION in the calling
 # environment.
-CUDA_VERSION=${CUDA_VERSION:=11.7}
+CUDA_VERSION=${CUDA_VERSION:=11.8}
 
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     echo "Usage: bash make-fresh-env.sh [ENV_NAME]"
