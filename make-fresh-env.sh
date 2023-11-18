@@ -3,7 +3,7 @@
 
 # Edit this line to match your CUDA version or set CUDA_VERSION in the calling
 # environment.
-CUDA_VERSION=${CUDA_VERSION:=11.7}
+CUDA_VERSION=${CUDA_VERSION:=11.8}
 
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
     echo "Usage: bash make-fresh-env.sh [ENV_NAME]"
@@ -90,6 +90,7 @@ if ! r pip install $PY_COUNTRY_WORLD; then
     r conda install -y $PY_COUNTRY_WORLD -c conda-forge
 fi
 
+r conda install -y sox -c conda-forge
 r pip install -e .
 r pip install -r requirements.dev.txt
 echo ""

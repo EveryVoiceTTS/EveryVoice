@@ -22,13 +22,12 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.9
-      - name: Install libsndfile
+      - name: Install sox
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libsndfile1
+          conda install -y sox -c conda-forge
       - name: Install dependencies and package
         run: |
-          CUDA_TAG=cu117 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+          CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
           pip install -r requirements.test.txt
           pip install cython
           pip install -e .

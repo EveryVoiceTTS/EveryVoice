@@ -446,7 +446,6 @@
     "PitchCalculationMethod": {
       "enum": [
         "pyworld",
-        "kaldi",
         "cwt"
       ],
       "title": "PitchCalculationMethod",

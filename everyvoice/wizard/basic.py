@@ -31,7 +31,9 @@ class NameStep(Step):
     DEFAULT_NAME = StepNames.name_step
 
     def prompt(self):
-        return input("What would you like to call this project? ")
+        return input(
+            "What would you like to call this project? This name should reflect the model you intend to train, e.g. 'my-sinhala-project' or 'english-french-model' or something similarly descriptive of your project: "
+        )
 
     def validate(self, response):
         if len(response) == 0:
@@ -86,11 +88,11 @@ class ConfigFormatStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
             "Which format would you like to output the configuration to?",
-            ["yaml", "json"],
+            ("yaml", "json"),
         )
 
     def validate(self, response):
-        return response in ["yaml", "json"]
+        return response in ("yaml", "json")
 
     def effect(self):
         output_path = (
@@ -132,8 +134,16 @@ class ConfigFormatStep(Step):
             ).expanduser()
             for entry_i in range(len(self.state[dataset]["filelist_data"])):
                 # Remove .wav if it was added to the basename
-                if self.state[dataset]["filelist_data"][entry_i]["basename"].endswith(".wav"):
-                    self.state[dataset]["filelist_data"][entry_i]["basename"] = self.state[dataset]["filelist_data"][entry_i]["basename"].replace('.wav', '')
+                if self.state[dataset]["filelist_data"][entry_i]["basename"].endswith(
+                    ".wav"
+                ):
+                    self.state[dataset]["filelist_data"][entry_i][
+                        "basename"
+                    ] = self.state[dataset]["filelist_data"][entry_i][
+                        "basename"
+                    ].replace(
+                        ".wav", ""
+                    )
                 self.state[dataset]["filelist_data"][entry_i] = {
                     k: v
                     for k, v in self.state[dataset]["filelist_data"][entry_i].items()
@@ -299,11 +309,11 @@ class MoreDatasetsStep(Step):
     def prompt(self):
         return get_response_from_menu_prompt(
             "Do you have more datasets to process?",
-            ["yes", "no"],
+            ("no", "yes"),
         )
 
     def validate(self, response):
-        return response in ["yes", "no"]
+        return response in ("yes", "no")
 
     def effect(self):
         if self.response == "yes":

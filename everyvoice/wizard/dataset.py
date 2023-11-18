@@ -20,7 +20,9 @@ class DatasetNameStep(Step):
     DEFAULT_NAME = StepNames.dataset_name_step
 
     def prompt(self):
-        return input("What would you like to call this dataset? ")
+        return input(
+            "What would you like to call this dataset? This is needed because EveryVoice lets you train models with multiple sources of data. Please choose a name that distinguishes this data source, e.g. 'john-english' or 'maria-spanish' or something similarly descriptive: "
+        )
 
     def validate(self, response):
         if len(response) == 0:
@@ -258,7 +260,7 @@ class HeaderStep(Step):
 
 class HasSpeakerStep(Step):
     DEFAULT_NAME = StepNames.data_has_speaker_value_step
-    choices = ("yes", "no")
+    choices = ("no", "yes")
 
     def prompt(self):
         if self.state[StepNames.filelist_format_step.value] == "festival":
@@ -287,7 +289,7 @@ class HasSpeakerStep(Step):
 
 class HasLanguageStep(Step):
     DEFAULT_NAME = StepNames.data_has_language_value_step
-    choices = ("yes", "no")
+    choices = ("no", "yes")
 
     def prompt(self):
         if self.state[StepNames.filelist_format_step.value] == "festival":
@@ -453,7 +455,7 @@ class SoxEffectsStep(Step):
             choices=(
                 "Resample to suggested sample rate: 22050 kHz",
                 "Normalization (-3.0dB)",
-                "Remove Silence at Start",
+                "Remove Silence at start and end",
                 "Remove Silence throughout",
             ),
             multi=True,
@@ -468,7 +470,18 @@ class SoxEffectsStep(Step):
         audio_effects = {
             0: ["rate", "22050"],
             1: ["norm", "-3.0"],
-            2: ["silence", "1", "0.1", "1.0%"],
+            2: [
+                "silence",
+                "1",
+                "0.1",
+                "0.1%",
+                "reverse",  # reverse the clip to trim silence from end
+                "silence",
+                "1",
+                "0.1",
+                "0.1%",
+                "reverse",  # reverse the clip again to revert to the right direction :)
+            ],
             3: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
         }
         self.state["sox_effects"] = [["channel", "1"]]

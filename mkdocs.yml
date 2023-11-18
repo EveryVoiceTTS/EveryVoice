@@ -46,7 +46,7 @@ markdown_extensions:
   - toc:
       permalink: true
 nav:
-  - Getting Started: start.md
+  - Getting Started: index.md
   - Installation: install.md
   - Guides:
     - Getting Started: guides/index.md

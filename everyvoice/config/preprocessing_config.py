@@ -46,7 +46,6 @@ class AudioConfig(ConfigModel):
 
 class PitchCalculationMethod(Enum):
     pyworld = "pyworld"
-    kaldi = "kaldi"
     cwt = "cwt"
 
 

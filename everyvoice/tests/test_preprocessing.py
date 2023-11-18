@@ -158,17 +158,11 @@ class PreprocessingTest(TestCase):
             self.assertEqual(complex_feats.size(1), linear_feats.size(1))
 
     def test_pitch(self):
-        kaldi_config = VocoderConfig(
-            preprocessing=PreprocessingConfig(
-                pitch_phone_averaging=False, pitch_type=PitchCalculationMethod.kaldi
-            )
-        )
         pyworld_config = VocoderConfig(
             preprocessing=PreprocessingConfig(
                 pitch_phone_averaging=False, pitch_type=PitchCalculationMethod.pyworld
             )
         )
-        preprocessor_kaldi = Preprocessor(kaldi_config)
         preprocessor_pyworld = Preprocessor(pyworld_config)
 
         for entry in self.filelist[1:]:
@@ -196,17 +190,7 @@ class PreprocessingTest(TestCase):
             #     / "ming024"
             #     / ("eng-LJSpeech-pitch-" + entry["filename"] + ".npy")
             # )
-            frame_pitch_kaldi = preprocessor_kaldi.extract_pitch(audio.unsqueeze(0))
-            kaldi_phone_avg_energy = preprocessor_kaldi.average_data_by_durations(
-                frame_pitch_kaldi, durs
-            )
-            # Ensure same number of frames
-            # TODO: Kaldi DOESN'T actually produce the right length tensors here
-            # self.assertEqual(
-            #     frame_pitch_kaldi.size(0) - 2, feats.size(1)
-            # )
             # Ensure avg pitch for each phone
-            self.assertEqual(len(durs), kaldi_phone_avg_energy.size(0))
             frame_pitch_pyworld = preprocessor_pyworld.extract_pitch(audio)
             pyworld_phone_avg_energy = preprocessor_pyworld.average_data_by_durations(
                 frame_pitch_pyworld, durs
