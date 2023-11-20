@@ -55,6 +55,16 @@ Install EveryVoice locally from your cloned sandbox:
 pip install -e .
 ```
 
+### Installation for use on CPU only
+
+The steps above use CUDA_VERSION (automated) or CUDA_TAG (manual) to specify the version of CUDA you are using. If you want to train a system for use on CPU only, use the value `cpu`:
+
+```sh
+CUDA_VERSION=cpu bash make-fresh-env.sh EveryVoice-cpu
+```
+
+or `CUDA_TAG=cpu` in the manual installation process.
+
 ### Documentation
 
 Read the full [EveryVoice documentation](https://docs.everyvoice.ca/).

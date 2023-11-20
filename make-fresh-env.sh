@@ -2,7 +2,10 @@
 # instructions in readme.md
 
 # Edit this line to match your CUDA version or set CUDA_VERSION in the calling
-# environment.
+# environment, e.g.:
+#    CUDA_VERSION=11.9 bash make-fresh-env.sh EveryVoice
+# Use the value CPU for a CPU-only installation, e.g.
+#    CUDA_VERSION=CPU bash make-fresh-env.sh EveryVoice-cpu
 CUDA_VERSION=${CUDA_VERSION:=11.8}
 
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
@@ -34,22 +37,27 @@ if git submodule status | grep -q "^-"; then
     exit 1
 fi
 
-if which nvidia-smi >& /dev/null && nvidia-smi | grep -q CUDA; then
-    if nvidia-smi | grep -q "CUDA Version: $CUDA_VERSION "; then
-        : # CUDA version OK
-    else
-        echo "Mismatched CUDA version. Please set CUDA_VERSION to what is installed on your system."
-        echo -n "Found: "
-        nvidia-smi | grep CUDA
-        echo "Specified: CUDA_VERSION=$CUDA_VERSION"
-        exit 1
-    fi
+if [[ $CUDA_VERSION == CPU || $CUDA_VERSION == cpu ]]; then
+    echo "Creating EveryVoice conda environment called \"$ENV_NAME\" for use on CPU only."
+    CUDA_TAG=cpu
 else
-    echo "Please make sure the CUDA version installed on your system matches CUDA_VERSION=$CUDA_VERSION."
+    if which nvidia-smi >& /dev/null && nvidia-smi | grep -q CUDA; then
+        if nvidia-smi | grep -q "CUDA Version: $CUDA_VERSION "; then
+            : # CUDA version OK
+        else
+            echo "Mismatched CUDA version. Please set CUDA_VERSION to what is installed on your system."
+            echo -n "Found: "
+            nvidia-smi | grep CUDA
+            echo "Specified: CUDA_VERSION=$CUDA_VERSION"
+            exit 1
+        fi
+    else
+        echo "Please make sure the CUDA version installed on your system matches CUDA_VERSION=$CUDA_VERSION."
+    fi
+    CUDA_TAG=cu$(echo $CUDA_VERSION | sed 's/\.//g')
+    echo "Creating EveryVoice conda environment called \"$ENV_NAME\" for CUDA $CUDA_VERSION."
 fi
-CUDA_TAG=cu$(echo $CUDA_VERSION | sed 's/\.//g')
 
-echo "Creating EveryVoice conda environment called \"$ENV_NAME\" for CUDA $CUDA_VERSION."
 echo -n "Proceed (y/[n])? "
 read proceed
 if [[ "$proceed" =~ ^[y|Y] ]]; then
