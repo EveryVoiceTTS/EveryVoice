@@ -209,14 +209,14 @@ class Preprocessor:
         sox_effects=None,
         save_wave=False,
         update_counters=True,  # unset this when processing the same file a second time
-    ) -> Optional[torch.Tensor]:
+    ) -> Union[Tuple[torch.Tensor, int], Tuple[None, None]]:
         """Process audio
 
         Args:
             wav_path (Path): path to wav file
             normalize (bool): volume normalization
         Returns:
-            Tensor: audio as a Tensor
+            Tensor: (audio as a Tensor, sampling rate)
         """
         audio, sr, seconds = self.load_audio(wav_path)
 
@@ -226,14 +226,14 @@ class Preprocessor:
             )
             if update_counters:
                 self.counters.increment("audio_too_long")
-            return None
+            return None, None
         if seconds < self.audio_config.min_audio_length:
             logger.warning(
                 f"Audio too short: {wav_path} ({seconds} seconds - we will skip this file)"
             )
             if update_counters:
                 self.counters.increment("audio_too_short")
-            return None
+            return None, None
 
         loudness_transform = torchaudio.transforms.Loudness(sr)
         loudness = loudness_transform(audio)
@@ -243,7 +243,7 @@ class Preprocessor:
             logger.warning(f"Audio empty: {wav_path} - we will skip this file")
             if update_counters:
                 self.counters.increment("audio_empty")
-            return None
+            return None, None
         if use_effects and sox_effects:
             audio, sr = apply_effects_tensor(
                 audio,
@@ -269,7 +269,7 @@ class Preprocessor:
                 bits_per_sample=self.audio_config.alignment_bit_depth,
             )
         audio = audio.squeeze()  # get rid of channels dimension
-        return audio
+        return audio, sr
 
     def extract_spectral_features(
         self, audio_tensor: torch.Tensor, transform, normalize=True
@@ -552,7 +552,7 @@ class Preprocessor:
             self.counters.increment("duration", seconds)
             return item
         if not input_audio_save_path.exists() or self.overwrite:
-            input_audio = self.process_audio(
+            input_audio, _ = self.process_audio(
                 audio_path,
                 resample_rate=self.input_sampling_rate,
             )
@@ -565,7 +565,7 @@ class Preprocessor:
             and not output_audio_save_path.exists()
             or self.overwrite
         ):
-            output_audio = self.process_audio(
+            output_audio, _ = self.process_audio(
                 audio_path,
                 resample_rate=self.output_sampling_rate,
                 update_counters=False,

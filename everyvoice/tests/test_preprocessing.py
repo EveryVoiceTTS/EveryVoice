@@ -16,6 +16,7 @@ from everyvoice.config.preprocessing_config import (
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
+from everyvoice.tests.stubs import capture_stdout
 from everyvoice.utils import read_filelist
 
 
@@ -277,6 +278,50 @@ class PreprocessingTest(TestCase):
     def test_sanity(self):
         """TODO: make sanity checking code for each type of data, maybe also data analysis tooling"""
         pass
+
+    def test_incremental_preprocess(self):
+        with tempfile.TemporaryDirectory(prefix="incremental", dir=".") as tmpdir:
+            lj_preprocessed = Path(tmpdir) / "preprocessed"
+            lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
+
+            fp_config = EveryVoiceConfig().feature_prediction
+            fp_config.preprocessing.source_data[0].data_dir = (
+                self.data_dir / "lj" / "wavs"
+            )
+            fp_config.preprocessing.source_data[0].filelist = (
+                self.data_dir / "partial-metadata.csv"
+            )
+            fp_config.preprocessing.save_dir = lj_preprocessed
+
+            with capture_stdout() as output:
+                Preprocessor(fp_config).preprocess(
+                    output_path=lj_filelist,
+                    cpus=1,
+                    to_process=("audio", "energy", "pitch", "text", "spec"),
+                )
+            self.assertRegex(output.getvalue(), r"processed files *3")
+            self.assertRegex(output.getvalue(), r"previously processed files *0")
+
+            fp_config.preprocessing.source_data[0].filelist = (
+                self.data_dir / "metadata.csv"
+            )
+            with capture_stdout() as output:
+                Preprocessor(fp_config).preprocess(
+                    output_path=lj_filelist,
+                    cpus=1,
+                    to_process=("audio", "energy", "pitch", "text", "spec"),
+                )
+            self.assertRegex(output.getvalue(), r"processed files *2")
+            self.assertRegex(output.getvalue(), r"previously processed files *3")
+            with capture_stdout() as output:
+                Preprocessor(fp_config).preprocess(
+                    output_path=lj_filelist,
+                    cpus=1,
+                    overwrite=True,
+                    to_process=("audio", "energy", "pitch", "text", "spec"),
+                )
+            self.assertRegex(output.getvalue(), r"processed files *5")
+            self.assertRegex(output.getvalue(), r"previously processed files *0")
 
 
 class PreprocessingHierarchyTest(TestCase):
