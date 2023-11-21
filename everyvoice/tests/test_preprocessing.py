@@ -293,11 +293,10 @@ class PreprocessingTest(TestCase):
             )
             fp_config.preprocessing.save_dir = lj_preprocessed
 
+            to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
             with capture_stdout() as output:
                 Preprocessor(fp_config).preprocess(
-                    output_path=lj_filelist,
-                    cpus=1,
-                    to_process=("audio", "energy", "pitch", "text", "spec"),
+                    output_path=lj_filelist, cpus=1, to_process=to_process
                 )
             self.assertRegex(output.getvalue(), r"processed files *3")
             self.assertRegex(output.getvalue(), r"previously processed files *0")
@@ -307,9 +306,7 @@ class PreprocessingTest(TestCase):
             )
             with capture_stdout() as output:
                 Preprocessor(fp_config).preprocess(
-                    output_path=lj_filelist,
-                    cpus=1,
-                    to_process=("audio", "energy", "pitch", "text", "spec"),
+                    output_path=lj_filelist, cpus=1, to_process=to_process
                 )
             self.assertRegex(output.getvalue(), r"processed files *2")
             self.assertRegex(output.getvalue(), r"previously processed files *3")
@@ -318,7 +315,7 @@ class PreprocessingTest(TestCase):
                     output_path=lj_filelist,
                     cpus=1,
                     overwrite=True,
-                    to_process=("audio", "energy", "pitch", "text", "spec"),
+                    to_process=to_process,
                 )
             self.assertRegex(output.getvalue(), r"processed files *5")
             self.assertRegex(output.getvalue(), r"previously processed files *0")
