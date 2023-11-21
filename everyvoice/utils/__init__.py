@@ -130,6 +130,10 @@ def plot_spectrogram(spectrogram):
 
 def write_filelist(files, path):
     with open(path, "w", encoding="utf8") as f:
+        if not files:
+            logger.warning(f"Writing empty filelist file {path}")
+            print("", file=f)  # header line, empty because we don't know the fields
+            return
         writer = csv.DictWriter(
             f,
             fieldnames=files[0].keys(),

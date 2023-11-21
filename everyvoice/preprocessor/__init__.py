@@ -14,6 +14,7 @@ from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
+import torchaudio
 from clipdetect import detect_clipping
 from joblib import Parallel, delayed
 from loguru import logger
@@ -21,9 +22,6 @@ from rich import print as rich_print
 from rich.panel import Panel
 from rich.style import Style
 from tabulate import tabulate
-from torchaudio import load as load_audio
-from torchaudio import save as save_audio
-from torchaudio import transforms
 from torchaudio.functional import resample
 from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
@@ -115,7 +113,9 @@ class Scaler:
 class Counters:
     def __init__(self, manager: managers.SyncManager):
         self._lock = manager.Lock()
-        self._duration = manager.Value("l", 0)
+        self._processed_files = manager.Value("l", 0)
+        self._previously_processed_files = manager.Value("l", 0)
+        self._duration = manager.Value("d", 0)
         self._nans = manager.Value("l", 0)
         self._audio_empty = manager.Value("l", 0)
         self._audio_too_long = manager.Value("l", 0)
@@ -123,7 +123,7 @@ class Counters:
         self._skipped_processes = manager.Value("l", 0)
         self._missing_files = manager.Value("l", 0)
 
-    def increment(self, counter: str, increment: int = 1):
+    def increment(self, counter: str, increment: Union[int, float] = 1):
         with self._lock:
             self.__getattribute__("_" + counter).value += increment
 
@@ -187,38 +187,38 @@ class Preprocessor:
                 f"Spectral feature specification '{self.audio_config.spec_type}' is not supported. Please edit your config file."
             )
 
-    def load_audio_tensor(self, audio_path: Union[Path, str]):
-        """Load audio tensor from file
+    def load_audio(self, audio_path: Path) -> Tuple[torch.Tensor, int, float]:
+        """
+        Load an audio file and calculate its duration.
 
         Args:
-            audio_path (str): path to audio file
+            audio_path: path to audio file
+
+        Returns: (audio as a Tensor, sampling rate, duration in seconds)
         """
-        try:
-            return torch.load(audio_path)
-        except FileNotFoundError:
-            logger.error("Audio file not found. Please process audio first.")
-            exit()
+        audio, sr = torchaudio.load(str(audio_path))
+        seconds = len(audio[0]) / sr
+        return audio, sr, seconds
 
     def process_audio(
         self,
-        wav_path: str,
+        wav_path: Path,
         normalize=True,
         use_effects=False,
         resample_rate=None,
         sox_effects=None,
         save_wave=False,
-        update_counters=True,
-    ) -> Union[Tuple[torch.Tensor, int], Tuple[None, None]]:
+        update_counters=True,  # unset this when processing the same file a second time
+    ) -> Optional[torch.Tensor]:
         """Process audio
 
         Args:
-            wav_path (str): path to wav file
+            wav_path (Path): path to wav file
             normalize (bool): volume normalization
         Returns:
-            [Tensor, int]: audio Tensor, sampling rate
+            Tensor: audio as a Tensor
         """
-        audio, sr = load_audio(str(wav_path))
-        seconds = len(audio[0]) / sr
+        audio, sr, seconds = self.load_audio(wav_path)
 
         if seconds > self.audio_config.max_audio_length:
             logger.warning(
@@ -226,16 +226,16 @@ class Preprocessor:
             )
             if update_counters:
                 self.counters.increment("audio_too_long")
-            return None, None
+            return None
         if seconds < self.audio_config.min_audio_length:
             logger.warning(
                 f"Audio too short: {wav_path} ({seconds} seconds - we will skip this file)"
             )
             if update_counters:
                 self.counters.increment("audio_too_short")
-            return None, None
+            return None
 
-        loudness_transform = transforms.Loudness(sr)
+        loudness_transform = torchaudio.transforms.Loudness(sr)
         loudness = loudness_transform(audio)
         if (
             torch.isnan(loudness) or loudness < -36
@@ -243,7 +243,7 @@ class Preprocessor:
             logger.warning(f"Audio empty: {wav_path} - we will skip this file")
             if update_counters:
                 self.counters.increment("audio_empty")
-            return None, None
+            return None
         if use_effects and sox_effects:
             audio, sr = apply_effects_tensor(
                 audio,
@@ -258,17 +258,18 @@ class Preprocessor:
             audio *= 0.95
 
         if update_counters:
+            self.counters.increment("processed_files")
             self.counters.increment("duration", seconds)
         if save_wave:
-            save_audio(
-                wav_path + ".processed.wav",
+            torchaudio.save(
+                str(wav_path) + ".processed.wav",
                 audio,
                 sr,
                 encoding="PCM_S",
                 bits_per_sample=self.audio_config.alignment_bit_depth,
             )
         audio = audio.squeeze()  # get rid of channels dimension
-        return (audio, sr)
+        return audio
 
     def extract_spectral_features(
         self, audio_tensor: torch.Tensor, transform, normalize=True
@@ -390,6 +391,11 @@ class Preprocessor:
         """Print a report of the dataset processing"""
         headers = ["type", "quantity"]
         table = [
+            ["processed files", self.counters.value("processed_files")],
+            [
+                "previously processed files",
+                self.counters.value("previously_processed_files"),
+            ],
             ["missing files", self.counters.value("missing_files")],
             [
                 "missing symbols",
@@ -508,7 +514,7 @@ class Preprocessor:
                 )
                 exit()
 
-    def create_path(self, item: dict, folder: str, fn: str):
+    def create_path(self, item: dict, folder: str, fn: str) -> Path:
         return (
             self.save_dir
             / folder
@@ -541,9 +547,12 @@ class Preprocessor:
             and output_audio_save_path.exists()
             and not self.overwrite
         ):
-            return None
+            audio, sr, seconds = self.load_audio(audio_path)
+            self.counters.increment("previously_processed_files")
+            self.counters.increment("duration", seconds)
+            return item
         if not input_audio_save_path.exists() or self.overwrite:
-            input_audio, _ = self.process_audio(
+            input_audio = self.process_audio(
                 audio_path,
                 resample_rate=self.input_sampling_rate,
             )
@@ -556,7 +565,7 @@ class Preprocessor:
             and not output_audio_save_path.exists()
             or self.overwrite
         ):
-            output_audio, _ = self.process_audio(
+            output_audio = self.process_audio(
                 audio_path,
                 resample_rate=self.output_sampling_rate,
                 update_counters=False,
@@ -609,12 +618,14 @@ class Preprocessor:
         return filtered_filelist
 
     def process_energy(self, item):
+        energy_path = self.create_path(item, "energy", "energy.pt")
+        if energy_path.exists() and not self.overwrite:
+            return
         spec_path = self.create_path(
             item,
             "spec",
             f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.pt",
         )
-        energy_path = self.create_path(item, "energy", "energy.pt")
         spec = torch.load(spec_path)
         energy = self.extract_energy(spec)
         if (
@@ -629,10 +640,12 @@ class Preprocessor:
         save(energy, energy_path)
 
     def process_pitch(self, item):
+        pitch_path = self.create_path(item, "pitch", "pitch.pt")
+        if pitch_path.exists() and not self.overwrite:
+            return
         audio_path = self.create_path(
             item, "audio", f"audio-{self.input_sampling_rate}.pt"
         )
-        pitch_path = self.create_path(item, "pitch", "pitch.pt")
         audio = torch.load(audio_path)
         pitch = self.extract_pitch(audio)
         if (
@@ -647,6 +660,9 @@ class Preprocessor:
         save(pitch, pitch_path)
 
     def process_attn_prior(self, item):
+        attn_prior_path = self.create_path(item, "attn", "attn-prior.pt")
+        if attn_prior_path.exists() and not self.overwrite:
+            return
         binomial_interpolator = BetaBinomialInterpolator()
         text = self.extract_text_inputs(item["text"], use_pfs=False)
         input_spec_path = self.create_path(
@@ -654,7 +670,6 @@ class Preprocessor:
             "spec",
             f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.pt",
         )
-        attn_prior_path = self.create_path(item, "attn", "attn-prior.pt")
         input_spec = torch.load(input_spec_path)
         attn_prior = torch.from_numpy(
             binomial_interpolator(input_spec.size(1), text.size(0))
@@ -665,6 +680,8 @@ class Preprocessor:
     def process_text(self, item, use_pfs=False):
         basename = "pfs.pt" if use_pfs else "text.pt"
         text_path = self.create_path(item, "text", basename)
+        if text_path.exists() and not self.overwrite:
+            return
         text = self.extract_text_inputs(item["text"], use_pfs=use_pfs)
         save(text, text_path)
 
@@ -685,24 +702,25 @@ class Preprocessor:
             f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.pt",
         )
 
-        input_audio = torch.load(input_audio_path)
         if input_audio_path != output_audio_path:
-            output_audio = torch.load(output_audio_path)
             output_spec_path = self.create_path(
                 item,
                 "spec",
                 f"spec-{self.output_sampling_rate}-{self.audio_config.spec_type}.pt",
             )
-            output_spec = self.extract_spectral_features(
-                output_audio, self.output_spectral_transform
+            if not output_spec_path.exists() or self.overwrite:
+                output_audio = torch.load(output_audio_path)
+                output_spec = self.extract_spectral_features(
+                    output_audio, self.output_spectral_transform
+                )
+                save(output_spec, output_spec_path)
+
+        if not input_spec_path.exists() or self.overwrite:
+            input_audio = torch.load(input_audio_path)
+            input_spec = self.extract_spectral_features(
+                input_audio, self.input_spectral_transform
             )
-            save(output_spec, output_spec_path)
-        else:
-            output_audio = input_audio
-        input_spec = self.extract_spectral_features(
-            input_audio, self.input_spectral_transform
-        )
-        save(input_spec, input_spec_path)
+            save(input_spec, input_spec_path)
 
     def get_process_fn(self, process):
         if process == "text":
@@ -851,6 +869,8 @@ class Preprocessor:
                         process_fn(f)
         if "audio" in to_process:
             report = f"Here is a report:\n {self.report()}"
+            if not self.counters.value("duration"):
+                report += "\n\nWARNING: No audio files were processed."
         else:
             report = ""
         rich_print(
