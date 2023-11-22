@@ -57,7 +57,7 @@ app = typer.Typer(
 
     ## Use your own language/dataset
 
-    To run the new dataset wizard please use the following command: everyvoice new-dataset
+    To run the wizard for a new project please use the following command: everyvoice new-project
 
     ## Segment long files in your dataset
 
@@ -96,15 +96,15 @@ app.command(
     # Segmentation help
 
     This command will segment a long audio file into multiple utterances which is required for training a TTS system.
-    This command should work on most languages and you should run it before running the new dataset or preprocessing steps.
+    This command should work on most languages and you should run it before running the new project or preprocessing steps.
     """,
 )(ctc_segment)
 
 
 @app.command(
-    short_help="This command will help you create all the configuration necessary for using a new dataset.",
+    short_help="This command will help you create all the configuration necessary for using a new project.",
     help="""
-    # This command will help you create all the configuration necessary for using a new dataset.
+    # This command will help you create all the configuration necessary for using a new project.
 
     ## Getting Started
 
@@ -125,7 +125,7 @@ app.command(
 
 """,
 )
-def new_dataset():
+def new_project():
     from everyvoice.wizard.main_tour import WIZARD_TOUR
 
     WIZARD_TOUR.run()

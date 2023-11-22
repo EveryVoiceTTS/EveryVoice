@@ -39,7 +39,7 @@ class DatasetNameStep(Step):
 
     def effect(self):
         print(
-            f"Great! New Dataset Wizard 🧙 finished the configuration for your dataset named '{self.response}'"
+            f"Great! The Configuration Wizard 🧙 finished the configuration for your dataset named '{self.response}'"
         )
 
 
@@ -331,7 +331,7 @@ class SelectLanguageStep(Step):
         from g2p import get_arpabet_langs
 
         print(
-            "Note: if your dataset has more than one language in it, you will have to add this information to your filelist, because the new dataset wizard can't guess!"
+            "Note: if your dataset has more than one language in it, you will have to add this information to your filelist, because the configuration wizard can't guess!"
         )
         # TODO: currently we only support the languages from g2p, but we should add more
         supported_langs = get_arpabet_langs()[1]

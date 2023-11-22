@@ -49,7 +49,7 @@ class NameStep(Step):
 
     def effect(self):
         print(
-            f"Great! Launching New Dataset Wizard 🧙 for project named '{self.response}'."
+            f"Great! Launching Configuration Wizard 🧙 for project named '{self.response}'."
         )
 
 
@@ -58,7 +58,7 @@ class OutputPathStep(Step):
 
     def prompt(self):
         return questionary.path(
-            "Where should the New Dataset Wizard save your files?",
+            "Where should the Configuration Wizard save your files?",
             default=".",
             style=CUSTOM_QUESTIONARY_STYLE,
         ).unsafe_ask()
@@ -79,7 +79,7 @@ class OutputPathStep(Step):
     def effect(self):
         output_path = Path(self.response) / self.state.get(StepNames.name_step.value)
         output_path.mkdir(parents=True, exist_ok=True)
-        print(f"New Dataset Wizard 🧙 will put your files here: '{output_path}'")
+        print(f"The Configuration Wizard 🧙 will put your files here: '{output_path}'")
 
 
 class ConfigFormatStep(Step):

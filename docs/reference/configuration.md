@@ -12,16 +12,16 @@ Static typing means that if someone accidentally enters an integer that the conf
 corrected when the configuration is instantiated, and doesn't produce downstream runtime errors. It also means that intellisense is available in your code editor
 when working with a configuration class.
 
-## New Dataset Wizard 🧙‍♀️
+## Configuration Wizard 🧙‍♀️
 
-This section of the documentation is meant for technical explanations and reference documentation - if you're just looking to get started, have a look at the {ref}`guides` section instead to learn about how the New Dataset Wizard 🧙‍♀️ can help you configure everything for your dataset.
+This section of the documentation is meant for technical explanations and reference documentation - if you're just looking to get started, have a look at the {ref}`guides` section instead to learn about how the Configuration Wizard 🧙‍♀️ can help you configure everything for your dataset.
 
-Here is the reference documentation for the New Dataset Wizard 🧙‍♀️
+Here is the reference documentation for the Configuration Wizard 🧙‍♀️
 
 <!-- ::: mkdocs-typer
     :prog_name: everyvoice
     :module: everyvoice.cli.app
-    :command: new-dataset -->
+    :command: new-project -->
 
 <!-- ::: mkdocs-click
     :prog_name: everyvoice
@@ -32,7 +32,7 @@ Here is the reference documentation for the New Dataset Wizard 🧙‍♀️
 .. click:: everyvoice.cli:CLICK_APP
     :prog: everyvoice
     :nested: full
-    :commands: new-dataset
+    :commands: new-project
 
 ``` -->
 

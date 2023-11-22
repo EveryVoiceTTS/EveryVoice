@@ -62,7 +62,7 @@ class StepAndAnswer(NamedTuple):
 
 
 class WizardTest(TestCase):
-    """Basic test for the new dataset wizard"""
+    """Basic test for the configuration wizard"""
 
     data_dir = Path(__file__).parent / "data"
 
