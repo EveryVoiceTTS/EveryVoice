@@ -513,7 +513,7 @@ class Preprocessor:
                 logger.error(
                     f"Data directory '{data_dir}' does not exist. Please check your config file."
                 )
-                sys.exit()
+                sys.exit(1)
 
     def create_path(self, item: dict, folder: str, fn: str) -> Path:
         return (
@@ -853,7 +853,7 @@ class Preprocessor:
                         f"A filelist was not found at {self.save_dir / output_path.name}. "
                         "Please try processing your audio again."
                     )
-                    sys.exit()
+                    sys.exit(1)
                 process_fn = self.get_process_fn(process)
                 logger.info(f"Processing {process} on {self.cpus} CPUs...")
                 logger.info(f"Filelist len={len(filelist or [])}")
