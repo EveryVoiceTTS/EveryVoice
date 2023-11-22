@@ -26,7 +26,7 @@ jobs:
           sudo apt-get install -y libsndfile1
       - name: Install dependencies and package
         run: |
-          CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
           pip install cython
           pip install -e .
       - name: Install documentation dependencies

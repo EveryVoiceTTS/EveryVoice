@@ -22,12 +22,12 @@ jobs:
         uses: conda-incubator/setup-miniconda@v2
         with:
           python-version: 3.9
-      - name: Install sox
+      - name: Install sox and use conda to optimize other installs
         run: |
-          conda install -y sox -c conda-forge
+          conda install -y sox $(grep "pycountry\|pyworld" requirements.txt) -c conda-forge
       - name: Install dependencies and package
         run: |
-          CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
           pip install -r requirements.test.txt
           pip install cython
           pip install -e .
