@@ -2,6 +2,7 @@ import csv
 import json
 import os
 import re
+import sys
 from contextlib import contextmanager
 from datetime import datetime
 from itertools import islice
@@ -32,7 +33,7 @@ def check_dataset_size(batch_size: int, number_of_samples: int, name: str):
         logger.error(
             f"Your {name} dataset only has {number_of_samples} samples, but you have a defined batch size of {batch_size}. Please either add more data or decrease your batch size. {reduce_train_split}"
         )
-        exit()
+        sys.exit()
 
 
 def return_configs_from_dir(dir: Path) -> Dict[str, Path]:
