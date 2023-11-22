@@ -22,16 +22,18 @@ To run EveryVoice, you need to create a new environment using Conda and Python 3
 We have automated the procedure required to do all this in the script `make-everyvoice-env`, which you can run like this:
 
 ```sh
-bash make-everyvoice-env <env-name-of-your-choice>
+./make-everyvoice-env --name <env-name-of-your-choice>
 conda activate <env-name-of-your-choice>
 ```
+
+Add the option `--cuda CUDA_VERSION` if you need to override the default CUDA version, or `--cpu` to use Torch compiled for CPU use only.
 
 ### Environment and installation – manual
 
 #### Create the environment
 
-Use conda to create a new environment based on Python 3.9, replacing cu118 (for
-CUDA 11.8) by your actual CUDA version tag (118 or higher):
+Use conda to create a new environment based on Python 3.9, replacing `cu118` below (for
+CUDA 11.8) by your actual CUDA version tag (118 or higher), or by `cpu` for a CPU-only installation:
 
 ```sh
 conda create --name EveryVoice python=3.9
@@ -54,16 +56,6 @@ Install EveryVoice locally from your cloned sandbox:
 ```sh
 pip install -e .
 ```
-
-### Installation for use on CPU only
-
-The steps above use CUDA_VERSION (automated) or CUDA_TAG (manual) to specify the version of CUDA you are using. If you want to train a system for use on CPU only, use the value `cpu`:
-
-```sh
-CUDA_VERSION=cpu bash make-everyvoice-env EveryVoice-cpu
-```
-
-or `CUDA_TAG=cpu` in the manual installation process.
 
 ### Documentation
 

@@ -17,3 +17,4 @@ everyvoice/tests/data/lj/preprocessed/*
 !everyvoice/tests/data/lj/preprocessed/duration/
 .history
 site/
+*env*/

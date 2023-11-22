@@ -1,51 +1,120 @@
-# Create a fresh conda environment for EveryVoice development, following all the
-# instructions in readme.md
+#!/bin/bash
 
-# Edit this line to match your CUDA version or set CUDA_VERSION in the calling
-# environment, e.g.:
-#    CUDA_VERSION=11.9 bash make-everyvoice-env EveryVoice
-# Use the value CPU for a CPU-only installation, e.g.
-#    CUDA_VERSION=CPU bash make-everyvoice-env EveryVoice-cpu
-CUDA_VERSION=${CUDA_VERSION:=11.8}
+# Create a conda environment for EveryVoice development, automating all the
+# manual instructions in readme.md
 
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    echo "Usage: bash make-everyvoice-env [ENV_NAME]"
-    exit 0
-fi
+# Default CUDA version:
+CUDA_VERSION=11.8
 
-if (( $# >= 1 )); then
-    ENV_NAME="$1"
-else
-    ENV_NAME=EveryVoice
-fi
+usage() {
+    for msg in "$@"; do
+        echo $msg >&2
+    done
+    cat <<==EOF== >&2
 
-# Don't overwrite an existing env
-if conda env list | grep -q "/$ENV_NAME$"; then
-    echo "Environment $ENV_NAME already exists, please use a different name."
-    exit 1
-fi
+Usage: ./make-everyvoice-env [options]
+
+  Create a conda environment for EveryVoice, automating all the instructions in
+  README.md
+
+Options:
+  -h, --help              Print this help message
+
+Torch pre-compilation options:
+  --cuda CUDA_VERSION     Install torch compiled for CUDA_VERSION
+                          Default: --cuda $CUDA_VERSION
+  --cpu                   Install torch for use on CPU only
+
+Target Environment Sepcification:
+  -n, --name ENV_NAME     Name of the conda environment to create
+                          Default: --name EveryVoice
+  -p, --prefix ENV_PATH   Path of the conda environment to create
+
+==EOF==
+    exit
+}
+
+error_exit() {
+   echo -n "ERROR: " >&2
+   for msg in "$@"; do
+      echo $msg >&2
+   done
+   echo "Use -h for help." >&2
+   exit 1
+}
+
+arg_check() {
+   if [ $2 -le $1 ]; then
+      error_exit "Missing argument to $3 option."
+   fi
+}
+
+ENV_PREFIX=
+ENV_NAME=
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+    -h|--help)   usage;;
+    --cuda)      arg_check 1 $# $!
+                 CUDA_VERSION=$2
+                 shift;;
+    --cpu)       CUDA_VERSION=cpu;;
+    -n|--name)   arg_check 1 $# $!
+                 ENV_NAME=$2
+                 shift;;
+    -p|--prefix) arg_check 1 $# $!
+                 ENV_PREFIX=$2
+                 shift;;
+    -*)          error_exit "Unknown option $1.";;
+    *)           break;;
+    esac
+    shift
+done
 
 # This can only be run from the root of an EveryVoice sandbox
-if [[ "$0" != make-everyvoice-env ]]; then
-    echo "make-everyvoice-env only works from the root of an EveryVoice sandbox."
-    exit 1
+if [[ "$0" != make-everyvoice-env && "$0" != ./make-everyvoice-env ]]; then
+    error_exit "make-everyvoice-env only works from the root of an EveryVoice sandbox."
 fi
 
 # submodules have to have already been initialized
 if git submodule status | grep -q "^-"; then
-    echo "Please init the submodules with \"git submodule update --init\"."
-    exit 1
+    error_exit "Please init the submodules with \"git submodule update --init\"."
+fi
+
+# Interpret the (mutually exclusive) env name or prefix
+if [[ ! $ENV_PREFIX ]]; then
+    [[ $ENV_NAME ]] || ENV_NAME=EveryVoice
+    ENV_OPTION="--name \"$ENV_NAME\""
+    ENV_DESC="called \"$ENV_NAME\""
+    ENV2ACTIVATE=$ENV_NAME
+else
+    [[ $ENV_NAME ]] && error_exit "Please specify only one of --name and --prefix."
+    ENV_OPTION="--prefix \"$ENV_PREFIX\""
+    ENV_DESC="at path \"$ENV_PREFIX\""
+    ENV2ACTIVATE=$ENV_PREFIX
+fi
+
+# Setup conda aliases
+if __conda_setup="$(conda shell.bash hook)"; then
+    eval "$__conda_setup"
+else
+    error_exit "Cannot initialize conda."
+fi
+unset __conda_setup
+
+# Don't overwrite an existing env
+if conda activate "$ENV2ACTIVATE" >& /dev/null; then
+    error_exit "Environment \"$ENV2ACTIVATE\" already exists, please use a different name or path."
 fi
 
 if [[ $CUDA_VERSION == CPU || $CUDA_VERSION == cpu ]]; then
-    echo "Creating EveryVoice conda environment called \"$ENV_NAME\" for use on CPU only."
+    echo "Creating EveryVoice conda environment $ENV_DESC for use on CPU only."
     CUDA_TAG=cpu
 else
     if which nvidia-smi >& /dev/null && nvidia-smi | grep -q CUDA; then
         if nvidia-smi | grep -q "CUDA Version: $CUDA_VERSION "; then
             : # CUDA version OK
         else
-            echo "Mismatched CUDA version. Please set CUDA_VERSION to what is installed on your system."
+            echo "Mismatched CUDA version. Please specify --cuda CUDA_VERSION to what is installed on your system."
             echo -n "Found: "
             nvidia-smi | grep CUDA
             echo "Specified: CUDA_VERSION=$CUDA_VERSION"
@@ -55,7 +124,7 @@ else
         echo "Please make sure the CUDA version installed on your system matches CUDA_VERSION=$CUDA_VERSION."
     fi
     CUDA_TAG=cu$(echo $CUDA_VERSION | sed 's/\.//g')
-    echo "Creating EveryVoice conda environment called \"$ENV_NAME\" for CUDA $CUDA_VERSION."
+    echo "Creating EveryVoice conda environment $ENV_DESC for CUDA $CUDA_VERSION."
 fi
 
 echo -n "Proceed (y/[n])? "
@@ -76,9 +145,9 @@ r() {
 
 set -o errexit
 
-r conda create -y --name "$ENV_NAME" python=3.9
+r conda create -y $ENV_OPTION python=3.9
 eval "$(conda shell.bash hook)"
-r conda activate "$ENV_NAME"
+r conda activate "$ENV2ACTIVATE"
 
 # Recent versions of lit do not always compile cleanly, but we can fall back to
 # the one with a wheel on pytorch.org if necessary
@@ -107,15 +176,15 @@ echo "Environment creation completed with success"
 echo ""
 echo "Configuring your sandbox in case you want to contribute to the project."
 if ! pre-commit install; then
-    echo "Error running \"pre-commit install\". Your \"$ENV_NAME\" environment is good, but if you want to submit contributions to the project, please troubleshoot and rerun \"pre-commit install\" in your sandbox."
+    echo "Error running \"pre-commit install\". Your \"$ENV2ACTIVATE\" environment is good, but if you want to submit contributions to the project, please rerun \"pre-commit install\" in your sandbox."
 fi
 if ! gitlint install-hook; then
     echo ""
-    echo "Error running \"gitlint install-hook\". Your \"$ENV_NAME\" environment is good, but if you want to submit contributions to the project, please troubleshoot and rerun \"gitlint install-hook\" in your sandbox."
+    echo "Error running \"gitlint install-hook\". Your \"$ENV2ACTIVATE\" environment is good, but if you want to submit contributions to the project, please rerun \"gitlint install-hook\" in your sandbox."
 fi
 
 echo ""
 echo "SUCCESS!"
-echo "EveryVoice environment \"$ENV_NAME\" successfully created."
-echo "Run \"conda activate $ENV_NAME\" to activate it."
-echo "Run \"cd everyvoice; ./run_tests.py all\" to validate it."
+echo "EveryVoice environment \"$ENV2ACTIVATE\" successfully created."
+echo "Run \"conda activate $ENV2ACTIVATE\" to activate it."
+echo "Run \"everyvoice/run_tests.py all\" to validate it."
