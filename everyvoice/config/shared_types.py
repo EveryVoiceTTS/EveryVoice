@@ -13,11 +13,10 @@ from pydantic import (
     Field,
     ValidationInfo,
     field_validator,
-    validator,
 )
 
 from everyvoice.config.utils import PossiblyRelativePath, PossiblySerializedCallable
-from everyvoice.utils import generic_dict_loader, get_current_time, rel_path_to_abs_path
+from everyvoice.utils import generic_dict_loader, get_current_time
 
 _init_context_var = ContextVar("_init_context_var", default=None)
 
@@ -107,25 +106,24 @@ class LoggerConfig(PartialLoadConfig):
     version: str = "base"
     """The version of your experiment"""
 
-    @field_validator("save_dir")
+    @field_validator("save_dir", mode="before")
     @classmethod
-    def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
-        return PartialLoadConfig.path_relative_to_absolute(value, info)
+    def relative_to_absolute(cls, value: Any, info: ValidationInfo) -> Path:
+        if not isinstance(value, Path):
+            try:
+                value = Path(value)
+            except TypeError as e:
+                # Pydantic needs ValueErrors to raise its ValidationErrors
+                raise ValueError from e
+        absolute_dir = cls.path_relative_to_absolute(value, info)
+        if not absolute_dir.exists():
+            logger.info(f"Directory at {absolute_dir} does not exist. Creating...")
+            absolute_dir.mkdir(parents=True, exist_ok=True)
+        return absolute_dir
 
     @cached_property
     def sub_dir(self) -> str:
         return self.sub_dir_callable()
-
-    # TODO[pydantic]: We couldn't refactor the `validator`, please replace it by `field_validator` manually.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-validators for more information.
-    @validator("save_dir", pre=True, always=True)
-    def convert_path(cls, v, values):
-        path = rel_path_to_abs_path(v)
-        values["save_dir"] = path
-        if not path.exists():
-            logger.info(f"Directory at {path} does not exist. Creating...")
-            path.mkdir(parents=True, exist_ok=True)
-        return path
 
 
 class BaseTrainingConfig(PartialLoadConfig):

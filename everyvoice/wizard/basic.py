@@ -102,10 +102,15 @@ class ConfigFormatStep(Step):
         # create_config_files
         config_dir = output_path / "config"
         config_dir.absolute().mkdir(exist_ok=True, parents=True)
-        (config_dir / "../preprocessed").absolute().mkdir(parents=True, exist_ok=True)
+        # preprocessed dir
+        preprocessed_dir = output_path / "preprocessed"
+        preprocessed_dir.absolute().mkdir(parents=True, exist_ok=True)
+        # used in configs
+        preprocessed_dir_relative_to_configs = Path("..") / "preprocessed"
         # log dir
-        log_dir = config_dir / ".." / "logs_and_checkpoints"
+        log_dir = output_path / "logs_and_checkpoints"
         log_dir.absolute().mkdir(parents=True, exist_ok=True)
+        log_dir_relative_to_configs = Path("..") / "logs_and_checkpoints"
         datasets = []
         # Text Configuration
         punctuation = []
@@ -174,15 +179,16 @@ class ConfigFormatStep(Step):
             (config_dir / text_config_path).absolute(),
         )
         # Preprocessing Config
+
         preprocessed_training_filelist_path = (
-            Path("..") / "preprocessed" / "training_filelist.psv"
+            preprocessed_dir_relative_to_configs / "training_filelist.psv"
         )
         preprocessed_validation_filelist_path = (
-            Path("..") / "preprocessed" / "validation_filelist.psv"
+            preprocessed_dir_relative_to_configs / "validation_filelist.psv"
         )
         preprocessing_config = PreprocessingConfig(
             dataset=self.state[StepNames.name_step.value],
-            save_dir=Path("..") / "preprocessed",
+            save_dir=preprocessed_dir_relative_to_configs,
             source_data=datasets,
         )
         preprocessing_config_path = Path(
@@ -194,7 +200,7 @@ class ConfigFormatStep(Step):
         )
         ## Create Aligner Config
         aligner_logger = LoggerConfig(
-            name="AlignerExperiment", save_dir=log_dir
+            name="AlignerExperiment", save_dir=log_dir_relative_to_configs
         ).model_dump()
         aligner_config = AlignerConfig(
             # This isn't the actual AlignerTrainingConfig, but we can use it because we just
@@ -220,7 +226,9 @@ class ConfigFormatStep(Step):
             (config_dir / aligner_config_path).absolute(),
         )
         # Create Feature Prediction Config
-        fp_logger = LoggerConfig(name="FeaturePredictionExperiment", save_dir=log_dir)
+        fp_logger = LoggerConfig(
+            name="FeaturePredictionExperiment", save_dir=log_dir_relative_to_configs
+        )
         fp_config = FeaturePredictionConfig(
             training=BaseTrainingConfig(
                 training_filelist=preprocessed_training_filelist_path,
@@ -243,7 +251,9 @@ class ConfigFormatStep(Step):
             (config_dir / fp_config_path).absolute(),
         )
         # Create Vocoder Config
-        vocoder_logger = LoggerConfig(name="VocoderExperiment", save_dir=log_dir)
+        vocoder_logger = LoggerConfig(
+            name="VocoderExperiment", save_dir=log_dir_relative_to_configs
+        )
         vocoder_config = VocoderConfig(
             training=BaseTrainingConfig(
                 training_filelist=preprocessed_training_filelist_path,
@@ -268,7 +278,9 @@ class ConfigFormatStep(Step):
         )
         # E2E Config
 
-        e2e_logger = LoggerConfig(name="E2E-Experiment", save_dir=log_dir)
+        e2e_logger = LoggerConfig(
+            name="E2E-Experiment", save_dir=log_dir_relative_to_configs
+        )
         e2e_config = EveryVoiceConfig(
             aligner=aligner_config,
             feature_prediction=fp_config,

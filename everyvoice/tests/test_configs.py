@@ -16,7 +16,11 @@ from everyvoice.config.preprocessing_config import (
     Dataset,
     PreprocessingConfig,
 )
-from everyvoice.config.shared_types import BaseTrainingConfig, LoggerConfig
+from everyvoice.config.shared_types import (
+    BaseTrainingConfig,
+    LoggerConfig,
+    init_context,
+)
 from everyvoice.config.text_config import TextConfig
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.aligner.DeepForcedAligner.dfaligner.config import (
@@ -71,6 +75,16 @@ class ConfigTest(TestCase):
         self.assertEqual(config_default.training.batch_size, 16)
         self.assertEqual(config_declared.training.batch_size, 16)
         self.assertEqual(config_32.training.batch_size, 32)
+
+    def test_config_save_dirs(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            # Preprocessing Config
+            tempdir = Path(tempdir)
+            with self.assertRaises(ValidationError):
+                preprocessing_config = PreprocessingConfig(save_dir=1)
+            with init_context({"config_path": tempdir}):
+                preprocessing_config = PreprocessingConfig(save_dir="./bloop")
+            self.assertTrue((tempdir / preprocessing_config.save_dir).exists())
 
     def test_config_partial(self):
         with tempfile.TemporaryDirectory() as tempdir:

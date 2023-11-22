@@ -1,7 +1,6 @@
-import contextlib
 from enum import Enum
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Any, List, Optional, Union
 
 from loguru import logger
 from pydantic import Field, FilePath, ValidationInfo, field_validator, model_validator
@@ -84,10 +83,21 @@ class PreprocessingConfig(PartialLoadConfig):
     path_to_audio_config_file: Optional[FilePath] = None
     source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
 
-    @field_validator("save_dir")
+    @field_validator("save_dir", mode="before")
     @classmethod
-    def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
-        return PartialLoadConfig.path_relative_to_absolute(value, info)
+    def relative_to_absolute(cls, value: Any, info: ValidationInfo) -> Path:
+        if not isinstance(value, Path):
+            try:
+                value = Path(value)
+            except TypeError as e:
+                # Pydantic needs ValueErrors to raise its ValidationErrors
+                raise ValueError from e
+
+        absolute_dir = cls.path_relative_to_absolute(value, info)
+        if not absolute_dir.exists():
+            logger.info(f"Directory at {absolute_dir} does not exist. Creating...")
+            absolute_dir.mkdir(parents=True, exist_ok=True)
+        return absolute_dir
 
     @model_validator(mode="before")  # type: ignore
     def load_partials(self, info: ValidationInfo):
@@ -99,15 +109,6 @@ class PreprocessingConfig(PartialLoadConfig):
             ("audio",),
             config_path=config_path,
         )
-
-    @field_validator("save_dir", mode="after")
-    def create_dir(cls, value: Path):
-        # Supress keyerrors because defaults will be used if not supplied
-        with contextlib.suppress(KeyError):
-            if not value.exists():
-                logger.info(f"Directory at {value} does not exist. Creating...")
-                value.mkdir(parents=True, exist_ok=True)
-        return value
 
     @staticmethod
     def load_config_from_path(path: Path) -> "PreprocessingConfig":
