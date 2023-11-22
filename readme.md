@@ -19,10 +19,10 @@ git submodule update --init
 
 To run EveryVoice, you need to create a new environment using Conda and Python 3.9, install all our dependencies and EveryVoice itself.
 
-We have automated the procedure required to do all this in the script `make-fresh-env.sh`, which you can run like this:
+We have automated the procedure required to do all this in the script `make-everyvoice-env`, which you can run like this:
 
 ```sh
-bash make-fresh-env.sh <env-name-of-your-choice>
+bash make-everyvoice-env <env-name-of-your-choice>
 conda activate <env-name-of-your-choice>
 ```
 
@@ -60,7 +60,7 @@ pip install -e .
 The steps above use CUDA_VERSION (automated) or CUDA_TAG (manual) to specify the version of CUDA you are using. If you want to train a system for use on CPU only, use the value `cpu`:
 
 ```sh
-CUDA_VERSION=cpu bash make-fresh-env.sh EveryVoice-cpu
+CUDA_VERSION=cpu bash make-everyvoice-env EveryVoice-cpu
 ```
 
 or `CUDA_TAG=cpu` in the manual installation process.
@@ -77,7 +77,7 @@ Feel free to dive in! [Open an issue](https://github.com/roedoejet/EveryVoice/is
 
 This repo follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
-Please make sure our standard Git hooks are activated, by running these commands in your sandbox (if you used our `make-fresh-env.sh` script then this step is already done for you.):
+Please make sure our standard Git hooks are activated, by running these commands in your sandbox (if you used our `make-everyvoice-env` script then this step is already done for you.):
 
 ```sh
 pip install -r requirements.dev.txt

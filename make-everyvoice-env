@@ -3,13 +3,13 @@
 
 # Edit this line to match your CUDA version or set CUDA_VERSION in the calling
 # environment, e.g.:
-#    CUDA_VERSION=11.9 bash make-fresh-env.sh EveryVoice
+#    CUDA_VERSION=11.9 bash make-everyvoice-env EveryVoice
 # Use the value CPU for a CPU-only installation, e.g.
-#    CUDA_VERSION=CPU bash make-fresh-env.sh EveryVoice-cpu
+#    CUDA_VERSION=CPU bash make-everyvoice-env EveryVoice-cpu
 CUDA_VERSION=${CUDA_VERSION:=11.8}
 
 if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    echo "Usage: bash make-fresh-env.sh [ENV_NAME]"
+    echo "Usage: bash make-everyvoice-env [ENV_NAME]"
     exit 0
 fi
 
@@ -26,8 +26,8 @@ if conda env list | grep -q "/$ENV_NAME$"; then
 fi
 
 # This can only be run from the root of an EveryVoice sandbox
-if [[ "$0" != make-fresh-env.sh ]]; then
-    echo "make-fresh-env.sh only works from the root of an EveryVoice sandbox."
+if [[ "$0" != make-everyvoice-env ]]; then
+    echo "make-everyvoice-env only works from the root of an EveryVoice sandbox."
     exit 1
 fi
 
