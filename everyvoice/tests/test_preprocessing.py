@@ -281,16 +281,22 @@ class PreprocessingTest(TestCase):
 
     def test_incremental_preprocess(self):
         with tempfile.TemporaryDirectory(prefix="incremental", dir=".") as tmpdir:
-            lj_preprocessed = Path(tmpdir) / "preprocessed"
+            tmpdir = Path(tmpdir)
+            lj_preprocessed = tmpdir / "preprocessed"
             lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
 
             fp_config = EveryVoiceConfig().feature_prediction
             fp_config.preprocessing.source_data[0].data_dir = (
                 self.data_dir / "lj" / "wavs"
             )
-            fp_config.preprocessing.source_data[0].filelist = (
-                self.data_dir / "partial-metadata.csv"
-            )
+            full_filelist = self.data_dir / "metadata.csv"
+            partial_filelist = tmpdir / "partial-metadata.psv"
+            with open(partial_filelist, mode="w") as f_out:
+                with open(full_filelist) as f_in:
+                    lines = list(f_in)
+                    for line in lines[:4]:
+                        f_out.write(line)
+            fp_config.preprocessing.source_data[0].filelist = partial_filelist
             fp_config.preprocessing.save_dir = lj_preprocessed
 
             to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
@@ -301,9 +307,7 @@ class PreprocessingTest(TestCase):
             self.assertRegex(output.getvalue(), r"processed files *3")
             self.assertRegex(output.getvalue(), r"previously processed files *0")
 
-            fp_config.preprocessing.source_data[0].filelist = (
-                self.data_dir / "metadata.csv"
-            )
+            fp_config.preprocessing.source_data[0].filelist = full_filelist
             with capture_stdout() as output:
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
@@ -319,6 +323,32 @@ class PreprocessingTest(TestCase):
                 )
             self.assertRegex(output.getvalue(), r"processed files *5")
             self.assertRegex(output.getvalue(), r"previously processed files *0")
+
+    def test_empty_preprocess(self):
+        # Test case where the file list is not empty but after filtering
+        # silence, the result is empty. The behaviour of the code base is not
+        # super satisfying, we exit when we try to read
+        # preprocessed/filelist.psv and it's not there, rather than catching the
+        # fact that we're trying to write an empty list.
+        with tempfile.TemporaryDirectory(prefix="empty", dir=".") as tmpdir:
+            tmpdir = Path(tmpdir)
+            preprocessed = tmpdir / "preprocessed"
+            filelist = preprocessed / "preprocessed_filelist.psv"
+
+            fp_config = EveryVoiceConfig().feature_prediction
+            fp_config.preprocessing.source_data[0].data_dir = self.data_dir
+            input_filelist = tmpdir / "empty-metadata.psv"
+            with open(input_filelist, mode="w") as f:
+                print("basename|raw_text|text|speaker|language", file=f)
+                print("empty|foo bar baz|foo bar baz|noone|und", file=f)
+            fp_config.preprocessing.source_data[0].filelist = input_filelist
+            fp_config.preprocessing.save_dir = preprocessed
+
+            to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
+            with self.assertRaises(SystemExit), capture_stdout():
+                Preprocessor(fp_config).preprocess(
+                    output_path=filelist, cpus=1, to_process=to_process
+                )
 
 
 class PreprocessingHierarchyTest(TestCase):

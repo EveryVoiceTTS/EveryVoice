@@ -7,6 +7,7 @@
 import functools
 import multiprocessing as mp
 import random
+import sys
 from glob import glob
 from multiprocessing import Manager, managers
 from pathlib import Path
@@ -512,7 +513,7 @@ class Preprocessor:
                 logger.error(
                     f"Data directory '{data_dir}' does not exist. Please check your config file."
                 )
-                exit()
+                sys.exit()
 
     def create_path(self, item: dict, folder: str, fn: str) -> Path:
         return (
@@ -832,6 +833,11 @@ class Preprocessor:
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
                         f.write(report)
                     rich_print(report)
+                else:
+                    logger.error(
+                        "Your filtered audio filelist is empty. Nothing to process."
+                    )
+                    sys.exit(1)
                 logger.info(f"Audio Filelist len={len(filelist or [])}")
             else:
                 # If audio has already been processed, then just read the processed_filelist
@@ -847,7 +853,7 @@ class Preprocessor:
                         f"A filelist was not found at {self.save_dir / output_path.name}. "
                         "Please try processing your audio again."
                     )
-                    exit()
+                    sys.exit()
                 process_fn = self.get_process_fn(process)
                 logger.info(f"Processing {process} on {self.cpus} CPUs...")
                 logger.info(f"Filelist len={len(filelist or [])}")
