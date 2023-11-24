@@ -579,14 +579,14 @@ class Preprocessor:
                 save(output_audio, output_audio_save_path)
         return item
 
-    def process_all_audio(self, debug=False):
+    def process_all_audio(self):
         """Process all audio across datasets, create a combined, filtered filelist and return it"""
         self.dataset_sanity_checks()
         filtered_filelist: List[dict] = []
         for dataset in tqdm(self.datasets, total=len(self.datasets), desc="Dataset"):
             data_dir = Path(dataset.data_dir)
             filelist = dataset.filelist_loader(dataset.filelist)
-            if debug:
+            if self.debug:
                 filelist = filelist[:10]
                 logger.info(
                     "Debug flag was set to true, only processing first 10 files"
@@ -687,7 +687,7 @@ class Preprocessor:
         text_path = self.create_path(item, "text", basename)
         if text_path.exists() and not self.overwrite:
             return
-        text = self.extract_text_inputs(item["text"], use_pfs=use_pfs)
+        text = self.extract_text_inputs(item["text"], use_pfs=use_pfs, quiet=True)
         save(text, text_path)
 
     def process_spec(self, item):
@@ -799,6 +799,22 @@ class Preprocessor:
             data.append(data_point)
         return data
 
+    def load_filelist(self, path: Path):
+        try:
+            filelist = generic_dict_loader(path)
+            if self.debug:
+                logger.info(
+                    "Debug flag was set to true, only processing first 10 files"
+                )
+                filelist = filelist[:10]
+        except FileNotFoundError:
+            logger.error(
+                f"A filelist was not found at {path}. "
+                "Please try processing your audio again."
+            )
+            sys.exit(1)
+        return filelist
+
     def preprocess(
         self,
         output_path="filelist.psv",
@@ -809,17 +825,19 @@ class Preprocessor:
     ):
         self.overwrite = overwrite
         self.cpus = cpus
+        self.debug = debug
         if not isinstance(output_path, Path):
             output_path = Path(output_path)
         processing_order = ("audio", "text", "pfs", "spec", "attn", "energy", "pitch")
         random.seed(self.config.preprocessing.dataset_split_seed)
+        processed_filelist = self.save_dir / output_path.name
         for process in processing_order:
             if process not in to_process:
                 continue
             (self.save_dir / process).mkdir(parents=True, exist_ok=True)
             if process == "audio":
-                if filelist := self.process_all_audio(debug=debug):
-                    write_filelist(filelist, self.save_dir / output_path.name)
+                if filelist := self.process_all_audio():
+                    write_filelist(filelist, processed_filelist)
                     # sample the validation set and subtract it from the whole dataset to determine the training set
                     random.shuffle(filelist)
                     train_split = int(
@@ -842,25 +860,23 @@ class Preprocessor:
                         "Your filtered audio filelist is empty. Nothing to process."
                     )
                     sys.exit(1)
-                logger.info(f"Audio Filelist len={len(filelist or [])}")
+                # logger.info(f"Audio Filelist len={len(filelist or [])}")
+            elif process == "text":
+                # We split out the "text" step to issue the missing symbol warnings
+                filelist = self.load_filelist(processed_filelist)
+                process_fn = self.get_process_fn(process)
+                for f in tqdm(filelist, desc=f"Processing {process} on 1 CPU"):
+                    process_fn(f)
+                for symbol, count in self.text_processor.missing_symbols.items():
+                    logger.warning(
+                        f"Symbol '{symbol}' occurs in the text {count} times but was not declared in your configuration so it is being ignored."
+                    )
             else:
                 # If audio has already been processed, then just read the processed_filelist
-                try:
-                    filelist = generic_dict_loader(self.save_dir / output_path.name)
-                    if debug:
-                        logger.info(
-                            "Debug flag was set to true, only processing first 10 files"
-                        )
-                        filelist = filelist[:10]
-                except FileNotFoundError:
-                    logger.error(
-                        f"A filelist was not found at {self.save_dir / output_path.name}. "
-                        "Please try processing your audio again."
-                    )
-                    sys.exit(1)
+                filelist = self.load_filelist(processed_filelist)
                 process_fn = self.get_process_fn(process)
                 logger.info(f"Processing {process} on {self.cpus} CPUs...")
-                logger.info(f"Filelist len={len(filelist or [])}")
+                # logger.info(f"Filelist len={len(filelist or [])}")
                 if self.cpus > 1:
                     batch_size = min(100, 1 + len(filelist) // (self.cpus * 2))
                     with tqdm_joblib_context(
