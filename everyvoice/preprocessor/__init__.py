@@ -364,20 +364,24 @@ class Preprocessor:
         """
         return torch.linalg.norm(spectral_feature_tensor, dim=0)
 
-    def extract_text_inputs(self, text, use_pfs=False) -> torch.Tensor:
+    def extract_text_inputs(self, text, use_pfs=False, quiet=False) -> torch.Tensor:
         """Given some text, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
 
         Args:
             text (str): text
+            use_pfs:
+            quiet: suppress warnings
         """
         if self.text_processor is None:
             raise ValueError("Text processor not initialized")
         if use_pfs:
             return torch.Tensor(
-                self.text_processor.text_to_phonological_features(text)
+                self.text_processor.text_to_phonological_features(text, quiet)
             ).long()
         else:
-            return torch.Tensor(self.text_processor.text_to_sequence(text)).long()
+            return torch.Tensor(
+                self.text_processor.text_to_sequence(text, quiet)
+            ).long()
 
     def print_duration(self):
         """Convert seconds to a human readable format"""
@@ -665,7 +669,7 @@ class Preprocessor:
         if attn_prior_path.exists() and not self.overwrite:
             return
         binomial_interpolator = BetaBinomialInterpolator()
-        text = self.extract_text_inputs(item["text"], use_pfs=False)
+        text = self.extract_text_inputs(item["text"], use_pfs=False, quiet=True)
         input_spec_path = self.create_path(
             item,
             "spec",
