@@ -506,5 +506,69 @@ class LoadConfigTest(TestCase):
                 config = AlignerConfig.load_config_from_path(tempdir / "aligner.json")
 
 
+class BaseTrainingConfigTest(TestCase):
+    """
+    Validate BaseTrainingConfig
+    """
+
+    def test_ckpt_epochs_cannot_be_negative(self):
+        """
+        every_n_epochs aka ckpt_epochs must be None or non-negative.
+        """
+        config = BaseTrainingConfig(ckpt_epochs=None, ckpt_steps=None)
+        self.assertEqual(config.ckpt_epochs, None)
+
+        config = BaseTrainingConfig(ckpt_epochs=0, ckpt_steps=None)
+        self.assertEqual(config.ckpt_epochs, 0)
+
+        config = BaseTrainingConfig(ckpt_epochs=10, ckpt_steps=None)
+        self.assertEqual(config.ckpt_epochs, 10)
+
+        with self.assertRaises(ValueError):
+            _ = BaseTrainingConfig(ckpt_epochs=-1, ckpt_steps=None)
+
+    def test_ckpt_steps_cannot_be_negative(self):
+        """
+        every_n_train_steps aka ckpt_steps must be None or non-negative.
+        """
+        config = BaseTrainingConfig(ckpt_epochs=None, ckpt_steps=None)
+        self.assertEqual(config.ckpt_steps, None)
+
+        config = BaseTrainingConfig(ckpt_epochs=None, ckpt_steps=0)
+        self.assertEqual(config.ckpt_steps, 0)
+
+        config = BaseTrainingConfig(ckpt_epochs=None, ckpt_steps=10)
+        self.assertEqual(config.ckpt_steps, 10)
+
+        with self.assertRaises(ValueError):
+            _ = BaseTrainingConfig(ckpt_epochs=None, ckpt_steps=-1)
+
+    def test_mutually_exclusive_ckpt_options(self):
+        """
+        ckpt_epochs and ckpt_steps must be mutually exclusive.
+        """
+        config = BaseTrainingConfig()
+        self.assertEqual(config.ckpt_epochs, 1)
+        self.assertEqual(config.ckpt_steps, None)
+
+        config = BaseTrainingConfig(ckpt_epochs=None, ckpt_steps=None)
+        self.assertEqual(config.ckpt_epochs, None)
+        self.assertEqual(config.ckpt_steps, None)
+
+        config = BaseTrainingConfig(ckpt_epochs=7, ckpt_steps=None)
+        self.assertEqual(config.ckpt_epochs, 7)
+        self.assertEqual(config.ckpt_steps, None)
+
+        config = BaseTrainingConfig(ckpt_epochs=None, ckpt_steps=11)
+        self.assertEqual(config.ckpt_epochs, None)
+        self.assertEqual(config.ckpt_steps, 11)
+
+        with self.assertRaises(ValueError):
+            _ = BaseTrainingConfig(
+                ckpt_epochs=1,
+                ckpt_steps=1,
+            )
+
+
 if __name__ == "__main__":
     main()

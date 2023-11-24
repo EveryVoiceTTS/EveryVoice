@@ -13,7 +13,9 @@ from pydantic import (
     Field,
     ValidationInfo,
     field_validator,
+    model_validator,
 )
+from typing_extensions import Annotated
 
 from everyvoice.config.utils import PossiblyRelativePath, PossiblySerializedCallable
 from everyvoice.utils import generic_dict_loader, get_current_time
@@ -129,8 +131,11 @@ class LoggerConfig(PartialLoadConfig):
 class BaseTrainingConfig(PartialLoadConfig):
     batch_size: int = 16
     save_top_k_ckpts: int = 5
-    ckpt_steps: Union[int, None] = None
-    ckpt_epochs: Union[int, None] = 1
+    # According to
+    # [ModelCheckpoint](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html#lightning.pytorch.callbacks.ModelCheckpoint),
+    # ckpt_epochs and ckpt_steps must be None or non-negative.
+    ckpt_steps: Union[Annotated[int, Field(ge=0)], None] = None
+    ckpt_epochs: Union[Annotated[int, Field(ge=0)], None] = 1
     max_epochs: int = 1000
     max_steps: int = 100000
     finetune_checkpoint: Union[PossiblyRelativePath, None] = None
@@ -149,6 +154,17 @@ class BaseTrainingConfig(PartialLoadConfig):
     @classmethod
     def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
         return PartialLoadConfig.path_relative_to_absolute(value, info)
+
+    @model_validator(mode="after")
+    def multually_exclusive_ckpt_options(self) -> "BaseTrainingConfig":
+        """
+        As documented in
+        [ModelCheckpoint](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html#lightning.pytorch.callbacks.ModelCheckpoint),
+        `ckpt_steps` and `ckpt_epochs` have to be mutually exclusive.
+        """
+        if self.ckpt_epochs is not None and self.ckpt_steps is not None:
+            raise ValueError("ckpt_epochs and ckpt_steps have to be mutually exclusive")
+        return self
 
 
 class BaseOptimizer(ConfigModel):
