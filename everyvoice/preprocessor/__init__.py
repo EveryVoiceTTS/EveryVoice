@@ -861,7 +861,7 @@ class Preprocessor:
                     )
                     sys.exit(1)
                 # logger.info(f"Audio Filelist len={len(filelist or [])}")
-            elif process == "text":
+            elif process in ["text", "pfs"]:
                 # We split out the "text" step to issue the missing symbol warnings
                 filelist = self.load_filelist(processed_filelist)
                 process_fn = self.get_process_fn(process)
