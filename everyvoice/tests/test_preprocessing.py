@@ -320,9 +320,30 @@ class PreprocessingTest(TestCase):
                     cpus=1,
                     overwrite=True,
                     to_process=to_process,
+                    debug=True,
                 )
             self.assertRegex(output.getvalue(), r"processed files *5")
             self.assertRegex(output.getvalue(), r"previously processed files *0")
+
+    def test_gotta_do_audio_first(self):
+        with tempfile.TemporaryDirectory(prefix="missing_audio", dir=".") as tmpdir:
+            tmpdir = Path(tmpdir)
+            preprocessed = tmpdir / "preprocessed"
+            filelist = preprocessed / "preprocessed_filelist.psv"
+
+            fp_config = EveryVoiceConfig().feature_prediction
+            fp_config.preprocessing.source_data[0].data_dir = (
+                self.data_dir / "lj" / "wavs"
+            )
+            full_filelist = self.data_dir / "metadata.csv"
+            fp_config.preprocessing.source_data[0].filelist = full_filelist
+            fp_config.preprocessing.save_dir = preprocessed
+
+            to_process_no_audio = ("energy", "pitch", "attn", "text", "spec")
+            with self.assertRaises(SystemExit), capture_stdout():
+                Preprocessor(fp_config).preprocess(
+                    output_path=filelist, cpus=1, to_process=to_process_no_audio
+                )
 
     def test_empty_preprocess(self):
         # Test case where the file list is not empty but after filtering
