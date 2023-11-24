@@ -8,6 +8,7 @@ import functools
 import multiprocessing as mp
 import random
 import sys
+from collections import Counter
 from glob import glob
 from multiprocessing import Manager, managers
 from pathlib import Path
@@ -865,9 +866,16 @@ class Preprocessor:
                 # We split out the "text" step to issue the missing symbol warnings
                 filelist = self.load_filelist(processed_filelist)
                 process_fn = self.get_process_fn(process)
+                missing_symbols_before = Counter(self.text_processor.missing_symbols)
                 for f in tqdm(filelist, desc=f"Processing {process} on 1 CPU"):
                     process_fn(f)
-                for symbol, count in self.text_processor.missing_symbols.items():
+                # if only one of "pfs" or "text" is specified, missing_symbols_before
+                # will always be empty, but if both are specified this makes sure
+                # each process gets only its own missing symbols logged.
+                new_missing_symbols = (
+                    self.text_processor.missing_symbols - missing_symbols_before
+                )
+                for symbol, count in new_missing_symbols.items():
                     logger.warning(
                         f"Symbol '{symbol}' occurs in the text {count} times but was not declared in your configuration so it is being ignored."
                     )
