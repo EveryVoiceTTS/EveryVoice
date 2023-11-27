@@ -18,6 +18,7 @@ from everyvoice.tests.test_preprocessing import (
     PreprocessingTest,
 )
 from everyvoice.tests.test_text import TextTest
+from everyvoice.tests.test_utils import UtilsTest
 from everyvoice.tests.test_wizard import WavFileDirectoryRelativePathTest, WizardTest
 
 # Unit tests
@@ -31,7 +32,7 @@ CONFIG_TESTS = [
 
 DATALOADER_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [DataLoaderTest]]
 
-TEXT_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [TextTest]]
+TEXT_TESTS = [LOADER.loadTestsFromTestCase(test) for test in [TextTest, UtilsTest]]
 
 PREPROCESSING_TESTS = [
     LOADER.loadTestsFromTestCase(test)

@@ -9,8 +9,8 @@ from everyvoice.dataloader import BaseDataModule
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.text import TextProcessor
 from everyvoice.text.lookups import LookupTables
-from everyvoice.utils import check_dataset_size
-from everyvoice.utils.heavy import _flatten, get_segments
+from everyvoice.utils import _flatten, check_dataset_size
+from everyvoice.utils.heavy import get_segments
 
 
 class E2EDataset(Dataset):

@@ -6,7 +6,7 @@ import sys
 from contextlib import contextmanager
 from datetime import datetime
 from itertools import islice
-from os.path import isfile, splitext
+from os.path import splitext
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from unicodedata import normalize
@@ -15,7 +15,6 @@ import joblib.parallel
 import yaml
 from loguru import logger
 from pydantic import ValidationInfo
-from pympi.Praat import TextGrid
 
 from everyvoice import exceptions
 
@@ -45,6 +44,10 @@ def get_current_time():
 
 
 def _flatten(structure, key="", path="", flattened=None):
+    """
+    >>> _flatten({"a": {"b": 2, "c": {"d": "e"}, "f": 4}, "g": 5})
+    {'a_b': 2, 'a_c_d': 'e', 'a_f': 4, 'g': 5}
+    """
     if flattened is None:
         flattened = {}
     if not isinstance(structure, dict):
@@ -91,14 +94,6 @@ def update_config_from_cli_args(arg_list: List[str], original_config):
             expand_config_string_syntax(arg)
         )
     return original_config
-
-
-def update_config_from_path(config_path: Path, original_config):
-    if config_path is None:
-        return original_config
-    logger.info(f"Loading and updating config from '{config_path}'")
-    config_override = load_config_from_json_or_yaml_path(config_path)
-    return original_config.update_config(config_override)
 
 
 def rel_path_to_abs_path(path: Union[None, str], info: Optional[ValidationInfo] = None):
@@ -148,20 +143,23 @@ def write_filelist(files, path):
 
 
 def lower(text):
+    """
+    >>> lower("MiXeD ÇÀSÉ")
+    'mixed çàsé'
+    """
     return text.lower()
 
 
 def nfc_normalize(text):
+    """
+    >>> nfc_normalize("éçà")
+    'éçà'
+    """
     return normalize("NFC", text)
 
 
 def load_lj_metadata_hifigan(path):
-    with open(
-        path,
-        "r",
-        newline="",
-        encoding="utf8",
-    ) as f:
+    with open(path, "r", newline="", encoding="utf8") as f:
         reader = csv.DictReader(
             f,
             fieldnames=["basename", "raw_text", "text"],
@@ -228,20 +226,10 @@ def sniff_and_return_filelist_data(path):
             return list(reader)
 
 
-# NOTE: It's annoying to be so un-DRY (with different functions for each different delmiter),
-# but currently the json serializing of pydantic BaseModels isn't properly configured to serialize partials
-# which would probably be needed to make this more DRY
-
-
 def generic_dict_loader(
     path, delimiter="|", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
 ):
-    with open(
-        path,
-        "r",
-        newline="",
-        encoding="utf8",
-    ) as f:
+    with open(path, "r", newline="", encoding="utf8") as f:
         reader = csv.DictReader(
             f,
             fieldnames=fieldnames,
@@ -267,12 +255,7 @@ def generic_csv_reader(
     escapechar="\\",
     record_limit: int = 0,  # if non-zero, read only this many records
 ):
-    with open(
-        path,
-        "r",
-        newline="",
-        encoding="utf8",
-    ) as f:
+    with open(path, "r", newline="", encoding="utf8") as f:
         if record_limit:
             f = islice(f, record_limit)  # type: ignore[assignment]
         reader = csv.reader(
@@ -285,72 +268,12 @@ def generic_csv_reader(
     return files
 
 
-def generic_csv_dict_reader(
-    path, delimiter=",", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
-):
-    with open(
-        path,
-        "r",
-        newline="",
-        encoding="utf8",
-    ) as f:
-        reader = csv.DictReader(
-            f,
-            fieldnames=fieldnames,
-            delimiter=delimiter,
-            quoting=quoting,
-            escapechar=escapechar,
-        )
-        files = list(reader)
-    return files
-
-
-def generic_tsv_dict_reader(
-    path, delimiter="\t", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
-):
-    with open(
-        path,
-        "r",
-        newline="",
-        encoding="utf8",
-    ) as f:
-        reader = csv.DictReader(
-            f,
-            fieldnames=fieldnames,
-            delimiter=delimiter,
-            quoting=quoting,
-            escapechar=escapechar,
-        )
-        files = list(reader)
-    return files
-
-
-def write_dict(path, data, fieldnames):
-    with open(
-        path,
-        "w",
-        newline="",
-        encoding="utf8",
-    ) as f:
-        writer = csv.DictWriter(
-            f,
-            fieldnames=fieldnames,
-            delimiter="|",
-            quoting=csv.QUOTE_NONE,
-            escapechar="\\",
-        )
-        writer.writeheader()
-        for line in data:
-            writer.writerow(line)
-
-
 def collapse_whitespace(text):
+    """
+    >>> collapse_whitespace("  asdf  	   qwer   ")
+    ' asdf qwer '
+    """
     return re.sub(_whitespace_re, " ", text)
-
-
-def read_textgrid(textgrid_path: str):
-    check_file_exists(textgrid_path)
-    return TextGrid(textgrid_path)
 
 
 def read_filelist(
@@ -362,7 +285,6 @@ def read_filelist(
     speaker_col=None,
     language_col=None,
 ):
-    check_file_exists(filelist_path)
     data = []
     with open(filelist_path, encoding="utf8") as f:
         reader = csv.reader(f, delimiter=delimiter)
@@ -375,11 +297,6 @@ def read_filelist(
                 entry["language"] = line[language_col]
             data.append(entry)
     return data
-
-
-def check_file_exists(path: str):
-    if not isfile(path):
-        raise FileNotFoundError(f"File at {path} could not be found")
 
 
 @contextmanager
