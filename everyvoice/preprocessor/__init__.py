@@ -35,7 +35,12 @@ from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor.attention_prior import BetaBinomialInterpolator
 from everyvoice.text import TextProcessor
-from everyvoice.utils import generic_dict_loader, tqdm_joblib_context, write_filelist
+from everyvoice.utils import (
+    generic_dict_loader,
+    n_times,
+    tqdm_joblib_context,
+    write_filelist,
+)
 from everyvoice.utils.heavy import (
     dynamic_range_compression_torch,
     get_spectral_transform,
@@ -877,7 +882,7 @@ class Preprocessor:
                 )
                 for symbol, count in new_missing_symbols.items():
                     logger.warning(
-                        f"Symbol '{symbol}' occurs in the text {count} times but was not declared in your configuration so it is being ignored."
+                        f"Symbol '{symbol}' occurs {n_times(count)} but was not declared in your configuration so it is being ignored."
                     )
             else:
                 # If audio has already been processed, then just read the processed_filelist
