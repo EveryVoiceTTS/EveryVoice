@@ -37,7 +37,14 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=REQS,
-    entry_points={"console_scripts": ["everyvoice = everyvoice.cli:app"]},
+    entry_points={
+        "console_scripts": [
+            "everyvoice = everyvoice.cli:app",
+            "shell_completion = everyvoice.base_cli.shell_completion:app",
+            "clidantic = everyvoice.base_cli.clidantic:cli",
+            "pydantic_cli = everyvoice.base_cli.pydantic_cli.cli",
+        ]
+    },
     zip_safe=False,
     classifiers=[
         "Programming Language :: Python :: 3",
