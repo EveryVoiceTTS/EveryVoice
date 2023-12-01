@@ -13,6 +13,9 @@ EV_DIR = Path(EV_FILE).parent
 
 
 class CLITest(TestCase):
+
+    data_dir = Path(__file__).parent / "data"
+
     def setUp(self) -> None:
         self.runner = CliRunner()
         self.commands = [
@@ -47,10 +50,21 @@ class CLITest(TestCase):
                     )
                 )
 
-    def test_inspect_checkpoint(self):
+    def test_inspect_checkpoint_help(self):
         result = self.runner.invoke(app, ["inspect-checkpoint", "--help"])
-        self.assertIn("inspect-checkpoint [OPTIONS] MODEL_PATH",
-                result.stdout)
+        self.assertIn("inspect-checkpoint [OPTIONS] MODEL_PATH", result.stdout)
+
+    def test_inspect_checkpoint(self):
+        result = self.runner.invoke(
+            app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
+        )
+        self.assertIn('global_step": 52256', result.stdout)
+        self.assertIn(
+            "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version.",
+            result.stdout,
+        )
+        self.assertIn("It appears to have 0.0 M parameters.", result.stdout)
+        self.assertIn("Number of Parameters", result.stdout)
 
 
 if __name__ == "__main__":
