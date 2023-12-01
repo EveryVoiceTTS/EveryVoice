@@ -1,3 +1,4 @@
+import sys
 from enum import Enum
 from typing import List, Optional, Union
 
@@ -81,6 +82,7 @@ class Step(_Step, NodeMixin):
             self.validate = validate_method  # type: ignore[method-assign]
         if children:
             self.children = children
+        self._validation_failures = 0
 
     def __repr__(self) -> str:
         return f"{self.name}: {super().__repr__()}"
@@ -99,6 +101,10 @@ class Step(_Step, NodeMixin):
             finally:
                 self.effect()
         else:
+            self._validation_failures += 1
+            if self._validation_failures > 20:
+                print("ERROR: Giving up after 20 validation failures.")
+                sys.exit(1)
             self.run()
 
 
@@ -148,6 +154,7 @@ class StepNames(Enum):
     wavs_dir_step = "Wavs Dir Step"
     filelist_step = "Filelist Step"
     filelist_format_step = "Filelist Format Step"
+    data_has_header_line_step = "Filelist Has Header Line Step"
     basename_header_step = "Basename Header Step"
     text_header_step = "Text Header Step"
     data_has_speaker_value_step = "Data Has Speaker Step"

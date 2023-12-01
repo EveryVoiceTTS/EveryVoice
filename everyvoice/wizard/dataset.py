@@ -184,15 +184,6 @@ class FilelistFormatStep(Step):
                 filelist_path, delimiter=self.state.get("filelist_delimiter")
             )
             self.state["filelist_headers"] = list(self.state["filelist_data"][0])
-            if (
-                "text" not in self.state["filelist_headers"]
-                and "basename" not in self.state["filelist_headers"]
-            ):
-                print(
-                    "Warning: we assume the filelist's first line has header names, but "
-                    'your filelist does not have the standard "basename" and "text" headers. '
-                    "The first line will be replaced by headers based on your next answers."
-                )
             if "text" not in self.state["filelist_headers"]:
                 self.tour.add_step(
                     HeaderStep(
@@ -213,6 +204,13 @@ class FilelistFormatStep(Step):
                     ),
                     self,
                 )
+            if (
+                "text" not in self.state["filelist_headers"]
+                and "basename" not in self.state["filelist_headers"]
+            ):
+                self.tour.add_step(
+                    HasHeaderLineStep(state_subset=self.state_subset), self
+                )
 
 
 # HEADER SELECTION
@@ -227,15 +225,13 @@ class HeaderStep(Step):
         self.header_name = header_name
 
     def prompt(self):
-        choices = [
-            f"{x}: {self.state['filelist_data'][0][x]}"
-            for x, _ in enumerate(self.state["filelist_headers"])
+        selected_headers = self.state.get("selected_headers", [])
+        choice_indices = [
+            x
+            for x in range(len(self.state["filelist_headers"]))
+            if x not in selected_headers
         ]
-        # filter if already selected
-        if "selected_headers" in self.state:
-            choices = tuple(
-                x for x in choices if int(x[:1]) not in self.state["selected_headers"]
-            )
+        choices = [f"{x}: {self.state['filelist_data'][0][x]}" for x in choice_indices]
         response = get_response_from_menu_prompt(
             prompt_text=self.prompt_text,
             choices=choices,
@@ -243,13 +239,7 @@ class HeaderStep(Step):
             search=False,
             return_indices=True,
         )
-        # adjust index offset with previous selections
-        if "selected_headers" in self.state:
-            previous_selected = [
-                x for x in self.state["selected_headers"] if x <= response
-            ]
-            response += len(previous_selected)
-        return response
+        return choice_indices[response]
 
     def validate(self, response):
         return isinstance(response, int)
@@ -260,6 +250,30 @@ class HeaderStep(Step):
             self.state["selected_headers"] = []
         self.state["selected_headers"].append(self.response)
         self.state["filelist_headers"][self.response] = self.header_name
+
+
+class HasHeaderLineStep(Step):
+    DEFAULT_NAME = StepNames.data_has_header_line_step
+    choices = ("no", "yes")
+
+    def prompt(self):
+        prompt_text = (
+            "Your filelist does not have the standard headers. The first row is:\n"
+            + self.state["filelist_delimiter"].join(self.state["filelist_data"][0])
+            + "\nIs this line a header row?"
+        )
+        return get_response_from_menu_prompt(
+            prompt_text=prompt_text,
+            choices=self.choices,
+        )
+
+    def validate(self, response):
+        return response in self.choices
+
+    def effect(self):
+        if self.state[StepNames.data_has_header_line_step.value] == "no":
+            print("Reinterpreting your first row as a record, not headers.")
+            self.state["filelist_data"].insert(0, self.state["filelist_data"][0])
 
 
 class HasSpeakerStep(Step):
@@ -386,6 +400,9 @@ def reload_filelist_data_as_dict(state):
             filelist_path,
             delimiter=state.get("filelist_delimiter"),
             fieldnames=state["filelist_headers"],
+            file_has_header_line=(
+                state.get(StepNames.data_has_header_line_step.value, "yes") == "yes"
+            ),
         )
     else:
         state["filelist_data"] = read_festival(filelist_path)
@@ -436,7 +453,7 @@ class TextProcessingStep(Step):
         # Apply the selected text processing processes
         process_lookup = {
             0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
-            1: {"fn": lambda x: normalize("NFC", x), "desc": ""},
+            1: {"fn": lambda x: normalize("NFC", x), "desc": "NFC Normalization"},
         }
         if self.response:
             for process in self.response:

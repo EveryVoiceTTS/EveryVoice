@@ -310,18 +310,28 @@ class WizardTest(TestCase):
         format_step = find_step(SN.filelist_format_step, tour.steps)
         with patch_menu_prompt(0):  # 0 is "psv"
             format_step.run()
-        self.assertIsInstance(format_step.children[0], dataset.HeaderStep)
-        self.assertEqual(format_step.children[0].name, SN.basename_header_step.value)
+        self.assertIsInstance(format_step.children[0], dataset.HasHeaderLineStep)
+        self.assertEqual(
+            format_step.children[0].name, SN.data_has_header_line_step.value
+        )
         self.assertIsInstance(format_step.children[1], dataset.HeaderStep)
-        self.assertEqual(format_step.children[1].name, SN.text_header_step.value)
+        self.assertEqual(format_step.children[1].name, SN.basename_header_step.value)
+        self.assertIsInstance(format_step.children[2], dataset.HeaderStep)
+        self.assertEqual(format_step.children[2].name, SN.text_header_step.value)
 
         step = format_step.children[0]
+        with patch_menu_prompt(1):  # 1 is "yes"
+            step.run()
+        self.assertEqual(step.state[SN.data_has_header_line_step.value], "yes")
+        self.assertEqual(len(step.state["filelist_data"]), 4)
+
+        step = format_step.children[1]
         with patch_menu_prompt(1):  # 1 is second column
             step.run()
         self.assertEqual(step.response, 1)
         self.assertEqual(step.state["filelist_headers"][1], "basename")
 
-        step = tour.steps[2].children[1]
+        step = tour.steps[2].children[2]
         with patch_menu_prompt(1):  # 1 is second remaining column, i.e., third column
             step.run()
         # print(step.state["filelist_headers"])
@@ -360,6 +370,9 @@ class WizardTest(TestCase):
             text_processing_step.state["filelist_data"][1]["text"],
             "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
         )
+
+        # Make sure realoading the data as dict stripped the header line
+        self.assertEqual(len(step.state["filelist_data"]), 3)
 
         sox_effects_step = find_step(SN.sox_effects_step, tour.steps)
         # 0 is resample to 22050 kHz, 2 is remove silence at start and end
@@ -578,7 +591,7 @@ class WizardTest(TestCase):
                     StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
                     StepAndAnswer(
                         dataset.FilelistStep(),
-                        Say(str(data_dir / "metadata.csv")),
+                        Say(data_dir / "metadata.csv"),
                     ),
                     StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
                     StepAndAnswer(
@@ -621,7 +634,7 @@ class WizardTest(TestCase):
                     StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
                     StepAndAnswer(
                         dataset.FilelistStep(),
-                        Say(str(data_dir / "language-col.tsv")),
+                        Say(data_dir / "language-col.tsv"),
                     ),
                     StepAndAnswer(dataset.FilelistFormatStep(), Say("tsv")),
                     StepAndAnswer(
@@ -647,6 +660,42 @@ class WizardTest(TestCase):
         self.assertEqual(tour.state[SN.language_header_step.value], 3)
         self.assertTrue(tour.steps[-1].completed)
 
+    def test_no_header_line(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            with open(tmpdir / "filelist.psv", "w", encoding="utf8") as f:
+                f.write("f1|foo bar|Joe\nf2|bar baz|Joe\nf3|baz foo|Joe\n")
+            for basename in ("f1", "f2", "f3"):
+                with open(tmpdir / (basename + ".wav"), "wb"):
+                    pass
+            tour = self.monkey_run_tour(
+                "Tour with datafile missing the header line",
+                [
+                    StepAndAnswer(basic.NameStep(), Say("project")),
+                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
+                    StepAndAnswer(dataset.WavsDirStep(), Say(tmpdir)),
+                    StepAndAnswer(
+                        dataset.FilelistStep(),
+                        Say(tmpdir / "filelist.psv"),
+                    ),
+                    StepAndAnswer(
+                        dataset.FilelistFormatStep(),
+                        Say("psv"),
+                        children_answers=[
+                            RecursiveAnswers(Say("no")),  # no header line
+                            RecursiveAnswers(Say(0)),  # column 0 is basename
+                            RecursiveAnswers(Say(1)),  # column 1 is text
+                        ],
+                    ),
+                    StepAndAnswer(dataset.SelectLanguageStep(), Say("und")),
+                    StepAndAnswer(dataset.DatasetNameStep(), Say("dataset")),
+                    StepAndAnswer(basic.ConfigFormatStep(), Say("yaml")),
+                ],
+            )
+            self.assertEqual(len(tour.state["filelist_data"]), 3)
+            # print(tour.state)
+            # print(list(tmpdir.glob("**/*")))
+
     def test_keyboard_interrupt(self):
         step = basic.NameStep()
         with self.assertRaises(KeyboardInterrupt):
@@ -663,6 +712,12 @@ class WizardTest(TestCase):
         step = basic.MoreDatasetsStep()
         with self.assertRaises(KeyboardInterrupt):
             with patch_menu_prompt(KeyboardInterrupt()):
+                step.run()
+
+    def test_give_up_after_twenty_failures(self):
+        step = dataset.WavsDirStep()
+        with monkeypatch(step, "prompt", Say("no/such/directory")):
+            with capture_stdout(), self.assertRaises(SystemExit):
                 step.run()
 
 

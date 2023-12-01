@@ -142,27 +142,18 @@ class ConfigFormatStep(Step):
                 Path("..")
                 / f"{self.state[dataset][StepNames.dataset_name_step.value]}-filelist.psv"
             ).expanduser()
-            for entry_i in range(len(self.state[dataset]["filelist_data"])):
+            filelist_data = self.state[dataset]["filelist_data"]
+            for i, entry in enumerate(filelist_data):
                 # Remove .wav if it was added to the basename
-                if self.state[dataset]["filelist_data"][entry_i]["basename"].endswith(
-                    ".wav"
-                ):
-                    self.state[dataset]["filelist_data"][entry_i][
-                        "basename"
-                    ] = self.state[dataset]["filelist_data"][entry_i][
-                        "basename"
-                    ].replace(
-                        ".wav", ""
-                    )
-                self.state[dataset]["filelist_data"][entry_i] = {
+                if entry["basename"].endswith(".wav"):
+                    entry["basename"] = entry["basename"].replace(".wav", "")
+                # Remove unknown columns
+                filelist_data[i] = {
                     k: v
-                    for k, v in self.state[dataset]["filelist_data"][entry_i].items()
+                    for k, v in entry.items()
                     if k is not None and not k.startswith("unknown")
                 }
-            write_filelist(
-                self.state[dataset]["filelist_data"],
-                (config_dir / new_filelist_path).absolute(),
-            )
+            write_filelist(filelist_data, (config_dir / new_filelist_path).absolute())
             sox_effects = self.state[dataset]["sox_effects"]
             filelist_loader = generic_psv_dict_reader
 
