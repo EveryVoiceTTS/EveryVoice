@@ -12,11 +12,6 @@ import typer
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
-    FastSpeech2,
-)
-from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
-
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
     help="Extract checkpoint's hyperparameters.",
@@ -142,6 +137,10 @@ def inspect(
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             try:
+                from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import (
+                    HiFiGAN,
+                )
+
                 model = HiFiGAN.load_from_checkpoint(model_path)
                 print(summary(model, None, verbose=0))
             # NOTE if ANY exception is raise, that means the model couldn't be
@@ -149,6 +148,10 @@ def inspect(
             # forgiveness, not permission".
             except Exception:
                 try:
+                    from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
+                        FastSpeech2,
+                    )
+
                     model = FastSpeech2.load_from_checkpoint(model_path)
                     print(summary(model, None, verbose=0))
                 except Exception:
