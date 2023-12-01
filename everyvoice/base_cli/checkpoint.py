@@ -2,15 +2,13 @@
 CLI command to inspect EveryVoice's checkpoints.
 """
 import json
-import sys
 import warnings
-from enum import Enum
+from collections import defaultdict
 from json import JSONEncoder
 from pathlib import Path
 from typing import Any, Dict
 
 import typer
-import yaml
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
@@ -23,15 +21,6 @@ app = typer.Typer(
     pretty_exceptions_show_locals=False,
     help="Extract checkpoint's hyperparameters.",
 )
-
-
-class ExportType(str, Enum):
-    """
-    Available export format for the configuration.
-    """
-
-    JSON = "json"
-    YAML = "yaml"
 
 
 class CheckpointEncoder(JSONEncoder):
@@ -52,7 +41,19 @@ class CheckpointEncoder(JSONEncoder):
         return super().default(obj)
 
 
-def load_checkpoint(model_path: Path) -> Dict[str, Any]:
+def summarize_statedict(ckpt: dict) -> dict:
+    if "state_dict" not in ckpt:
+        return {}
+    model_keys: Dict[str, int] = defaultdict(int)
+    for k, v in sorted(ckpt["state_dict"].items()):
+        main_key = k.split(".")[0]
+        model_keys[main_key] += v.numel()
+
+    model_keys["TOTAL"] = sum(model_keys.values())
+    return model_keys
+
+
+def load_checkpoint(model_path: Path, minimal=True) -> Dict[str, Any]:
     """
     Loads a checkpoint and performs minor clean up of the checkpoint.
     Removes the `optimizer_states`'s `state` and `param_groups`'s `params`.
@@ -62,22 +63,27 @@ def load_checkpoint(model_path: Path) -> Dict[str, Any]:
 
     checkpoint = torch.load(str(model_path), map_location=torch.device("cpu"))
 
-    # Some clean up of useless stuff.
-    if "optimizer_states" in checkpoint:
-        for optimizer in checkpoint["optimizer_states"]:
-            # Delete the optimizer history values.
-            if "state" in optimizer:
-                del optimizer["state"]
-            # These are simply values [0, len(checkpoint["optimizer_states"][0]["state"])].
-            for param_group in optimizer["param_groups"]:
-                if "params" in param_group:
-                    del param_group["params"]
+    if minimal:
+        # Some clean up of useless stuff.
+        if "optimizer_states" in checkpoint:
+            for optimizer in checkpoint["optimizer_states"]:
+                # Delete the optimizer history values.
+                if "state" in optimizer:
+                    del optimizer["state"]
+                # These are simply values [0, len(checkpoint["optimizer_states"][0]["state"])].
+                if "param_groups" in optimizer:
+                    for param_group in optimizer["param_groups"]:
+                        if "params" in param_group:
+                            del param_group["params"]
 
-    if "state_dict" in checkpoint:
-        del checkpoint["state_dict"]
+        if "state_dict" in checkpoint:
+            del checkpoint["state_dict"]
 
-    if "loops" in checkpoint:
-        del checkpoint["loops"]
+        if "callbacks" in checkpoint:
+            del checkpoint["callbacks"]
+
+        if "loops" in checkpoint:
+            del checkpoint["loops"]
 
     return checkpoint
 
@@ -91,13 +97,12 @@ def inspect(
         file_okay=True,
         help="The path to your model checkpoint file.",
     ),
-    export_type: ExportType = ExportType.YAML,
     show_config: Annotated[
         bool,
         typer.Option(
             "--show-config/--no-show-config",  # noqa
             "-c/-C",  # noqa
-            help="Show the configuration used during training in either json or yaml format",  # noqa
+            help="Show the configuration used during training",  # noqa
         ),
     ] = True,
     show_architecture: Annotated[
@@ -108,60 +113,61 @@ def inspect(
             help="Show the model's architecture",  # noqa
         ),
     ] = True,
-    show_weights: Annotated[
-        bool,
-        typer.Option(
-            "--show-weights/--no-show-weights",  # noqa
-            "-w/-W",  # noqa
-            help="Show the number of weights per layer",  # noqa
-        ),
-    ] = True,
 ):
     """
     Given an EveryVoice checkpoint, show information about the configuration
     used during training, the model's architecture and the number of weights
     per layer and total weight count.
     """
-    checkpoint = load_checkpoint(model_path)
 
     if show_config:
-        print("Configs:")
-        if export_type is ExportType.JSON:
-            json.dump(
-                checkpoint,
-                sys.stdout,
-                ensure_ascii=False,
-                indent=2,
-                cls=CheckpointEncoder,
-            )
-        elif export_type is ExportType.YAML:
-            output = json.loads(json.dumps(checkpoint, cls=CheckpointEncoder))
-            yaml.dump(output, stream=sys.stdout)
-        else:
-            raise NotImplementedError(f"Unsupported export type {export_type}!")
+        print(
+            """
+    ++++++++++++++
+        CONFIG
+    ++++++++++++++
+"""
+        )
+        config = json.dumps(
+            load_checkpoint(model_path),
+            ensure_ascii=False,
+            indent=2,
+            cls=CheckpointEncoder,
+        )
+        print(config)
 
     if show_architecture:
+        from torchinfo import summary
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             try:
                 model = HiFiGAN.load_from_checkpoint(model_path)
+                print(summary(model, None, verbose=0))
             # NOTE if ANY exception is raise, that means the model couldn't be
             # loaded and we want to try another config type.  This is to "ask
             # forgiveness, not permission".
             except Exception:
                 try:
                     model = FastSpeech2.load_from_checkpoint(model_path)
+                    print(summary(model, None, verbose=0))
                 except Exception:
-                    raise NotImplementedError(
-                        "Your checkpoint contains a model type that is not yet supported!"
+                    from tabulate import tabulate
+
+                    model = load_checkpoint(model_path, minimal=False)
+                    print(
+                        "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version."
                     )
-            print("\n\nModel Architecture:\n", model, sep="")
-
-    if show_weights:
-        from torchinfo import summary
-
-        statistics = summary(model, None, verbose=0)
-        print("\nModel's Weights:\n", statistics)
-        # According to Aidan (1, 80, 50) should be a valid input size but it looks
-        # like the model is expecting a Dict which isn't supported by torchsummary.
-        # print(summary(model, (1, 80, 50)))
+                    if sd_summary := summarize_statedict(model):
+                        print(
+                            f"We've tried to infer some information from your checkpoint. It appears to have {round(sd_summary['TOTAL'] / 1000000, 2)} M parameters."
+                        )
+                        print(
+                            tabulate(
+                                [[k, v] for k, v in sd_summary.items()],
+                                tablefmt="rounded_grid",
+                                # for some reason mypy is complaining, but intfmt is valid as of tabulate==0.9.0
+                                intfmt=",",  # type: ignore
+                                headers=["LayerName", "Number of Parameters"],
+                            )
+                        )
