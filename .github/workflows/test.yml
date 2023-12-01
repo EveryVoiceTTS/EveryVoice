@@ -44,3 +44,12 @@ jobs:
         with:
           fail_ci_if_error: false # optional (default = false)
           token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Make sure the CLI stays fast
+        run: |
+          CLI_LOAD_TIME="$((/usr/bin/time --format=%E everyvoice -h > /dev/null) 2>&1)"
+          echo "CLI load time: $CLI_LOAD_TIME"
+          if [[ "$CLI_LOAD_TIME" > "0:02.00" ]]; then \
+            echo "ERROR: everyvoice --help is too slow."; \
+            echo "Please make sure any expensive imports are tucked away so that the CLI doesn't load them until it uses them."; \
+            false; \
+          fi
