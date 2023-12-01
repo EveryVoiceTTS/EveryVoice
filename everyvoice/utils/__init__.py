@@ -226,8 +226,14 @@ def sniff_and_return_filelist_data(path):
 
 
 def generic_dict_loader(
-    path, delimiter="|", quoting=csv.QUOTE_NONE, escapechar="\\", fieldnames=None
+    path,
+    delimiter="|",
+    quoting=csv.QUOTE_NONE,
+    escapechar="\\",
+    fieldnames=None,
+    file_has_header_line=True,
 ):
+    assert fieldnames is not None or file_has_header_line
     with open(path, "r", newline="", encoding="utf8") as f:
         reader = csv.DictReader(
             f,
@@ -236,9 +242,9 @@ def generic_dict_loader(
             quoting=quoting,
             escapechar=escapechar,
         )
-        # When fieldnames is given, csv.DictReader treats the header line as a
-        # data line, but we don't want that, so skip it.
-        if fieldnames:
+        # When fieldnames is given, csv.DictReader assumes the first line is a data
+        # line.  Skip it if the file has a header line.
+        if fieldnames and file_has_header_line:
             next(reader)
         files = list(reader)
     return files
