@@ -57,7 +57,7 @@ class TextProcessor:
             discard_empty=True,
         )
 
-    def replace_cleaner(self, text):
+    def replace_cleaner(self, text: str) -> str:
         """Given some text and a list of replacement operations in the form of input/output key value pairs,
            return the transformed text.
         Args:
@@ -69,7 +69,7 @@ class TextProcessor:
             text = re.sub(k, v, text)
         return text
 
-    def text_to_sequence(self, text):
+    def text_to_sequence(self, text: str, quiet: bool = False):
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
         Args:
         text: string to convert to a sequence
@@ -78,24 +78,24 @@ class TextProcessor:
         List of integers corresponding to the symbols in the text
         """
         sequence = []
-        clean_tokens = self.text_to_tokens(text)
+        clean_tokens = self.text_to_tokens(text, quiet)
         for symbol in clean_tokens:
             symbol_id = self._symbol_to_id[symbol]
             sequence += [symbol_id]
         return sequence
 
-    def text_to_phonological_features(self, text):
+    def text_to_phonological_features(self, text: str, quiet: bool = False):
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
         Args:
-        text: string to convert to a sequence
-        cleaner_fns: a list of fns to clean text
+            text: string to convert to a sequence
+            quiet: suppress warnings
         Returns:
-        List of phonological feature vectors
+            List of phonological feature vectors
         """
-        clean_text = self.text_to_tokens(text)
+        clean_text = self.text_to_tokens(text, quiet)
         return get_features(clean_text)
 
-    def clean_text(self, text):
+    def clean_text(self, text: str) -> str:
         """Converts some text to cleaned text"""
         text = self.replace_cleaner(text)
         for cleaner_fn in self.config.text.cleaners:
@@ -107,20 +107,21 @@ class TextProcessor:
                 ) from e
         return text
 
-    def text_to_tokens(self, text):
+    def text_to_tokens(self, text: str, quiet: bool = False):
         """Converts a string of text to a sequence of tokens.
         Args:
-        text: string to convert to a sequence
-        cleaner_fns: a list of fns to clean text
+            text: string to convert to a sequence
+            quiet: suppress warnings
         Returns:
-        List of symbols in the text
+            List of symbols in the text
         """
         clean_text = self.clean_text(text)
         clean_tokens = self._tokenizer.tokenize(clean_text)
         for symbol in self._missing_symbol_finder.tokenize(clean_text):
-            logger.warning(
-                f"Symbol '{symbol}' occurs in the text '{clean_text}' but was not declared in your configuration so it is being ignored."
-            )
+            if not quiet:
+                logger.warning(
+                    f"Symbol '{symbol}' occurs in the text '{clean_text}' but was not declared in your configuration so it is being ignored."
+                )
             self.missing_symbols[symbol] += 1
         return clean_tokens
 
@@ -132,9 +133,9 @@ class TextProcessor:
     def cleaned_text_to_sequence(self, cleaned_text):
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
         Args:
-        text: string to convert to a sequence
+            text: string to convert to a sequence
         Returns:
-        List of integers corresponding to the symbols in the text
+            List of integers corresponding to the symbols in the text
         """
         cleaned_text = self._tokenizer.tokenize(cleaned_text)
         return [self._symbol_to_id[symbol] for symbol in cleaned_text]

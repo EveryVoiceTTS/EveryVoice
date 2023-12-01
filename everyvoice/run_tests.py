@@ -79,9 +79,10 @@ def run_tests(suite):
 
 if __name__ == "__main__":
     try:
-        result = run_tests(sys.argv[1])
-        if not result:
-            sys.exit(1)
+        suite = sys.argv[1]
     except IndexError:
-        logger.error("Please specify a test suite to run: i.e. 'dev' or 'all'")
+        logger.info('No test suite specified, defaulting to "dev"')
+        suite = "dev"
+    result = run_tests(suite)
+    if not result:
         sys.exit(1)

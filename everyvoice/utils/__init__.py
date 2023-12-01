@@ -324,3 +324,20 @@ def tqdm_joblib_context(tqdm_instance):
     finally:
         tqdm_instance.close()
         joblib.parallel.BatchCompletionCallBack = old_callback
+
+
+def n_times(n: int) -> str:
+    """Return a grammatically correct version of n times for n > 0.
+
+    >>> n_times(1)
+    'once'
+    >>> n_times(2)
+    'twice'
+    >>> n_times(1001)
+    '1001 times'
+    """
+    if n == 1:
+        return "once"
+    if n == 2:
+        return "twice"
+    return f"{n} times"
