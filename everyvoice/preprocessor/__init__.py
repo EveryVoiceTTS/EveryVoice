@@ -375,7 +375,7 @@ class Preprocessor:
         """
         return torch.linalg.norm(spectral_feature_tensor, dim=0)
 
-    def extract_text_inputs(self, text, use_pfs=False) -> torch.Tensor:
+    def extract_text_inputs(self, text, use_pfs=False, tokenize=False) -> torch.Tensor:
         """Given some text, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
 
         Args:
@@ -387,8 +387,11 @@ class Preprocessor:
             return torch.Tensor(
                 self.text_processor.text_to_phonological_features(text)
             ).long()
-        else:
+        if tokenize:
             return torch.Tensor(self.text_processor.text_to_sequence(text)).long()
+        else:
+            tokens = text.split('*')
+            return torch.Tensor(self.text_processor.text_tokens_to_sequence(tokens)).long()
 
     def print_duration(self):
         """Convert seconds to a human readable format"""

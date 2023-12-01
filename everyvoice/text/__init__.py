@@ -146,3 +146,17 @@ class TextProcessor:
     def token_sequence_to_text(self, sequence) -> str:
         """Converts a sequence of IDs back to a string"""
         return "".join(self.token_sequence_to_text_sequence(sequence))
+
+    def text_tokens_to_sequence(self, clean_tokens):
+        """Converts a list of cleaned strings to a sequence of IDs corresponding to the symbols in the text.
+        Args:
+        text: string to convert to a sequence
+        cleaner_fns: a list of fns to clean text
+        Returns:
+        List of integers corresponding to the symbols in the text
+        """
+        sequence = []
+        for symbol in clean_tokens:
+            symbol_id = self._symbol_to_id[symbol]
+            sequence += [symbol_id]
+        return sequence

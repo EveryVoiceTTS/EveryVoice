@@ -138,6 +138,7 @@ def train_base_command(
         gradient_clip_val=1.0,
         logger=tensorboard_logger,
         accelerator=accelerator,
+        check_val_every_n_epoch=20,
         devices=devices,
         max_epochs=config.training.max_epochs,
         max_steps=config.training.max_steps,
