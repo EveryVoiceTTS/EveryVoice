@@ -9,8 +9,11 @@ from tqdm import tqdm
 
 from everyvoice.config.text_config import Symbols
 from everyvoice.utils import generic_csv_reader, generic_dict_loader, read_festival
-from everyvoice.wizard import CUSTOM_QUESTIONARY_STYLE, Step, StepNames, Tour
-from everyvoice.wizard.prompts import get_response_from_menu_prompt
+from everyvoice.wizard import Step, StepNames, Tour
+from everyvoice.wizard.prompts import (
+    CUSTOM_QUESTIONARY_STYLE,
+    get_response_from_menu_prompt,
+)
 from everyvoice.wizard.validators import validate_path
 
 # WAVS & FILELIST

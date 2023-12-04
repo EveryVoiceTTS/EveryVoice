@@ -2,8 +2,27 @@ import sys
 from typing import List, Tuple, Union
 
 import simple_term_menu
+from questionary import Style
 from rich import print
 from rich.panel import Panel
+
+CUSTOM_QUESTIONARY_STYLE = Style(
+    [
+        ("qmark", "fg:default"),  # token in front of the question
+        ("question", "bold"),  # question text
+        ("answer", "fg:default"),  # submitted answer text behind the question
+        ("pointer", "fg:default"),  # pointer used in select and checkbox prompts
+        (
+            "highlighted",
+            "fg:default bold",
+        ),  # pointed-at choice in select and checkbox prompts
+        ("selected", "fg:default bold"),  # style for a selected item of a checkbox
+        ("separator", "fg:default"),  # separator in lists
+        ("instruction", "reverse"),  # user instructions for select, rawselect, checkbox
+        ("text", "fg:default"),  # plain text
+        ("disabled", "fg:default"),  # disabled choices for select and checkbox prompts
+    ]
+)
 
 
 def get_response_from_menu_prompt(

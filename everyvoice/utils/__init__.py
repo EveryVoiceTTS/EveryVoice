@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 from unicodedata import normalize
 
-import joblib.parallel
 import yaml
 from loguru import logger
 from pydantic import ValidationInfo
@@ -311,6 +310,7 @@ def tqdm_joblib_context(tqdm_instance):
         with tqdm_joblib_context(tqdm(desc="my description", total=len(job_list))):
             joblib.Parallel(n_jobs=cpus)(delayed(fn)(item) for item in job_list)
     """
+    import joblib.parallel
 
     class ParallelCallback(joblib.parallel.BatchCompletionCallBack):
         def __call__(self, out):

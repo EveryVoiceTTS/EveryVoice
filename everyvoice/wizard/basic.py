@@ -14,17 +14,22 @@ from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import generic_psv_dict_reader, write_filelist
-from everyvoice.wizard import CUSTOM_QUESTIONARY_STYLE, Step, StepNames
+from everyvoice.wizard import (
+    ALIGNER_CONFIG_FILENAME_PREFIX,
+    PREPROCESSING_CONFIG_FILENAME_PREFIX,
+    SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
+    TEXT_CONFIG_FILENAME_PREFIX,
+    TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
+    TEXT_TO_WAV_CONFIG_FILENAME_PREFIX,
+    Step,
+    StepNames,
+)
 from everyvoice.wizard.dataset import return_dataset_steps
-from everyvoice.wizard.prompts import get_response_from_menu_prompt
+from everyvoice.wizard.prompts import (
+    CUSTOM_QUESTIONARY_STYLE,
+    get_response_from_menu_prompt,
+)
 from everyvoice.wizard.utils import sanitize_path, write_dict_to_config
-
-TEXT_CONFIG_FILENAME_PREFIX = "everyvoice-shared-text"
-ALIGNER_CONFIG_FILENAME_PREFIX = "everyvoice-aligner"
-PREPROCESSING_CONFIG_FILENAME_PREFIX = "everyvoice-shared-data"
-TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-spec"
-SPEC_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-spec-to-wav"
-TEXT_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-wav"
 
 
 class NameStep(Step):
