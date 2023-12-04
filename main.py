@@ -2,7 +2,7 @@
     https://mkdocs-macros-plugin.readthedocs.io/en/latest/
 """
 
-from everyvoice.wizard.basic import (
+from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,

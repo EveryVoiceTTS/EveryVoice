@@ -2,25 +2,13 @@ from enum import Enum
 from typing import List, Optional, Union
 
 from anytree import NodeMixin, RenderTree
-from questionary import Style
 
-CUSTOM_QUESTIONARY_STYLE = Style(
-    [
-        ("qmark", "fg:default"),  # token in front of the question
-        ("question", "bold"),  # question text
-        ("answer", "fg:default"),  # submitted answer text behind the question
-        ("pointer", "fg:default"),  # pointer used in select and checkbox prompts
-        (
-            "highlighted",
-            "fg:default bold",
-        ),  # pointed-at choice in select and checkbox prompts
-        ("selected", "fg:default bold"),  # style for a selected item of a checkbox
-        ("separator", "fg:default"),  # separator in lists
-        ("instruction", "reverse"),  # user instructions for select, rawselect, checkbox
-        ("text", "fg:default"),  # plain text
-        ("disabled", "fg:default"),  # disabled choices for select and checkbox prompts
-    ]
-)
+TEXT_CONFIG_FILENAME_PREFIX = "everyvoice-shared-text"
+ALIGNER_CONFIG_FILENAME_PREFIX = "everyvoice-aligner"
+PREPROCESSING_CONFIG_FILENAME_PREFIX = "everyvoice-shared-data"
+TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-spec"
+SPEC_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-spec-to-wav"
+TEXT_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-wav"
 
 
 class _Step:

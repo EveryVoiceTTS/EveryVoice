@@ -7,14 +7,9 @@ import typer
 from pydantic import BaseModel
 
 from everyvoice._version import VERSION
-from everyvoice.config.preprocessing_config import PreprocessingConfig
-from everyvoice.config.text_config import TextConfig
-from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     align_single as ctc_segment,
 )
-from everyvoice.model.e2e.config import EveryVoiceConfig
-from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
     preprocess as preprocess_fs2,
 )
@@ -24,12 +19,11 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
     train as train_fs2,
 )
-from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
-from everyvoice.wizard.basic import (
+from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
@@ -225,21 +219,15 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
     run_tests(suite)
 
 
-SCHEMAS_TO_OUTPUT: Dict[str, BaseModel] = {
-    f"{ALIGNER_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": AlignerConfig,  # type: ignore
-    f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": EveryVoiceConfig,  # type: ignore
-    f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": FeaturePredictionConfig,  # type: ignore
-    f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": PreprocessingConfig,  # type: ignore
-    f"{TEXT_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": TextConfig,  # type: ignore
-    f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": VocoderConfig,  # type: ignore
-}
+# Deferred full initialization to optimize the CLI, but still exposed for unit testing.
+SCHEMAS_TO_OUTPUT: Dict[str, BaseModel] = {}
 
 
 @app.command(hidden=True)
 def update_schemas(
     out_dir: Path = typer.Option(
         None, "-o", "--out-dir", file_okay=False, dir_okay=True, exists=True
-    )
+    ),
 ):
     """Update the JSON Schemas. This is hidden because you shouldn't be calling this unless you are
     a developer for EveryVoice. Note: Pydantic will raise some Warnings related to the Callable fields
@@ -249,6 +237,25 @@ def update_schemas(
         schema_dir_path = Path(__file__).parent / ".schema"
     else:
         schema_dir_path = out_dir
+
+    # Defer somewhat slow imports to optimize CLI
+    from everyvoice.config.preprocessing_config import PreprocessingConfig
+    from everyvoice.config.text_config import TextConfig
+    from everyvoice.model.aligner.config import AlignerConfig
+    from everyvoice.model.e2e.config import EveryVoiceConfig
+    from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
+    from everyvoice.model.vocoder.config import VocoderConfig
+
+    SCHEMAS_TO_OUTPUT.update(
+        {
+            f"{ALIGNER_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": AlignerConfig,  # type: ignore
+            f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": EveryVoiceConfig,  # type: ignore
+            f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": FeaturePredictionConfig,  # type: ignore
+            f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": PreprocessingConfig,  # type: ignore
+            f"{TEXT_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": TextConfig,  # type: ignore
+            f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": VocoderConfig,  # type: ignore
+        }
+    )
 
     for filename, schema in SCHEMAS_TO_OUTPUT.items():
         if (schema_dir_path / filename).exists():
