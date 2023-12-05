@@ -61,4 +61,6 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: mshick/add-pr-comment@v2
         with:
-          message: CLI load time is ${{ steps.cli-load-time.outputs.CLI_LOAD_TIME }}
+          message: |
+            CLI load time is ${{ steps.cli-load-time.outputs.CLI_LOAD_TIME }}
+            PR head "${{ github.event.pull_request.head.sha }}"
