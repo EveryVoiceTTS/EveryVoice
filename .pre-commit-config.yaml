@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v2.3.0
+    rev: v4.4.0
     hooks:
     -   id: check-yaml
     -   id: end-of-file-fixer
@@ -24,7 +24,7 @@ repos:
         types: [python]
         stages: [commit]
 # We do flake8 last since black fixes a lot of the stuff it complains about
--   repo: https://github.com/PyCQA/flake8
+-   repo: https://github.com/pycqa/flake8
     rev: 3.8.3
     hooks:
     -   id: flake8
