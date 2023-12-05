@@ -2,7 +2,6 @@ import typer
 from merge_args import merge_args
 
 from everyvoice.base_cli.interfaces import train_base_command_interface
-from everyvoice.model.e2e.config import EveryVoiceConfig
 
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
@@ -14,6 +13,7 @@ app = typer.Typer(
 @merge_args(train_base_command_interface)
 def train(**kwargs):
     from everyvoice.base_cli.helpers import train_base_command
+    from everyvoice.model.e2e.config import EveryVoiceConfig
     from everyvoice.model.e2e.dataset import E2EDataModule
     from everyvoice.model.e2e.model import EveryVoice
 
