@@ -49,9 +49,14 @@ jobs:
       - name: Make sure the CLI stays fast
         id: cli-load-time
         run: |
+          PYTHONPROFILEIMPORTTIME=1 everyvoice -h 2> importtime.txt > /dev/null
           CLI_LOAD_TIME="$((/usr/bin/time --format=%E everyvoice -h > /dev/null) 2>&1)"
           echo "CLI load time: $CLI_LOAD_TIME"
           echo "CLI_LOAD_TIME=$CLI_LOAD_TIME" >> $GITHUB_OUTPUT
+          echo "CLI load time is $CLI_LOAD_TIME" > import-message.txt
+          echo "PR head ${{ github.event.pull_request.head.sha }}" >> import-message.txt
+          echo "The most expensive imports are:" >> import-message.txt
+          cat importtime.txt | sort -t'|' -k 2 | tail | tac >> import-message.txt
           if [[ "$CLI_LOAD_TIME" > "0:01.00" ]]; then \
             echo "ERROR: everyvoice --help is too slow."; \
             echo "Please make sure any expensive imports are tucked away so that the CLI doesn't load them until it uses them."; \
@@ -61,6 +66,5 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: mshick/add-pr-comment@v2
         with:
-          message: |
-            CLI load time is ${{ steps.cli-load-time.outputs.CLI_LOAD_TIME }}
-            PR head "${{ github.event.pull_request.head.sha }}"
+          preformatted: true
+          message-path: import-message.txt
