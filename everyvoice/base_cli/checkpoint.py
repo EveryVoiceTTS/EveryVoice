@@ -79,7 +79,6 @@ def load_checkpoint(model_path: Path, minimal=True) -> Dict[str, Any]:
 
         if "loops" in checkpoint:
             del checkpoint["loops"]
-
     return checkpoint
 
 
@@ -116,18 +115,18 @@ def inspect(
     """
 
     if show_config:
-        print(
-            """
-    ++++++++++++++
-        CONFIG
-    ++++++++++++++
-"""
-        )
         config = json.dumps(
             load_checkpoint(model_path),
             ensure_ascii=False,
             indent=2,
             cls=CheckpointEncoder,
+        )
+        print(
+            """
+                ++++++++++++++
+                    CONFIG
+                ++++++++++++++
+            """
         )
         print(config)
 
