@@ -28,7 +28,6 @@ from torchaudio.functional import resample
 from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
-from everyvoice.config.preprocessing_config import PitchCalculationMethod
 from everyvoice.exceptions import ConfigError
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -152,7 +151,7 @@ class Preprocessor:
         self.save_dir = Path(config.preprocessing.save_dir)
         self.save_dir.mkdir(parents=True, exist_ok=True)
         self.audio_config = config.preprocessing.audio
-        self.sep = config.preprocessing.value_separator
+        self.sep = "--"
         self.text_processor = (
             None if isinstance(config, VocoderConfig) else TextProcessor(config)
         )
@@ -314,35 +313,30 @@ class Preprocessor:
         Args:
             spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
         """
-        if self.config.preprocessing.pitch_type == PitchCalculationMethod.pyworld.value:
-            import pyworld as pw  # This isn't a very good place for an import,
+        import pyworld as pw  # This isn't a very good place for an import,
 
-            # but also pyworld is very annoying to install so this is a compromise
-            pitch, t = pw.dio(
-                audio_tensor.squeeze(0)
-                .numpy()
-                .astype(
-                    np.float64
-                ),  # TODO: why are these np.float64, maybe it's just what pw expects?
-                self.input_sampling_rate,
-                frame_period=self.audio_config.fft_hop_size
-                / self.input_sampling_rate
-                * 1000,
-                speed=4,
-            )
-            pitch = pw.stonemask(
-                audio_tensor.squeeze(0).numpy().astype(np.float64),
-                pitch,
-                t,
-                self.input_sampling_rate,
-            )
-            pitch[pitch == 0] = np.nan
-            pitch = self._interpolate(pitch)
-            pitch = torch.tensor(pitch).float()
-        else:
-            raise ConfigError(
-                f"Sorry, the pitch estimation type '{self.config.preprocessing.pitch_type}' is not supported. Please edit your config file."
-            )
+        # but also pyworld is very annoying to install so this is a compromise
+        pitch, t = pw.dio(
+            audio_tensor.squeeze(0)
+            .numpy()
+            .astype(
+                np.float64
+            ),  # TODO: why are these np.float64, maybe it's just what pw expects?
+            self.input_sampling_rate,
+            frame_period=self.audio_config.fft_hop_size
+            / self.input_sampling_rate
+            * 1000,
+            speed=4,
+        )
+        pitch = pw.stonemask(
+            audio_tensor.squeeze(0).numpy().astype(np.float64),
+            pitch,
+            t,
+            self.input_sampling_rate,
+        )
+        pitch[pitch == 0] = np.nan
+        pitch = self._interpolate(pitch)
+        pitch = torch.tensor(pitch).float()
         return pitch
 
     def average_data_by_durations(self, data, durations):
@@ -640,8 +634,7 @@ class Preprocessor:
         energy = self.extract_energy(spec)
         if (
             isinstance(self.config, FeaturePredictionConfig)
-            and self.config.model.variance_adaptor.variance_predictors.energy.level
-            == "phone"
+            and self.config.model.variance_predictors.energy.level == "phone"
             and not self.config.model.learn_alignment
         ):
             dur_path = self.create_path(item, "duration", "duration.pt")
@@ -660,8 +653,7 @@ class Preprocessor:
         pitch = self.extract_pitch(audio)
         if (
             isinstance(self.config, FeaturePredictionConfig)
-            and self.config.model.variance_adaptor.variance_predictors.pitch.level
-            == "phone"
+            and self.config.model.variance_predictors.pitch.level == "phone"
             and not self.config.model.learn_alignment
         ):
             dur_path = self.create_path(item, "duration", "duration.pt")

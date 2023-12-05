@@ -12,7 +12,7 @@
         },
         "max_audio_length": {
           "default": 11.0,
-          "description": "The maximum length of an audio sample in seconds. Audio longer than this will be ignored during preprocessing.",
+          "description": "The maximum length of an audio sample in seconds. Audio longer than this will be ignored during preprocessing. Increasing the max_audio_length will result in larger memory usage. If you are running out of memory, consider lowering the max_audio_length.",
           "title": "Max Audio Length",
           "type": "number"
         },
@@ -48,19 +48,19 @@
         },
         "n_fft": {
           "default": 1024,
-          "description": "Advanced. This is the size of the FFT.",
+          "description": "Advanced. This is the number of bins used by the Fast Fourier Transform (FFT).",
           "title": "FFT Size",
           "type": "integer"
         },
         "fft_window_size": {
           "default": 1024,
-          "description": "Advanced. This is the window size of the FFT.",
+          "description": "Advanced. This is the window size used by the Fast Fourier Transform (FFT).",
           "title": "FFT Window Size",
           "type": "integer"
         },
         "fft_hop_size": {
           "default": 256,
-          "description": "Advanced. This is the hop size for calculating the Short-Time Fourier Transform which calculates a sequence of spectrograms from a single audio file. Another way of putting it is that the hop size is equal to the amount of non-intersecting samples from the audio in each spectrogram.",
+          "description": "Advanced. This is the hop size for calculating the Short-Time Fourier Transform (STFT) which calculates a sequence of spectrograms from a single audio file. Another way of putting it is that the hop size is equal to the amount of non-intersecting samples from the audio in each spectrogram.",
           "title": "FFT Hop Size",
           "type": "integer"
         },
@@ -92,7 +92,7 @@
             }
           ],
           "default": "mel-librosa",
-          "description": "Advanced. Defines how to calculate the spectrogram. 'mel' uses the TorchAudio implementation for a Mel spectrogram. 'mel-librosa' use's Librosa's implementation. 'linear' calculates a non-Mel linear spectrogram and 'raw' calculates a complex-valued spectrogram.",
+          "description": "Advanced. Defines how to calculate the spectrogram. 'mel' uses the TorchAudio implementation for a Mel spectrogram. 'mel-librosa' uses Librosa's implementation. 'linear' calculates a non-Mel linear spectrogram and 'raw' calculates a complex-valued spectrogram. 'linear' and 'raw' are not currently supported by EveryVoice. We recommend using 'mel-librosa'.",
           "title": "Spec Type"
         },
         "vocoder_segment_size": {
@@ -115,13 +115,57 @@
       "title": "AudioSpecTypeEnum",
       "type": "string"
     },
+    "ConformerConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "layers": {
+          "default": 4,
+          "description": "The number of layers in the Conformer.",
+          "title": "Layers",
+          "type": "integer"
+        },
+        "heads": {
+          "default": 2,
+          "description": "The number of heads in the multi-headed attention modules.",
+          "title": "Heads",
+          "type": "integer"
+        },
+        "input_dim": {
+          "default": 256,
+          "description": "The number of hidden dimensions in the input. The input_dim value declared in the encoder and decoder modules must match the input_dim value declared in each variance predictor module.",
+          "title": "Input Dim",
+          "type": "integer"
+        },
+        "feedforward_dim": {
+          "default": 1024,
+          "description": "The number of dimensions in the feedforward layers.",
+          "title": "Feedforward Dim",
+          "type": "integer"
+        },
+        "conv_kernel_size": {
+          "default": 9,
+          "description": "The size of the kernel in each convoluational layer of the Conformer.",
+          "title": "Conv Kernel Size",
+          "type": "integer"
+        },
+        "dropout": {
+          "default": 0.2,
+          "description": "The amount of dropout to apply.",
+          "title": "Dropout",
+          "type": "number"
+        }
+      },
+      "title": "ConformerConfig",
+      "type": "object"
+    },
     "Dataset": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
         "label": {
           "default": "YourDataSet",
-          "description": "The name of your dataset",
+          "description": "A label for the source of data",
           "title": "Label",
           "type": "string"
         },
@@ -151,7 +195,7 @@
               "1"
             ]
           ],
-          "description": "Advanced. A list of SoX effects to apply to your audio prior to preprocessing. Run torchaudio.sox_effects.effect_names() in a Python interpreter to see a list of supported effects.",
+          "description": "Advanced. A list of SoX effects to apply to your audio prior to preprocessing. Run python -c 'import torchaudio; print(torchaudio.sox_effects.effect_names())' to see a list of supported effects.",
           "items": {},
           "title": "Sox Effects",
           "type": "array"
@@ -160,87 +204,43 @@
       "title": "Dataset",
       "type": "object"
     },
-    "EarlyStoppingConfig": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "metric": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/EarlyStoppingMetricEnum"
-            }
-          ],
-          "default": "none"
-        },
-        "patience": {
-          "default": 4,
-          "title": "Patience",
-          "type": "integer"
-        }
-      },
-      "title": "EarlyStoppingConfig",
-      "type": "object"
-    },
-    "EarlyStoppingMetricEnum": {
-      "enum": [
-        "none",
-        "mae",
-        "js"
-      ],
-      "title": "EarlyStoppingMetricEnum",
-      "type": "string"
-    },
-    "FastSpeech2FreezeLayersConfig": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "all_layers": {
-          "default": false,
-          "title": "All Layers",
-          "type": "boolean"
-        },
-        "encoder": {
-          "default": false,
-          "title": "Encoder",
-          "type": "boolean"
-        },
-        "decoder": {
-          "default": false,
-          "title": "Decoder",
-          "type": "boolean"
-        },
-        "postnet": {
-          "default": false,
-          "title": "Postnet",
-          "type": "boolean"
-        },
-        "variance": {
-          "$ref": "#/$defs/FastSpeech2Variances"
-        }
-      },
-      "title": "FastSpeech2FreezeLayersConfig",
-      "type": "object"
-    },
     "FastSpeech2ModelConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
         "encoder": {
-          "$ref": "#/$defs/TransformerConfig"
+          "allOf": [
+            {
+              "$ref": "#/$defs/ConformerConfig"
+            }
+          ],
+          "description": "The configuration of the encoder module."
         },
         "decoder": {
-          "$ref": "#/$defs/TransformerConfig"
+          "allOf": [
+            {
+              "$ref": "#/$defs/ConformerConfig"
+            }
+          ],
+          "description": "The configuration of the decoder module."
         },
-        "variance_adaptor": {
-          "$ref": "#/$defs/VarianceAdaptorConfig"
+        "variance_predictors": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VariancePredictors"
+            }
+          ],
+          "description": "Configuration for energy, duration, and pitch variance predictors."
         },
         "learn_alignment": {
           "default": true,
+          "description": "Whether to jointly learn alignments using monotonic alignment search module (See Badlani et. al. 2021: https://arxiv.org/abs/2108.10447). If set to False, you will have to provide text/audio alignments separately before training a text-to-spec (feature prediction) model.",
           "title": "Learn Alignment",
           "type": "boolean"
         },
         "max_length": {
           "default": 1000,
+          "description": "The maximum length (i.e. number of symbols) for text inputs.",
           "title": "Max Length",
           "type": "integer"
         },
@@ -250,35 +250,36 @@
               "$ref": "#/$defs/VarianceLossEnum"
             }
           ],
-          "default": "mse"
-        },
-        "mel_loss_weight": {
-          "default": 0.5,
-          "title": "Mel Loss Weight",
-          "type": "number"
+          "default": "mse",
+          "description": "The loss function to use when calculating Mel spectrogram loss."
         },
         "phonological_feats_size": {
           "default": 38,
+          "description": "Advanced. The number of dimension used in the phonological feature vector representation. The default is 38, but this can be changed by modifying the everyvoice/text/features.py module.",
           "title": "Phonological Feats Size",
           "type": "integer"
         },
         "use_phonological_feats": {
           "default": false,
+          "description": "Whether to train using phonological feature vectors as inputs instead of one-hot encoded text inputs.",
           "title": "Use Phonological Feats",
           "type": "boolean"
         },
         "use_postnet": {
           "default": true,
+          "description": "Whether to use a postnet module.",
           "title": "Use Postnet",
           "type": "boolean"
         },
         "multilingual": {
           "default": false,
+          "description": "Whether to train a multilingual model. For this to work, your filelist must contain a column/field for 'language' with values for each utterance.",
           "title": "Multilingual",
           "type": "boolean"
         },
         "multispeaker": {
           "default": false,
+          "description": "Whether to train a multispeaker model. For this to work, your filelist must contain a column/field for 'speaker' with values for each utterance.",
           "title": "Multispeaker",
           "type": "boolean"
         }
@@ -369,11 +370,17 @@
           "type": "string"
         },
         "filelist_loader": {
+          "description": "Advanced. The function to use to load the filelist.",
           "title": "Filelist Loader",
           "type": "string"
         },
         "logger": {
-          "$ref": "#/$defs/LoggerConfig"
+          "allOf": [
+            {
+              "$ref": "#/$defs/LoggerConfig"
+            }
+          ],
+          "description": "The configuration for the logger."
         },
         "val_data_workers": {
           "default": 0,
@@ -389,20 +396,17 @@
         },
         "use_weighted_sampler": {
           "default": false,
+          "description": "Whether to use a sampler which oversamples from the minority language or speaker class for balanced training.",
           "title": "Use Weighted Sampler",
           "type": "boolean"
         },
         "optimizer": {
-          "$ref": "#/$defs/NoamOptimizer"
-        },
-        "freeze_layers": {
-          "$ref": "#/$defs/FastSpeech2FreezeLayersConfig"
-        },
-        "early_stopping": {
-          "$ref": "#/$defs/EarlyStoppingConfig"
-        },
-        "tf": {
-          "$ref": "#/$defs/TFConfig"
+          "allOf": [
+            {
+              "$ref": "#/$defs/NoamOptimizer"
+            }
+          ],
+          "description": "The optimizer to use during training."
         },
         "vocoder_path": {
           "anyOf": [
@@ -421,29 +425,6 @@
       "title": "FastSpeech2TrainingConfig",
       "type": "object"
     },
-    "FastSpeech2Variances": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "energy": {
-          "default": false,
-          "title": "Energy",
-          "type": "boolean"
-        },
-        "duration": {
-          "default": false,
-          "title": "Duration",
-          "type": "boolean"
-        },
-        "pitch": {
-          "default": false,
-          "title": "Pitch",
-          "type": "boolean"
-        }
-      },
-      "title": "FastSpeech2Variances",
-      "type": "object"
-    },
     "LoggerConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -457,7 +438,7 @@
         },
         "save_dir": {
           "default": "logs_and_checkpoints",
-          "description": "The directory to save your checkpoints and logs to",
+          "description": "The directory to save your checkpoints and logs to.",
           "format": "directory-path",
           "title": "Save Dir",
           "type": "string"
@@ -483,11 +464,13 @@
       "properties": {
         "learning_rate": {
           "default": 0.0001,
+          "description": "The initial learning rate to use",
           "title": "Learning Rate",
           "type": "number"
         },
         "eps": {
           "default": 1e-08,
+          "description": "Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
           "title": "Eps",
           "type": "number"
         },
@@ -501,6 +484,7 @@
             0.9,
             0.98
           ],
+          "description": "Advanced. The values of the Adam Optimizer beta coefficients.",
           "maxItems": 2,
           "minItems": 2,
           "prefixItems": [
@@ -516,11 +500,13 @@
         },
         "name": {
           "default": "noam",
+          "description": "The name of the optimizer to use.",
           "title": "Name",
           "type": "string"
         },
         "warmup_steps": {
           "default": 4000,
+          "description": "The number of steps to increase the learning rate before starting to decrease it.",
           "title": "Warmup Steps",
           "type": "integer"
         }
@@ -528,52 +514,19 @@
       "title": "NoamOptimizer",
       "type": "object"
     },
-    "PitchCalculationMethod": {
-      "enum": [
-        "pyworld",
-        "cwt"
-      ],
-      "title": "PitchCalculationMethod",
-      "type": "string"
-    },
     "PreprocessingConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
         "dataset": {
           "default": "YourDataSet",
+          "description": "The name of the dataset.",
           "title": "Dataset",
-          "type": "string"
-        },
-        "pitch_type": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/PitchCalculationMethod"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "default": "pyworld",
-          "title": "Pitch Type"
-        },
-        "pitch_phone_averaging": {
-          "default": true,
-          "title": "Pitch Phone Averaging",
-          "type": "boolean"
-        },
-        "energy_phone_averaging": {
-          "default": true,
-          "title": "Energy Phone Averaging",
-          "type": "boolean"
-        },
-        "value_separator": {
-          "default": "--",
-          "title": "Value Separator",
           "type": "string"
         },
         "train_split": {
           "default": 0.9,
+          "description": "The amount of the dataset to use for training. The rest will be used as validation. Hold some of the validation set out for a test set if you are performing experiments.",
           "max": 1.0,
           "min": 0.0,
           "title": "Train Split",
@@ -581,17 +534,24 @@
         },
         "dataset_split_seed": {
           "default": 1234,
+          "description": "The seed to use when splitting the dataset into train and validation sets.",
           "title": "Dataset Split Seed",
           "type": "integer"
         },
         "save_dir": {
           "default": "preprocessed/YourDataSet",
+          "description": "The directory to save preprocessed files to.",
           "format": "path",
           "title": "Save Dir",
           "type": "string"
         },
         "audio": {
-          "$ref": "#/$defs/AudioConfig"
+          "allOf": [
+            {
+              "$ref": "#/$defs/AudioConfig"
+            }
+          ],
+          "description": "Configuration settings for audio."
         },
         "path_to_audio_config_file": {
           "anyOf": [
@@ -604,9 +564,11 @@
             }
           ],
           "default": null,
+          "description": "The path to an audio configuration file.",
           "title": "Path To Audio Config File"
         },
         "source_data": {
+          "description": "A list of datasets.",
           "items": {
             "$ref": "#/$defs/Dataset"
           },
@@ -635,10 +597,12 @@
           "default": [
             "<SIL>"
           ],
+          "description": "The symbol(s) used to indicate silence.",
           "title": "Silence"
         },
         "pad": {
           "default": "_",
+          "description": "The symbol used to indicate padding. Batches are length-normalized by adding this padding character so that each utterance in the batch is the same length.",
           "title": "Pad",
           "type": "string"
         },
@@ -655,43 +619,11 @@
             }
           ],
           "default": "-';:,.!?\u00a1\u00bf\u2014\u2026\"\u00ab\u00bb\u201c\u201d ",
+          "description": "A list of punctuation symbols.",
           "title": "Punctuation"
         }
       },
       "title": "Symbols",
-      "type": "object"
-    },
-    "TFConfig": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "ratio": {
-          "default": 1.0,
-          "title": "Ratio",
-          "type": "number"
-        },
-        "linear_schedule": {
-          "default": false,
-          "title": "Linear Schedule",
-          "type": "boolean"
-        },
-        "linear_schedule_start": {
-          "default": 0,
-          "title": "Linear Schedule Start",
-          "type": "integer"
-        },
-        "linear_schedule_end": {
-          "default": 20,
-          "title": "Linear Schedule End",
-          "type": "integer"
-        },
-        "linear_schedule_end_ratio": {
-          "default": 0.0,
-          "title": "Linear Schedule End Ratio",
-          "type": "number"
-        }
-      },
-      "title": "TFConfig",
       "type": "object"
     },
     "TextConfig": {
@@ -720,70 +652,6 @@
       "title": "TextConfig",
       "type": "object"
     },
-    "TransformerConfig": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "layers": {
-          "default": 4,
-          "title": "Layers",
-          "type": "integer"
-        },
-        "heads": {
-          "default": 2,
-          "title": "Heads",
-          "type": "integer"
-        },
-        "hidden_dim": {
-          "default": 256,
-          "title": "Hidden Dim",
-          "type": "integer"
-        },
-        "feedforward_dim": {
-          "default": 1024,
-          "title": "Feedforward Dim",
-          "type": "integer"
-        },
-        "conv_filter_size": {
-          "default": 1024,
-          "title": "Conv Filter Size",
-          "type": "integer"
-        },
-        "conv_kernel_size": {
-          "default": 9,
-          "title": "Conv Kernel Size",
-          "type": "integer"
-        },
-        "dropout": {
-          "default": 0.2,
-          "title": "Dropout",
-          "type": "number"
-        },
-        "depthwise": {
-          "default": true,
-          "title": "Depthwise",
-          "type": "boolean"
-        },
-        "conformer": {
-          "default": true,
-          "title": "Conformer",
-          "type": "boolean"
-        }
-      },
-      "title": "TransformerConfig",
-      "type": "object"
-    },
-    "VarianceAdaptorConfig": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "variance_predictors": {
-          "$ref": "#/$defs/VariancePredictors"
-        }
-      },
-      "title": "VarianceAdaptorConfig",
-      "type": "object"
-    },
     "VarianceLevelEnum": {
       "enum": [
         "phone",
@@ -795,9 +663,7 @@
     "VarianceLossEnum": {
       "enum": [
         "mse",
-        "mae",
-        "l1",
-        "soft_dtw"
+        "mae"
       ],
       "title": "VarianceLossEnum",
       "type": "string"
@@ -806,54 +672,48 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
-        "transform": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/VarianceTransformEnum"
-            }
-          ],
-          "default": "none"
-        },
         "loss": {
           "allOf": [
             {
               "$ref": "#/$defs/VarianceLossEnum"
             }
           ],
-          "default": "mse"
+          "default": "mse",
+          "description": "The loss function to use when calculate variance loss. Either 'mse' or 'mae'."
         },
         "n_layers": {
           "default": 5,
+          "description": "The number of layers in the variance predictor module.",
           "title": "N Layers",
           "type": "integer"
         },
-        "loss_weights": {
-          "default": 0.05,
-          "title": "Loss Weights",
-          "type": "number"
-        },
         "kernel_size": {
           "default": 3,
+          "description": "The kernel size of each convolutional layer in the variance predictor module.",
           "title": "Kernel Size",
           "type": "integer"
         },
         "dropout": {
           "default": 0.5,
+          "description": "The amount of dropout to apply.",
           "title": "Dropout",
           "type": "number"
         },
-        "hidden_dim": {
+        "input_dim": {
           "default": 256,
-          "title": "Hidden Dim",
+          "description": "The number of hidden dimensions in the input. This must match the input_dim value declared in the encoder and decoder modules.",
+          "title": "Input Dim",
           "type": "integer"
         },
         "n_bins": {
           "default": 256,
+          "description": "The number of bins to use in the variance predictor module.",
           "title": "N Bins",
           "type": "integer"
         },
         "depthwise": {
           "default": true,
+          "description": "Whether to use depthwise separable convolutions.",
           "title": "Depthwise",
           "type": "boolean"
         }
@@ -865,54 +725,48 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
-        "transform": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/VarianceTransformEnum"
-            }
-          ],
-          "default": "none"
-        },
         "loss": {
           "allOf": [
             {
               "$ref": "#/$defs/VarianceLossEnum"
             }
           ],
-          "default": "mse"
+          "default": "mse",
+          "description": "The loss function to use when calculate variance loss. Either 'mse' or 'mae'."
         },
         "n_layers": {
           "default": 5,
+          "description": "The number of layers in the variance predictor module.",
           "title": "N Layers",
           "type": "integer"
         },
-        "loss_weights": {
-          "default": 0.05,
-          "title": "Loss Weights",
-          "type": "number"
-        },
         "kernel_size": {
           "default": 3,
+          "description": "The kernel size of each convolutional layer in the variance predictor module.",
           "title": "Kernel Size",
           "type": "integer"
         },
         "dropout": {
           "default": 0.5,
+          "description": "The amount of dropout to apply.",
           "title": "Dropout",
           "type": "number"
         },
-        "hidden_dim": {
+        "input_dim": {
           "default": 256,
-          "title": "Hidden Dim",
+          "description": "The number of hidden dimensions in the input. This must match the input_dim value declared in the encoder and decoder modules.",
+          "title": "Input Dim",
           "type": "integer"
         },
         "n_bins": {
           "default": 256,
+          "description": "The number of bins to use in the variance predictor module.",
           "title": "N Bins",
           "type": "integer"
         },
         "depthwise": {
           "default": true,
+          "description": "Whether to use depthwise separable convolutions.",
           "title": "Depthwise",
           "type": "boolean"
         },
@@ -922,7 +776,8 @@
               "$ref": "#/$defs/VarianceLevelEnum"
             }
           ],
-          "default": "phone"
+          "default": "phone",
+          "description": "The level for the variance predictor to use. 'frame' will make predictions at the frame level. 'phone' will average predictions across all frames in each phone."
         }
       },
       "title": "VariancePredictorConfig",
@@ -933,33 +788,44 @@
       "additionalProperties": false,
       "properties": {
         "energy": {
-          "$ref": "#/$defs/VariancePredictorConfig"
+          "allOf": [
+            {
+              "$ref": "#/$defs/VariancePredictorConfig"
+            }
+          ],
+          "description": "The variance predictor for energy"
         },
         "duration": {
-          "$ref": "#/$defs/VariancePredictorBase"
+          "allOf": [
+            {
+              "$ref": "#/$defs/VariancePredictorBase"
+            }
+          ],
+          "description": "The variance predictor for duration"
         },
         "pitch": {
-          "$ref": "#/$defs/VariancePredictorConfig"
+          "allOf": [
+            {
+              "$ref": "#/$defs/VariancePredictorConfig"
+            }
+          ],
+          "description": "The variance predictor for pitch"
         }
       },
       "title": "VariancePredictors",
       "type": "object"
-    },
-    "VarianceTransformEnum": {
-      "enum": [
-        "log",
-        "cwt",
-        "none"
-      ],
-      "title": "VarianceTransformEnum",
-      "type": "string"
     }
   },
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
   "properties": {
     "model": {
-      "$ref": "#/$defs/FastSpeech2ModelConfig"
+      "allOf": [
+        {
+          "$ref": "#/$defs/FastSpeech2ModelConfig"
+        }
+      ],
+      "description": "The model configuration settings."
     },
     "path_to_model_config_file": {
       "anyOf": [
@@ -972,10 +838,16 @@
         }
       ],
       "default": null,
+      "description": "The path of a model configuration file.",
       "title": "Path To Model Config File"
     },
     "training": {
-      "$ref": "#/$defs/FastSpeech2TrainingConfig"
+      "allOf": [
+        {
+          "$ref": "#/$defs/FastSpeech2TrainingConfig"
+        }
+      ],
+      "description": "The training configuration hyperparameters."
     },
     "path_to_training_config_file": {
       "anyOf": [
@@ -988,10 +860,16 @@
         }
       ],
       "default": null,
+      "description": "The path of a training configuration file.",
       "title": "Path To Training Config File"
     },
     "preprocessing": {
-      "$ref": "#/$defs/PreprocessingConfig"
+      "allOf": [
+        {
+          "$ref": "#/$defs/PreprocessingConfig"
+        }
+      ],
+      "description": "The preprocessing configuration, including information about audio settings."
     },
     "path_to_preprocessing_config_file": {
       "anyOf": [
@@ -1004,10 +882,16 @@
         }
       ],
       "default": null,
+      "description": "The path of a preprocessing configuration file.",
       "title": "Path To Preprocessing Config File"
     },
     "text": {
-      "$ref": "#/$defs/TextConfig"
+      "allOf": [
+        {
+          "$ref": "#/$defs/TextConfig"
+        }
+      ],
+      "description": "The text configuration."
     },
     "path_to_text_config_file": {
       "anyOf": [
@@ -1020,6 +904,7 @@
         }
       ],
       "default": null,
+      "description": "The path of a text configuration file.",
       "title": "Path To Text Config File"
     }
   },

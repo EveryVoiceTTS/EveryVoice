@@ -198,7 +198,7 @@ class EveryVoice(pl.LightningModule):
             audio = torch.load(
                 self.config.feature_prediction.preprocessing.save_dir
                 / "audio"
-                / self.config.feature_prediction.preprocessing.value_separator.join(
+                / "--".join(
                     [
                         batch["basename"][0],
                         batch["speaker"][0],

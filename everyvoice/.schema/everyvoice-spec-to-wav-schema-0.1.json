@@ -6,11 +6,13 @@
       "properties": {
         "learning_rate": {
           "default": 0.0001,
+          "description": "The initial learning rate to use",
           "title": "Learning Rate",
           "type": "number"
         },
         "eps": {
           "default": 1e-08,
+          "description": "Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
           "title": "Eps",
           "type": "number"
         },
@@ -24,6 +26,7 @@
             0.9,
             0.98
           ],
+          "description": "Advanced. The values of the Adam Optimizer beta coefficients.",
           "maxItems": 2,
           "minItems": 2,
           "prefixItems": [
@@ -39,6 +42,7 @@
         },
         "name": {
           "default": "adam",
+          "description": "The name of the optimizer to use.",
           "title": "Name",
           "type": "string"
         }
@@ -52,11 +56,13 @@
       "properties": {
         "learning_rate": {
           "default": 0.0001,
+          "description": "The initial learning rate to use",
           "title": "Learning Rate",
           "type": "number"
         },
         "eps": {
           "default": 1e-08,
+          "description": "Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
           "title": "Eps",
           "type": "number"
         },
@@ -70,6 +76,7 @@
             0.9,
             0.98
           ],
+          "description": "Advanced. The values of the AdamW Optimizer beta coefficients.",
           "maxItems": 2,
           "minItems": 2,
           "prefixItems": [
@@ -85,6 +92,7 @@
         },
         "name": {
           "default": "adamw",
+          "description": "The name of the optimizer to use.",
           "title": "Name",
           "type": "string"
         }
@@ -104,7 +112,7 @@
         },
         "max_audio_length": {
           "default": 11.0,
-          "description": "The maximum length of an audio sample in seconds. Audio longer than this will be ignored during preprocessing.",
+          "description": "The maximum length of an audio sample in seconds. Audio longer than this will be ignored during preprocessing. Increasing the max_audio_length will result in larger memory usage. If you are running out of memory, consider lowering the max_audio_length.",
           "title": "Max Audio Length",
           "type": "number"
         },
@@ -140,19 +148,19 @@
         },
         "n_fft": {
           "default": 1024,
-          "description": "Advanced. This is the size of the FFT.",
+          "description": "Advanced. This is the number of bins used by the Fast Fourier Transform (FFT).",
           "title": "FFT Size",
           "type": "integer"
         },
         "fft_window_size": {
           "default": 1024,
-          "description": "Advanced. This is the window size of the FFT.",
+          "description": "Advanced. This is the window size used by the Fast Fourier Transform (FFT).",
           "title": "FFT Window Size",
           "type": "integer"
         },
         "fft_hop_size": {
           "default": 256,
-          "description": "Advanced. This is the hop size for calculating the Short-Time Fourier Transform which calculates a sequence of spectrograms from a single audio file. Another way of putting it is that the hop size is equal to the amount of non-intersecting samples from the audio in each spectrogram.",
+          "description": "Advanced. This is the hop size for calculating the Short-Time Fourier Transform (STFT) which calculates a sequence of spectrograms from a single audio file. Another way of putting it is that the hop size is equal to the amount of non-intersecting samples from the audio in each spectrogram.",
           "title": "FFT Hop Size",
           "type": "integer"
         },
@@ -184,7 +192,7 @@
             }
           ],
           "default": "mel-librosa",
-          "description": "Advanced. Defines how to calculate the spectrogram. 'mel' uses the TorchAudio implementation for a Mel spectrogram. 'mel-librosa' use's Librosa's implementation. 'linear' calculates a non-Mel linear spectrogram and 'raw' calculates a complex-valued spectrogram.",
+          "description": "Advanced. Defines how to calculate the spectrogram. 'mel' uses the TorchAudio implementation for a Mel spectrogram. 'mel-librosa' uses Librosa's implementation. 'linear' calculates a non-Mel linear spectrogram and 'raw' calculates a complex-valued spectrogram. 'linear' and 'raw' are not currently supported by EveryVoice. We recommend using 'mel-librosa'.",
           "title": "Spec Type"
         },
         "vocoder_segment_size": {
@@ -213,7 +221,7 @@
       "properties": {
         "label": {
           "default": "YourDataSet",
-          "description": "The name of your dataset",
+          "description": "A label for the source of data",
           "title": "Label",
           "type": "string"
         },
@@ -243,55 +251,13 @@
               "1"
             ]
           ],
-          "description": "Advanced. A list of SoX effects to apply to your audio prior to preprocessing. Run torchaudio.sox_effects.effect_names() in a Python interpreter to see a list of supported effects.",
+          "description": "Advanced. A list of SoX effects to apply to your audio prior to preprocessing. Run python -c 'import torchaudio; print(torchaudio.sox_effects.effect_names())' to see a list of supported effects.",
           "items": {},
           "title": "Sox Effects",
           "type": "array"
         }
       },
       "title": "Dataset",
-      "type": "object"
-    },
-    "HiFiGANDepthwiseBlocks": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "description": "Only currently implemented for the generator",
-      "properties": {
-        "generator": {
-          "default": false,
-          "title": "Generator",
-          "type": "boolean"
-        }
-      },
-      "title": "HiFiGANDepthwiseBlocks",
-      "type": "object"
-    },
-    "HiFiGANFreezingLayers": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "all_layers": {
-          "default": false,
-          "title": "All Layers",
-          "type": "boolean"
-        },
-        "msd": {
-          "default": false,
-          "title": "Msd",
-          "type": "boolean"
-        },
-        "mpd": {
-          "default": false,
-          "title": "Mpd",
-          "type": "boolean"
-        },
-        "generator": {
-          "default": false,
-          "title": "Generator",
-          "type": "boolean"
-        }
-      },
-      "title": "HiFiGANFreezingLayers",
       "type": "object"
     },
     "HiFiGANModelConfig": {
@@ -304,13 +270,15 @@
               "$ref": "#/$defs/HiFiGANResblock"
             }
           ],
-          "default": "1"
+          "default": "1",
+          "description": "Which resblock to use. See Kong et. al. 2020: https://arxiv.org/abs/2010.05646"
         },
         "upsample_rates": {
           "default": [
             8,
             8
           ],
+          "description": "The stride of each convolutional layer in the upsampling module.",
           "items": {
             "type": "integer"
           },
@@ -322,6 +290,7 @@
             16,
             16
           ],
+          "description": "The kernel size of each convolutional layer in the upsampling module.",
           "items": {
             "type": "integer"
           },
@@ -330,6 +299,7 @@
         },
         "upsample_initial_channel": {
           "default": 512,
+          "description": "The number of dimensions to project the Mel inputs to before being passed to the resblock.",
           "title": "Upsample Initial Channel",
           "type": "integer"
         },
@@ -339,6 +309,7 @@
             7,
             11
           ],
+          "description": "The kernel size of each convolutional layer in the resblock.",
           "items": {
             "type": "integer"
           },
@@ -363,6 +334,7 @@
               5
             ]
           ],
+          "description": "The dilations of each convolution in each layer of the resblock.",
           "items": {
             "items": {
               "type": "integer"
@@ -372,20 +344,20 @@
           "title": "Resblock Dilation Sizes",
           "type": "array"
         },
-        "depthwise_separable_convolutions": {
-          "$ref": "#/$defs/HiFiGANDepthwiseBlocks"
-        },
         "activation_function": {
+          "description": "The activation function to use.",
           "title": "Activation Function",
           "type": "string"
         },
         "istft_layer": {
           "default": true,
+          "description": "Whether to predict phase and magnitude values and use an inverse Short-Time Fourier Transform instead of predicting a waveform directly. See Kaneko et. al. 2022: https://arxiv.org/abs/2203.02395",
           "title": "Istft Layer",
           "type": "boolean"
         },
         "msd_layers": {
           "default": 3,
+          "description": "The number of layers to use in the Multi-Scale Discriminator.",
           "title": "Msd Layers",
           "type": "integer"
         },
@@ -397,6 +369,7 @@
             7,
             11
           ],
+          "description": "The size of each layer in the Multi-Period Discriminator.",
           "items": {
             "type": "integer"
           },
@@ -418,8 +391,7 @@
     "HiFiGANTrainTypes": {
       "enum": [
         "original",
-        "wgan",
-        "wgan-gp"
+        "wgan"
       ],
       "title": "HiFiGANTrainTypes",
       "type": "string"
@@ -507,11 +479,17 @@
           "type": "string"
         },
         "filelist_loader": {
+          "description": "Advanced. The function to use to load the filelist.",
           "title": "Filelist Loader",
           "type": "string"
         },
         "logger": {
-          "$ref": "#/$defs/LoggerConfig"
+          "allOf": [
+            {
+              "$ref": "#/$defs/LoggerConfig"
+            }
+          ],
+          "description": "The configuration for the logger."
         },
         "val_data_workers": {
           "default": 0,
@@ -527,6 +505,7 @@
         },
         "generator_warmup_steps": {
           "default": 0,
+          "description": "The number of steps to run through before activating the discriminators.",
           "title": "Generator Warmup Steps",
           "type": "integer"
         },
@@ -536,7 +515,8 @@
               "$ref": "#/$defs/HiFiGANTrainTypes"
             }
           ],
-          "default": "original"
+          "default": "original",
+          "description": "The type of GAN to use. Can be set to either 'original' for a vanilla GAN, or 'wgan' for a Wasserstein GAN that clips gradients."
         },
         "optimizer": {
           "anyOf": [
@@ -550,23 +530,24 @@
               "$ref": "#/$defs/RMSOptimizer"
             }
           ],
+          "description": "Configuration settings for the optimizer.",
           "title": "Optimizer"
         },
         "wgan_clip_value": {
           "default": 0.01,
+          "description": "The gradient clip value when gan_type='wgan'.",
           "title": "Wgan Clip Value",
           "type": "number"
         },
         "use_weighted_sampler": {
           "default": false,
+          "description": "Whether to use a sampler which oversamples from the minority language or speaker class for balanced training.",
           "title": "Use Weighted Sampler",
           "type": "boolean"
         },
-        "freeze_layers": {
-          "$ref": "#/$defs/HiFiGANFreezingLayers"
-        },
         "finetune": {
           "default": false,
+          "description": "Whether to read spectrograms from 'preprocessed/synthesized_spec' instead of 'preprocessed/spec'. This is used when finetuning a pretrained spec-to-wav (vocoder) model using the outputs of a trained text-to-spec (feature prediction network) model.",
           "title": "Finetune",
           "type": "boolean"
         }
@@ -587,7 +568,7 @@
         },
         "save_dir": {
           "default": "logs_and_checkpoints",
-          "description": "The directory to save your checkpoints and logs to",
+          "description": "The directory to save your checkpoints and logs to.",
           "format": "directory-path",
           "title": "Save Dir",
           "type": "string"
@@ -607,52 +588,19 @@
       "title": "LoggerConfig",
       "type": "object"
     },
-    "PitchCalculationMethod": {
-      "enum": [
-        "pyworld",
-        "cwt"
-      ],
-      "title": "PitchCalculationMethod",
-      "type": "string"
-    },
     "PreprocessingConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
         "dataset": {
           "default": "YourDataSet",
+          "description": "The name of the dataset.",
           "title": "Dataset",
-          "type": "string"
-        },
-        "pitch_type": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/PitchCalculationMethod"
-            },
-            {
-              "type": "string"
-            }
-          ],
-          "default": "pyworld",
-          "title": "Pitch Type"
-        },
-        "pitch_phone_averaging": {
-          "default": true,
-          "title": "Pitch Phone Averaging",
-          "type": "boolean"
-        },
-        "energy_phone_averaging": {
-          "default": true,
-          "title": "Energy Phone Averaging",
-          "type": "boolean"
-        },
-        "value_separator": {
-          "default": "--",
-          "title": "Value Separator",
           "type": "string"
         },
         "train_split": {
           "default": 0.9,
+          "description": "The amount of the dataset to use for training. The rest will be used as validation. Hold some of the validation set out for a test set if you are performing experiments.",
           "max": 1.0,
           "min": 0.0,
           "title": "Train Split",
@@ -660,17 +608,24 @@
         },
         "dataset_split_seed": {
           "default": 1234,
+          "description": "The seed to use when splitting the dataset into train and validation sets.",
           "title": "Dataset Split Seed",
           "type": "integer"
         },
         "save_dir": {
           "default": "preprocessed/YourDataSet",
+          "description": "The directory to save preprocessed files to.",
           "format": "path",
           "title": "Save Dir",
           "type": "string"
         },
         "audio": {
-          "$ref": "#/$defs/AudioConfig"
+          "allOf": [
+            {
+              "$ref": "#/$defs/AudioConfig"
+            }
+          ],
+          "description": "Configuration settings for audio."
         },
         "path_to_audio_config_file": {
           "anyOf": [
@@ -683,9 +638,11 @@
             }
           ],
           "default": null,
+          "description": "The path to an audio configuration file.",
           "title": "Path To Audio Config File"
         },
         "source_data": {
+          "description": "A list of datasets.",
           "items": {
             "$ref": "#/$defs/Dataset"
           },
@@ -702,11 +659,13 @@
       "properties": {
         "learning_rate": {
           "default": 0.0001,
+          "description": "The initial learning rate to use",
           "title": "Learning Rate",
           "type": "number"
         },
         "eps": {
           "default": 1e-08,
+          "description": "Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
           "title": "Eps",
           "type": "number"
         },
@@ -717,11 +676,13 @@
         },
         "alpha": {
           "default": 0.99,
+          "description": "Advanced. The value of RMSProp optimizer alpha smoothing constant.",
           "title": "Alpha",
           "type": "number"
         },
         "name": {
           "default": "rms",
+          "description": "The name of the optimizer to use.",
           "title": "Name",
           "type": "string"
         }
@@ -734,7 +695,12 @@
   "additionalProperties": false,
   "properties": {
     "model": {
-      "$ref": "#/$defs/HiFiGANModelConfig"
+      "allOf": [
+        {
+          "$ref": "#/$defs/HiFiGANModelConfig"
+        }
+      ],
+      "description": "The model configuration settings."
     },
     "path_to_model_config_file": {
       "anyOf": [
@@ -747,10 +713,16 @@
         }
       ],
       "default": null,
+      "description": "The path of a model configuration file.",
       "title": "Path To Model Config File"
     },
     "training": {
-      "$ref": "#/$defs/HiFiGANTrainingConfig"
+      "allOf": [
+        {
+          "$ref": "#/$defs/HiFiGANTrainingConfig"
+        }
+      ],
+      "description": "The training configuration hyperparameters."
     },
     "path_to_training_config_file": {
       "anyOf": [
@@ -763,10 +735,16 @@
         }
       ],
       "default": null,
+      "description": "The path of a training configuration file.",
       "title": "Path To Training Config File"
     },
     "preprocessing": {
-      "$ref": "#/$defs/PreprocessingConfig"
+      "allOf": [
+        {
+          "$ref": "#/$defs/PreprocessingConfig"
+        }
+      ],
+      "description": "The preprocessing configuration, including information about audio settings."
     },
     "path_to_preprocessing_config_file": {
       "anyOf": [
@@ -779,6 +757,7 @@
         }
       ],
       "default": null,
+      "description": "The path of a preprocessing configuration file.",
       "title": "Path To Preprocessing Config File"
     }
   },

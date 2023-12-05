@@ -29,7 +29,7 @@ class AudioConfig(ConfigModel):
     )
     max_audio_length: float = Field(
         11.0,
-        description="The maximum length of an audio sample in seconds. Audio longer than this will be ignored during preprocessing.",
+        description="The maximum length of an audio sample in seconds. Audio longer than this will be ignored during preprocessing. Increasing the max_audio_length will result in larger memory usage. If you are running out of memory, consider lowering the max_audio_length.",
     )
     max_wav_value: float = Field(
         32767.0,
@@ -52,17 +52,19 @@ class AudioConfig(ConfigModel):
         description="Advanced. This is the bit depth of each sample in your audio files.",
     )
     n_fft: int = Field(
-        1024, title="FFT Size", description="Advanced. This is the size of the FFT."
+        1024,
+        title="FFT Size",
+        description="Advanced. This is the number of bins used by the Fast Fourier Transform (FFT).",
     )
     fft_window_size: int = Field(
         1024,
         title="FFT Window Size",
-        description="Advanced. This is the window size of the FFT.",
+        description="Advanced. This is the window size used by the Fast Fourier Transform (FFT).",
     )
     fft_hop_size: int = Field(
         256,
         title="FFT Hop Size",
-        description="Advanced. This is the hop size for calculating the Short-Time Fourier Transform which calculates a sequence of spectrograms from a single audio file. Another way of putting it is that the hop size is equal to the amount of non-intersecting samples from the audio in each spectrogram.",
+        description="Advanced. This is the hop size for calculating the Short-Time Fourier Transform (STFT) which calculates a sequence of spectrograms from a single audio file. Another way of putting it is that the hop size is equal to the amount of non-intersecting samples from the audio in each spectrogram.",
     )
     f_min: int = Field(
         0,
@@ -81,7 +83,7 @@ class AudioConfig(ConfigModel):
     )
     spec_type: Union[AudioSpecTypeEnum, str] = Field(
         AudioSpecTypeEnum.mel_librosa.value,
-        description="Advanced. Defines how to calculate the spectrogram. 'mel' uses the TorchAudio implementation for a Mel spectrogram. 'mel-librosa' use's Librosa's implementation. 'linear' calculates a non-Mel linear spectrogram and 'raw' calculates a complex-valued spectrogram.",
+        description="Advanced. Defines how to calculate the spectrogram. 'mel' uses the TorchAudio implementation for a Mel spectrogram. 'mel-librosa' uses Librosa's implementation. 'linear' calculates a non-Mel linear spectrogram and 'raw' calculates a complex-valued spectrogram. 'linear' and 'raw' are not currently supported by EveryVoice. We recommend using 'mel-librosa'.",
     )
     vocoder_segment_size: int = Field(
         8192,
@@ -89,13 +91,8 @@ class AudioConfig(ConfigModel):
     )
 
 
-class PitchCalculationMethod(Enum):
-    pyworld = "pyworld"
-    cwt = "cwt"
-
-
 class Dataset(PartialLoadConfig):
-    label: str = Field("YourDataSet", description="The name of your dataset")
+    label: str = Field("YourDataSet", description="A label for the source of data")
     data_dir: PossiblyRelativePath = Field(
         Path("/please/create/a/path/to/your/dataset/data"),
         description="The path to the directory with your audio files.",
@@ -110,7 +107,7 @@ class Dataset(PartialLoadConfig):
     )
     sox_effects: list = Field(
         [["channels", "1"]],
-        description="Advanced. A list of SoX effects to apply to your audio prior to preprocessing. Run torchaudio.sox_effects.effect_names() in a Python interpreter to see a list of supported effects.",
+        description="Advanced. A list of SoX effects to apply to your audio prior to preprocessing. Run python -c 'import torchaudio; print(torchaudio.sox_effects.effect_names())' to see a list of supported effects.",
     )
 
     @field_validator(
@@ -123,19 +120,30 @@ class Dataset(PartialLoadConfig):
 
 
 class PreprocessingConfig(PartialLoadConfig):
-    dataset: str = "YourDataSet"
-    pitch_type: Union[
-        PitchCalculationMethod, str
-    ] = PitchCalculationMethod.pyworld.value
-    pitch_phone_averaging: bool = True
-    energy_phone_averaging: bool = True
-    value_separator: str = "--"
-    train_split: Annotated[float, Ge(0.0), Le(1.0)] = 0.9
-    dataset_split_seed: int = 1234
-    save_dir: PossiblyRelativePath = Path("./preprocessed/YourDataSet")
-    audio: AudioConfig = Field(default_factory=AudioConfig)
-    path_to_audio_config_file: Optional[FilePath] = None
-    source_data: List[Dataset] = Field(default_factory=lambda: [Dataset()])
+    dataset: str = Field("YourDataSet", description="The name of the dataset.")
+    train_split: Annotated[float, Ge(0.0), Le(1.0)] = Field(
+        0.9,
+        description="The amount of the dataset to use for training. The rest will be used as validation. Hold some of the validation set out for a test set if you are performing experiments.",
+    )
+    dataset_split_seed: int = Field(
+        1234,
+        description="The seed to use when splitting the dataset into train and validation sets.",
+    )
+    save_dir: PossiblyRelativePath = Field(
+        Path("./preprocessed/YourDataSet"),
+        description="The directory to save preprocessed files to.",
+    )
+    audio: AudioConfig = Field(
+        default_factory=AudioConfig,  # type: ignore
+        description="Configuration settings for audio.",
+    )
+    path_to_audio_config_file: Optional[FilePath] = Field(
+        None, description="The path to an audio configuration file."
+    )
+    source_data: List[Dataset] = Field(
+        default_factory=lambda: [Dataset()],  # type: ignore
+        description="A list of datasets.",
+    )
 
     @field_validator("save_dir", mode="before")
     @classmethod

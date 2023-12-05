@@ -104,7 +104,7 @@ class LoggerConfig(PartialLoadConfig):
 
     save_dir: DirectoryPath = Field(
         Path("./logs_and_checkpoints"),
-        description="The directory to save your checkpoints and logs to",
+        description="The directory to save your checkpoints and logs to.",
     )
 
     sub_dir_callable: PossiblySerializedCallable = Field(
@@ -170,8 +170,14 @@ class BaseTrainingConfig(PartialLoadConfig):
         Path("./path/to/your/preprocessed/validation_filelist.psv"),
         description="The path to a filelist containing samples belonging to your validation set.",
     )
-    filelist_loader: PossiblySerializedCallable = generic_dict_loader
-    logger: LoggerConfig = Field(default_factory=LoggerConfig)
+    filelist_loader: PossiblySerializedCallable = Field(
+        generic_dict_loader,
+        description="Advanced. The function to use to load the filelist.",
+    )
+    logger: LoggerConfig = Field(
+        default_factory=LoggerConfig,  # type: ignore
+        description="The configuration for the logger.",
+    )
     val_data_workers: int = Field(
         0,
         description="The number of CPU workers to use when loading data during validation.",
@@ -199,26 +205,41 @@ class BaseTrainingConfig(PartialLoadConfig):
 
 
 class BaseOptimizer(ConfigModel):
-    learning_rate: float = 1e-4
-    eps: float = 1e-8
+    learning_rate: float = Field(1e-4, description="The initial learning rate to use")
+    eps: float = Field(
+        1e-8,
+        description="Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
+    )
     weight_decay: float = 0.01
 
 
 class RMSOptimizer(BaseOptimizer):
-    alpha: float = 0.99
-    name: str = "rms"
+    alpha: float = Field(
+        0.99,
+        description="Advanced. The value of RMSProp optimizer alpha smoothing constant.",
+    )
+    name: str = Field("rms", description="The name of the optimizer to use.")
 
 
 class AdamOptimizer(BaseOptimizer):
-    betas: Tuple[float, float] = (0.9, 0.98)
-    name: str = "adam"
+    betas: Tuple[float, float] = Field(
+        (0.9, 0.98),
+        description="Advanced. The values of the Adam Optimizer beta coefficients.",
+    )
+    name: str = Field("adam", description="The name of the optimizer to use.")
 
 
 class AdamWOptimizer(BaseOptimizer):
-    betas: Tuple[float, float] = (0.9, 0.98)
-    name: str = "adamw"
+    betas: Tuple[float, float] = Field(
+        (0.9, 0.98),
+        description="Advanced. The values of the AdamW Optimizer beta coefficients.",
+    )
+    name: str = Field("adamw", description="The name of the optimizer to use.")
 
 
 class NoamOptimizer(AdamOptimizer):
-    warmup_steps: int = 4000
-    name: str = "noam"
+    warmup_steps: int = Field(
+        4000,
+        description="The number of steps to increase the learning rate before starting to decrease it.",
+    )
+    name: str = Field("noam", description="The name of the optimizer to use.")
