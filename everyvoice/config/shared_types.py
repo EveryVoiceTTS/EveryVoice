@@ -146,14 +146,13 @@ class BaseTrainingConfig(PartialLoadConfig):
     # According to
     # [ModelCheckpoint](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html#lightning.pytorch.callbacks.ModelCheckpoint),
     # ckpt_epochs and ckpt_steps must be None or non-negative.
-    ckpt_steps: Union[int, None] = Field(
+    # 0 is the same as None, and disables checkpointing
+    ckpt_steps: Union[Annotated[int, Field(ge=0)], None] = Field(
         None,
-        ge=1,
         description="The interval (in steps) for saving a checkpoint. By default checkpoints are saved every epoch using the 'ckpt_epochs' hyperparameter",
     )
-    ckpt_epochs: Union[int, None] = Field(
+    ckpt_epochs: Union[Annotated[int, Field(ge=0)], None] = Field(
         1,
-        ge=1,
         description="The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
     )
     max_epochs: int = Field(1000, description="Stop training after this many epochs")
