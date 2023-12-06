@@ -1,7 +1,8 @@
 from enum import Enum
 from pathlib import Path
-from typing import Any, List, Optional, Union
+from typing import Annotated, Any, List, Optional, Union
 
+from annotated_types import Ge, Le
 from loguru import logger
 from pydantic import Field, FilePath, ValidationInfo, field_validator, model_validator
 
@@ -76,7 +77,7 @@ class PreprocessingConfig(PartialLoadConfig):
     pitch_phone_averaging: bool = True
     energy_phone_averaging: bool = True
     value_separator: str = "--"
-    train_split: float = Field(0.9, min=0.0, max=1.0)
+    train_split: Annotated[float, Ge(0.0), Le(1.0)] = 0.9
     dataset_split_seed: int = 1234
     save_dir: PossiblyRelativePath = Path("./preprocessed/YourDataSet")
     audio: AudioConfig = Field(default_factory=AudioConfig)

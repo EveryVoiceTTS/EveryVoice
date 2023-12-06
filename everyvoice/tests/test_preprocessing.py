@@ -5,6 +5,7 @@ from pathlib import Path
 from unittest import TestCase, main
 
 import torch
+from pydantic_core._pydantic_core import ValidationError
 from torch import float32
 
 from everyvoice.config.preprocessing_config import (
@@ -370,6 +371,26 @@ class PreprocessingTest(TestCase):
                 Preprocessor(fp_config).preprocess(
                     output_path=filelist, cpus=1, to_process=to_process
                 )
+
+    def test_train_split(self):
+        """
+        PreprocessingConfig's train_split should be [0., 1.].
+        """
+        config = PreprocessingConfig(train_split=0.5)
+        self.assertEqual(config.train_split, 0.5)
+
+        config = PreprocessingConfig(train_split=0.0)
+        self.assertEqual(config.train_split, 0.0)
+
+        config = PreprocessingConfig(train_split=1.0)
+        self.assertEqual(config.train_split, 1.0)
+
+        with self.assertRaises(ValidationError), capture_stdout() as cout:
+            config = PreprocessingConfig(train_split=-0.1)
+            self.assertIn("Input should be greater than or equal to 0", cout.getvalue())
+        with self.assertRaises(ValidationError), capture_stdout() as cout:
+            config = PreprocessingConfig(train_split=1.1)
+            self.assertIn("Input should be less than or equal to 1", cout.getvalue())
 
 
 class PreprocessingHierarchyTest(TestCase):
