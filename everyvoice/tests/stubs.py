@@ -1,7 +1,6 @@
 import io
 import logging
-import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, redirect_stdout
 from typing import Any, Generator, Sequence, Union
 
 from everyvoice.wizard import prompts
@@ -59,8 +58,9 @@ def capture_stdout() -> Generator[io.StringIO, None, None]:
     Yields:
         stdout (io.StringIO): captured stdout
     """
-    with monkeypatch(sys, "stdout", io.StringIO()) as stdout:
-        yield stdout
+    f = io.StringIO()
+    with redirect_stdout(f):
+        yield f
 
 
 @contextmanager
