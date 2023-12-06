@@ -158,7 +158,7 @@ train_group = typer.Typer(
 train_group.command(
     name="text-to-spec",
     short_help="Train your Text-to-Spec model",
-    help=f"Train your text-to-spec model. For example **everyvoice train config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**",
+    help=f"Train your text-to-spec model. For example **everyvoice train text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**",
 )(train_fs2)
 
 train_group.command(
