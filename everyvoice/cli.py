@@ -210,6 +210,7 @@ app.command(
 
 class TestSuites(str, Enum):
     all = "all"
+    cli = "cli"
     configs = "configs"
     dev = "dev"
     model = "model"

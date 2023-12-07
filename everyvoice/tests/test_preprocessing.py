@@ -418,10 +418,10 @@ class PreprocessingHierarchyTest(TestCase):
                 # There are two speakers
                 sources = [d.name for d in tmpdir.glob(f"**/{t}/*")]
                 self.assertSetEqual(set(sources), set(("LJ010", "LJ050")))
-                # First speaker as one recording
+                # First speaker has one recording
                 files = list(tmpdir.glob(f"**/{t}/LJ010/*.pt"))
                 self.assertEqual(len(files), 1)
-                # Second speaker as 5 recordings
+                # Second speaker has 5 recordings
                 files = list(tmpdir.glob(f"**/{t}/LJ050/*.pt"))
                 self.assertEqual(len(files), 5)
 
