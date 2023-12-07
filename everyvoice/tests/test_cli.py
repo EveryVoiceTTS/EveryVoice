@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import json
 import tempfile
 from pathlib import Path
@@ -13,7 +15,6 @@ EV_DIR = Path(EV_FILE).parent
 
 
 class CLITest(TestCase):
-
     data_dir = Path(__file__).parent / "data"
 
     def setUp(self) -> None:
@@ -33,6 +34,13 @@ class CLITest(TestCase):
             self.assertIn(command, result.stdout)
         # link to docs is present
         self.assertIn("https://docs.everyvoice.ca", result.stdout)
+
+    def test_command_help_messages(self):
+        for command in self.commands:
+            result = self.runner.invoke(app, [command, "--help"])
+            self.assertEqual(result.exit_code, 0)
+            result = self.runner.invoke(app, [command, "-h"])
+            self.assertEqual(result.exit_code, 0)
 
     def test_update_schema(self):
         result = self.runner.invoke(app, ["update-schemas"])

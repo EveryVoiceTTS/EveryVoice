@@ -65,6 +65,8 @@ def run_tests(suite):
     """Decide which Test Suite to run"""
     if suite == "all":
         suite = LOADER.discover(os.path.dirname(__file__))
+    elif suite == "cli":
+        suite = TestSuite(CLI_TESTS)
     elif suite == "configs":
         suite = TestSuite(CONFIG_TESTS)
     elif suite == "text":
