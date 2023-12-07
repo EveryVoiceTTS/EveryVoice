@@ -134,9 +134,13 @@ app.command(
 
     This command will preprocess all of the data you need for use with EveryVoice.
 
-    By default every step of the preprocessor will be done by running **everyvoice preprocess config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**.
+    By default every step of the preprocessor will be done by running:
     \n\n
-    If you only want to process specific things, you can run specific commands by adding them as options for example: **everyvoice preprocess config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml -s energy -s pitch**
+    **everyvoice preprocess config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**.
+    \n\n
+    If you only want to process specific things, you can run specific commands by adding them as options for example:
+    \n\n
+    **everyvoice preprocess config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml -s energy -s pitch**
     """,
 )(preprocess_fs2)
 
@@ -158,13 +162,19 @@ train_group = typer.Typer(
 train_group.command(
     name="text-to-spec",
     short_help="Train your Text-to-Spec model",
-    help=f"Train your text-to-spec model. For example **everyvoice train text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**",
+    help=f"""Train your text-to-spec model.  For example:
+
+    **everyvoice train text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**
+    """,
 )(train_fs2)
 
 train_group.command(
     name="spec-to-wav",
     short_help="Train your Spec-to-Wav model",
-    help=f"Train your spec-to-wav model. For example **everyvoice train config/{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**",
+    help=f"""Train your spec-to-wav model. For example:
+
+    **everyvoice train spec-to-wav config/{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
+    """,
 )(train_hfg)
 
 app.add_typer(
