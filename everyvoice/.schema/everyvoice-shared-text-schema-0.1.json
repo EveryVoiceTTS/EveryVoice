@@ -18,10 +18,12 @@
           "default": [
             "<SIL>"
           ],
+          "description": "The symbol(s) used to indicate silence.",
           "title": "Silence"
         },
         "pad": {
           "default": "_",
+          "description": "The symbol used to indicate padding. Batches are length-normalized by adding this padding character so that each utterance in the batch is the same length.",
           "title": "Pad",
           "type": "string"
         },
@@ -38,6 +40,7 @@
             }
           ],
           "default": "-';:,.!?\u00a1\u00bf\u2014\u2026\"\u00ab\u00bb\u201c\u201d ",
+          "description": "A list of punctuation symbols.",
           "title": "Punctuation"
         }
       },

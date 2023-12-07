@@ -61,7 +61,7 @@ class DataLoaderTest(TestCase):
                 spec.size(1),
                 self.config.vocoder.preprocessing.audio.vocoder_segment_size
                 / (
-                    self.config.vocoder.preprocessing.audio.fft_hop_frames
+                    self.config.vocoder.preprocessing.audio.fft_hop_size
                     * (
                         self.config.vocoder.preprocessing.audio.output_sampling_rate
                         // self.config.vocoder.preprocessing.audio.input_sampling_rate

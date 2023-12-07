@@ -11,7 +11,6 @@ from torch import float32
 from everyvoice.config.preprocessing_config import (
     AudioConfig,
     AudioSpecTypeEnum,
-    PitchCalculationMethod,
     PreprocessingConfig,
 )
 from everyvoice.model.e2e.config import EveryVoiceConfig
@@ -160,11 +159,7 @@ class PreprocessingTest(TestCase):
             self.assertEqual(complex_feats.size(1), linear_feats.size(1))
 
     def test_pitch(self):
-        pyworld_config = VocoderConfig(
-            preprocessing=PreprocessingConfig(
-                pitch_phone_averaging=False, pitch_type=PitchCalculationMethod.pyworld
-            )
-        )
+        pyworld_config = VocoderConfig(preprocessing=PreprocessingConfig())
         preprocessor_pyworld = Preprocessor(pyworld_config)
 
         for entry in self.filelist[1:]:
@@ -237,9 +232,7 @@ class PreprocessingTest(TestCase):
             self.assertTrue(feats.size(1) - int(sum(durs)) <= 10)
 
     def test_energy(self):
-        frame_energy_config = VocoderConfig(
-            preprocessing=PreprocessingConfig(energy_phone_averaging=False)
-        )
+        frame_energy_config = VocoderConfig(preprocessing=PreprocessingConfig())
         preprocessor = Preprocessor(frame_energy_config)
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(

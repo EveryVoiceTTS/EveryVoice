@@ -1,6 +1,5 @@
 model:
   activation_function: everyvoice.utils.original_hifigan_leaky_relu
-  depthwise_separable_convolutions: {generator: false}
   istft_layer: true
   mpd_layers: [2, 3, 5, 7, 11]
   msd_layers: 3
@@ -19,7 +18,6 @@ training:
   ckpt_epochs: 1
   filelist_loader: everyvoice.utils.generic_dict_loader
   finetune: false
-  freeze_layers: {all_layers: false, generator: false, mpd: false, msd: false}
   gan_type: original
   generator_warmup_steps: 0
   logger: {name: VocoderExperiment, save_dir: ../logs_and_checkpoints, sub_dir_callable: everyvoice.utils.get_current_time,
