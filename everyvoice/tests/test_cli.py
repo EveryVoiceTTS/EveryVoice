@@ -8,6 +8,9 @@ from unittest import TestCase, main
 import jsonschema
 from typer.testing import CliRunner
 
+# required for `./run_tests.py cli` to work, otherwise test_inspect_checkpoint
+# fails with an Intel MKL FATAL ERROR saying it cannot load libtorch_cpu.so
+import everyvoice.tests.test_model  # noqa
 from everyvoice import __file__ as EV_FILE
 from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
 
