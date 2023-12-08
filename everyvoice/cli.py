@@ -136,7 +136,7 @@ app.command(
 
     By default every step of the preprocessor will be done by running:
     \n\n
-    **everyvoice preprocess config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**.
+    **everyvoice preprocess config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**
     \n\n
     If you only want to process specific things, you can run specific commands by adding them as options for example:
     \n\n
