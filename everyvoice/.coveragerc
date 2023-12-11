@@ -1,7 +1,10 @@
 [run]
 branch = True
 source_pkgs = everyvoice
-omit = *tmp*
+omit =
+    *tmp*
+    */run_tests.py
+    */tests/*
 
 [report]
 precision = 2
