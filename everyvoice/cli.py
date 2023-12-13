@@ -285,5 +285,31 @@ def update_schemas(
 
 CLICK_APP = typer.main.get_group(app)
 
+
+import click
+import typer
+from typing_extensions import Annotated
+import pydantic
+import json
+
+class User(BaseModel):
+    id: int
+    name: str
+
+class UserClassParser(click.ParamType):
+    name = "User"
+
+    def convert(self, value, param, ctx):
+        #return User.model_validate_json(value, strict=False)
+        return User(
+                **json.loads(value)
+                )
+
+@app.command()
+def sam(
+        user: Annotated[User, typer.Option(click_type=UserClassParser())],
+    ):
+    print(f"user is {user}")
+
 if __name__ == "__main__":
     app()

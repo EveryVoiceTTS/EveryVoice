@@ -26,10 +26,14 @@ autocompleteshell_completion
 Option✔️✔️
 Argument✔️✖️
 
+[PR: Initial attempt at pydantic support. #630](https://github.com/tiangolo/typer/pull/630)
+
 
 # PyDantic
 https://docs.pydantic.dev/latest/api/pydantic_core/
 [Use pydantic to define schema used across services?](https://github.com/pydantic/pydantic/issues/2261)
+Discussion about [Command-line argument parsing #756](https://github.com/pydantic/pydantic/issues/756)
+[typer doesn't offer the full power of pydantic for parsing, but to the extent that that is even necessary (basic types seem to get you pretty far with CLIs), I think we might be better served by adding pydantic integration there rather than adding CLI integration here.](https://github.com/pydantic/pydantic/issues/756#issuecomment-576427504)
 
 
 # Reddit
