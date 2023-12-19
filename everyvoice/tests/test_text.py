@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 import string
+from pathlib import Path
+from typing import Dict, List
 from unicodedata import normalize
 from unittest import TestCase, main
 
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.text import TextProcessor
-from everyvoice.text.lookups import build_lookup
+from everyvoice.text.lookups import build_lookup, lookuptables_from_data
+from everyvoice.utils import generic_dict_loader
 
 
 class TextTest(TestCase):
@@ -187,6 +190,86 @@ class LookupTableTest(TestCase):
                 "Marc": 2,
                 "Aidan": 3,
             },
+        )
+
+
+class LookupTables(TestCase):
+    def test_lookuptables_from_data(self):
+        """
+        Text looluptables for a multilangual and multispeaker.
+        """
+        base_path = Path(__file__).parent / "data/lookuptable/"
+        lang2id, speaker2id = lookuptables_from_data(
+            (
+                generic_dict_loader(base_path / "training_filelist.psv"),
+                generic_dict_loader(base_path / "validation_filelist.psv"),
+            )
+        )
+        self.assertDictEqual(
+            lang2id, {"crk": 0, "git": 1, "str": 2}, "Language lookup tables differ"
+        )
+        self.assertDictEqual(
+            speaker2id,
+            {"0": 0, "1": 1, "2": 2, "3": 3},
+            "Speaker lookup tables differ.",
+        )
+
+    def test_no_language(self):
+        """
+        Test a datasest that has no language.
+        """
+
+        def remove_language(data: List[Dict[str, str]]) -> List[Dict[str, str]]:
+            for d in data:
+                del d["language"]
+            return data
+
+        base_path = Path(__file__).parent / "data/lookuptable/"
+        lang2id, speaker2id = lookuptables_from_data(
+            (
+                remove_language(
+                    generic_dict_loader(base_path / "training_filelist.psv")
+                ),
+                remove_language(
+                    generic_dict_loader(base_path / "validation_filelist.psv")
+                ),
+            )
+        )
+        self.assertDictEqual(lang2id, {}, "Language lookup tables differ")
+        self.assertDictEqual(
+            speaker2id,
+            {"0": 0, "1": 1, "2": 2, "3": 3},
+            "Speaker lookup tables differ.",
+        )
+
+    def test_no_speaker(self):
+        """
+        Test a datasest that has no speaker.
+        """
+
+        def remove_speaker(data: List[Dict[str, str]]) -> List[Dict[str, str]]:
+            for d in data:
+                del d["speaker"]
+            return data
+
+        base_path = Path(__file__).parent / "data/lookuptable/"
+        lang2id, speaker2id = lookuptables_from_data(
+            (
+                remove_speaker(
+                    generic_dict_loader(base_path / "training_filelist.psv")
+                ),
+                remove_speaker(
+                    generic_dict_loader(base_path / "validation_filelist.psv")
+                ),
+            )
+        )
+        self.assertDictEqual(
+            lang2id, {"crk": 0, "git": 1, "str": 2}, "Language lookup tables differ"
+        )
+        self.assertDictEqual(
+            speaker2id,
+            {},
+            "Speaker lookup tables differ.",
         )
 
 
