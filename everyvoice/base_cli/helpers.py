@@ -131,6 +131,7 @@ def train_base_command(
     nodes: int,
     strategy: str,
     gradient_clip_val: float,
+    model_kwargs={},
 ):
     config = load_config_base_command(model_config, config_args, config_file)
 
@@ -185,7 +186,7 @@ def train_base_command(
     )
     model_obj = model(config)
     logger.info(f"Model's architecture\n{model_obj}")
-    data = data_module(config)
+    data = data_module(config)  # type: ignore
     last_ckpt = (
         config.training.finetune_checkpoint
         if config.training.finetune_checkpoint is not None
@@ -194,11 +195,13 @@ def train_base_command(
     )
     # Train from Scratch
     if last_ckpt is None:
-        model_obj = model(config)
+        model_obj = model(config, **model_kwargs)
+        logger.info(f"Model's architecture\n{model_obj}")
         tensorboard_logger.log_hyperparams(config.model_dump())
         trainer.fit(model_obj, data)
     else:
         model_obj = model.load_from_checkpoint(last_ckpt)
+        logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
         diff = DeepDiff(
             model_obj.config.training.model_dump(), config.training.model_dump()
