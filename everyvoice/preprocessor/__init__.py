@@ -12,7 +12,7 @@ from collections import Counter
 from glob import glob
 from multiprocessing import Manager, managers
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import torch
@@ -578,10 +578,10 @@ class Preprocessor:
                 save(output_audio, output_audio_save_path)
         return item
 
-    def process_all_audio(self):
+    def process_all_audio(self) -> list[dict]:
         """Process all audio across datasets, create a combined, filtered filelist and return it"""
         self.dataset_sanity_checks()
-        filtered_filelist: List[dict] = []
+        filtered_filelist: list[dict] = []
         for dataset in tqdm(self.datasets, total=len(self.datasets), desc="Dataset"):
             data_dir = Path(dataset.data_dir)
             filelist = dataset.filelist_loader(dataset.filelist)
@@ -816,7 +816,7 @@ class Preprocessor:
         self,
         output_path="filelist.psv",
         cpus=min(5, mp.cpu_count()),
-        to_process=List[str],
+        to_process=list[str],
         overwrite=False,
         debug=False,
     ):

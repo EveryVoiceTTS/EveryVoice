@@ -1,6 +1,6 @@
 # Adapted from https://github.com/ufoym/imbalanced-dataset-sampler
 
-from typing import Callable
+from typing import Callable, Optional
 
 import pandas as pd
 import torch
@@ -19,10 +19,10 @@ class ImbalancedDatasetSampler(torch.utils.data.sampler.Sampler):
     def __init__(
         self,
         dataset,
-        labels: list = None,
-        indices: list = None,
-        num_samples: int = None,
-        callback_get_label: Callable = None,
+        labels: Optional[list] = None,
+        indices: Optional[list] = None,
+        num_samples: Optional[int] = None,
+        callback_get_label: Optional[Callable] = None,
     ):
         # if indices is not provided, all elements in the dataset will be considered
         self.indices = list(range(len(dataset))) if indices is None else indices

@@ -10,7 +10,7 @@ build_no = dt.datetime.now().strftime("%Y%m%d")
 # Ugly hack to read the current version number without importing g2p:
 # (works by )
 with open("everyvoice/_version.py", "r", encoding="utf8") as version_file:
-    namespace = {}  # type: ignore
+    namespace: dict = {}
     exec(version_file.read(), namespace)
     VERSION = namespace["VERSION"] + "." + build_no
 

@@ -118,7 +118,8 @@ class FilelistFormatStep(Step):
         )
 
     def looks_like_sv(self, file_type, separator) -> bool:
-        filelist_path = self.state.get(StepNames.filelist_step.value)  # type: ignore
+        assert self.state
+        filelist_path = self.state.get(StepNames.filelist_step.value)
         initial_records = generic_csv_reader(
             filelist_path, delimiter=separator, record_limit=10
         )
@@ -341,7 +342,7 @@ class SelectLanguageStep(Step):
         supported_langs_choices = ["[und]: my language isn't here"] + [
             f"[{k}]: {v}" for k, v in supported_langs.items()
         ]
-        return get_response_from_menu_prompt(  # type: ignore
+        return get_response_from_menu_prompt(
             choices=supported_langs_choices,
             title="Which of the following supported languages are in your dataset?",
             multi=False,
@@ -517,7 +518,7 @@ class SymbolSetStep(Step):
         symbols = sorted(list(symbols))
         if not symbols:
             return
-        punctuation = get_response_from_menu_prompt(  # type: ignore
+        punctuation = get_response_from_menu_prompt(
             choices=symbols,
             title="Which of the following symbols are punctuation?",
             multi=True,
@@ -526,7 +527,7 @@ class SymbolSetStep(Step):
         if punctuation is None:
             punctuation = []
         symbols = tuple(x for x in symbols if x not in punctuation)
-        banned_symbols = get_response_from_menu_prompt(  # type: ignore
+        banned_symbols = get_response_from_menu_prompt(
             title="Ignore utterances that contain any of the following characters:",
             choices=symbols,
             multi=True,
@@ -536,7 +537,7 @@ class SymbolSetStep(Step):
             banned_symbols = []
         self.state["banned_symbols"] = banned_symbols
         symbols = tuple(x for x in symbols if x not in banned_symbols)
-        ignored_symbols = get_response_from_menu_prompt(  # type: ignore
+        ignored_symbols = get_response_from_menu_prompt(
             title="Which of the following symbols can be ignored?",
             choices=symbols,
             multi=True,

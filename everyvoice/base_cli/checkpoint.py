@@ -168,8 +168,7 @@ def inspect(
                             tabulate(
                                 [[k, v] for k, v in sd_summary.items()],
                                 tablefmt="rounded_grid",
-                                # for some reason mypy is complaining, but intfmt is valid as of tabulate==0.9.0
-                                intfmt=",",  # type: ignore
+                                intfmt=",",
                                 headers=["LayerName", "Number of Parameters"],
                             )
                         )

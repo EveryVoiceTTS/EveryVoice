@@ -53,13 +53,13 @@ class PreprocessingTest(TestCase):
             self.tempdirobj = tempfile.TemporaryDirectory(
                 prefix=tempdir_prefix, dir="."
             )
-            self.tempdir = self.tempdirobj.name
+            tempdir = self.tempdirobj.name
         else:  # pragma: no cover
             # Alternative tempdir code keeps it after running, for manual inspection:
-            self.tempdir = tempfile.mkdtemp(prefix=tempdir_prefix, dir=".")
-            print(f"tmpdir={self.tempdir}")
-        self.tempdir = Path(self.tempdir)  # type: ignore
-        self.filelist = read_filelist(self.data_dir / "metadata.csv")  # type: ignore
+            tempdir = tempfile.mkdtemp(prefix=tempdir_prefix, dir=".")
+            print(f"tmpdir={tempdir}")
+        self.tempdir = Path(tempdir)
+        self.filelist = read_filelist(self.data_dir / "metadata.csv")
 
     def tearDown(self):
         """Clean up the temporary directory"""

@@ -40,7 +40,10 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 
 def load_config_base_command(
     model_config: Union[
-        DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
+        type[DFAlignerConfig],
+        type[EveryVoiceConfig],
+        type[FastSpeech2Config],
+        type[HiFiGANConfig],
     ],
     # Must include the above in model-specific command
     config_args: List[str],
@@ -56,7 +59,10 @@ def load_config_base_command(
 
 def preprocess_base_command(
     model_config: Union[
-        DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
+        type[DFAlignerConfig],
+        type[EveryVoiceConfig],
+        type[FastSpeech2Config],
+        type[HiFiGANConfig],
     ],
     steps: List[str],
     # Must include the above in model-specific command
@@ -104,10 +110,16 @@ def save_configuration_to_log_dir(
 
 def train_base_command(
     model_config: Union[
-        DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig
+        type[DFAlignerConfig],
+        type[EveryVoiceConfig],
+        type[FastSpeech2Config],
+        type[HiFiGANConfig],
     ],
     data_module: Union[
-        AlignerDataModule, E2EDataModule, FastSpeech2DataModule, HiFiGANDataModule
+        type[AlignerDataModule],
+        type[E2EDataModule],
+        type[FastSpeech2DataModule],
+        type[HiFiGANDataModule],
     ],
     model: Union[Aligner, EveryVoice, FastSpeech2, HiFiGAN],
     monitor: str,
@@ -173,7 +185,7 @@ def train_base_command(
     )
     model_obj = model(config)
     logger.info(f"Model's architecture\n{model_obj}")
-    data = data_module(config)  # type: ignore
+    data = data_module(config)
     last_ckpt = (
         config.training.finetune_checkpoint
         if config.training.finetune_checkpoint is not None
