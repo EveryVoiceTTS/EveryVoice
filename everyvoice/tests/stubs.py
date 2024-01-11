@@ -1,6 +1,6 @@
 import io
 import logging
-from contextlib import contextmanager, redirect_stdout
+from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from typing import Any, Generator, Sequence, Union
 
 from loguru import logger
@@ -87,6 +87,26 @@ def capture_stdout() -> Generator[io.StringIO, None, None]:
     """
     f = io.StringIO()
     with redirect_stdout(f):
+        yield f
+
+
+@contextmanager
+def capture_stderr():
+    """Context manager to capture what is printed to stderr.
+
+    Usage:
+        with capture_stderr() as stderr:
+            # do stuff whose stderr you want to capture
+        stderr.getvalue() is what was printed to stderr during the context
+
+        with capture_stderr():
+            # do stuff with stderr suppressed
+
+    Yields:
+        stderr (io.StringIO): captured stderr
+    """
+    f = io.StringIO()
+    with redirect_stderr(f):
         yield f
 
 
