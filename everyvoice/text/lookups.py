@@ -8,8 +8,9 @@ def build_lookup(items: Sequence[Dict[str, str]], key: str) -> Dict[str, int]:
     """
     Create a lookup table from a list of entries and a key into those entries.
     """
-    uniq_items = set((item[key] for item in items))
-    return {item: i for i, item in enumerate(sorted(uniq_items))}
+    # Using a dictionary instead of a set to preserve the order.
+    uniq_items = {item[key]: 1 for item in items}
+    return {item: i for i, item in enumerate(uniq_items.keys())}
 
 
 class LookupTables:
