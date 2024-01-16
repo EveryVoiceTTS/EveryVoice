@@ -145,7 +145,7 @@ r() {
 
 set -o errexit
 
-r conda create -y $ENV_OPTION python=3.9
+r conda create -y $ENV_OPTION python=3.10
 eval "$(conda shell.bash hook)"
 r conda activate "$ENV2ACTIVATE"
 

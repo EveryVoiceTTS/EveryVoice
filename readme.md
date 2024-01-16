@@ -17,7 +17,7 @@ git submodule update --init
 
 ### Environment and installation – automated
 
-To run EveryVoice, you need to create a new environment using Conda and Python 3.9, install all our dependencies and EveryVoice itself.
+To run EveryVoice, you need to create a new environment using Conda and Python 3.10, install all our dependencies and EveryVoice itself.
 
 We have automated the procedure required to do all this in the script `make-everyvoice-env`, which you can run like this:
 
@@ -32,11 +32,11 @@ Add the option `--cuda CUDA_VERSION` if you need to override the default CUDA ve
 
 #### Create the environment
 
-Use conda to create a new environment based on Python 3.9, replacing `cu118` below (for
+Use conda to create a new environment based on Python 3.10, replacing `cu118` below (for
 CUDA 11.8) by your actual CUDA version tag (118 or higher), or by `cpu` for a CPU-only installation:
 
 ```sh
-conda create --name EveryVoice python=3.9
+conda create --name EveryVoice python=3.10
 conda activate EveryVoice
 CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
 pip install cython
