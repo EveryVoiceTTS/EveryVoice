@@ -46,14 +46,14 @@ class ConfigModel(BaseModel):
         return self
 
     @staticmethod
-    def combine_configs(orig_dict: Union[dict, Sequence], new_dict: dict):
+    def combine_configs(orig_dict: Union[dict, Sequence], new_dict: Mapping):
         """See https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth"""
         if isinstance(orig_dict, Sequence):
             orig_list = list(orig_dict)
             for key_s, val in new_dict.items():
                 key_i = int(key_s)
                 if isinstance(val, Mapping):
-                    tmp = ConfigModel.combine_configs(orig_list[key_i], val)  # type: ignore
+                    tmp = ConfigModel.combine_configs(orig_list[key_i], val)
                     orig_list[key_i] = tmp
                 else:
                     orig_list[key_i] = val
@@ -63,7 +63,7 @@ class ConfigModel(BaseModel):
         new_dict = dict(new_dict)
         for key, val in new_dict.items():
             if isinstance(val, Mapping):
-                tmp = ConfigModel.combine_configs(orig_dict.get(key, {}), val)  # type: ignore
+                tmp = ConfigModel.combine_configs(orig_dict.get(key, {}), val)
                 orig_dict[key] = tmp
             else:
                 orig_dict[key] = new_dict[key]
@@ -174,7 +174,7 @@ class BaseTrainingConfig(PartialLoadConfig):
         description="Advanced. The function to use to load the filelist.",
     )
     logger: LoggerConfig = Field(
-        default_factory=LoggerConfig,  # type: ignore
+        default_factory=LoggerConfig,
         description="The configuration for the logger.",
     )
     val_data_workers: int = Field(

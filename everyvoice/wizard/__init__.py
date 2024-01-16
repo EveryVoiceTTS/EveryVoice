@@ -18,9 +18,10 @@ class _Step:
     This method must save the answer in the response attribute.
     """
 
-    def __init__(self):
+    def __init__(self, name: str):
         self.response = None
         self.completed = False
+        self.name = name
 
     def prompt(self):
         """Prompt the user and return the result.
@@ -61,15 +62,17 @@ class Step(_Step, NodeMixin):
         children=None,
         state_subset=None,
     ):
-        super(Step, self).__init__()
         if name is None:
             name = getattr(self, "DEFAULT_NAME", "default step name missing")
-        self.name: str = name.value if isinstance(name, Enum) else name
+        name = name.value if isinstance(name, Enum) else name
+        super(Step, self).__init__(name)
         self.default = default
         self.parent = parent
         self.state_subset = state_subset
-        self.state = None  # should be added when the Step is added to a Tour
-        self.tour = None  # should be added when the Step is added to a Tour
+        # state will be added when the Step is added to a Tour
+        self.state: Optional[dict] = None
+        # tour will be added when the Step is added to a Tour
+        self.tour: Optional[Tour] = None
         if effect_method is not None:
             self.effect = effect_method  # type: ignore[method-assign]
         if prompt_method is not None:
@@ -107,10 +110,10 @@ class Tour:
         for parent, child in zip(steps, steps[1:]):
             child.parent = parent
             self.determine_state(child, self.state)
-            child.tour = self  # type: ignore
+            child.tour = self
         self.steps = steps
         self.root = steps[0]
-        self.root.tour = self  # type: ignore
+        self.root.tour = self
         self.determine_state(self.root, self.state)
 
     def determine_state(self, step: Step, state: dict):
@@ -119,11 +122,11 @@ class Tour:
                 state[step.state_subset] = {}
             step.state = state[step.state_subset]
         else:
-            step.state = state  # type: ignore
+            step.state = state
 
     def add_step(self, step: Step, parent: Step, child_index=0):
         self.determine_state(step, self.state)
-        step.tour = self  # type: ignore
+        step.tour = self
         children = list(parent.children)
         children.insert(child_index, step)
         parent.children = children

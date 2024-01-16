@@ -237,7 +237,7 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
 
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
-SCHEMAS_TO_OUTPUT: Dict[str, BaseModel] = {}
+SCHEMAS_TO_OUTPUT: Dict[str, type[BaseModel]] = {}
 
 
 @app.command(hidden=True)
@@ -265,12 +265,12 @@ def update_schemas(
 
     SCHEMAS_TO_OUTPUT.update(
         {
-            f"{ALIGNER_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": AlignerConfig,  # type: ignore
-            f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": EveryVoiceConfig,  # type: ignore
-            f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": FeaturePredictionConfig,  # type: ignore
-            f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": PreprocessingConfig,  # type: ignore
-            f"{TEXT_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": TextConfig,  # type: ignore
-            f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": VocoderConfig,  # type: ignore
+            f"{ALIGNER_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": AlignerConfig,
+            f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": EveryVoiceConfig,
+            f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": FeaturePredictionConfig,
+            f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": PreprocessingConfig,
+            f"{TEXT_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": TextConfig,
+            f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": VocoderConfig,
         }
     )
 

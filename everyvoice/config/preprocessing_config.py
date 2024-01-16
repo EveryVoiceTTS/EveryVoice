@@ -134,14 +134,14 @@ class PreprocessingConfig(PartialLoadConfig):
         description="The directory to save preprocessed files to.",
     )
     audio: AudioConfig = Field(
-        default_factory=AudioConfig,  # type: ignore
+        default_factory=AudioConfig,
         description="Configuration settings for audio.",
     )
     path_to_audio_config_file: Optional[FilePath] = Field(
         None, description="The path to an audio configuration file."
     )
     source_data: List[Dataset] = Field(
-        default_factory=lambda: [Dataset()],  # type: ignore
+        default_factory=lambda: [Dataset()],
         description="A list of datasets.",
     )
 

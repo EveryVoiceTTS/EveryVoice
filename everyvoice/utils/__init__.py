@@ -8,7 +8,7 @@ from datetime import datetime
 from itertools import islice
 from os.path import splitext
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional, Union
 from unicodedata import normalize
 
 import yaml
@@ -192,9 +192,10 @@ def read_festival(
         re.VERBOSE,
     )
     data = []
+    f: Iterable[str]
     with open(path, encoding="utf-8") as f:
         if record_limit:
-            f = islice(f, record_limit)  # type: ignore[assignment]
+            f = islice(f, record_limit)
         for line in f:
             if match := re.search(festival_pattern, line.strip()):
                 basename = match["basename"].strip()
@@ -254,9 +255,10 @@ def generic_csv_reader(
     escapechar="\\",
     record_limit: int = 0,  # if non-zero, read only this many records
 ):
+    f: Iterable[str]
     with open(path, "r", newline="", encoding="utf8") as f:
         if record_limit:
-            f = islice(f, record_limit)  # type: ignore[assignment]
+            f = islice(f, record_limit)
         reader = csv.reader(
             f,
             delimiter=delimiter,
@@ -276,7 +278,7 @@ def collapse_whitespace(text):
 
 
 def read_filelist(
-    filelist_path: str,
+    filelist_path: Union[str, os.PathLike],
     filename_col: int = 0,
     filename_suffix: str = "",
     text_col: int = 1,

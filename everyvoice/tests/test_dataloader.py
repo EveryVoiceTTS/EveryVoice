@@ -5,6 +5,10 @@ from unittest import TestCase, main
 
 from tqdm import tqdm
 
+# This test suite relies on side effects of loading test_preprocessing, so let's
+# import it explicitly here.  Otherwise, ./test_dataloader.py fails unless we have
+# previously run or at least loaded test_preprocessing.py in some other way.
+import everyvoice.tests.test_preprocessing  # noqa
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.vocoder.config import VocoderConfig

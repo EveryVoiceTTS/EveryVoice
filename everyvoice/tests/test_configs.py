@@ -87,9 +87,9 @@ class ConfigTest(TestCase):
             self.assertTrue((tempdir / preprocessing_config.save_dir).exists())
 
     def test_config_partial(self):
-        with tempfile.TemporaryDirectory() as tempdir:
+        with tempfile.TemporaryDirectory() as tempdir_str:
             # Preprocessing Config
-            tempdir = Path(tempdir)
+            tempdir = Path(tempdir_str)
             _writer_helper(AudioConfig(), tempdir / "audio.json")
             config = PreprocessingConfig(
                 path_to_audio_config_file=(tempdir / "audio.json")
@@ -267,7 +267,7 @@ class ConfigTest(TestCase):
             str(config.preprocessing.source_data[0].filelist), "/foo/bar/filelist.psv"
         )
 
-    def test_shared_sox(self):
+    def test_shared_sox(self) -> None:
         """Test that the shared sox config is correct"""
         vocoder_config = VocoderConfig(
             preprocessing=PreprocessingConfig(

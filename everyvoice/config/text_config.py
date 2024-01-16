@@ -22,7 +22,7 @@ class Symbols(BaseModel):
 
 
 class TextConfig(ConfigModel):
-    symbols: Symbols = Field(default_factory=Symbols)  # type: ignore
+    symbols: Symbols = Field(default_factory=Symbols)
     to_replace: Dict[str, str] = {}  # Happens before cleaners
     cleaners: List[PossiblySerializedCallable] = [
         lower,
