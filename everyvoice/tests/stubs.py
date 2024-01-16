@@ -46,7 +46,7 @@ def patch_logger(
 
 
 @contextmanager
-def mute_logger(module) -> Generator[None, None, None]:
+def mute_logger(module: str) -> Generator[None, None, None]:
     """
     Temporarily mutes a module's `logger`.
 

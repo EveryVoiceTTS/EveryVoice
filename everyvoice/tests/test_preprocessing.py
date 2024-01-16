@@ -16,7 +16,7 @@ from everyvoice.config.preprocessing_config import (
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
-from everyvoice.tests.stubs import capture_stdout
+from everyvoice.tests.stubs import capture_stdout, mute_logger
 from everyvoice.utils import read_filelist
 
 
@@ -35,15 +35,13 @@ class PreprocessingTest(TestCase):
     fp_config.preprocessing.save_dir = lj_preprocessed
     preprocessor = Preprocessor(fp_config)
 
-    # Important side effect: this code must run before all the other tests suites
+    # Important side effect: this code must run before test_dataloader.py
     # can pass, because it generates the input files for several test cases in this
-    # suite and in other test suites.  This works because run_tests.py calls
-    # LOAD.loadTestsFromTestCase(PreprocessingTest) regardless of which test
-    # suite is being run.
+    # suite and in that test suite.
     preprocessor.preprocess(
         output_path=lj_filelist,
         cpus=1,
-        overwrite=True,
+        overwrite=False,
         to_process=("audio", "energy", "pitch", "text", "spec"),
     )
 
@@ -294,7 +292,7 @@ class PreprocessingTest(TestCase):
             fp_config.preprocessing.save_dir = lj_preprocessed
 
             to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
-            with capture_stdout() as output:
+            with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
@@ -302,13 +300,13 @@ class PreprocessingTest(TestCase):
             self.assertRegex(output.getvalue(), r"previously processed files *0")
 
             fp_config.preprocessing.source_data[0].filelist = full_filelist
-            with capture_stdout() as output:
+            with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
             self.assertRegex(output.getvalue(), r"processed files *2")
             self.assertRegex(output.getvalue(), r"previously processed files *3")
-            with capture_stdout() as output:
+            with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist,
                     cpus=1,
@@ -405,14 +403,15 @@ class PreprocessingHierarchyTest(TestCase):
             fp_config.preprocessing.save_dir = preprocessed_dir
             preprocessor = Preprocessor(fp_config)
 
-            preprocessor.preprocess(
-                output_path=filelist,
-                cpus=2,
-                overwrite=True,
-                # to_process=("audio", "energy", "pitch", "text", "spec"),
-                # to_process=("audio", "text", "pfs", "spec", "attn", "energy", "pitch"),
-                to_process=("audio", "text", "spec", "attn", "energy", "pitch"),
-            )
+            with mute_logger("everyvoice.preprocessor"), capture_stdout():
+                preprocessor.preprocess(
+                    output_path=filelist,
+                    cpus=2,
+                    overwrite=True,
+                    # to_process=("audio", "energy", "pitch", "text", "spec"),
+                    # to_process=("audio", "text", "pfs", "spec", "attn", "energy", "pitch"),
+                    to_process=("audio", "text", "spec", "attn", "energy", "pitch"),
+                )
 
             for t in ("audio", "text", "spec", "attn", "energy", "pitch"):
                 # There are two speakers
