@@ -3,8 +3,9 @@
 # Create a conda environment for EveryVoice development, automating all the
 # manual instructions in readme.md
 
-# Default CUDA version:
+# Default versions:
 CUDA_VERSION=11.8
+PYTHON_VERSION=3.10
 
 usage() {
     for msg in "$@"; do
@@ -24,6 +25,8 @@ Torch pre-compilation options:
   --cuda CUDA_VERSION     Install torch compiled for CUDA_VERSION
                           Default: --cuda $CUDA_VERSION
   --cpu                   Install torch for use on CPU only
+  --python PYTHON_VERSION Specify the Python version to use
+                          Default: --python $PYTHON_VERSION
 
 Target Environment Sepcification:
   -n, --name ENV_NAME     Name of the conda environment to create
@@ -54,16 +57,11 @@ ENV_NAME=
 while [[ $# -gt 0 ]]; do
     case "$1" in
     -h|--help)   usage;;
-    --cuda)      arg_check 1 $# $!
-                 CUDA_VERSION=$2
-                 shift;;
+    --cuda)      arg_check 1 $# $!; CUDA_VERSION=$2; shift;;
     --cpu)       CUDA_VERSION=cpu;;
-    -n|--name)   arg_check 1 $# $!
-                 ENV_NAME=$2
-                 shift;;
-    -p|--prefix) arg_check 1 $# $!
-                 ENV_PREFIX=$2
-                 shift;;
+    --python)    arg_check 1 $# $!; PYTHON_VERSION=$2; shift;;
+    -n|--name)   arg_check 1 $# $!; ENV_NAME=$2; shift;;
+    -p|--prefix) arg_check 1 $# $!; ENV_PREFIX=$2; shift;;
     -*)          error_exit "Unknown option $1.";;
     *)           break;;
     esac
@@ -107,8 +105,8 @@ if conda activate "$ENV2ACTIVATE" >& /dev/null; then
 fi
 
 if [[ $CUDA_VERSION == CPU || $CUDA_VERSION == cpu ]]; then
-    echo "Creating EveryVoice conda environment $ENV_DESC for use on CPU only."
     CUDA_TAG=cpu
+    CUDA_DESC="use on CPU only"
 else
     if which nvidia-smi >& /dev/null && nvidia-smi | grep -q CUDA; then
         if nvidia-smi | grep -q "CUDA Version: $CUDA_VERSION "; then
@@ -124,8 +122,9 @@ else
         echo "Please make sure the CUDA version installed on your system matches CUDA_VERSION=$CUDA_VERSION."
     fi
     CUDA_TAG=cu$(echo $CUDA_VERSION | sed 's/\.//g')
-    echo "Creating EveryVoice conda environment $ENV_DESC for CUDA $CUDA_VERSION."
+    CUDA_DESC="CUDA $CUDA_VERSION"
 fi
+echo "Creating EveryVoice conda environment $ENV_DESC for $CUDA_DESC using Python $PYTHON_VERSION."
 
 echo -n "Proceed (y/[n])? "
 read proceed
@@ -145,7 +144,7 @@ r() {
 
 set -o errexit
 
-r conda create -y $ENV_OPTION python=3.10
+r conda create -y $ENV_OPTION python=$PYTHON_VERSION
 eval "$(conda shell.bash hook)"
 r conda activate "$ENV2ACTIVATE"
 
