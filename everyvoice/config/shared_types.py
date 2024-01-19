@@ -155,6 +155,10 @@ class BaseTrainingConfig(PartialLoadConfig):
         1,
         description="The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
     )
+    check_val_every_n_epoch: int = Field(
+        1,
+        description="Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
+    )
     max_epochs: int = Field(1000, description="Stop training after this many epochs")
     max_steps: int = Field(100000, description="Stop training after this many steps")
     finetune_checkpoint: Union[PossiblyRelativePath, None] = Field(

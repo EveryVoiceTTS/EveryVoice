@@ -173,8 +173,8 @@
     "train_split": {
       "default": 0.9,
       "description": "The amount of the dataset to use for training. The rest will be used as validation. Hold some of the validation set out for a test set if you are performing experiments.",
-      "max": 1.0,
-      "min": 0.0,
+      "maximum": 1.0,
+      "minimum": 0.0,
       "title": "Train Split",
       "type": "number"
     },
