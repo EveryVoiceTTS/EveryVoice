@@ -181,6 +181,9 @@ if ! gitlint install-hook; then
     echo ""
     echo "Error running \"gitlint install-hook\". Your \"$ENV2ACTIVATE\" environment is good, but if you want to submit contributions to the project, please rerun \"gitlint install-hook\" in your sandbox."
 fi
+# Try to install pre-commit and gitlint hooks in the submodules but don't complain on failure
+git submodule foreach 'pre-commit install || true' || true
+git submodule foreach 'gitlint install-hook || true' || true
 
 echo ""
 echo "SUCCESS!"

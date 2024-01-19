@@ -40,6 +40,7 @@ conda create --name EveryVoice python=3.10
 conda activate EveryVoice
 CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
 pip install cython
+conda install sox -c conda-forge
 ```
 
 Installation will require a fair bit of space on `~/.cache` and your `$TMPDIR`
@@ -57,6 +58,14 @@ Install EveryVoice locally from your cloned sandbox:
 pip install -e .
 ```
 
+#### Dev dependencies
+
+Before you can run the test suites, you'll also need to install the dev dependencies:
+
+```sh
+pip intall -r requirements.dev.txt
+```
+
 ### Documentation
 
 Read the full [EveryVoice documentation](https://docs.everyvoice.ca/).
@@ -69,12 +78,14 @@ Feel free to dive in! [Open an issue](https://github.com/roedoejet/EveryVoice/is
 
 This repo follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
-Please make sure our standard Git hooks are activated, by running these commands in your sandbox (if you used our `make-everyvoice-env` script then this step is already done for you.):
+Please make sure our standard Git hooks are activated, by running these commands in your sandbox (if you used our `make-everyvoice-env` script then this step is already done for you):
 
 ```sh
 pip install -r requirements.dev.txt
 pre-commit install
 gitlint install-hook
+git submodule foreach 'pre-commit install'
+git submodule foreach 'gitlint install-hook'
 ```
 
 Have a look at [Contributing.md](Contributing.md) for the full details on the
