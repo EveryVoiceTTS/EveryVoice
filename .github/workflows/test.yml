@@ -23,7 +23,7 @@ jobs:
       - name: Set up Conda
         uses: conda-incubator/setup-miniconda@v2
         with:
-          python-version: 3.9
+          python-version: "3.10"
       - name: Install sox and use conda to optimize other installs
         run: |
           conda install -y sox $(grep "pycountry\|pyworld" requirements.txt) -c conda-forge

@@ -422,7 +422,7 @@ class LoadConfigTest(TestCase):
     def test_absolute_path(self):
         """Load a config that has absolute paths."""
         with tempfile.TemporaryDirectory() as tempdir:
-            tempdir = Path(tempdir)
+            tempdir = Path(tempdir).absolute()
             # Write preprocessing:
             preprocessing_config_path = tempdir / "aligner-preprocessing.json"
             _writer_helper(
@@ -441,8 +441,9 @@ class LoadConfigTest(TestCase):
                 validation_filelist=tempdir / "validation_filelist.psv",
             )
             (tempdir / training.logger.save_dir).mkdir(parents=True, exist_ok=True)
-            (tempdir / training.training_filelist).touch(exist_ok=True)
-            (tempdir / training.validation_filelist).touch(exist_ok=True)
+            print(tempdir, training.training_filelist)
+            (training.training_filelist).touch(exist_ok=True)
+            (training.validation_filelist).touch(exist_ok=True)
             _writer_helper(training, aligner_training_path)
 
             # Write model:

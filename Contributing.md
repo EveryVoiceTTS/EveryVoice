@@ -8,12 +8,12 @@ This repo uses automated tools to standardize the formatting of code, text files
 commits.
  - [Pre-commit hooks](#pre-commit-hooks) validate and automatically apply code
    formatting rules.
- - [commitlint](#commitlint) is used as a commit message hook to validate that
+ - [gitlint](#gitlint) is used as a commit message hook to validate that
    commit messages follow the convention.
 
 ## TL;DR
 
-Run these commands in each of your sandboxes to enable our pre-commit hooks and commitlint:
+Run these commands in each of your sandboxes to enable our pre-commit hooks and gitlint:
 
 ```sh
 pip install -r requirements.dev.txt
@@ -61,7 +61,7 @@ pre-commit install
 Note that you have to run the second command in every sandbox you create, so please
 don't forget to do so when you clone a new sandbox!
 
-## commitlint
+## gitlint
 
 The team has also agreed to use [Conventional Commits](https://www.conventionalcommits.org/).
 Install and enable [gitlint](https://jorisroovers.com/gitlint/) to have your
@@ -108,9 +108,9 @@ These rules are inspired by these commit formatting guides:
  - [develar's commit message format](https://gist.github.com/develar/273e2eb938792cf5f86451fbac2bcd51)
  - [AngularJS Git Commit Message Conventions](https://docs.google.com/document/d/1QrDFcIiPjSLDn3EL15IJygNPiHORgU1_OOAqWjiDU5Y).
 
-### Enabling commitlint
+### Enabling the commit linter
 
-You can run commitlint on each commit message that you write by enabling the
+You can run gitlint on each commit message that you write by enabling the
 commit-msg hook in Git.
 
 Run this command in your sandbox to install and enable the commit-msg hook:

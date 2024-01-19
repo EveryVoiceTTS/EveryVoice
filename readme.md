@@ -17,7 +17,7 @@ git submodule update --init
 
 ### Environment and installation – automated
 
-To run EveryVoice, you need to create a new environment using Conda and Python 3.9, install all our dependencies and EveryVoice itself.
+To run EveryVoice, you need to create a new environment using Conda and Python 3.10, install all our dependencies and EveryVoice itself.
 
 We have automated the procedure required to do all this in the script `make-everyvoice-env`, which you can run like this:
 
@@ -32,14 +32,15 @@ Add the option `--cuda CUDA_VERSION` if you need to override the default CUDA ve
 
 #### Create the environment
 
-Use conda to create a new environment based on Python 3.9, replacing `cu118` below (for
+Use conda to create a new environment based on Python 3.10, replacing `cu118` below (for
 CUDA 11.8) by your actual CUDA version tag (118 or higher), or by `cpu` for a CPU-only installation:
 
 ```sh
-conda create --name EveryVoice python=3.9
+conda create --name EveryVoice python=3.10
 conda activate EveryVoice
 CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
 pip install cython
+conda install sox -c conda-forge
 ```
 
 Installation will require a fair bit of space on `~/.cache` and your `$TMPDIR`
@@ -57,6 +58,14 @@ Install EveryVoice locally from your cloned sandbox:
 pip install -e .
 ```
 
+#### Dev dependencies
+
+Before you can run the test suites, you'll also need to install the dev dependencies:
+
+```sh
+pip intall -r requirements.dev.txt
+```
+
 ### Documentation
 
 Read the full [EveryVoice documentation](https://docs.everyvoice.ca/).
@@ -69,12 +78,14 @@ Feel free to dive in! [Open an issue](https://github.com/roedoejet/EveryVoice/is
 
 This repo follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
-Please make sure our standard Git hooks are activated, by running these commands in your sandbox (if you used our `make-everyvoice-env` script then this step is already done for you.):
+Please make sure our standard Git hooks are activated, by running these commands in your sandbox (if you used our `make-everyvoice-env` script then this step is already done for you):
 
 ```sh
 pip install -r requirements.dev.txt
 pre-commit install
 gitlint install-hook
+git submodule foreach 'pre-commit install'
+git submodule foreach 'gitlint install-hook'
 ```
 
 Have a look at [Contributing.md](Contributing.md) for the full details on the
