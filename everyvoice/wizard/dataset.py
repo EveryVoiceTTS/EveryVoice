@@ -154,7 +154,7 @@ class FilelistFormatStep(Step):
         if separator:
             return self.looks_like_sv(response, separator)
 
-        assert False and "the above code covers all the accepted formats"
+        assert False and "the above code covers all valid cases"  # pragma: no cover
 
     def effect(self):
         """
@@ -184,7 +184,13 @@ class FilelistFormatStep(Step):
                 filelist_path, delimiter=self.state.get("filelist_delimiter")
             )
             self.state["filelist_headers"] = list(self.state["filelist_data"][0])
-            if "text" not in self.state["filelist_headers"]:
+            standard_header_found = False
+            self.state["selected_headers"] = []
+            try:
+                text_index = self.state["filelist_headers"].index("text")
+                self.state["selected_headers"].append(text_index)
+                standard_header_found = True
+            except ValueError:
                 self.tour.add_step(
                     HeaderStep(
                         name=StepNames.text_header_step.value,
@@ -194,7 +200,11 @@ class FilelistFormatStep(Step):
                     ),
                     self,
                 )
-            if "basename" not in self.state["filelist_headers"]:
+            try:
+                basename_index = self.state["filelist_headers"].index("basename")
+                self.state["selected_headers"].append(basename_index)
+                standard_header_found = True
+            except ValueError:
                 self.tour.add_step(
                     HeaderStep(
                         name=StepNames.basename_header_step.value,
@@ -204,10 +214,7 @@ class FilelistFormatStep(Step):
                     ),
                     self,
                 )
-            if (
-                "text" not in self.state["filelist_headers"]
-                and "basename" not in self.state["filelist_headers"]
-            ):
+            if not standard_header_found:
                 self.tour.add_step(
                     HasHeaderLineStep(state_subset=self.state_subset), self
                 )
@@ -283,6 +290,11 @@ class HasSpeakerStep(Step):
     def prompt(self):
         if self.state[StepNames.filelist_format_step.value] == "festival":
             return "no"
+        elif len(self.state.get("selected_headers", [])) >= len(
+            self.state["filelist_data"][0]
+        ):
+            print("No columns left, we will assume you have no speaker column.")
+            return "no"
         else:
             return get_response_from_menu_prompt(
                 prompt_text="Does your data have a column/value for the speaker?",
@@ -311,6 +323,11 @@ class HasLanguageStep(Step):
 
     def prompt(self):
         if self.state[StepNames.filelist_format_step.value] == "festival":
+            return "no"
+        elif len(self.state.get("selected_headers", [])) >= len(
+            self.state["filelist_data"][0]
+        ):
+            print("No columns left, we will assume you have no language column.")
             return "no"
         else:
             return get_response_from_menu_prompt(
