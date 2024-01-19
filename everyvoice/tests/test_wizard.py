@@ -696,6 +696,45 @@ class WizardTest(TestCase):
             # print(tour.state)
             # print(list(tmpdir.glob("**/*")))
 
+    def test_running_out_of_columns(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            with open(tmpdir / "filelist.psv", "w", encoding="utf8") as f:
+                f.write("basename|text\nf1|foo bar\nf2|bar baz\nf3|baz foo\n")
+            for basename in ("f1", "f2", "f3"):
+                with open(tmpdir / (basename + ".wav"), "wb"):
+                    pass
+            tour = self.monkey_run_tour(
+                "Tour without enough columsn to have speaker or language",
+                [
+                    StepAndAnswer(basic.NameStep(), Say("project")),
+                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
+                    StepAndAnswer(dataset.WavsDirStep(), Say(tmpdir)),
+                    StepAndAnswer(
+                        dataset.FilelistStep(),
+                        Say(tmpdir / "filelist.psv"),
+                    ),
+                    StepAndAnswer(
+                        dataset.FilelistFormatStep(),
+                        Say("psv"),
+                    ),
+                    StepAndAnswer(
+                        dataset.HasSpeakerStep(),
+                        patch_menu_prompt(1),
+                        children_answers=[RecursiveAnswers(Say("foo"))],
+                    ),
+                    StepAndAnswer(
+                        dataset.HasLanguageStep(),
+                        patch_menu_prompt(1),
+                        children_answers=[RecursiveAnswers(Say("bar"))],
+                    ),
+                    StepAndAnswer(dataset.SelectLanguageStep(), Say("und")),
+                    StepAndAnswer(dataset.DatasetNameStep(), Say("dataset")),
+                    StepAndAnswer(basic.ConfigFormatStep(), Say("yaml")),
+                ],
+            )
+            self.assertEqual(tour.state["filelist_headers"], ["basename", "text"])
+
     def test_keyboard_interrupt(self):
         step = basic.NameStep()
         with self.assertRaises(KeyboardInterrupt):
