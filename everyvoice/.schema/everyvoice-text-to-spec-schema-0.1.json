@@ -306,6 +306,7 @@
         "ckpt_steps": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "integer"
             },
             {
@@ -319,6 +320,7 @@
         "ckpt_epochs": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "integer"
             },
             {
@@ -328,6 +330,12 @@
           "default": 1,
           "description": "The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
           "title": "Ckpt Epochs"
+        },
+        "check_val_every_n_epoch": {
+          "default": 1,
+          "description": "Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
+          "title": "Check Val Every N Epoch",
+          "type": "integer"
         },
         "max_epochs": {
           "default": 1000,
@@ -420,6 +428,55 @@
           ],
           "default": null,
           "title": "Vocoder Path"
+        },
+        "mel_loss_weight": {
+          "default": 1.0,
+          "description": "Multiply the spec loss by this weight",
+          "title": "Mel Loss Weight",
+          "type": "number"
+        },
+        "postnet_loss_weight": {
+          "default": 1.0,
+          "description": "Multiply the postnet loss by this weight",
+          "title": "Postnet Loss Weight",
+          "type": "number"
+        },
+        "pitch_loss_weight": {
+          "default": 1.0,
+          "description": "Multiply the pitch loss by this weight",
+          "title": "Pitch Loss Weight",
+          "type": "number"
+        },
+        "energy_loss_weight": {
+          "default": 1.0,
+          "description": "Multiply the energy loss by this weight",
+          "title": "Energy Loss Weight",
+          "type": "number"
+        },
+        "duration_loss_weight": {
+          "default": 1.0,
+          "description": "Multiply the duration loss by this weight",
+          "title": "Duration Loss Weight",
+          "type": "number"
+        },
+        "attn_ctc_loss_weight": {
+          "default": 1.0,
+          "description": "Multiply the Attention CTC loss by this weight",
+          "title": "Attn Ctc Loss Weight",
+          "type": "number"
+        },
+        "attn_bin_loss_weight": {
+          "default": 1.0,
+          "description": "Multiply the Attention Binarization loss by this weight",
+          "title": "Attn Bin Loss Weight",
+          "type": "number"
+        },
+        "attn_bin_loss_warmup_epochs": {
+          "default": 100,
+          "description": "Scale the Attention Binarization loss by (current_epoch / attn_bin_loss_warmup_epochs) until the number of epochs defined by attn_bin_loss_warmup_epochs is reached.",
+          "minimum": 1,
+          "title": "Attn Bin Loss Warmup Epochs",
+          "type": "integer"
         }
       },
       "title": "FastSpeech2TrainingConfig",
@@ -527,8 +584,8 @@
         "train_split": {
           "default": 0.9,
           "description": "The amount of the dataset to use for training. The rest will be used as validation. Hold some of the validation set out for a test set if you are performing experiments.",
-          "max": 1.0,
-          "min": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Train Split",
           "type": "number"
         },

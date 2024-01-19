@@ -262,6 +262,7 @@
         "ckpt_steps": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "integer"
             },
             {
@@ -275,6 +276,7 @@
         "ckpt_epochs": {
           "anyOf": [
             {
+              "minimum": 0,
               "type": "integer"
             },
             {
@@ -284,6 +286,12 @@
           "default": 1,
           "description": "The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
           "title": "Ckpt Epochs"
+        },
+        "check_val_every_n_epoch": {
+          "default": 1,
+          "description": "Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
+          "title": "Check Val Every N Epoch",
+          "type": "integer"
         },
         "max_epochs": {
           "default": 1000,
@@ -478,8 +486,8 @@
         "train_split": {
           "default": 0.9,
           "description": "The amount of the dataset to use for training. The rest will be used as validation. Hold some of the validation set out for a test set if you are performing experiments.",
-          "max": 1.0,
-          "min": 0.0,
+          "maximum": 1.0,
+          "minimum": 0.0,
           "title": "Train Split",
           "type": "number"
         },
