@@ -193,7 +193,7 @@ class LookupTableTest(TestCase):
         )
 
 
-class LookupTables(TestCase):
+class LookupTablesTest(TestCase):
     def test_lookuptables_from_data(self):
         """
         Text looluptables for a multilangual and multispeaker.
