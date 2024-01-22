@@ -6,6 +6,7 @@ from unittest import TestCase, main
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.text import TextProcessor
+from everyvoice.text.lookups import build_lookup
 
 
 class TextTest(TestCase):
@@ -162,6 +163,31 @@ class TextTest(TestCase):
         )
         self.assertIn("3", self.base_text_processor.missing_symbols)
         self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
+
+
+class LookupTableTest(TestCase):
+    def test_build_lookup(self):
+        """Make sure the original order of the keys is preserved"""
+        key = "speaker"
+        data = [
+            {key: "Samuel"},
+            {key: "Eric"},
+            {key: "Eric"},
+            {key: "Marc"},
+            {key: "Aidan"},
+            {key: "Marc"},
+            {key: "Samuel"},
+        ]
+        speaker2id = build_lookup(data, key)
+        self.assertDictEqual(
+            speaker2id,
+            {
+                "Samuel": 0,
+                "Eric": 1,
+                "Marc": 2,
+                "Aidan": 3,
+            },
+        )
 
 
 if __name__ == "__main__":

@@ -1,9 +1,16 @@
-from typing import Union
-
-import pandas as pd
+from typing import Dict, Sequence, Union
 
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
+
+
+def build_lookup(items: Sequence[Dict[str, str]], key: str) -> Dict[str, int]:
+    """
+    Create a lookup table from a list of entries and a key into those entries.
+    """
+    # Using a dictionary instead of a set to preserve the order.
+    uniq_items = {item[key]: 1 for item in items}
+    return {item: i for i, item in enumerate(uniq_items.keys())}
 
 
 class LookupTables:
@@ -15,8 +22,5 @@ class LookupTables:
         self.train_dataset = self.config.training.filelist_loader(
             self.config.training.training_filelist
         )
-        data_frame = pd.DataFrame(self.train_dataset + self.val_dataset)
-        speakers = data_frame["speaker"].unique()
-        self.speaker2id = {speaker: i for i, speaker in enumerate(speakers)}
-        langs = data_frame["language"].unique()
-        self.lang2id = {language: i for i, language in enumerate(langs)}
+        self.speaker2id = build_lookup(self.train_dataset + self.val_dataset, "speaker")
+        self.lang2id = build_lookup(self.train_dataset + self.val_dataset, "language")
