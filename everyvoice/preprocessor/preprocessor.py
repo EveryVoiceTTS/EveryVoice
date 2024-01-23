@@ -12,7 +12,7 @@ from collections import Counter
 from glob import glob
 from multiprocessing import Manager
 from pathlib import Path
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 import numpy as np
 import torch
@@ -48,9 +48,7 @@ from everyvoice.utils.heavy import (
 
 
 class Preprocessor:
-    def __init__(
-        self, config: Union[AlignerConfig, FeaturePredictionConfig, VocoderConfig]
-    ):
+    def __init__(self, config: AlignerConfig | FeaturePredictionConfig | VocoderConfig):
         self.config = config
         self.counters = Counters(Manager())
         self.cpus = 0
@@ -101,7 +99,7 @@ class Preprocessor:
                 f"Spectral feature specification '{self.audio_config.spec_type}' is not supported. Please edit your config file."
             )
 
-    def load_audio(self, audio_path: Path) -> Tuple[torch.Tensor, int, float]:
+    def load_audio(self, audio_path: Path) -> tuple[torch.Tensor, int, float]:
         """
         Load an audio file and calculate its duration.
 
@@ -123,7 +121,7 @@ class Preprocessor:
         sox_effects=None,
         save_wave=False,
         update_counters=True,  # unset this when processing the same file a second time
-    ) -> Union[Tuple[torch.Tensor, int], Tuple[None, None]]:
+    ) -> tuple[torch.Tensor, int] | tuple[None, None]:
         """Process audio
 
         Args:
@@ -339,7 +337,7 @@ class Preprocessor:
 
     def compute_stats(
         self, energy=True, pitch=True
-    ) -> Tuple[Union[Scaler, None], Union[Scaler, None]]:
+    ) -> tuple[Optional[Scaler], Optional[Scaler]]:
         if self.cpus > 1:
             parallel = Parallel(n_jobs=self.cpus, backend="loky", batch_size=500)
         if energy:
