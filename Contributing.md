@@ -88,10 +88,10 @@ Valid types: (these are the default, which we're using as is for now)
  - style: working only on code or documentation style
  - test: commits for testing code
 
-Types for partial work: you can use `pfeat`, `pfix`, `pdoc` or `ptest` as the commit type
-for partial work that won't be shown in the release logs. Make sure you have the
-appropriate regular type commit later in the history documenting the work for the release
-log, and consider squashing the partial work commits when that makes sense.
+Types for partial work: you can use `pfeat`, `pfix`, `pdoc`, `ptest` or `prefactor` as the
+commit type for partial work that won't be shown in the release logs. Make sure you have
+the appropriate regular type commit later in the history documenting the work for the
+release log, and consider squashing the partial work commits when that makes sense.
 
 Valid scopes: the scope is optional and usually refers to which module is being changed.
  - TBD - for now not validated, should be just one word ideally
