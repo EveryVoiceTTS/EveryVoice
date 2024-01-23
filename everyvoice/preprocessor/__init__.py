@@ -10,7 +10,7 @@ import random
 import sys
 from collections import Counter
 from glob import glob
-from multiprocessing import Manager, managers
+from multiprocessing import Manager
 from pathlib import Path
 from typing import Optional, Tuple, Union
 
@@ -33,6 +33,7 @@ from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor.attention_prior import BetaBinomialInterpolator
+from everyvoice.preprocessor.helpers import Counters, Scaler, save_tensor
 from everyvoice.text import TextProcessor
 from everyvoice.utils import (
     generic_dict_loader,
@@ -44,98 +45,6 @@ from everyvoice.utils.heavy import (
     dynamic_range_compression_torch,
     get_spectral_transform,
 )
-
-
-def save(tensor: torch.Tensor, path: Path):
-    """Create hierarchy before saving a tensor."""
-    path = Path(path)
-    if not path.parent.exists():
-        path.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(tensor, path)
-
-
-class Scaler:
-    def __init__(self):
-        self._data = []
-        self._tensor_data = None
-        self.min = None
-        self.max = None
-        self.std = None
-        self.mean = None
-        self.norm_min = None
-        self.norm_max = None
-
-    def __len__(self):
-        return len(self.data)
-
-    @property
-    def data(self):
-        return self._data
-
-    @data.setter
-    def data(self, value):
-        raise ValueError(
-            f"Sorry, you tried to change the data to {value} but it cannot be changed directly. Either Scaler.append(data), or Scaler.clear_data()"
-        )
-
-    def append(self, value):
-        self._data += value
-
-    def clear_data(self):
-        """Clear data"""
-        self.__init__()
-
-    def normalize(self, data):
-        """Remove mean and normalize to unit variance"""
-        return (data - self.mean) / self.std
-
-    def denormalize(self, data):
-        """Get de-normalized value"""
-        return (data * self.std) + self.mean
-
-    def calculate_stats(self):
-        if not len(self):
-            return
-        if self._tensor_data is None:
-            self._tensor_data = torch.cat(self.data)
-        non_nan_data = self._tensor_data[~torch.isnan(self._tensor_data)]
-        self.min = torch.min(non_nan_data)
-        self.max = torch.max(non_nan_data)
-        self.mean = torch.nanmean(self._tensor_data)
-        self.std = torch.std(non_nan_data)
-        self.norm_max = self.normalize(self.max)
-        self.norm_min = self.normalize(self.min)
-        return {
-            "sample_size": len(self),
-            "norm_min": float(self.norm_min),
-            "norm_max": float(self.norm_max),
-            "min": float(self.min),
-            "max": float(self.max),
-            "mean": float(self.mean),
-            "std": float(self.std),
-        }
-
-
-class Counters:
-    def __init__(self, manager: managers.SyncManager):
-        self._lock = manager.Lock()
-        self._processed_files = manager.Value("l", 0)
-        self._previously_processed_files = manager.Value("l", 0)
-        self._duration = manager.Value("d", 0)
-        self._nans = manager.Value("l", 0)
-        self._audio_empty = manager.Value("l", 0)
-        self._audio_too_long = manager.Value("l", 0)
-        self._audio_too_short = manager.Value("l", 0)
-        self._skipped_processes = manager.Value("l", 0)
-        self._missing_files = manager.Value("l", 0)
-
-    def increment(self, counter: str, increment: Union[int, float] = 1):
-        with self._lock:
-            self.__getattribute__("_" + counter).value += increment
-
-    def value(self, counter):
-        with self._lock:
-            return self.__getattribute__("_" + counter).value
 
 
 class Preprocessor:
@@ -489,7 +398,7 @@ class Preprocessor:
             ):
                 energy = torch.load(path)
                 energy = energy_scaler.normalize(energy)
-                save(energy, path)
+                save_tensor(energy, path)
             stats["energy"] = energy_stats
         if pitch_scaler:
             pitch_stats = pitch_scaler.calculate_stats()
@@ -503,7 +412,7 @@ class Preprocessor:
             ):
                 pitch = torch.load(path)
                 pitch = pitch_scaler.normalize(pitch)
-                save(pitch, path)
+                save_tensor(pitch, path)
             stats["pitch"] = pitch_stats
 
         return stats
@@ -563,7 +472,7 @@ class Preprocessor:
             if input_audio is None:
                 return None
             else:
-                save(input_audio, input_audio_save_path)
+                save_tensor(input_audio, input_audio_save_path)
         if (
             self.input_sampling_rate != self.output_sampling_rate
             and not output_audio_save_path.exists()
@@ -575,7 +484,7 @@ class Preprocessor:
                 update_counters=False,
             )
             if output_audio is not None:
-                save(output_audio, output_audio_save_path)
+                save_tensor(output_audio, output_audio_save_path)
         return item
 
     def process_all_audio(self) -> list[dict]:
@@ -640,7 +549,7 @@ class Preprocessor:
             dur_path = self.create_path(item, "duration", "duration.pt")
             durs = torch.load(dur_path)
             energy = self.average_data_by_durations(energy, durs)
-        save(energy, energy_path)
+        save_tensor(energy, energy_path)
 
     def process_pitch(self, item):
         pitch_path = self.create_path(item, "pitch", "pitch.pt")
@@ -659,7 +568,7 @@ class Preprocessor:
             dur_path = self.create_path(item, "duration", "duration.pt")
             durs = torch.load(dur_path)
             pitch = self.average_data_by_durations(pitch, durs)
-        save(pitch, pitch_path)
+        save_tensor(pitch, pitch_path)
 
     def process_attn_prior(self, item):
         attn_prior_path = self.create_path(item, "attn", "attn-prior.pt")
@@ -677,7 +586,7 @@ class Preprocessor:
             binomial_interpolator(input_spec.size(1), text.size(0))
         )
         assert input_spec.size(1) == attn_prior.size(0)
-        save(attn_prior, attn_prior_path)
+        save_tensor(attn_prior, attn_prior_path)
 
     def process_text(self, item, use_pfs=False):
         basename = "pfs.pt" if use_pfs else "text.pt"
@@ -685,7 +594,7 @@ class Preprocessor:
         if text_path.exists() and not self.overwrite:
             return
         text = self.extract_text_inputs(item["text"], use_pfs=use_pfs, quiet=True)
-        save(text, text_path)
+        save_tensor(text, text_path)
 
     def process_spec(self, item):
         input_audio_path = self.create_path(
@@ -715,14 +624,14 @@ class Preprocessor:
                 output_spec = self.extract_spectral_features(
                     output_audio, self.output_spectral_transform
                 )
-                save(output_spec, output_spec_path)
+                save_tensor(output_spec, output_spec_path)
 
         if not input_spec_path.exists() or self.overwrite:
             input_audio = torch.load(input_audio_path)
             input_spec = self.extract_spectral_features(
                 input_audio, self.input_spectral_transform
             )
-            save(input_spec, input_spec_path)
+            save_tensor(input_spec, input_spec_path)
 
     def get_process_fn(self, process):
         if process == "text":
