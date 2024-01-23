@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, Iterator, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Tuple, Union
 
 from loguru import logger
 from pydantic import (
@@ -11,8 +11,10 @@ from pydantic import (
     ConfigDict,
     DirectoryPath,
     Field,
+    SerializationInfo,
     ValidationInfo,
     field_validator,
+    model_serializer,
     model_validator,
 )
 from typing_extensions import Annotated
@@ -44,6 +46,24 @@ class ConfigModel(BaseModel):
         new_data = self.combine_configs(dict(self), new_config)
         self.__init__(**new_data)  # type: ignore
         return self
+
+    @model_serializer(mode="wrap", when_used="json")
+    def remove_paths(
+        self, other_serializer_callable: Callable, info: SerializationInfo
+    ):
+        """In order to preserve checkpoint interoperability between
+        different environments, we have to exclude Paths from exports.
+
+        This model serializer is implemented to only apply when model_dump(mode='json').
+        """
+        path_keys = [k for k, v in self if isinstance(v, Path)]  # type: ignore
+        default_serialization = other_serializer_callable(self)
+        if path_keys:
+            return {
+                k: v for k, v in default_serialization.items() if k not in path_keys
+            }
+        else:
+            return default_serialization
 
     @staticmethod
     def combine_configs(orig_dict: Union[dict, Sequence], new_dict: Mapping):
