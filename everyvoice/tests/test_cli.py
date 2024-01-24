@@ -8,6 +8,7 @@ from unittest import TestCase, main
 
 import jsonschema
 import yaml
+from pytorch_lightning import Trainer
 from typer.testing import CliRunner
 from yaml import CLoader as Loader
 
@@ -20,7 +21,16 @@ from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
 )
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
+    FastSpeech2,
+)
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 from everyvoice.tests.stubs import mute_logger
+from everyvoice.wizard import (
+    SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
+    TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
+)
 
 EV_DIR = Path(EV_FILE).parent
 
@@ -30,6 +40,7 @@ class CLITest(TestCase):
 
     def setUp(self) -> None:
         self.runner = CliRunner()
+        self.config_dir = Path(__file__).parent / "data" / "relative" / "config"
         self.commands = [
             "new-project",
             "train",
@@ -37,6 +48,44 @@ class CLITest(TestCase):
             "preprocess",
             "inspect-checkpoint",
         ]
+
+    def wip_test_synthesize(self):
+        # TODO: Here's a stub for getting synthesis unit tests working
+        #       I believe we'll need to also pass a stats object to the created spec_model
+        vocoder = HiFiGAN(
+            HiFiGANConfig.load_config_from_path(
+                self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+            )
+        )
+        spec_model = FastSpeech2(
+            FastSpeech2Config.load_config_from_path(
+                self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+            )
+        )
+        vocoder_trainer = Trainer()
+        fp_trainer = Trainer()
+        vocoder_trainer.strategy.connect(vocoder)
+        fp_trainer.strategy.connect(spec_model)
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            fp_path = tmpdir / "fp.ckpt"
+            fp_trainer.save_checkpoint(fp_path)
+            vocoder_path = tmpdir / "vocoder.ckpt"
+            vocoder_trainer.save_checkpoint(vocoder_path)
+            self.runner.invoke(
+                app,
+                [
+                    "synthesize",
+                    "text-to-wav",
+                    str(fp_path),
+                    "--vocoder-path",
+                    str(vocoder_path),
+                    "--text",
+                    "hello world",
+                    "-O",
+                    "wav",
+                ],
+            )
 
     def test_commands_present(self):
         result = self.runner.invoke(app, ["--help"])
