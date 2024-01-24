@@ -185,9 +185,7 @@ def train_base_command(
         detect_anomaly=False,  # used for debugging, but triples training time
         gradient_clip_val=gradient_clip_val,
     )
-    model_obj = model(config)
-    logger.info(f"Model's architecture\n{model_obj}")
-    data = data_module(config)  # type: ignore
+    data = data_module(config)
     last_ckpt = (
         config.training.finetune_checkpoint
         if config.training.finetune_checkpoint is not None

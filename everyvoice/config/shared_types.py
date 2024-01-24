@@ -39,6 +39,40 @@ class ConfigModel(BaseModel):
         json_schema_extra={"$schema": "http://json-schema.org/draft-07/schema#"},
     )
 
+    def model_checkpoint_dump(self):
+        """When saving a configuration to a checkpoint, we have to ensure that it is:
+
+            - A JSON-serializable dict, to allow interoperability between different
+              versions of EveryVoice and Pydantic.
+            - Contains no Paths, which are validated by Pydantic and throw ValidationErrors
+              if the path does not exist. Checkpoints by their nature will be shared
+              across different environments so we cannot guarantee the presence of any Path
+              used during initial training.
+
+        Therefore we dump the model checkpoint (which will serialize functions into a string format)
+        and then recursively search over the dumped checkpoint to remove fields with Path values.
+
+        Returns:
+            dict: A JSON-serializable dict containing no paths
+        """
+        ckpt = self.model_dump()
+
+        def delete_paths(ckpt: dict | list | tuple):
+            if isinstance(ckpt, dict):
+                for k, v in ckpt.copy().items():
+                    if not isinstance(v, Path):
+                        ckpt[k] = delete_paths(v)
+                    else:
+                        del ckpt[k]
+            if isinstance(ckpt, list):
+                return [delete_paths(x) for x in ckpt if not isinstance(x, Path)]
+            if isinstance(ckpt, tuple):
+                return tuple(delete_paths(x) for x in ckpt if not isinstance(x, Path))
+            else:
+                return ckpt
+
+        return delete_paths(ckpt)
+
     def update_config(self, new_config: dict):
         """Update the config with new values"""
         new_data = self.combine_configs(dict(self), new_config)
