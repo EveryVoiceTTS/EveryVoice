@@ -705,7 +705,7 @@ class WizardTest(TestCase):
                 with open(tmpdir / (basename + ".wav"), "wb"):
                     pass
             tour = self.monkey_run_tour(
-                "Tour without enough columsn to have speaker or language",
+                "Tour without enough columns to have speaker or language",
                 [
                     StepAndAnswer(basic.NameStep(), Say("project")),
                     StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),

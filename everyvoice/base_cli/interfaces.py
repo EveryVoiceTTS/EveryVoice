@@ -33,7 +33,7 @@ def preprocess_base_command_interface(
         help="The path to your model configuration file.",
     ),
     config_args: List[str] = typer.Option(
-        None, "-c", "--config-args", help="Overwrite the configuration"
+        None, "-c", "--config-args", help="Override the configuration."
     ),
     cpus: Optional[int] = typer.Option(
         min(4, mp.cpu_count()),
@@ -41,8 +41,13 @@ def preprocess_base_command_interface(
         "--cpus",
         help="How many CPUs to use when preprocessing",
     ),
-    overwrite: bool = typer.Option(False, "-O", "--overwrite"),
-    debug: bool = typer.Option(False, "-D", "--debug"),
+    overwrite: bool = typer.Option(
+        False,
+        "-O",
+        "--overwrite",
+        help="Redo all preprocessing, even if files already exist and aren't expected to change.",
+    ),
+    debug: bool = typer.Option(False, "-D", "--debug", help="Enable debugging."),
 ):
     pass
 

@@ -529,8 +529,8 @@ class Preprocessor:
 
     def process_energy(self, item):
         energy_path = self.create_path(item, "energy", "energy.pt")
-        if energy_path.exists() and not self.overwrite:
-            return
+        # Always reprocess energy even without self.overwrite, since its results
+        # depend on the stats of the whole fileset.
         spec_path = self.create_path(
             item,
             "spec",
@@ -550,8 +550,8 @@ class Preprocessor:
 
     def process_pitch(self, item):
         pitch_path = self.create_path(item, "pitch", "pitch.pt")
-        if pitch_path.exists() and not self.overwrite:
-            return
+        # Always reprocess pitch even without self.overwrite, since its results
+        # depend on the stats of the whole fileset.
         audio_path = self.create_path(
             item, "audio", f"audio-{self.input_sampling_rate}.pt"
         )
