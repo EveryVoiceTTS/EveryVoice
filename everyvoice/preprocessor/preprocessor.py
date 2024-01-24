@@ -56,7 +56,6 @@ class Preprocessor:
         self.energy_scaler = Scaler()
         self.datasets = config.preprocessing.source_data
         self.save_dir = Path(config.preprocessing.save_dir)
-        self.save_dir.mkdir(parents=True, exist_ok=True)
         self.audio_config = config.preprocessing.audio
         self.sep = "--"
         self.text_processor = (

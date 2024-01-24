@@ -52,6 +52,7 @@ class CLITest(TestCase):
     def wip_test_synthesize(self):
         # TODO: Here's a stub for getting synthesis unit tests working
         #       I believe we'll need to also pass a stats object to the created spec_model
+        # TODO: add a test for making sure that `preprocessing` and `logs_and_checkpoints` folders don't get created.
         vocoder = HiFiGAN(
             HiFiGANConfig.load_config_from_path(
                 self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
