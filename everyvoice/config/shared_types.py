@@ -40,6 +40,21 @@ class ConfigModel(BaseModel):
     )
 
     def model_checkpoint_dump(self):
+        """When saving a configuration to a checkpoint, we have to ensure that it is:
+
+            - A JSON-serializable dict, to allow interoperability between different
+              versions of EveryVoice and Pydantic.
+            - Contains no Paths, which are validated by Pydantic and throw ValidationErrors
+              if the path does not exist. Checkpoints by their nature will be shared
+              across different environments so we cannot guarantee the presence of any Path
+              used during initial training.
+
+        Therefore we dump the model checkpoint (which will serialize functions into a string format)
+        and then recursively search over the dumped checkpoint to remove fields with Path values.
+
+        Returns:
+            dict: A JSON-serializable dict containing no paths
+        """
         ckpt = self.model_dump()
 
         def delete_paths(ckpt: dict | list | tuple):
