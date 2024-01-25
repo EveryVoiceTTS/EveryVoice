@@ -11,7 +11,10 @@ from everyvoice.config.shared_types import BaseTrainingConfig, LoggerConfig
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
-from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
+from everyvoice.model.feature_prediction.config import (
+    FastSpeech2ModelConfig,
+    FeaturePredictionConfig,
+)
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import generic_psv_dict_reader, slugify, write_filelist
 from everyvoice.wizard import (
@@ -120,6 +123,8 @@ class ConfigFormatStep(Step):
         # Text Configuration
         punctuation = []
         symbols = {}
+        multispeaker = False
+        multilingual = False
         for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
             # Gather Symbols for Text Configuration
             punctuation += self.state[dataset][
@@ -128,6 +133,20 @@ class ConfigFormatStep(Step):
             symbols[f"{dataset}-symbols"] = self.state[dataset][
                 StepNames.symbol_set_step.value
             ].symbol_set
+            if (
+                self.state[dataset].get(
+                    StepNames.data_has_language_value_step.value, "no"
+                )
+                == "yes"
+            ):
+                multilingual = True
+            if (
+                self.state[dataset].get(
+                    StepNames.data_has_speaker_value_step.value, "no"
+                )
+                == "yes"
+            ):
+                multispeaker = True
             # Dataset Configs
             wavs_dir = Path(
                 self.state[dataset][StepNames.wavs_dir_step.value]
@@ -226,11 +245,15 @@ class ConfigFormatStep(Step):
             name="FeaturePredictionExperiment", save_dir=log_dir_relative_to_configs
         )
         fp_config = FeaturePredictionConfig(
+            model=FastSpeech2ModelConfig(
+                multilingual=multilingual,
+                multispeaker=multispeaker,
+            ),
             training=BaseTrainingConfig(
                 training_filelist=preprocessed_training_filelist_path,
                 validation_filelist=preprocessed_validation_filelist_path,
                 logger=fp_logger,
-            ).model_dump()
+            ).model_dump(),
         )
         fp_config_path = Path(f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}")
         fp_config_json = json.loads(
