@@ -93,7 +93,7 @@ everyvoice train text-to-spec config/{{ config_filename('text-to-spec') }}
 You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export to wav, npy, or pt files.
 
 ```bash
-everyvoice synthesize text-to-wav logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1
+everyvoice synthesize from-text logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1
 ```
 
 <!-- % Step 10 (optional): Finetune your vocoder
@@ -110,7 +110,7 @@ everyvoice synthesize text-to-wav logs_and_checkpoints/FeaturePredictionExperime
 
 % .. code-block:: bash
 
-% everyvoice synthesize text-to-wav -t "hello world" -c config/{{ config_filename('text-to-wav') }}
+% everyvoice synthesize from-text -t "hello world" -c config/{{ config_filename('text-to-wav') }}
 
 % .. warning::
 
