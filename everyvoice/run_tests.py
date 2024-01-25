@@ -21,8 +21,11 @@ SUITES = {
     "preprocessing": ("test_preprocessing",),
     "model": ("test_model",),
     "cli": ("test_wizard", "test_cli"),
+    "fs2": (
+        "everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.tests.test_cli",
+    ),
 }
-dev_suites = ("config", "loader", "text", "preprocessing", "model", "cli")
+dev_suites = ("config", "loader", "text", "preprocessing", "model", "cli", "fs2")
 SUITES["dev"] = sum((SUITES[suite] for suite in dev_suites), start=())
 
 
@@ -69,7 +72,10 @@ def run_tests(suite: str, describe: bool = False):
                 f"Please specify a test suite to run: one of '{['all'] + sorted(SUITES.keys())}'."
             )
             return False
-        tests = ["everyvoice.tests." + test for test in tests]
+        tests = [
+            "everyvoice.tests." + test if not test.startswith("everyvoice") else test
+            for test in tests
+        ]
         for test in tests:
             importlib.import_module(test)
         test_suite = TestSuite(loader.loadTestsFromNames(tests))
