@@ -103,7 +103,7 @@ class Step(_Step, NodeMixin):
         else:
             self._validation_failures += 1
             if self._validation_failures > 20:
-                print("ERROR: Giving up after 20 validation failures.")
+                print(f"ERROR: {self.name} giving up after 20 validation failures.")
                 sys.exit(1)
             self.run()
 
