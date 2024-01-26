@@ -546,9 +546,13 @@ class WizardTest(TestCase):
             for step_and_answer in steps_and_answers:
                 step = step_and_answer.step
                 # print(step.name)
+                old_children_len = len(step.children)
                 with step_and_answer.monkey:
                     step.run()
-                if len(step.children) > 1 and step_and_answer.children_answers:
+                if (
+                    len(step.children) > old_children_len
+                    and step_and_answer.children_answers
+                ):
                     # Here we assemble steps_and_answers for the recursive call from
                     # the actual children of step and the provided children_answers.
                     recursive_helper(
@@ -566,7 +570,8 @@ class WizardTest(TestCase):
                     )
 
         tour = Tour(name, steps=[step for (step, *_) in steps_and_answers])
-        self.assertEqual(tour.state, {})  # fail on accidentally shared initializer
+        # fail on accidentally shared initializer
+        self.assertTrue(tour.state == {} or tour.state == {"dataset_0": {}})
         recursive_helper(steps_and_answers)
         return tour
 
@@ -627,38 +632,64 @@ class WizardTest(TestCase):
 
     def test_with_language_column(self):
         data_dir = Path(__file__).parent / "data"
-        with capture_stdout():
+        with capture_stdout(), tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
             tour = self.monkey_run_tour(
                 "tour with language column",
                 [
-                    StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
+                    StepAndAnswer(basic.NameStep(), Say("project")),
+                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
                     StepAndAnswer(
-                        dataset.FilelistStep(),
+                        dataset.WavsDirStep(state_subset="dataset_0"), Say(data_dir)
+                    ),
+                    StepAndAnswer(
+                        dataset.FilelistStep(state_subset="dataset_0"),
                         Say(data_dir / "language-col.tsv"),
                     ),
-                    StepAndAnswer(dataset.FilelistFormatStep(), Say("tsv")),
                     StepAndAnswer(
-                        dataset.HasSpeakerStep(),
+                        dataset.FilelistFormatStep(state_subset="dataset_0"), Say("tsv")
+                    ),
+                    StepAndAnswer(
+                        dataset.HasSpeakerStep(state_subset="dataset_0"),
                         Say("yes"),
                         children_answers=[RecursiveAnswers(Say(2))],
                     ),
                     StepAndAnswer(
-                        dataset.HasLanguageStep(),
+                        dataset.HasLanguageStep(state_subset="dataset_0"),
                         Say("yes"),
                         children_answers=[RecursiveAnswers(Say(3))],
                     ),
-                    StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
                     StepAndAnswer(
-                        dataset.SymbolSetStep(),
+                        dataset.TextProcessingStep(state_subset="dataset_0"),
+                        Say([0, 1]),
+                    ),
+                    StepAndAnswer(
+                        dataset.SymbolSetStep(state_subset="dataset_0"),
                         patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
                     ),
-                    StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
-                    StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
+                    StepAndAnswer(
+                        dataset.SoxEffectsStep(state_subset="dataset_0"), Say([0])
+                    ),
+                    StepAndAnswer(
+                        dataset.DatasetNameStep(state_subset="dataset_0"),
+                        Say("my-monkey-dataset"),
+                    ),
+                    StepAndAnswer(
+                        basic.MoreDatasetsStep(),
+                        Say("no"),
+                        children_answers=[RecursiveAnswers(Say("yaml"))],
+                    ),
                 ],
             )
-        self.assertEqual(tour.state[SN.speaker_header_step.value], 2)
-        self.assertEqual(tour.state[SN.language_header_step.value], 3)
-        self.assertTrue(tour.steps[-1].completed)
+
+            self.assertEqual(tour.state["dataset_0"][SN.speaker_header_step.value], 2)
+            self.assertEqual(tour.state["dataset_0"][SN.language_header_step.value], 3)
+            self.assertTrue(tour.steps[-1].completed)
+
+            with open(tmpdir / "out/project/config/everyvoice-text-to-spec.yaml") as f:
+                text_to_spec_config = "\n".join(f)
+            self.assertIn("multilingual: true", text_to_spec_config)
+            self.assertIn("multispeaker: true", text_to_spec_config)
 
     def test_no_header_line(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -673,13 +704,15 @@ class WizardTest(TestCase):
                 [
                     StepAndAnswer(basic.NameStep(), Say("project")),
                     StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
-                    StepAndAnswer(dataset.WavsDirStep(), Say(tmpdir)),
                     StepAndAnswer(
-                        dataset.FilelistStep(),
+                        dataset.WavsDirStep(state_subset="dataset_0"), Say(tmpdir)
+                    ),
+                    StepAndAnswer(
+                        dataset.FilelistStep(state_subset="dataset_0"),
                         Say(tmpdir / "filelist.psv"),
                     ),
                     StepAndAnswer(
-                        dataset.FilelistFormatStep(),
+                        dataset.FilelistFormatStep(state_subset="dataset_0"),
                         Say("psv"),
                         children_answers=[
                             RecursiveAnswers(Say("no")),  # no header line
@@ -687,14 +720,46 @@ class WizardTest(TestCase):
                             RecursiveAnswers(Say(1)),  # column 1 is text
                         ],
                     ),
-                    StepAndAnswer(dataset.SelectLanguageStep(), Say("und")),
-                    StepAndAnswer(dataset.DatasetNameStep(), Say("dataset")),
-                    StepAndAnswer(basic.ConfigFormatStep(), Say("yaml")),
+                    StepAndAnswer(
+                        dataset.HasSpeakerStep(state_subset="dataset_0"),
+                        Say("no"),
+                    ),
+                    StepAndAnswer(
+                        dataset.HasLanguageStep(state_subset="dataset_0"),
+                        Say("no"),
+                        children_answers=[RecursiveAnswers(Say("und"))],
+                    ),
+                    StepAndAnswer(
+                        dataset.TextProcessingStep(state_subset="dataset_0"),
+                        Say(()),
+                    ),
+                    StepAndAnswer(
+                        dataset.SymbolSetStep(state_subset="dataset_0"),
+                        monkeypatch(dataset, "get_response_from_menu_prompt", Say([])),
+                    ),
+                    StepAndAnswer(
+                        dataset.SoxEffectsStep(state_subset="dataset_0"),
+                        Say([]),
+                    ),
+                    StepAndAnswer(
+                        dataset.DatasetNameStep(state_subset="dataset_0"),
+                        Say("dataset"),
+                    ),
+                    StepAndAnswer(
+                        basic.MoreDatasetsStep(),
+                        Say("no"),
+                        children_answers=[RecursiveAnswers(Say("yaml"))],
+                    ),
                 ],
             )
-            self.assertEqual(len(tour.state["filelist_data"]), 3)
-            # print(tour.state)
-            # print(list(tmpdir.glob("**/*")))
+            self.assertEqual(len(tour.state["dataset_0"]["filelist_data"]), 3)
+            with open(tmpdir / "out/project/dataset-filelist.psv") as f:
+                output_filelist = list(f)
+            self.assertEqual(len(output_filelist), 4)
+            with open(tmpdir / "out/project/config/everyvoice-text-to-spec.yaml") as f:
+                text_to_spec_config = "\n".join(f)
+            self.assertIn("multilingual: false", text_to_spec_config)
+            self.assertIn("multispeaker: false", text_to_spec_config)
 
     def test_running_out_of_columns(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -730,10 +795,16 @@ class WizardTest(TestCase):
                     ),
                     StepAndAnswer(dataset.SelectLanguageStep(), Say("und")),
                     StepAndAnswer(dataset.DatasetNameStep(), Say("dataset")),
-                    StepAndAnswer(basic.ConfigFormatStep(), Say("yaml")),
+                    StepAndAnswer(
+                        basic.MoreDatasetsStep(),
+                        Say("no"),
+                        children_answers=[RecursiveAnswers(Say("yaml"))],
+                    ),
                 ],
             )
             self.assertEqual(tour.state["filelist_headers"], ["basename", "text"])
+            self.assertEqual(tour.state[SN.data_has_speaker_value_step.value], "no")
+            self.assertEqual(tour.state[SN.data_has_language_value_step.value], "no")
 
     def test_keyboard_interrupt(self):
         step = basic.NameStep()

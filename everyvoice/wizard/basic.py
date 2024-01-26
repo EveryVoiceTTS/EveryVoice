@@ -126,31 +126,24 @@ class ConfigFormatStep(Step):
         multispeaker = False
         multilingual = False
         for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
+            dataset_state = self.state[dataset]
             # Gather Symbols for Text Configuration
-            punctuation += self.state[dataset][
-                StepNames.symbol_set_step.value
-            ].punctuation
-            symbols[f"{dataset}-symbols"] = self.state[dataset][
+            punctuation += dataset_state[StepNames.symbol_set_step.value].punctuation
+            symbols[f"{dataset}-symbols"] = dataset_state[
                 StepNames.symbol_set_step.value
             ].symbol_set
             if (
-                self.state[dataset].get(
-                    StepNames.data_has_language_value_step.value, "no"
-                )
+                dataset_state.get(StepNames.data_has_language_value_step.value, "no")
                 == "yes"
             ):
                 multilingual = True
             if (
-                self.state[dataset].get(
-                    StepNames.data_has_speaker_value_step.value, "no"
-                )
+                dataset_state.get(StepNames.data_has_speaker_value_step.value, "no")
                 == "yes"
             ):
                 multispeaker = True
             # Dataset Configs
-            wavs_dir = Path(
-                self.state[dataset][StepNames.wavs_dir_step.value]
-            ).expanduser()
+            wavs_dir = Path(dataset_state[StepNames.wavs_dir_step.value]).expanduser()
             if not wavs_dir.is_absolute():
                 if not output_path.is_absolute():
                     for _ in config_dir.parts:
@@ -159,9 +152,9 @@ class ConfigFormatStep(Step):
                     wavs_dir = Path.cwd() / wavs_dir
             new_filelist_path = (
                 Path("..")
-                / f"{self.state[dataset][StepNames.dataset_name_step.value]}-filelist.psv"
+                / f"{dataset_state[StepNames.dataset_name_step.value]}-filelist.psv"
             ).expanduser()
-            filelist_data = self.state[dataset]["filelist_data"]
+            filelist_data = dataset_state["filelist_data"]
             for i, entry in enumerate(filelist_data):
                 # Remove .wav if it was added to the basename
                 if entry["basename"].endswith(".wav"):
@@ -173,7 +166,7 @@ class ConfigFormatStep(Step):
                     if k is not None and not k.startswith("unknown")
                 }
             write_filelist(filelist_data, (config_dir / new_filelist_path).absolute())
-            sox_effects = self.state[dataset]["sox_effects"]
+            sox_effects = dataset_state["sox_effects"]
             filelist_loader = generic_psv_dict_reader
 
             datasets.append(
