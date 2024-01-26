@@ -192,18 +192,18 @@ synthesize_group = typer.Typer(
     help="""
     # Synthesize Help
 
-        - **text-to-spec** --- this is the most common model to run for performing normal speech synthesis.
+        - **from-text** --- This is the most common input for performing normal speech synthesis. It will take text or a filelist with text and produce either waveform audio or spectrogram.
 
-        - **spec-to-wav** --- this is the model that turns your spectral features into audio. this type of synthesis is also known as copy synthesis and unless you know what you are doing, you probably don't want to do this.
+        - **from-spec** --- This is the model that turns your spectral features into audio. This type of synthesis is also known as copy synthesis and unless you know what you are doing, you probably don't want to do this.
     """,
 )
 
 synthesize_group.command(
-    name="text-to-wav",
+    name="from-text",
 )(synthesize_fs2)
 
 synthesize_group.command(
-    name="spec-to-wav",
+    name="from-spec",
 )(synthesize_hfg)
 
 app.add_typer(
