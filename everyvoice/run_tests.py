@@ -14,6 +14,9 @@ from loguru import logger
 
 # Unit tests
 
+SUBMODULE_SUITES = {
+    "fs2": ("/model/feature_prediction/FastSpeech2_lightning/fs2/tests",),
+}
 SUITES = {
     "config": ("test_configs",),
     "loader": ("test_dataloader",),
@@ -21,9 +24,7 @@ SUITES = {
     "preprocessing": ("test_preprocessing",),
     "model": ("test_model",),
     "cli": ("test_wizard", "test_cli"),
-    "fs2": (
-        "everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.tests.test_cli",
-    ),
+    **SUBMODULE_SUITES,
 }
 dev_suites = ("config", "loader", "text", "preprocessing", "model", "cli", "fs2")
 SUITES["dev"] = sum((SUITES[suite] for suite in dev_suites), start=())
@@ -44,8 +45,24 @@ def list_tests(suite: TestSuite):
                 yield remove_test_prefix(test_case)
 
 
+def all_test_suites() -> TestSuite:
+    loader = TestLoader()
+    # NOTE: Looking specifically under `/tests` removes empty TestSuites.
+    test_suite = loader.discover(
+        os.path.dirname(__file__) + "/tests",
+        top_level_dir=os.path.dirname(__file__),
+    )
+    for submodule_testsuite in SUBMODULE_SUITES.values():
+        suite = loader.discover(
+            os.path.dirname(__file__) + submodule_testsuite[0],
+        )
+        test_suite.addTests(suite)
+
+    return test_suite
+
+
 def describe_suite(suite: TestSuite):
-    full_suite = TestLoader().discover(os.path.dirname(__file__))
+    full_suite = all_test_suites()
     full_list = list(list_tests(full_suite))
     requested_list = list(list_tests(suite))
     requested_set = set(requested_list)
@@ -59,11 +76,11 @@ def describe_suite(suite: TestSuite):
 
 def run_tests(suite: str, describe: bool = False):
     """Decide which Test Suite to run"""
-    loader = TestLoader()
     logger.info(f"Loading test suite '{suite}'.")
     if suite == "all":
-        test_suite = loader.discover(os.path.dirname(__file__))
+        test_suite = all_test_suites()
     else:
+        loader = TestLoader()
         tests: Iterable[str]
         if suite in SUITES:
             tests = SUITES[suite]
@@ -73,12 +90,20 @@ def run_tests(suite: str, describe: bool = False):
             )
             return False
         tests = [
-            "everyvoice.tests." + test if not test.startswith("everyvoice") else test
+            "everyvoice.tests." + test if not test.startswith("/") else test
             for test in tests
         ]
+        test_suite = TestSuite()
         for test in tests:
-            importlib.import_module(test)
-        test_suite = TestSuite(loader.loadTestsFromNames(tests))
+            if test.startswith("/"):
+                sub_suite = loader.discover(
+                    os.path.dirname(__file__) + test,
+                    top_level_dir=os.path.dirname(__file__),  # MANDATORY
+                )
+                test_suite.addTests(sub_suite)
+            else:
+                importlib.import_module(test)
+                test_suite.addTest(loader.loadTestsFromName(test))
 
     if describe:
         describe_suite(test_suite)
