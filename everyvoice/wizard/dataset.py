@@ -8,7 +8,12 @@ import questionary
 from tqdm import tqdm
 
 from everyvoice.config.text_config import Symbols
-from everyvoice.utils import generic_csv_reader, generic_dict_loader, read_festival
+from everyvoice.utils import (
+    generic_csv_reader,
+    generic_dict_loader,
+    read_festival,
+    slugify,
+)
 from everyvoice.wizard import Step, StepNames, Tour
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
@@ -31,8 +36,7 @@ class DatasetNameStep(Step):
         if len(response) == 0:
             print("Sorry, your dataset needs a name.")
             return False
-        special_chars = re.compile(r"[\W]+")
-        slug = re.sub(special_chars, "-", response)
+        slug = slugify(response)
         if not slug == response:
             print(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."

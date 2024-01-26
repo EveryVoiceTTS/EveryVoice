@@ -13,7 +13,7 @@ from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
-from everyvoice.utils import generic_psv_dict_reader, write_filelist
+from everyvoice.utils import generic_psv_dict_reader, slugify, write_filelist
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
@@ -29,7 +29,7 @@ from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
 )
-from everyvoice.wizard.utils import sanitize_path, write_dict_to_config
+from everyvoice.wizard.utils import write_dict_to_config
 
 
 class NameStep(Step):
@@ -44,7 +44,7 @@ class NameStep(Step):
         if len(response) == 0:
             print("Sorry, your project needs a name.")
             return False
-        sanitized_path = sanitize_path(response)
+        sanitized_path = slugify(response)
         if not sanitized_path == response:
             print(
                 f"Sorry, the project name '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like '{sanitized_path}' instead."

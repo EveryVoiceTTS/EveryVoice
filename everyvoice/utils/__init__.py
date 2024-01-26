@@ -19,6 +19,46 @@ from everyvoice import exceptions
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
+# Regular expression matching non-slug characters:
+special_chars = re.compile(r"[\W]+")
+
+
+def slugify(
+    text: str, repl: str = "-", limit_to_n_characters: Optional[int] = None
+) -> str:
+    """Create a slugified representation of input text
+       (i.e. without special characters) and optionally
+       limited to a specific number of characters.
+
+       >>> slugify('gya?a')
+       'gya-a'
+
+       >>> slugify('gya?a', repl='')
+       'gyaa'
+
+       >>> slugify('gya?a', limit_to_n_characters=3)
+       'gya'
+
+       >>> slugify('!@#$%^&*(){}<>? :;|+=/\\'"', limit_to_n_characters=3)
+       '-'
+
+       >>> slugify('!@#$%^&*(){}<>? :;|+=/\\'"', repl='', limit_to_n_characters=3)
+       ''
+
+    Args:
+        text (str): text to slugify
+        repl (str): character to replace special character with. defaults to -
+        limit_to_n_characters (Optional[int]): return first n characters of output
+
+    Returns:
+        str: slugified string
+    """
+    slugified_text = re.sub(special_chars, repl, text)
+
+    if limit_to_n_characters is None:
+        return slugified_text
+    else:
+        return slugified_text[:limit_to_n_characters]
 
 
 def check_dataset_size(batch_size: int, number_of_samples: int, name: str):
