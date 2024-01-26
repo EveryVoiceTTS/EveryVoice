@@ -11,13 +11,13 @@ jobs:
     # Create latest docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.SGILE_PAT }}
           submodules: recursive
           fetch-depth: 0 # fetch all commits/branches
       - name: Set up Conda
-        uses: conda-incubator/setup-miniconda@v2
+        uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: "3.10"
       - name: Install libsndfile
