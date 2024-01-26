@@ -937,7 +937,7 @@ then you should have a psv file that looks like this:</p>
 </code></pre></div>
 <h2 id="step-8-synthesize-speech-in-your-language">Step 8: Synthesize Speech in Your Language!<a class="headerlink" href="#step-8-synthesize-speech-in-your-language" title="Permanent link">&para;</a></h2>
 <p>You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export to wav, npy, or pt files.</p>
-<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>text-to-wav<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ&quot;</span><span class="w"> </span>-a<span class="w"> </span>gpu<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>from-text<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ&quot;</span><span class="w"> </span>-a<span class="w"> </span>gpu<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span>
 </code></pre></div>
 <!-- % Step 10 (optional): Finetune your vocoder
 
@@ -953,7 +953,7 @@ then you should have a psv file that looks like this:</p>
 
 % .. code-block:: bash
 
-% everyvoice synthesize text-to-wav -t "hello world" -c config/everyvoice-text-to-wav.yaml
+% everyvoice synthesize from-text -t "hello world" -c config/everyvoice-text-to-wav.yaml
 
 % .. warning::
 
