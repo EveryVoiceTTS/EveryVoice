@@ -226,6 +226,7 @@ class TestSuites(str, Enum):
     model = "model"
     preprocessing = "preprocessing"
     text = "text"
+    fs2 = "fs2"
 
 
 @app.command(hidden=True)
