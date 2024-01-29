@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 
-from pathlib import Path
 from unittest import TestCase, main
 
 from tqdm import tqdm
 
-# This test suite relies on side effects of loading test_preprocessing, so let's
-# import it explicitly here.  Otherwise, ./test_dataloader.py fails unless we have
-# previously run or at least loaded test_preprocessing.py in some other way.
-import everyvoice.tests.test_preprocessing  # noqa
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.vocoder.config import VocoderConfig
@@ -19,13 +14,16 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     HiFiGANDataModule,
     SpecDataset,
 )
+from everyvoice.tests.test_preprocessing import PreprocessingTest
 
 
 class DataLoaderTest(TestCase):
     """Basic test for dataloaders"""
 
+    lj_preprocessed = PreprocessingTest.lj_preprocessed
+
     def setUp(self) -> None:
-        self.lj_preprocessed = Path(__file__).parent / "data" / "lj" / "preprocessed"
+        PreprocessingTest.preprocess()  # Generate some preprocessed test data
         self.config = EveryVoiceConfig(
             vocoder=VocoderConfig(
                 training=HiFiGANTrainingConfig(
