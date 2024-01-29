@@ -2,67 +2,67 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://docs.everyvoice.ca/latest/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/install/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/guides/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/guides/background/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/guides/custom/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/guides/finetune/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/guides/schemas/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/reference/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/reference/aligner/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/reference/configuration/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/reference/e2e/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/reference/feature_prediction/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://docs.everyvoice.ca/latest/reference/vocoder/</loc>
-         <lastmod>2024-01-26</lastmod>
+         <lastmod>2024-01-29</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
