@@ -35,17 +35,23 @@ class PreprocessingTest(TestCase):
     fp_config.preprocessing.save_dir = lj_preprocessed
     preprocessor = Preprocessor(fp_config)
 
-    # Important side effect: this code must run before test_dataloader.py
-    # can pass, because it generates the input files for several test cases in this
-    # suite and in that test suite.
-    preprocessor.preprocess(
-        output_path=lj_filelist,
-        cpus=1,
-        overwrite=False,
-        to_process=("audio", "energy", "pitch", "text", "spec"),
-    )
+    _preprocess_ran = False
+
+    @classmethod
+    def preprocess(cls):
+        """Generate a preprocessed test set that can be used in various test cases."""
+        # We only need to actually run this once
+        if not cls._preprocess_ran:
+            cls.preprocessor.preprocess(
+                output_path=cls.lj_filelist,
+                cpus=1,
+                overwrite=False,
+                to_process=("audio", "energy", "pitch", "text", "spec"),
+            )
+            cls._preprocess_ran = True
 
     def setUp(self) -> None:
+        self.preprocess()
         tempdir_prefix = f"tmpdir_{type(self).__name__}_"
         if not self.keep_temp_dir_after_running:
             self.tempdirobj = tempfile.TemporaryDirectory(
