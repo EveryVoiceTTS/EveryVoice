@@ -6,6 +6,7 @@
 """
 import json
 import os
+import textwrap
 from enum import Enum
 from pathlib import Path
 from pprint import pformat
@@ -16,6 +17,7 @@ from deepdiff import DeepDiff
 from loguru import logger
 from tqdm import tqdm
 
+from everyvoice.exceptions import InvalidConfiguration
 from everyvoice.model.aligner.config import DFAlignerConfig
 from everyvoice.model.aligner.DeepForcedAligner.dfaligner.dataset import (
     AlignerDataModule,
@@ -164,13 +166,24 @@ def train_base_command(
     )
     lr_monitor = LearningRateMonitor(logging_interval="step")
     logger.info("Starting training.")
-    ckpt_callback = ModelCheckpoint(
+    # This callback will always save the last checkpoint
+    # regardless of its performance.
+    last_ckpt_callback = ModelCheckpoint(
+        save_top_k=1,
+        save_last=True,
+        every_n_train_steps=config.training.ckpt_steps,
+        every_n_epochs=config.training.ckpt_epochs,
+        enable_version_counter=True,
+    )
+    # This callback will only save the top-k checkpoints
+    # based on minimization of the monitored loss
+    monitored_ckpt_callback = ModelCheckpoint(
         monitor=monitor,
         mode="min",
-        save_last=True,
         save_top_k=config.training.save_top_k_ckpts,
         every_n_train_steps=config.training.ckpt_steps,
         every_n_epochs=config.training.ckpt_epochs,
+        enable_version_counter=False,
     )
     trainer = Trainer(
         logger=tensorboard_logger,
@@ -179,7 +192,7 @@ def train_base_command(
         max_epochs=config.training.max_epochs,
         max_steps=config.training.max_steps,
         check_val_every_n_epoch=config.training.check_val_every_n_epoch,
-        callbacks=[ckpt_callback, lr_monitor],
+        callbacks=[monitored_ckpt_callback, last_ckpt_callback, lr_monitor],
         strategy=strategy,
         num_nodes=nodes,
         detect_anomaly=False,  # used for debugging, but triples training time
@@ -202,32 +215,56 @@ def train_base_command(
         model_obj = model.load_from_checkpoint(last_ckpt)
         logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
-        diff = DeepDiff(
-            model_obj.config.training.model_dump(), config.training.model_dump()
+        optimizer_diff = DeepDiff(
+            model_obj.config.training.optimizer.model_dump(),
+            config.training.optimizer.model_dump(),
         )
-        training_config_diff = []
-        if "values_changed" in diff:
-            training_config_diff += [
-                item
-                for item in diff["values_changed"].items()
-                if "sub_dir" not in item[0]
-            ]
-        if "types_changed" in diff:
-            training_config_diff += list(diff["types_changes"].items())
-        if training_config_diff:
-            model_obj.config.training = config.training
-            tensorboard_logger.log_hyperparams(config.model_dump())
+        model_diff = DeepDiff(
+            model_obj.config.model.model_dump(), config.model.model_dump()
+        )
+        model_config_diff = []
+        optimizer_config_diff = []
+        if "values_changed" in model_diff:
+            model_config_diff += list(model_diff["values_changed"].items())
+        if "types_changed" in model_diff:
+            model_config_diff += list(model_diff["types_changed"].items())
+        if "values_changed" in optimizer_diff:
+            optimizer_config_diff += list(optimizer_diff["values_changed"].items())
+        if "types_changed" in optimizer_diff:
+            optimizer_config_diff += list(optimizer_diff["types_changed"].items())
+        if model_config_diff:
+            raise InvalidConfiguration(
+                textwrap.dedent(
+                    f"""Sorry, you are a trying to fine-tune a model with a different architecture
+                                                         defined in your configuration than was used during pre-training.
+                                                         Please fix your configuration or use a different model.
+                                                         Values Changed: {pformat(optimizer_config_diff)}"""
+                )
+            )
+        # If optimizer configuration is different, start training with updated optimizer hyperparameters
+        # We need to override the model object's configuration with the current one.
+        # This assumes that the model and optimizer configurations haven't changed since they
+        # would be caught by the previous checks. TODO: We should also check for certain changes to
+        # the text configuration, since certain changes would cause an input space mismatch.
+        model_obj.config = config
+        tensorboard_logger.log_hyperparams(config.model_dump())
+        if optimizer_config_diff:
             # Finetune from Checkpoint
             logger.warning(
-                f"""Some of your training hyperparameters have changed from your checkpoint at '{last_ckpt}', so we will override your checkpoint hyperparameters.
-                               Your training logs will start from epoch 0/step 0, but will still use the weights from your checkpoint. Values Changed: {pformat(training_config_diff)}
-                            """
+                textwrap.dedent(
+                    f"""Some of your optimizer hyperparameters have changed from your checkpoint at '{last_ckpt}',
+                    so we will override your checkpoint hyperparameters and restart the optimizer.
+                    Your training logs will start from epoch 0/step 0, but will still use the weights from your checkpoint.
+                    Values Changed: {pformat(optimizer_config_diff)}
+                    """
+                )
             )
+            # This will only use the weights in the model_obj, the optimizer and current epoch etc will be restarted using
+            # the configuration in model_obj.config, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
             trainer.fit(model_obj, data)
         else:
             logger.info(f"Resuming from checkpoint '{last_ckpt}'")
-            # Resume from checkpoint
-            tensorboard_logger.log_hyperparams(config.model_dump())
+            # This will resume the weights, optimizer, and steps from last_ckpt, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
             trainer.fit(model_obj, data, ckpt_path=last_ckpt)
 
 
