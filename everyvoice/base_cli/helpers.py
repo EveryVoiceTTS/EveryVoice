@@ -6,6 +6,7 @@
 """
 import json
 import os
+import tempfile
 import textwrap
 from enum import Enum
 from pathlib import Path
@@ -235,10 +236,13 @@ def train_base_command(
         if model_config_diff:
             raise InvalidConfiguration(
                 textwrap.dedent(
-                    f"""Sorry, you are a trying to fine-tune a model with a different architecture
-                                                         defined in your configuration than was used during pre-training.
-                                                         Please fix your configuration or use a different model.
-                                                         Values Changed: {pformat(optimizer_config_diff)}"""
+                    f"""
+                    Sorry, you are a trying to fine-tune a model with a different architecture defined in your configuration than was used during pre-training.
+
+                    Please fix your configuration or use a different model.
+
+                    Values Changed: {pformat(optimizer_config_diff)}
+                    """
                 )
             )
         # If optimizer configuration is different, start training with updated optimizer hyperparameters
@@ -252,9 +256,12 @@ def train_base_command(
             # Finetune from Checkpoint
             logger.warning(
                 textwrap.dedent(
-                    f"""Some of your optimizer hyperparameters have changed from your checkpoint at '{last_ckpt}',
+                    f"""
+                    Some of your optimizer hyperparameters have changed from your checkpoint at '{last_ckpt}',
                     so we will override your checkpoint hyperparameters and restart the optimizer.
+
                     Your training logs will start from epoch 0/step 0, but will still use the weights from your checkpoint.
+
                     Values Changed: {pformat(optimizer_config_diff)}
                     """
                 )
@@ -263,9 +270,20 @@ def train_base_command(
             # the configuration in model_obj.config, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
             trainer.fit(model_obj, data)
         else:
+            import torch
+
             logger.info(f"Resuming from checkpoint '{last_ckpt}'")
-            # This will resume the weights, optimizer, and steps from last_ckpt, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
-            trainer.fit(model_obj, data, ckpt_path=last_ckpt)
+            # We need to create a temporary checkpoint with torch.save because on_save_checkpoint
+            # removes all paths for checkpoint portability. However, some paths, like "vocoder_path"
+            # should be still accessible when training is resumed.
+            new_config_with_paths = model_obj.config.model_dump(mode="json")
+            old_ckpt = torch.load(last_ckpt)
+            old_ckpt["hyper_parameters"]["config"] = new_config_with_paths
+            # TODO: check if we need to do the same thing with stats and any thing else registered on the model
+            with tempfile.NamedTemporaryFile() as tmp:
+                torch.save(old_ckpt, tmp.name)
+                # This will resume the weights, optimizer, and steps from last_ckpt, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
+                trainer.fit(model_obj, data, ckpt_path=tmp.name)
 
 
 def inference_base_command(name: Enum):
