@@ -7,7 +7,7 @@ import tempfile
 from enum import Enum
 from pathlib import Path
 from types import MethodType
-from typing import Callable, Iterable, NamedTuple, Optional, Sequence, Union
+from typing import Callable, Iterable, NamedTuple, Optional, Sequence
 from unittest import TestCase, main
 
 import yaml
@@ -31,7 +31,7 @@ class RecursiveAnswers(NamedTuple):
     """Recursive answer for StepAndAnswer.children_answers, see StepAndAnswer
     documentation for a description of the fields here."""
 
-    answer_or_monkey: Union[Say, Callable]
+    answer_or_monkey: Say | Callable
     children_answers: Optional[list["RecursiveAnswers"]] = None
 
 
@@ -49,7 +49,7 @@ class StepAndAnswer(NamedTuple):
     """
 
     step: Step
-    answer_or_monkey: Union[Say, Callable]
+    answer_or_monkey: Say | Callable
     children_answers: Optional[list[RecursiveAnswers]] = None
 
     @property
