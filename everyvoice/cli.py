@@ -1,7 +1,6 @@
 import json
 from enum import Enum
 from pathlib import Path
-from typing import Dict
 
 import typer
 from pydantic import BaseModel
@@ -238,7 +237,7 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
 
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
-SCHEMAS_TO_OUTPUT: Dict[str, type[BaseModel]] = {}
+SCHEMAS_TO_OUTPUT: dict[str, type[BaseModel]] = {}
 
 
 @app.command(hidden=True)

@@ -1,6 +1,6 @@
 import sys
 from enum import Enum
-from typing import List, Optional, Union
+from typing import Optional
 
 from anytree import NodeMixin, RenderTree
 
@@ -54,7 +54,7 @@ class Step(_Step, NodeMixin):
 
     def __init__(
         self,
-        name: Union[None, Enum, str] = None,
+        name: None | Enum | str = None,
         default=None,
         prompt_method=None,
         validate_method=None,
@@ -109,7 +109,7 @@ class Step(_Step, NodeMixin):
 
 
 class Tour:
-    def __init__(self, name: str, steps: List[Step], state: Optional[dict] = None):
+    def __init__(self, name: str, steps: list[Step], state: Optional[dict] = None):
         """Create the tour by setting each Step as the child of the previous Step."""
         self.name = name
         self.state: dict = state if state is not None else {}
