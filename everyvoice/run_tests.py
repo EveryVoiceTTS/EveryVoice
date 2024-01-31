@@ -14,10 +14,10 @@ from loguru import logger
 
 # Unit tests
 
-SUBMODULE_SUITES = {
+SUBMODULE_SUITES: dict[str, tuple[str, ...]] = {
     "fs2": ("/model/feature_prediction/FastSpeech2_lightning/fs2/tests",),
 }
-SUITES = {
+SUITES: dict[str, tuple[str, ...]] = {
     "config": ("test_configs",),
     "loader": ("test_dataloader",),
     "text": ("test_text", "test_utils"),
