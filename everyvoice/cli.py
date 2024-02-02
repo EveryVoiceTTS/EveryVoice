@@ -10,13 +10,13 @@ from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     align_single as ctc_segment,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.preprocess import (
     preprocess as preprocess_fs2,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
     synthesize as synthesize_fs2,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli import (
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.train import (
     train as train_fs2,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
