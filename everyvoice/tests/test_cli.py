@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import os
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -23,6 +24,10 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
     FastSpeech2,
+)
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
+    Stats,
+    StatsInfo,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
@@ -49,10 +54,13 @@ class CLITest(TestCase):
             "inspect-checkpoint",
         ]
 
-    def wip_test_synthesize(self):
+    def test_synthesize(self):
         # TODO: Here's a stub for getting synthesis unit tests working
         #       I believe we'll need to also pass a stats object to the created spec_model
         # TODO: add a test for making sure that `preprocessing` and `logs_and_checkpoints` folders don't get created.
+        os.environ[
+            "PYTORCH_ENABLE_MPS_FALLBACK"
+        ] = "1"  # Fallback for running tests on Mac
         vocoder = HiFiGAN(
             HiFiGANConfig.load_config_from_path(
                 self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
@@ -61,32 +69,74 @@ class CLITest(TestCase):
         spec_model = FastSpeech2(
             FastSpeech2Config.load_config_from_path(
                 self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
-            )
+            ),
+            lang2id={"default": 0},
+            speaker2id={"default": 0},
+            stats=Stats(
+                pitch=StatsInfo(
+                    min=150, max=300, std=2.0, mean=0.5, norm_max=1.0, norm_min=0.1
+                ),
+                energy=StatsInfo(
+                    min=0.1, max=10.0, std=2.0, mean=0.5, norm_max=1.0, norm_min=0.1
+                ),
+            ),
         )
-        vocoder_trainer = Trainer()
-        fp_trainer = Trainer()
-        vocoder_trainer.strategy.connect(vocoder)
-        fp_trainer.strategy.connect(spec_model)
         with tempfile.TemporaryDirectory() as tmpdir_str:
             tmpdir = Path(tmpdir_str)
+            vocoder_trainer = Trainer(default_root_dir=tmpdir_str, barebones=True)
+            fp_trainer = Trainer(default_root_dir=tmpdir_str, barebones=True)
+            vocoder_trainer.strategy.connect(vocoder)
+            fp_trainer.strategy.connect(spec_model)
             fp_path = tmpdir / "fp.ckpt"
             fp_trainer.save_checkpoint(fp_path)
             vocoder_path = tmpdir / "vocoder.ckpt"
             vocoder_trainer.save_checkpoint(vocoder_path)
-            self.runner.invoke(
+            with open(tmpdir / "utt.list", "w") as f:
+                f.write(
+                    "\n".join(
+                        ["this is a test", "here is another test", "and a foo bar test"]
+                    )
+                )
+            single_text_result = self.runner.invoke(
                 app,
                 [
                     "synthesize",
-                    "text-to-wav",
+                    "from-text",
                     str(fp_path),
                     "--vocoder-path",
                     str(vocoder_path),
+                    "-o",
+                    str(tmpdir / "single_text"),
                     "--text",
                     "hello world",
                     "-O",
                     "wav",
                 ],
             )
+            self.assertEqual(single_text_result.exit_code, 0)
+            self.assertEqual(
+                len(list((tmpdir / "single_text" / "wav").glob("*.wav"))), 1
+            )  # assert synthesizes a single file
+            filelist_result = self.runner.invoke(
+                app,
+                [
+                    "synthesize",
+                    "from-text",
+                    str(fp_path),
+                    "--vocoder-path",
+                    str(vocoder_path),
+                    "-o",
+                    str(tmpdir / "filelist"),
+                    "--filelist",
+                    str(tmpdir / "utt.list"),
+                    "-O",
+                    "wav",
+                ],
+            )
+            self.assertEqual(filelist_result.exit_code, 0)
+            self.assertEqual(
+                len(list((tmpdir / "filelist" / "wav").glob("*.wav"))), 3
+            )  # assert synthesizes three files
 
     def test_commands_present(self):
         result = self.runner.invoke(app, ["--help"])
