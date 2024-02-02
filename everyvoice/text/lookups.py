@@ -4,7 +4,7 @@ from typing import Dict, Iterable, Sequence, Tuple, Union
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 
-LookupTable = Dict[str, int]
+LookupTable = dict[str, int]
 
 
 def lookuptables_from_config(
