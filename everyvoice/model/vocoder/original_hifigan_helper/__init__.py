@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -224,16 +225,10 @@ def get_vocoder(path, device):
     return vocoder
 
 
-def vocoder_infer(mels, vocoder, lengths=None):
+def vocoder_infer(mels, vocoder) -> np.ndarray:
     # mels (1, 80, 111) normal
     # mels small (1, 80, 5)
     with torch.no_grad():
         wavs = vocoder(mels.transpose(1, 2)).squeeze(1)
-    wavs = wavs.cpu().numpy()
-    wavs = [wav for wav in wavs]
-
-    for i in range(len(mels)):
-        if lengths is not None:
-            wavs[i] = wavs[i][: lengths[i]]
-
+    wavs = wavs.cpu().numpy()  # B, T
     return wavs
