@@ -269,24 +269,28 @@ class Preprocessor:
         """
         return torch.linalg.norm(spectral_feature_tensor, dim=0)
 
-    def extract_text_inputs(self, text, use_pfs=False, quiet=False) -> torch.Tensor:
-        """Given some text, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
+    # This method is static because we want to use it in Datasets without setting the Preprocessor as an attribute
+    @staticmethod
+    def extract_text_inputs(
+        text, text_processor: TextProcessor, use_pfs=False, quiet=False
+    ) -> torch.Tensor:
+        """
+        Given some text and a text_processor, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
 
         Args:
             text (str): text
+            text_processor (TextProcessor): a text processor
             use_pfs:
             quiet: suppress warnings
         """
-        if self.text_processor is None:
+        if text_processor is None:
             raise ValueError("Text processor not initialized")
         if use_pfs:
             return torch.Tensor(
-                self.text_processor.text_to_phonological_features(text, quiet)
+                text_processor.text_to_phonological_features(text, quiet)
             ).long()
         else:
-            return torch.Tensor(
-                self.text_processor.text_to_sequence(text, quiet)
-            ).long()
+            return torch.Tensor(text_processor.text_to_sequence(text, quiet)).long()
 
     def print_duration(self):
         """Convert seconds to a human readable format"""
@@ -572,7 +576,9 @@ class Preprocessor:
         if attn_prior_path.exists() and not self.overwrite:
             return
         binomial_interpolator = BetaBinomialInterpolator()
-        text = self.extract_text_inputs(item["text"], use_pfs=False, quiet=True)
+        text = self.extract_text_inputs(
+            item["text"], self.text_processor, use_pfs=False, quiet=True
+        )
         input_spec_path = self.create_path(
             item,
             "spec",
@@ -590,7 +596,9 @@ class Preprocessor:
         text_path = self.create_path(item, "text", basename)
         if text_path.exists() and not self.overwrite:
             return
-        text = self.extract_text_inputs(item["text"], use_pfs=use_pfs, quiet=True)
+        text = self.extract_text_inputs(
+            item["text"], self.text_processor, use_pfs=use_pfs, quiet=True
+        )
         save_tensor(text, text_path)
 
     def process_spec(self, item):
