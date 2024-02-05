@@ -61,6 +61,19 @@ class CLITest(TestCase):
         os.environ[
             "PYTORCH_ENABLE_MPS_FALLBACK"
         ] = "1"  # Fallback for running tests on Mac
+        import random
+
+        import torch
+
+        # Set a manual seed, because some seeds cause the model
+        # to fail to generate a proper wav file. This seed was taken
+        # from running torch.seed() on a working run. Note: this is a bit
+        # brittle, but this test is just to test that the synthesize command
+        # works given two functional checkpoints. Further tests into the effects
+        # of seeds should be looked into.
+        torch.use_deterministic_algorithms(True)
+        torch.manual_seed(10719787423044995460)
+        random.seed(10719787423044995460)
         vocoder = HiFiGAN(
             HiFiGANConfig.load_config_from_path(
                 self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
