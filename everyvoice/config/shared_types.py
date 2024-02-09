@@ -116,11 +116,16 @@ class PartialLoadConfig(ConfigModel):
         )
 
     @classmethod
-    def path_relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
-        if info.context and value is not None and not value.is_absolute():
+    def path_relative_to_absolute(cls, value: Path | str, info: ValidationInfo) -> Path:
+        """
+        Given `value` a relative path from `config` and a `config_path` defined in `info`, transform `value` into an absolute path.
+        """
+        # Make sure value is a path because it can be a string when we load a model that is not partial.
+        path = Path(value)
+        if info.context and path is not None and not path.is_absolute():
             config_path = info.context.get("config_path", Path("."))
-            value = (config_path.parent / value).resolve()
-        return value
+            path = (config_path.parent / path).resolve()
+        return path
 
 
 class LoggerConfig(PartialLoadConfig):
@@ -224,10 +229,10 @@ class BaseTrainingConfig(PartialLoadConfig):
         description="The number of CPU workers to use when loading data during training.",
     )
 
-    @field_validator("training_filelist", "validation_filelist")
+    @field_validator("training_filelist", "validation_filelist", mode="before")
     @classmethod
     def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
-        return PartialLoadConfig.path_relative_to_absolute(value, info)
+        return cls.path_relative_to_absolute(value, info)
 
     @model_validator(mode="after")
     def multually_exclusive_ckpt_options(self) -> "BaseTrainingConfig":
