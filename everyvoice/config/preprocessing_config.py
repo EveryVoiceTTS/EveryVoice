@@ -113,10 +113,11 @@ class Dataset(PartialLoadConfig):
     @field_validator(
         "data_dir",
         "filelist",
+        mode="before",
     )
     @classmethod
     def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
-        return PartialLoadConfig.path_relative_to_absolute(value, info)
+        return cls.path_relative_to_absolute(value, info)
 
 
 class PreprocessingConfig(PartialLoadConfig):
