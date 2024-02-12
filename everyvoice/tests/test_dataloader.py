@@ -5,6 +5,7 @@ from unittest import TestCase, main
 from tqdm import tqdm
 
 from everyvoice.dataloader import BaseDataModule
+from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
@@ -87,6 +88,18 @@ class DataLoaderTest(TestCase):
     def test_e2e_data_module(self):
         # TODO: once e2e is done
         pass
+
+    def test_imbalanced_sampler(self):
+        dataset = SpecDataset(
+            self.config.vocoder.training.filelist_loader(
+                self.config.vocoder.training.training_filelist
+            ),
+            self.config.vocoder,
+            use_segments=True,
+        )
+        sampler = ImbalancedDatasetSampler(dataset)
+        sample = list(sampler)
+        self.assertEqual(len(sample), 5)
 
 
 if __name__ == "__main__":
