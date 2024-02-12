@@ -9,7 +9,7 @@ loguru==0.6.0
 matplotlib==3.6.0
 merge-args
 nltk==3.7
-pandas==1.4.4
+pandas~=2.0
 panphon==0.20.0
 pycountry==22.3.5
 pydantic>=2.4.2
