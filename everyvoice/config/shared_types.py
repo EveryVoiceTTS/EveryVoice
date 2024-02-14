@@ -5,19 +5,14 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, Iterator, Tuple, Union
 
-from loguru import logger
-from pydantic import (
-    BaseModel,
-    ConfigDict,
-    DirectoryPath,
-    Field,
-    ValidationInfo,
-    field_validator,
-    model_validator,
-)
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, model_validator
 from typing_extensions import Annotated
 
-from everyvoice.config.utils import PossiblyRelativePath, PossiblySerializedCallable
+from everyvoice.config.utils import (
+    PossiblyRelativePath,
+    PossiblyRelativePathMustExist,
+    PossiblySerializedCallable,
+)
 from everyvoice.utils import generic_dict_loader, get_current_time
 
 _init_context_var = ContextVar("_init_context_var", default=None)
@@ -141,7 +136,7 @@ class LoggerConfig(PartialLoadConfig):
         description="The name of the experiment. The structure of your logs will be <name> / <version> / <sub_dir>.",
     )
 
-    save_dir: DirectoryPath = Field(
+    save_dir: PossiblyRelativePathMustExist = Field(
         Path("./logs_and_checkpoints"),
         description="The directory to save your checkpoints and logs to.",
     )
@@ -155,21 +150,6 @@ class LoggerConfig(PartialLoadConfig):
         "base",
         description="The version of your experiment. The structure of your logs will be <name> / <version> / <sub_dir>.",
     )
-
-    @field_validator("save_dir", mode="before")
-    @classmethod
-    def relative_to_absolute(cls, value: Any, info: ValidationInfo) -> Path:
-        if not isinstance(value, Path):
-            try:
-                value = Path(value)
-            except TypeError as e:
-                # Pydantic needs ValueErrors to raise its ValidationErrors
-                raise ValueError from e
-        absolute_dir = cls.path_relative_to_absolute(value, info)
-        if not absolute_dir.exists():
-            logger.info(f"Directory at {absolute_dir} does not exist. Creating...")
-            absolute_dir.mkdir(parents=True, exist_ok=True)
-        return absolute_dir
 
     @cached_property
     def sub_dir(self) -> str:
@@ -228,20 +208,6 @@ class BaseTrainingConfig(PartialLoadConfig):
         4,
         description="The number of CPU workers to use when loading data during training.",
     )
-
-    @field_validator("training_filelist", "validation_filelist", mode="before")
-    @classmethod
-    def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
-        return cls.path_relative_to_absolute(value, info)
-
-    @field_validator("finetune_checkpoint", mode="before")
-    @classmethod
-    def relative_to_absolute_finetune_checkpoint(
-        cls, value: Any, info: ValidationInfo
-    ) -> Path | None:
-        if isinstance(value, (Path, str)):
-            return cls.path_relative_to_absolute(Path(value), info)
-        return value
 
     @model_validator(mode="after")
     def multually_exclusive_ckpt_options(self) -> "BaseTrainingConfig":

@@ -1,14 +1,14 @@
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Any, List, Optional, Union
+from typing import Annotated, List, Optional, Union
 
 from annotated_types import Ge, Le
-from loguru import logger
-from pydantic import Field, FilePath, ValidationInfo, field_validator, model_validator
+from pydantic import Field, FilePath, ValidationInfo, model_validator
 
 from everyvoice.config.shared_types import ConfigModel, PartialLoadConfig, init_context
 from everyvoice.config.utils import (
     PossiblyRelativePath,
+    PossiblyRelativePathMustExist,
     PossiblySerializedCallable,
     load_partials,
 )
@@ -110,15 +110,6 @@ class Dataset(PartialLoadConfig):
         description="Advanced. A list of SoX effects to apply to your audio prior to preprocessing. Run python -c 'import torchaudio; print(torchaudio.sox_effects.effect_names())' to see a list of supported effects.",
     )
 
-    @field_validator(
-        "data_dir",
-        "filelist",
-        mode="before",
-    )
-    @classmethod
-    def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
-        return cls.path_relative_to_absolute(value, info)
-
 
 class PreprocessingConfig(PartialLoadConfig):
     dataset: str = Field("YourDataSet", description="The name of the dataset.")
@@ -130,7 +121,7 @@ class PreprocessingConfig(PartialLoadConfig):
         1234,
         description="The seed to use when splitting the dataset into train and validation sets.",
     )
-    save_dir: PossiblyRelativePath = Field(
+    save_dir: PossiblyRelativePathMustExist = Field(
         Path("./preprocessed/YourDataSet"),
         description="The directory to save preprocessed files to.",
     )
@@ -145,22 +136,6 @@ class PreprocessingConfig(PartialLoadConfig):
         default_factory=lambda: [Dataset()],
         description="A list of datasets.",
     )
-
-    @field_validator("save_dir", mode="before")
-    @classmethod
-    def relative_to_absolute(cls, value: Any, info: ValidationInfo) -> Path:
-        if not isinstance(value, Path):
-            try:
-                value = Path(value)
-            except TypeError as e:
-                # Pydantic needs ValueErrors to raise its ValidationErrors
-                raise ValueError from e
-
-        absolute_dir = cls.path_relative_to_absolute(value, info)
-        if not absolute_dir.exists():
-            logger.info(f"Directory at {absolute_dir} does not exist. Creating...")
-            absolute_dir.mkdir(parents=True, exist_ok=True)
-        return absolute_dir
 
     @model_validator(mode="before")  # type: ignore
     def load_partials(self, info: ValidationInfo):

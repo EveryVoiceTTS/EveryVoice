@@ -135,13 +135,40 @@ def update_config_from_cli_args(arg_list: List[str], original_config):
     return original_config
 
 
-def rel_path_to_abs_path(path: Union[None, str], info: Optional[ValidationInfo] = None):
-    """TODO: This function is intended to process relative paths and either resolve them to
-    absolute paths or resolve them with respect to the configuration file they came
-    from. This does neither at the moment and will need to be updated."""
-    if path is None:
-        return None
-    return Path(path)
+def relative_to_absolute_path(
+    value: Any, info: Optional[ValidationInfo] = None
+) -> Path | None:
+    """
+    Helper function to annotate a type.
+    This function processes relative paths and either resolve them to absolute
+    paths or resolve them with respect to the configuration file they came
+    from.
+    """
+    if value is None or info is None:
+        return value
+
+    try:
+        # Make sure value is a path because it can be a string when we load a model that is not partial.
+        path = Path(value)
+        if info.context and not path.is_absolute():
+            config_path = info.context.get("config_path", Path("."))
+            path = (config_path.parent / path).resolve()
+        return path
+    except TypeError as e:
+        # Pydantic needs ValueErrors to raise its ValidationErrors
+        raise ValueError from e
+
+
+def path_must_exist(value: Any, info: Optional[ValidationInfo] = None) -> Path | None:
+    """
+    Helper function to annotate a type.
+    Creates a directory if it doesn't exist.
+    """
+    assert isinstance(value, Path)
+    if not value.exists():
+        logger.info(f"Directory at {value} does not exist. Creating...")
+        value.mkdir(parents=True, exist_ok=True)
+    return value
 
 
 def original_hifigan_leaky_relu(x):
