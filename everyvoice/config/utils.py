@@ -5,9 +5,14 @@ from typing import Any, Callable, Dict, Optional, Sequence, Union
 from loguru import logger
 from pydantic import PlainSerializer, WithJsonSchema
 from pydantic.functional_validators import BeforeValidator
+from pydantic.types import PathType
 from typing_extensions import Annotated
 
-from everyvoice.utils import load_config_from_json_or_yaml_path, rel_path_to_abs_path
+from everyvoice.utils import (
+    load_config_from_json_or_yaml_path,
+    path_must_exist,
+    relative_to_absolute_path,
+)
 
 
 def load_partials(
@@ -103,4 +108,15 @@ PossiblySerializedCallable = Annotated[
     WithJsonSchema({"type": "string"}, mode="serialization"),  # noqa: F821
     WithJsonSchema({"type": "string"}, mode="validation"),  # noqa: F821
 ]
-PossiblyRelativePath = Annotated[Path, BeforeValidator(rel_path_to_abs_path)]
+PossiblyRelativePath = Annotated[Path, BeforeValidator(relative_to_absolute_path)]
+# [Ordering of validators within Annotated](https://docs.pydantic.dev/latest/concepts/validators/#ordering-of-validators-within-annotated)
+# Order of validation metadata within Annotated matters. Validation goes from
+# right to left and back. That is, it goes from right to left running all
+# "before" validators (or calling into "wrap" validators), then left to right
+# back out calling all "after" validators.
+PossiblyRelativePathMustExist = Annotated[
+    Path,
+    PathType("dir"),
+    BeforeValidator(path_must_exist),
+    BeforeValidator(relative_to_absolute_path),
+]
