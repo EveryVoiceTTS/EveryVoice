@@ -234,6 +234,15 @@ class BaseTrainingConfig(PartialLoadConfig):
     def relative_to_absolute(cls, value: Path, info: ValidationInfo) -> Path:
         return cls.path_relative_to_absolute(value, info)
 
+    @field_validator("finetune_checkpoint", mode="before")
+    @classmethod
+    def relative_to_absolute_finetune_checkpoint(
+        cls, value: Any, info: ValidationInfo
+    ) -> Path | None:
+        if isinstance(value, (Path, str)):
+            return cls.path_relative_to_absolute(Path(value), info)
+        return value
+
     @model_validator(mode="after")
     def multually_exclusive_ckpt_options(self) -> "BaseTrainingConfig":
         """
