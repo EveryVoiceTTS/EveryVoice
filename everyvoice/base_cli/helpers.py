@@ -4,6 +4,7 @@
     We want to do it this way to preserve the functionality from typer's command() decorator
     inferring information from the function signature while still keeping code DRY.
 """
+
 import json
 import os
 import tempfile
@@ -124,7 +125,7 @@ def train_base_command(
         type[FastSpeech2DataModule],
         type[HiFiGANDataModule],
     ],
-    model: Union[Aligner, EveryVoice, FastSpeech2, HiFiGAN],
+    model: Union[type[Aligner], type[EveryVoice], type[FastSpeech2], type[HiFiGAN]],
     monitor: str,
     # Must include the above in model-specific command
     config_args: List[str],
@@ -133,7 +134,7 @@ def train_base_command(
     devices: str,
     nodes: int,
     strategy: str,
-    gradient_clip_val: float,
+    gradient_clip_val: float | None,
     model_kwargs={},
 ):
     config = load_config_base_command(model_config, config_args, config_file)
@@ -217,11 +218,14 @@ def train_base_command(
         logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
         optimizer_diff = DeepDiff(
+            # FIXME: Cannot access member "optimizer" for type "E2ETrainingConfig"    Member "optimizer" is unknown
             model_obj.config.training.optimizer.model_dump(),
             config.training.optimizer.model_dump(),
         )
         model_diff = DeepDiff(
-            model_obj.config.model.model_dump(), config.model.model_dump()
+            # FIXME: Cannot access member "model" for type "EveryVoiceConfig"
+            model_obj.config.model.model_dump(),
+            config.model.model_dump(),
         )
         model_config_diff = []
         optimizer_config_diff = []
@@ -250,6 +254,7 @@ def train_base_command(
         # This assumes that the model and optimizer configurations haven't changed since they
         # would be caught by the previous checks. TODO: We should also check for certain changes to
         # the text configuration, since certain changes would cause an input space mismatch.
+        # FIXME: Cannot assign member "config" for type "HiFiGAN"
         model_obj.config = config
         tensorboard_logger.log_hyperparams(config.model_dump())
         if optimizer_config_diff:
@@ -286,5 +291,5 @@ def train_base_command(
                 trainer.fit(model_obj, data, ckpt_path=tmp.name)
 
 
-def inference_base_command(name: Enum):
+def inference_base_command(_name: Enum):
     pass
