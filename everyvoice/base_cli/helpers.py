@@ -217,16 +217,18 @@ def train_base_command(
         model_obj = model.load_from_checkpoint(last_ckpt)
         logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
-        optimizer_diff = DeepDiff(
-            # FIXME: Cannot access member "optimizer" for type "E2ETrainingConfig"    Member "optimizer" is unknown
-            model_obj.config.training.optimizer.model_dump(),
-            config.training.optimizer.model_dump(),
-        )
-        model_diff = DeepDiff(
-            # FIXME: Cannot access member "model" for type "EveryVoiceConfig"
-            model_obj.config.model.model_dump(),
-            config.model.model_dump(),
-        )
+        if isinstance(model_obj, EveryVoice) or isinstance(config, EveryVoiceConfig):
+            optimizer_diff = DeepDiff((), ())
+            model_diff = DeepDiff((), ())
+        else:
+            optimizer_diff = DeepDiff(
+                model_obj.config.training.optimizer.model_dump(),
+                config.training.optimizer.model_dump(),  # type : ignore[reportAttributeAccessIssue]
+            )
+            model_diff = DeepDiff(
+                model_obj.config.model.model_dump(),
+                config.model.model_dump(),
+            )
         model_config_diff = []
         optimizer_config_diff = []
         if "values_changed" in model_diff:
