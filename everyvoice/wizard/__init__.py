@@ -149,6 +149,8 @@ class Tour:
 
 class StepNames(Enum):
     name_step = "Name Step"
+    contact_name_step = "Contact Name Step"
+    contact_email_step = "Contact Email Step"
     dataset_name_step = "Dataset Name Step"
     output_step = "Output Path Step"
     wavs_dir_step = "Wavs Dir Step"

@@ -3,22 +3,25 @@
 import json
 import tempfile
 from pathlib import Path
-from unittest import TestCase, main
 
 import torch
 from pytorch_lightning import Trainer
 
+from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.aligner.DeepForcedAligner.dfaligner.config import DFAlignerConfig
 from everyvoice.model.aligner.DeepForcedAligner.dfaligner.model import Aligner
 from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
     FastSpeech2,
 )
+from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
+from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
@@ -26,11 +29,17 @@ from everyvoice.wizard import (
 )
 
 
-class ModelTest(TestCase):
+class ModelTest(BasicTestCase):
     """Basic test for models"""
 
     def setUp(self) -> None:
-        self.config = EveryVoiceConfig()
+        super().setUp()
+        self.config = EveryVoiceConfig(
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+            vocoder=VocoderConfig(contact=self.contact),
+        )
         self.config_dir = Path(__file__).parent / "data" / "relative" / "config"
         self.hifi_gan = HiFiGAN(self.config.vocoder)
 
@@ -76,7 +85,3 @@ class ModelTest(TestCase):
                     self.fail(
                         f"model {type(model).__name__} has some fields that are not JSON serializable"
                     )
-
-
-if __name__ == "__main__":
-    main()

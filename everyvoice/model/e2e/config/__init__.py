@@ -4,8 +4,8 @@ from typing import Optional, Union
 from pydantic import Field, FilePath, ValidationInfo, model_validator
 
 from everyvoice.config.shared_types import (
+    BaseModelWithContact,
     BaseTrainingConfig,
-    PartialLoadConfig,
     init_context,
 )
 from everyvoice.config.utils import PossiblyRelativePath, load_partials
@@ -20,7 +20,7 @@ class E2ETrainingConfig(BaseTrainingConfig):
     vocoder_checkpoint: Union[None, PossiblyRelativePath] = None
 
 
-class EveryVoiceConfig(PartialLoadConfig):
+class EveryVoiceConfig(BaseModelWithContact):
     aligner: AlignerConfig = Field(default_factory=AlignerConfig)
     path_to_aligner_config_file: Optional[FilePath] = None
 

@@ -259,10 +259,41 @@
       "title": "ConformerConfig",
       "type": "object"
     },
+    "ContactInformation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact_name": {
+          "description": "The name of the contact person responsible for answering questions related to this model.",
+          "title": "Contact Name",
+          "type": "string"
+        },
+        "contact_email": {
+          "description": "The email address of the contact person responsible for answering questions related to this model.",
+          "format": "email",
+          "title": "Contact Email",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contact_name",
+        "contact_email"
+      ],
+      "title": "ContactInformation",
+      "type": "object"
+    },
     "DFAlignerConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
+        "contact": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            }
+          ],
+          "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+        },
         "model": {
           "allOf": [
             {
@@ -346,6 +377,9 @@
           "title": "Path To Text Config File"
         }
       },
+      "required": [
+        "contact"
+      ],
       "title": "DFAlignerConfig",
       "type": "object"
     },
@@ -723,6 +757,14 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
+        "contact": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            }
+          ],
+          "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+        },
         "model": {
           "allOf": [
             {
@@ -812,6 +854,9 @@
           "title": "Path To Text Config File"
         }
       },
+      "required": [
+        "contact"
+      ],
       "title": "FastSpeech2Config",
       "type": "object"
     },
@@ -1097,6 +1142,14 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
+        "contact": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            }
+          ],
+          "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+        },
         "model": {
           "allOf": [
             {
@@ -1164,6 +1217,9 @@
           "title": "Path To Preprocessing Config File"
         }
       },
+      "required": [
+        "contact"
+      ],
       "title": "HiFiGANConfig",
       "type": "object"
     },
@@ -1586,7 +1642,7 @@
         "save_dir": {
           "default": "preprocessed/YourDataSet",
           "description": "The directory to save preprocessed files to.",
-          "format": "path",
+          "format": "directory-path",
           "title": "Save Dir",
           "type": "string"
         },
@@ -1901,6 +1957,14 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "additionalProperties": false,
   "properties": {
+    "contact": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ContactInformation"
+        }
+      ],
+      "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+    },
     "aligner": {
       "$ref": "#/$defs/DFAlignerConfig"
     },
@@ -1966,6 +2030,9 @@
       "title": "Path To Training Config File"
     }
   },
+  "required": [
+    "contact"
+  ],
   "title": "EveryVoiceConfig",
   "type": "object"
 }

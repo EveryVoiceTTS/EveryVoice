@@ -2,12 +2,17 @@ import json
 from pathlib import Path
 
 import questionary
+from email_validator import EmailNotValidError, validate_email
 from rich import print
 from rich.panel import Panel
 from rich.style import Style
 
 from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
-from everyvoice.config.shared_types import BaseTrainingConfig, LoggerConfig
+from everyvoice.config.shared_types import (
+    BaseTrainingConfig,
+    ContactInformation,
+    LoggerConfig,
+)
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
@@ -58,6 +63,56 @@ class NameStep(Step):
     def effect(self):
         print(
             f"Great! Launching Configuration Wizard 🧙 for project named '{self.response}'."
+        )
+
+
+class ContactNameStep(Step):
+    DEFAULT_NAME = StepNames.contact_name_step
+
+    def prompt(self):
+        return input(
+            "What is your full name? EveryVoice requires a name to prevent misuse. "
+        )
+
+    def validate(self, response):
+        # Some languages don't use first and last names, so we can't necessarily check that response.split() > 1
+        # It would be nice to have a better check here though.
+        if len(response) < 3:
+            print("Sorry, EveryVoice needs a name.")
+            return False
+        return True
+
+    def effect(self):
+        print(f"Great! Nice to meet you, '{self.response}'.")
+
+
+class ContactEmailStep(Step):
+    DEFAULT_NAME = StepNames.contact_email_step
+
+    def prompt(self):
+        return input(
+            "Please provide a contact email address for your models. EveryVoice requires this to prevent misuse. "
+        )
+
+    def validate(self, response):
+        try:
+            # Check that the email address is valid. Turn on check_deliverability
+            # for first-time validations like on account creation pages (but not
+            # login pages).
+            validate_email(response, check_deliverability=True)
+        except EmailNotValidError as e:
+            # The exception message is a human-readable explanation of why it's
+            # not a valid (or deliverable) email address.
+            print(str(e))
+            return False
+        return True
+
+    def effect(self):
+        emailinfo = validate_email(self.response, check_deliverability=False)
+        email = emailinfo.normalized
+        self.response = email
+        print(
+            f"Great! Your contact email '{self.response}' will be saved to your models."
         )
 
 
@@ -186,6 +241,12 @@ class ConfigFormatStep(Step):
             json.loads(text_config.model_dump_json(exclude_none=False)),
             (config_dir / text_config_path).absolute(),
         )
+        # Contact
+        CONTACT_INFO = ContactInformation(
+            contact_name=self.state[StepNames.contact_name_step.value],
+            contact_email=self.state[StepNames.contact_email_step.value],
+        )
+
         # Preprocessing Config
 
         preprocessed_training_filelist_path = (
@@ -211,13 +272,14 @@ class ConfigFormatStep(Step):
             name="AlignerExperiment", save_dir=log_dir_relative_to_configs
         ).model_dump()
         aligner_config = AlignerConfig(
+            contact=CONTACT_INFO,
             # This isn't the actual AlignerTrainingConfig, but we can use it because we just
             # inherit the defaults if we pass a dict to the AlignerConfig.training field
             training=BaseTrainingConfig(
                 training_filelist=preprocessed_training_filelist_path,
                 validation_filelist=preprocessed_validation_filelist_path,
                 logger=aligner_logger,
-            ).model_dump()
+            ).model_dump(),
         )
         aligner_config_path = Path(f"{ALIGNER_CONFIG_FILENAME_PREFIX}.{self.response}")
         aligner_config_json = json.loads(
@@ -238,6 +300,7 @@ class ConfigFormatStep(Step):
             name="FeaturePredictionExperiment", save_dir=log_dir_relative_to_configs
         )
         fp_config = FeaturePredictionConfig(
+            contact=CONTACT_INFO,
             model=FastSpeech2ModelConfig(
                 multilingual=multilingual,
                 multispeaker=multispeaker,
@@ -267,11 +330,12 @@ class ConfigFormatStep(Step):
             name="VocoderExperiment", save_dir=log_dir_relative_to_configs
         )
         vocoder_config = VocoderConfig(
+            contact=CONTACT_INFO,
             training=BaseTrainingConfig(
                 training_filelist=preprocessed_training_filelist_path,
                 validation_filelist=preprocessed_validation_filelist_path,
                 logger=vocoder_logger,
-            ).model_dump()
+            ).model_dump(),
         )
         vocoder_config_path = Path(
             f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
@@ -294,6 +358,7 @@ class ConfigFormatStep(Step):
             name="E2E-Experiment", save_dir=log_dir_relative_to_configs
         )
         e2e_config = EveryVoiceConfig(
+            contact=CONTACT_INFO,
             aligner=aligner_config,
             feature_prediction=fp_config,
             vocoder=vocoder_config,

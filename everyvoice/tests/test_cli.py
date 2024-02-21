@@ -5,7 +5,7 @@ import os
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import TestCase, main
+from unittest import TestCase
 
 import jsonschema
 import yaml
@@ -19,6 +19,7 @@ import everyvoice.tests.test_model  # noqa
 from everyvoice import __file__ as EV_FILE
 from everyvoice.base_cli.helpers import save_configuration_to_log_dir
 from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
+from everyvoice.config.shared_types import ContactInformation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
 )
@@ -44,6 +45,7 @@ class CLITest(TestCase):
     data_dir = Path(__file__).parent / "data"
 
     def setUp(self) -> None:
+        super().setUp()
         self.runner = CliRunner()
         self.config_dir = Path(__file__).parent / "data" / "relative" / "config"
         self.commands = [
@@ -170,6 +172,9 @@ class CLITest(TestCase):
         result = self.runner.invoke(app, ["update-schemas"])
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("FileExistsError", str(result))
+        dummy_contact = ContactInformation(
+            contact_name="Test Runner", contact_email="info@everyvoice.ca"
+        )
         with tempfile.TemporaryDirectory() as tmpdir:
             result = self.runner.invoke(app, ["update-schemas", "-o", tmpdir])
             for filename, obj in SCHEMAS_TO_OUTPUT.items():
@@ -178,7 +183,8 @@ class CLITest(TestCase):
                 # serialize the model to json and then validate against the schema
                 self.assertIsNone(
                     jsonschema.validate(
-                        json.loads(obj().model_dump_json()), schema=schema
+                        json.loads(obj(contact=dummy_contact).model_dump_json()),
+                        schema=schema,
                     )
                 )
 
@@ -200,16 +206,16 @@ class CLITest(TestCase):
 
 
 class TestBaseCLIHelper(TestCase):
-    """ """
-
     def test_save_configuration_to_log_dir(self):
-        """ """
         with TemporaryDirectory() as tempdir, mute_logger(
             "everyvoice.base_cli.helpers"
         ):
             tempdir = Path(tempdir)
             config = FastSpeech2Config(
                 **{
+                    "contact": ContactInformation(
+                        contact_name="Test Runner", contact_email="info@everyvoice.ca"
+                    ),
                     "training": {
                         "logger": {
                             "save_dir": tempdir / "log",
@@ -236,7 +242,3 @@ class TestBaseCLIHelper(TestCase):
                     config.training.logger.name,
                     config_reloaded["training"]["logger"]["name"],
                 )
-
-
-if __name__ == "__main__":
-    main()

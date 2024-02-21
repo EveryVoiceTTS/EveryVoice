@@ -1,3 +1,6 @@
+contact:
+  contact_name: Test name
+  contact_email: info@everyvoice.ca
 model:
   decoder: {conv_kernel_size: 9,
     dropout: 0.2, feedforward_dim: 1024, heads: 2, input_dim: 256, layers: 4}

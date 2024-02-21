@@ -8,7 +8,7 @@ from enum import Enum
 from pathlib import Path
 from types import MethodType
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence
-from unittest import TestCase, main
+from unittest import TestCase
 
 import yaml
 from anytree import RenderTree
@@ -66,9 +66,6 @@ class WizardTest(TestCase):
 
     data_dir = Path(__file__).parent / "data"
 
-    def setUp(self) -> None:
-        pass
-
     def test_implementation_missing(self):
         nothing_step = Step(name="Dummy Step")
         no_validate_step = Step(name="Dummy Step", prompt_method=lambda: "test")
@@ -89,6 +86,8 @@ class WizardTest(TestCase):
             config_step.state = {}
             config_step.state[SN.output_step.value] = tmpdirname
             config_step.state[SN.name_step.value] = config_step.name
+            config_step.state[SN.contact_name_step.value] = "Test Name"
+            config_step.state[SN.contact_email_step.value] = "test@this.ca"
             config_step.state["dataset_test"] = {}
             config_step.state["dataset_test"][SN.symbol_set_step.value] = Symbols(
                 symbol_set=string.ascii_letters
@@ -178,6 +177,30 @@ class WizardTest(TestCase):
         self.assertIn("'bad/name'", stdout.getvalue())
         self.assertIn("is not valid", stdout.getvalue())
         self.assertEqual(step.response, "good-name")
+
+    def test_bad_contact_name_step(self):
+        """Exercise providing an invalid contact name."""
+        step = basic.ContactNameStep("")
+        with capture_stdout() as stdout:
+            self.assertFalse(step.validate("a"))
+            self.assertFalse(step.validate(""))
+        output = stdout.getvalue()
+        self.assertIn("Sorry", output)
+        self.assertIn("EveryVoice needs a name", output)
+
+    def test_bad_contact_email_step(self):
+        """Exercise providing an invalid contact email."""
+        step = basic.ContactEmailStep("")
+        with capture_stdout() as stdout:
+            self.assertFalse(step.validate("test"))
+            self.assertFalse(step.validate("test@"))
+            self.assertFalse(step.validate("test@test."))
+            self.assertTrue(step.validate("test@test.ca"))
+            self.assertFalse(step.validate(""))
+        output = stdout.getvalue()
+        self.assertIn("It must have exactly one @-sign", output)
+        self.assertIn("There must be something after the @-sign", output)
+        self.assertIn("An email address cannot end with a period", output)
 
     def test_output_path_step(self):
         """Exercise the OutputPathStep"""
@@ -638,6 +661,8 @@ class WizardTest(TestCase):
                 "tour with language column",
                 [
                     StepAndAnswer(basic.NameStep(), Say("project")),
+                    StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
+                    StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
                     StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
                     StepAndAnswer(
                         dataset.WavsDirStep(state_subset="dataset_0"), Say(data_dir)
@@ -703,6 +728,8 @@ class WizardTest(TestCase):
                 "Tour with datafile missing the header line",
                 [
                     StepAndAnswer(basic.NameStep(), Say("project")),
+                    StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
+                    StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
                     StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
                     StepAndAnswer(
                         dataset.WavsDirStep(state_subset="dataset_0"), Say(tmpdir)
@@ -773,6 +800,8 @@ class WizardTest(TestCase):
                 "Tour without enough columns to have speaker or language",
                 [
                     StepAndAnswer(basic.NameStep(), Say("project")),
+                    StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
+                    StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
                     StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
                     StepAndAnswer(dataset.WavsDirStep(), Say(tmpdir)),
                     StepAndAnswer(
@@ -836,6 +865,8 @@ class WavFileDirectoryRelativePathTest(TestCase):
     Make sure the wav files directory path is correctly handle when transformed
     to a relative path.
     """
+
+    data_dir = Path(__file__).parent / "data"
 
     def setUp(self):
         """
@@ -905,6 +936,8 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "."
         self.config.state[SN.name_step.value] = "Unittest"
+        self.config.state[SN.contact_name_step.value] = "Test Name"
+        self.config.state[SN.contact_email_step.value] = "test@this.ca"
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
                 os.chdir(tmpdir)
@@ -929,6 +962,8 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "."
         self.config.state[SN.name_step.value] = "Unittest"
+        self.config.state[SN.contact_name_step.value] = "Test Name"
+        self.config.state[SN.contact_email_step.value] = "test@this.ca"
         wavs_dir = "wavs/Common-Voice"
         self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
         with capture_stdout():
@@ -955,6 +990,8 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "John/Smith"
         self.config.state[SN.name_step.value] = "Unittest"
+        self.config.state[SN.contact_name_step.value] = "Test Name"
+        self.config.state[SN.contact_email_step.value] = "test@this.ca"
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
                 os.chdir(tmpdir)
@@ -980,6 +1017,8 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "John/Smith"
         self.config.state[SN.name_step.value] = "Unittest"
+        self.config.state[SN.contact_name_step.value] = "Test Name"
+        self.config.state[SN.contact_email_step.value] = "test@this.ca"
         wavs_dir = "wavs/Common-Voice"
         self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
         with capture_stdout():
@@ -1008,6 +1047,8 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "."
         self.config.state[SN.name_step.value] = "Unittest"
+        self.config.state[SN.contact_name_step.value] = "Test Name"
+        self.config.state[SN.contact_email_step.value] = "test@this.ca"
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
                 os.chdir(tmpdir)
@@ -1035,6 +1076,8 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "John/Smith"
         self.config.state[SN.name_step.value] = "Unittest"
+        self.config.state[SN.contact_name_step.value] = "Test Name"
+        self.config.state[SN.contact_email_step.value] = "test@this.ca"
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
                 os.chdir(tmpdir)
@@ -1055,7 +1098,3 @@ class WavFileDirectoryRelativePathTest(TestCase):
             Path(config["source_data"][0]["data_dir"]),
             wavs_dir,
         )
-
-
-if __name__ == "__main__":
-    main()

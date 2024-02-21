@@ -1,6 +1,9 @@
 model: {conv_dim: 512, lstm_dim: 512}
 path_to_preprocessing_config_file: everyvoice-shared-data.yaml
 path_to_text_config_file: everyvoice-shared-text.yaml
+contact:
+  contact_name: Test name
+  contact_email: info@everyvoice.ca
 training:
   batch_size: 16
   binned_sampler: true
