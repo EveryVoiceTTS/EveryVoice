@@ -59,6 +59,18 @@ def mute_logger(module: str) -> Generator[None, None, None]:
 
 
 @contextmanager
+def capture_logs():
+    """
+    Context manager to capture log messages from loguru.
+    """
+    # [How to test loguru logger with unittest?](https://github.com/Delgan/loguru/issues/616)
+    output = []
+    handler_id = logger.add(output.append)
+    yield output
+    logger.remove(handler_id)
+
+
+@contextmanager
 def capture_stdout() -> Generator[io.StringIO, None, None]:
     """Context manager to capture what is printed to stdout.
 
