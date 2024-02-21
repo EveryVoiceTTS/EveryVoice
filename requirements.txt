@@ -12,7 +12,7 @@ nltk==3.7
 pandas~=2.0
 panphon==0.20.0
 pycountry==22.3.5
-pydantic>=2.4.2
+pydantic[email]>=2.4.2
 pympi-ling
 pysdtw==0.0.5
 pyworld==0.3.4

@@ -2,7 +2,6 @@
 
 import tempfile
 from pathlib import Path
-from unittest import TestCase, main
 
 import torch
 from pydantic_core._pydantic_core import ValidationError
@@ -13,28 +12,33 @@ from everyvoice.config.preprocessing_config import (
     AudioSpecTypeEnum,
     PreprocessingConfig,
 )
-from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.config.shared_types import ContactInformation
+from everyvoice.model.aligner.config import AlignerConfig
+from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
+from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.stubs import capture_stdout, mute_logger
 from everyvoice.utils import read_filelist
 
 
-class PreprocessingTest(TestCase):
+class PreprocessingTest(BasicTestCase):
     """Unit tests for preprocessing steps"""
 
     data_dir = Path(__file__).parent / "data"
     wavs_dir = data_dir / "lj" / "wavs"
     lj_preprocessed = data_dir / "lj" / "preprocessed"
     lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
-    keep_temp_dir_after_running = False
 
-    fp_config = EveryVoiceConfig().feature_prediction
+    fp_config = FeaturePredictionConfig(
+        contact=ContactInformation(
+            contact_name="Test Runner", contact_email="info@everyvoice.ca"
+        )
+    )
     fp_config.preprocessing.source_data[0].data_dir = data_dir / "lj" / "wavs"
     fp_config.preprocessing.source_data[0].filelist = data_dir / "metadata.csv"
     fp_config.preprocessing.save_dir = lj_preprocessed
     preprocessor = Preprocessor(fp_config)
-
     _preprocess_ran = False
 
     @classmethod
@@ -51,24 +55,9 @@ class PreprocessingTest(TestCase):
             cls._preprocess_ran = True
 
     def setUp(self) -> None:
+        super().setUp()
         self.preprocess()
-        tempdir_prefix = f"tmpdir_{type(self).__name__}_"
-        if not self.keep_temp_dir_after_running:
-            self.tempdirobj = tempfile.TemporaryDirectory(
-                prefix=tempdir_prefix, dir="."
-            )
-            tempdir = self.tempdirobj.name
-        else:  # pragma: no cover
-            # Alternative tempdir code keeps it after running, for manual inspection:
-            tempdir = tempfile.mkdtemp(prefix=tempdir_prefix, dir=".")
-            print(f"tmpdir={tempdir}")
-        self.tempdir = Path(tempdir)
         self.filelist = read_filelist(self.data_dir / "metadata.csv")
-
-    def tearDown(self):
-        """Clean up the temporary directory"""
-        if not self.keep_temp_dir_after_running:
-            self.tempdirobj.cleanup()
 
     # def test_compute_stats(self):
     #     feat_prediction_config = EveryVoiceConfig.load_config_from_path().feature_prediction
@@ -90,13 +79,13 @@ class PreprocessingTest(TestCase):
         self.assertNotIn("speaker", self.filelist[0].keys())
 
     def test_process_audio_for_alignment(self):
-        config = EveryVoiceConfig()
+        config = AlignerConfig(contact=self.contact)
         for entry in self.filelist[1:]:
             # This just applies the SOX effects
             audio, sr = self.preprocessor.process_audio(
                 self.wavs_dir / (entry["filename"] + ".wav"),
                 use_effects=True,
-                sox_effects=config.aligner.preprocessing.source_data[0].sox_effects,
+                sox_effects=config.preprocessing.source_data[0].sox_effects,
             )
             self.assertEqual(sr, 22050)
             self.assertEqual(audio.dtype, float32)
@@ -117,14 +106,16 @@ class PreprocessingTest(TestCase):
 
     def test_spectral_feats(self):
         linear_vocoder_config = VocoderConfig(
+            contact=self.contact,
             preprocessing=PreprocessingConfig(
                 audio=AudioConfig(spec_type=AudioSpecTypeEnum.linear)
-            )
+            ),
         )
         complex_vocoder_config = VocoderConfig(
+            contact=self.contact,
             preprocessing=PreprocessingConfig(
                 audio=AudioConfig(spec_type=AudioSpecTypeEnum.raw)
-            )
+            ),
         )
         linear_preprocessor = Preprocessor(linear_vocoder_config)
         complex_preprocessor = Preprocessor(complex_vocoder_config)
@@ -163,7 +154,9 @@ class PreprocessingTest(TestCase):
             self.assertEqual(complex_feats.size(1), linear_feats.size(1))
 
     def test_pitch(self):
-        pyworld_config = VocoderConfig(preprocessing=PreprocessingConfig())
+        pyworld_config = VocoderConfig(
+            contact=self.contact, preprocessing=PreprocessingConfig()
+        )
         preprocessor_pyworld = Preprocessor(pyworld_config)
 
         for entry in self.filelist[1:]:
@@ -236,7 +229,9 @@ class PreprocessingTest(TestCase):
             self.assertTrue(feats.size(1) - int(sum(durs)) <= 10)
 
     def test_energy(self):
-        frame_energy_config = VocoderConfig(preprocessing=PreprocessingConfig())
+        frame_energy_config = VocoderConfig(
+            contact=self.contact, preprocessing=PreprocessingConfig()
+        )
         preprocessor = Preprocessor(frame_energy_config)
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
@@ -283,7 +278,7 @@ class PreprocessingTest(TestCase):
             lj_preprocessed = tmpdir / "preprocessed"
             lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
 
-            fp_config = EveryVoiceConfig().feature_prediction
+            fp_config = FeaturePredictionConfig(contact=self.contact)
             fp_config.preprocessing.source_data[0].data_dir = (
                 self.data_dir / "lj" / "wavs"
             )
@@ -329,7 +324,7 @@ class PreprocessingTest(TestCase):
             preprocessed = tmpdir / "preprocessed"
             filelist = preprocessed / "preprocessed_filelist.psv"
 
-            fp_config = EveryVoiceConfig().feature_prediction
+            fp_config = FeaturePredictionConfig(contact=self.contact)
             fp_config.preprocessing.source_data[0].data_dir = (
                 self.data_dir / "lj" / "wavs"
             )
@@ -354,7 +349,7 @@ class PreprocessingTest(TestCase):
             preprocessed = tmpdir / "preprocessed"
             filelist = preprocessed / "preprocessed_filelist.psv"
 
-            fp_config = EveryVoiceConfig().feature_prediction
+            fp_config = FeaturePredictionConfig(contact=self.contact)
             fp_config.preprocessing.source_data[0].data_dir = self.data_dir
             input_filelist = tmpdir / "empty-metadata.psv"
             with open(input_filelist, mode="w") as f:
@@ -390,7 +385,7 @@ class PreprocessingTest(TestCase):
             self.assertIn("Input should be less than or equal to 1", cout.getvalue())
 
 
-class PreprocessingHierarchyTest(TestCase):
+class PreprocessingHierarchyTest(BasicTestCase):
     def test_hierarchy(self):
         """Unit tests for preprocessing steps"""
 
@@ -401,7 +396,7 @@ class PreprocessingHierarchyTest(TestCase):
             preprocessed_dir = tmpdir / "hierarchy" / "preprocessed"
             filelist = preprocessed_dir / "preprocessed_filelist.psv"
 
-            fp_config = EveryVoiceConfig().feature_prediction
+            fp_config = FeaturePredictionConfig(contact=self.contact)
             fp_config.preprocessing.source_data[0].data_dir = wavs_dir
             fp_config.preprocessing.source_data[0].filelist = (
                 data_dir / "hierarchy" / "metadata.csv"
@@ -429,7 +424,3 @@ class PreprocessingHierarchyTest(TestCase):
                 # Second speaker has 5 recordings
                 files = list(tmpdir.glob(f"**/{t}/LJ050/*.pt"))
                 self.assertEqual(len(files), 5)
-
-
-if __name__ == "__main__":
-    main()

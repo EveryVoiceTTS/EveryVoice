@@ -5,7 +5,14 @@ from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, Iterator, Tuple, Union
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    EmailStr,
+    Field,
+    ValidationInfo,
+    model_validator,
+)
 from typing_extensions import Annotated
 
 from everyvoice.config.utils import (
@@ -219,6 +226,22 @@ class BaseTrainingConfig(PartialLoadConfig):
         if self.ckpt_epochs is not None and self.ckpt_steps is not None:
             raise ValueError("ckpt_epochs and ckpt_steps have to be mutually exclusive")
         return self
+
+
+class ContactInformation(ConfigModel):
+    contact_name: str = Field(
+        description="The name of the contact person responsible for answering questions related to this model."
+    )
+    contact_email: EmailStr = Field(
+        description="The email address of the contact person responsible for answering questions related to this model."
+    )
+
+
+class BaseModelWithContact(PartialLoadConfig):
+    # TODO: finish guide in docs
+    contact: ContactInformation = Field(
+        description="EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+    )
 
 
 class BaseOptimizer(ConfigModel):

@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-from unittest import TestCase, main
-
 from tqdm import tqdm
 
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
+from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
     HiFiGANTrainingConfig,
@@ -15,25 +15,31 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     HiFiGANDataModule,
     SpecDataset,
 )
+from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.test_preprocessing import PreprocessingTest
 
 
-class DataLoaderTest(TestCase):
+class DataLoaderTest(BasicTestCase):
     """Basic test for dataloaders"""
 
     lj_preprocessed = PreprocessingTest.lj_preprocessed
 
     def setUp(self) -> None:
+        super().setUp()
         PreprocessingTest.preprocess()  # Generate some preprocessed test data
         self.config = EveryVoiceConfig(
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
             vocoder=VocoderConfig(
+                contact=self.contact,
                 training=HiFiGANTrainingConfig(
                     training_filelist=self.lj_preprocessed
                     / "training_preprocessed_filelist.psv",
                     validation_filelist=self.lj_preprocessed
                     / "validation_preprocessed_filelist.psv",
-                )
-            )
+                ),
+            ),
         )
         self.config.vocoder.preprocessing.save_dir = self.lj_preprocessed
         self.config.vocoder.training.training_filelist = (
@@ -100,7 +106,3 @@ class DataLoaderTest(TestCase):
         sampler = ImbalancedDatasetSampler(dataset)
         sample = list(sampler)
         self.assertEqual(len(sample), 5)
-
-
-if __name__ == "__main__":
-    main()

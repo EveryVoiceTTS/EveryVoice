@@ -5,7 +5,6 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Callable
-from unittest import TestCase, main
 
 import yaml
 from pydantic import ValidationError
@@ -29,6 +28,7 @@ from everyvoice.model.aligner.DeepForcedAligner.dfaligner.config import (
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
+from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.utils import (
     expand_config_string_syntax,
     load_config_from_json_or_yaml_path,
@@ -49,27 +49,38 @@ def _writer_helper(model, filename):
         f.write(model.model_dump_json())
 
 
-class ConfigTest(TestCase):
+class ConfigTest(BasicTestCase):
     """Basic test for hyperparameter configuration"""
 
-    data_dir = Path(__file__).parent / "data"
-
     def setUp(self) -> None:
-        self.config = EveryVoiceConfig()
+        super().setUp()
+        self.config = EveryVoiceConfig(
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+            vocoder=VocoderConfig(contact=self.contact),
+        )
 
     def test_from_object(self):
         """Test from object"""
-        config_default = EveryVoiceConfig()
+        config_default = EveryVoiceConfig(
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+            vocoder=VocoderConfig(contact=self.contact),
+        )
         config_declared = EveryVoiceConfig(
-            aligner=AlignerConfig(),
-            feature_prediction=FeaturePredictionConfig(),
-            vocoder=VocoderConfig(),
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+            vocoder=VocoderConfig(contact=self.contact),
             training=E2ETrainingConfig(),
         )
         config_32 = EveryVoiceConfig(
-            aligner=AlignerConfig(),
-            feature_prediction=FeaturePredictionConfig(),
-            vocoder=VocoderConfig(),
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+            vocoder=VocoderConfig(contact=self.contact),
             training=E2ETrainingConfig(batch_size=32),
         )
         self.assertEqual(config_default.training.batch_size, 16)
@@ -108,9 +119,16 @@ class ConfigTest(TestCase):
             _writer_helper(TextConfig(), tempdir / "text.json")
             _writer_helper(BaseTrainingConfig(), tempdir / "training.json")
             # Aligner Config
-            _writer_helper(AlignerConfig().training, tempdir / "aligner-training.json")
-            _writer_helper(AlignerConfig().model, tempdir / "aligner-model.json")
+            _writer_helper(
+                AlignerConfig(contact=self.contact).training,
+                tempdir / "aligner-training.json",
+            )
+            _writer_helper(
+                AlignerConfig(contact=self.contact).model,
+                tempdir / "aligner-model.json",
+            )
             aligner_config = AlignerConfig(
+                contact=self.contact,
                 path_to_model_config_file=(tempdir / "aligner-model.json"),
                 path_to_preprocessing_config_file=(tempdir / "preprocessing.json"),
                 path_to_text_config_file=(tempdir / "text.json"),
@@ -120,10 +138,15 @@ class ConfigTest(TestCase):
             self.assertTrue(isinstance(aligner_config, AlignerConfig))
             # FP Config
             _writer_helper(
-                FeaturePredictionConfig().training, tempdir / "fp-training.json"
+                FeaturePredictionConfig(contact=self.contact).training,
+                tempdir / "fp-training.json",
             )
-            _writer_helper(FeaturePredictionConfig().model, tempdir / "fp-model.json")
+            _writer_helper(
+                FeaturePredictionConfig(contact=self.contact).model,
+                tempdir / "fp-model.json",
+            )
             fp_config = FeaturePredictionConfig(
+                contact=self.contact,
                 path_to_model_config_file=(tempdir / "fp-model.json"),
                 path_to_preprocessing_config_file=(tempdir / "preprocessing.json"),
                 path_to_text_config_file=(tempdir / "text.json"),
@@ -132,9 +155,16 @@ class ConfigTest(TestCase):
             _writer_helper(fp_config, tempdir / "fp.json")
             self.assertTrue(isinstance(fp_config, FeaturePredictionConfig))
             # Vocoder Config
-            _writer_helper(VocoderConfig().training, tempdir / "vocoder-training.json")
-            _writer_helper(VocoderConfig().model, tempdir / "vocoder-model.json")
+            _writer_helper(
+                VocoderConfig(contact=self.contact).training,
+                tempdir / "vocoder-training.json",
+            )
+            _writer_helper(
+                VocoderConfig(contact=self.contact).model,
+                tempdir / "vocoder-model.json",
+            )
             vocoder_config = VocoderConfig(
+                contact=self.contact,
                 path_to_model_config_file=(tempdir / "vocoder-model.json"),
                 path_to_preprocessing_config_file=(tempdir / "preprocessing.json"),
                 path_to_training_config_file=tempdir / "vocoder-training.json",
@@ -143,6 +173,7 @@ class ConfigTest(TestCase):
             self.assertTrue(isinstance(vocoder_config, VocoderConfig))
             # E2E Config
             e2e_config = EveryVoiceConfig(
+                contact=self.contact,
                 path_to_aligner_config_file=(tempdir / "aligner.json"),
                 path_to_feature_prediction_config_file=(tempdir / "fp.json"),
                 path_to_training_config_file=(tempdir / "training.json"),
@@ -184,7 +215,7 @@ class ConfigTest(TestCase):
     def test_string_to_callable(self):
         # Test Basic Functionality
         config = FeaturePredictionConfig(
-            text=TextConfig(cleaners=["everyvoice.utils.lower"])
+            contact=self.contact, text=TextConfig(cleaners=["everyvoice.utils.lower"])
         )
         self.assertEqual(config.text.cleaners, [lower])
         # Test missing function
@@ -217,7 +248,12 @@ class ConfigTest(TestCase):
             self.assertTrue(isinstance(fn, Callable))
 
     def test_string_to_dict(self):
-        base_config = EveryVoiceConfig()
+        base_config = EveryVoiceConfig(
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+            vocoder=VocoderConfig(contact=self.contact),
+        )
         test_string = "vocoder.training.gan_type=wgan"
         test_bad_strings = [
             "vocoder.training.gan_type==wgan",
@@ -255,7 +291,7 @@ class ConfigTest(TestCase):
 
     def test_change_with_indices(self):
         """Text the --config-args can also work with arrays"""
-        config = FeaturePredictionConfig()
+        config = FeaturePredictionConfig(contact=self.contact)
         config.update_config(
             {
                 "preprocessing": {
@@ -270,11 +306,17 @@ class ConfigTest(TestCase):
     def test_shared_sox(self) -> None:
         """Test that the shared sox config is correct"""
         vocoder_config = VocoderConfig(
+            contact=self.contact,
             preprocessing=PreprocessingConfig(
                 source_data=[Dataset(), Dataset(), Dataset(), Dataset()]
-            )
+            ),
         )
-        config: EveryVoiceConfig = EveryVoiceConfig(vocoder=vocoder_config)
+        config: EveryVoiceConfig = EveryVoiceConfig(
+            vocoder=vocoder_config,
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+        )
         sox_effects = config.vocoder.preprocessing.source_data[0].sox_effects
         self.assertEqual(len(config.vocoder.preprocessing.source_data), 4)
         for d_other in config.vocoder.preprocessing.source_data[1:]:
@@ -283,16 +325,22 @@ class ConfigTest(TestCase):
 
     def test_correct_number_typing(self):
         batch_size = 64.0
-        config = EveryVoiceConfig(training=E2ETrainingConfig(batch_size=batch_size))
+        config = EveryVoiceConfig(
+            training=E2ETrainingConfig(batch_size=batch_size),
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+            vocoder=VocoderConfig(contact=self.contact),
+        )
         self.assertIsInstance(batch_size, float)
         self.assertEqual(config.training.batch_size, 64)
         self.assertIsInstance(config.feature_prediction.training.batch_size, int)
 
 
-class LoadConfigTest(TestCase):
+class LoadConfigTest(BasicTestCase):
     """Load configs that contains relative paths."""
 
-    DATA_DIR = Path(__file__).parent / "data" / "relative" / "config"
+    REL_DATA_DIR = Path(__file__).parent / "data" / "relative" / "config"
     DATASET_NAME: str = "relative"
 
     def validate_config_path(self, path: Path):
@@ -304,7 +352,7 @@ class LoadConfigTest(TestCase):
 
     def test_aligner_config(self):
         """Create a AlignerConfig which pydantic will validate for us."""
-        config_path = self.DATA_DIR / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
+        config_path = self.REL_DATA_DIR / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
             self.assertFalse(
@@ -327,7 +375,7 @@ class LoadConfigTest(TestCase):
 
     def test_preprocessing_config(self):
         """Create a PreprocessingConfig which pydantic will validate for us."""
-        config_path = self.DATA_DIR / f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.yaml"
+        config_path = self.REL_DATA_DIR / f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.yaml"
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
             self.assertFalse(Path(pre_test["save_dir"]).is_absolute())
@@ -347,7 +395,7 @@ class LoadConfigTest(TestCase):
 
     def test_feature_prediction_config(self):
         """Create a FeaturePredictionConfig which pydantic will validate for us."""
-        config_path = self.DATA_DIR / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+        config_path = self.REL_DATA_DIR / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
             self.assertFalse(
@@ -369,7 +417,7 @@ class LoadConfigTest(TestCase):
 
     def test_vocoder_config(self):
         """Create a VocoderConfig which pydantic will validate for us."""
-        config_path = self.DATA_DIR / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+        config_path = self.REL_DATA_DIR / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
             self.assertFalse(
@@ -390,7 +438,7 @@ class LoadConfigTest(TestCase):
 
     def test_everyvoice_config(self):
         """Create a EveryVoiceConfig which pydantic will validate for us."""
-        config_path = self.DATA_DIR / f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+        config_path = self.REL_DATA_DIR / f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
             self.assertFalse(
@@ -448,10 +496,13 @@ class LoadConfigTest(TestCase):
 
             # Write model:
             aligner_model_path = tempdir / "aligner-model.json"
-            _writer_helper(AlignerConfig().model, aligner_model_path)
+            _writer_helper(
+                AlignerConfig(contact=self.contact).model, aligner_model_path
+            )
 
             # Aligner Config
             aligner_config = AlignerConfig(
+                contact=self.contact,
                 path_to_model_config_file=aligner_model_path,
                 path_to_preprocessing_config_file=preprocessing_config_path,
                 path_to_text_config_file=text_config_path,
@@ -490,9 +541,16 @@ class LoadConfigTest(TestCase):
             _writer_helper(TextConfig(), tempdir / "text.json")
             _writer_helper(BaseTrainingConfig(), tempdir / "training.json")
             # Aligner Config
-            _writer_helper(AlignerConfig().training, tempdir / "aligner-training.json")
-            _writer_helper(AlignerConfig().model, tempdir / "aligner-model.json")
+            _writer_helper(
+                AlignerConfig(contact=self.contact).training,
+                tempdir / "aligner-training.json",
+            )
+            _writer_helper(
+                AlignerConfig(contact=self.contact).model,
+                tempdir / "aligner-model.json",
+            )
             aligner_config = AlignerConfig(
+                contact=self.contact,
                 path_to_model_config_file=tempdir / "aligner-model.json",
                 path_to_preprocessing_config_file=tempdir / "preprocessing.json",
                 path_to_text_config_file=tempdir / "text.json",
@@ -507,7 +565,7 @@ class LoadConfigTest(TestCase):
                 config = AlignerConfig.load_config_from_path(tempdir / "aligner.json")
 
 
-class BaseTrainingConfigTest(TestCase):
+class BaseTrainingConfigTest(BasicTestCase):
     """
     Validate BaseTrainingConfig
     """
@@ -569,7 +627,3 @@ class BaseTrainingConfigTest(TestCase):
                 ckpt_epochs=1,
                 ckpt_steps=1,
             )
-
-
-if __name__ == "__main__":
-    main()

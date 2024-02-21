@@ -3,22 +3,25 @@ import string
 from pathlib import Path
 from typing import Dict, List
 from unicodedata import normalize
-from unittest import TestCase, main
+from unittest import TestCase
 
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
+from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.text import TextProcessor
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.utils import generic_dict_loader
 
 
-class TextTest(TestCase):
+class TextTest(BasicTestCase):
     """Basic test for text input configuration"""
 
     def setUp(self) -> None:
+        super().setUp()
         self.base_text_processor = TextProcessor(
             FeaturePredictionConfig(
-                text=TextConfig(symbols=Symbols(letters=string.ascii_letters))
+                contact=self.contact,
+                text=TextConfig(symbols=Symbols(letters=string.ascii_letters)),
             )
         )
 
@@ -45,6 +48,7 @@ class TextTest(TestCase):
 
     def test_phonological_features(self):
         moh_config = FeaturePredictionConfig(
+            contact=self.contact,
             text=TextConfig(
                 symbols=Symbols(
                     letters=[
@@ -95,7 +99,7 @@ class TextTest(TestCase):
                         "ʔ",
                     ]
                 )
-            )
+            ),
         )
         moh_text_processor = TextProcessor(moh_config)
         tokens = moh_text_processor.text_to_tokens("shéːkon")
@@ -110,9 +114,10 @@ class TextTest(TestCase):
     def test_duplicate_symbols(self):
         duplicate_symbols_text_processor = TextProcessor(
             FeaturePredictionConfig(
+                contact=self.contact,
                 text=TextConfig(
                     symbols=Symbols(letters=string.ascii_letters, duplicate=["e"])
-                )
+                ),
             )
         )
         self.assertIn("e", duplicate_symbols_text_processor.duplicate_symbols)
@@ -121,18 +126,20 @@ class TextTest(TestCase):
         with self.assertRaises(TypeError):
             TextProcessor(
                 FeaturePredictionConfig(
+                    contact=self.contact,
                     text=TextConfig(
                         symbols=Symbols(letters=string.ascii_letters, bad=[1])
-                    )
+                    ),
                 )
             )
 
     def test_dipgrahs(self):
         digraph_text_processor = TextProcessor(
             FeaturePredictionConfig(
+                contact=self.contact,
                 text=TextConfig(
                     symbols=Symbols(letters=string.ascii_letters, digraph=["ee"])
-                )
+                ),
             )
         )
         text = "ee"  # should be treated as "ee" and not two instances of "e"
@@ -143,9 +150,10 @@ class TextTest(TestCase):
         # This test doesn't really test very much, but just here to highlight that base cleaning involves NFC
         accented_text_processor = TextProcessor(
             FeaturePredictionConfig(
+                contact=self.contact,
                 text=TextConfig(
                     symbols=Symbols(letters=string.ascii_letters, accented=["é"])
-                )
+                ),
             )
         )
         text = "he\u0301llo world"
@@ -271,7 +279,3 @@ class LookupTablesTest(TestCase):
             {},
             "Speaker lookup tables differ.",
         )
-
-
-if __name__ == "__main__":
-    main()
