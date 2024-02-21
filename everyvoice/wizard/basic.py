@@ -70,15 +70,13 @@ class ContactNameStep(Step):
     DEFAULT_NAME = StepNames.contact_name_step
 
     def prompt(self):
-        return input(
-            "What is your full name? EveryVoice requires a name to prevent misuse. "
-        )
+        return input("What is your full name?")
 
     def validate(self, response):
         # Some languages don't use first and last names, so we can't necessarily check that response.split() > 1
         # It would be nice to have a better check here though.
         if len(response) < 3:
-            print("Sorry, EveryVoice needs a name.")
+            print("Sorry, EveryVoice requires a name to help prevent misuse.")
             return False
         return True
 
@@ -90,9 +88,7 @@ class ContactEmailStep(Step):
     DEFAULT_NAME = StepNames.contact_email_step
 
     def prompt(self):
-        return input(
-            "Please provide a contact email address for your models. EveryVoice requires this to prevent misuse. "
-        )
+        return input("Please provide a contact email address for your models.")
 
     def validate(self, response):
         try:
@@ -103,6 +99,7 @@ class ContactEmailStep(Step):
         except EmailNotValidError as e:
             # The exception message is a human-readable explanation of why it's
             # not a valid (or deliverable) email address.
+            print("EveryVoice requires a valid email address to prevent misuse.")
             print(str(e))
             return False
         return True

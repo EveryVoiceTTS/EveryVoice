@@ -9,6 +9,7 @@ from unittest import TestCase
 
 import jsonschema
 import yaml
+from pydantic import ValidationError
 from pytorch_lightning import Trainer
 from typer.testing import CliRunner
 from yaml import CLoader as Loader
@@ -181,9 +182,14 @@ class CLITest(TestCase):
                 with open(Path(tmpdir) / filename, encoding="utf8") as f:
                     schema = json.load(f)
                 # serialize the model to json and then validate against the schema
+                # Some objects will require a contact key
+                try:
+                    obj_instance = obj()
+                except ValidationError:
+                    obj_instance = obj(contact=dummy_contact)
                 self.assertIsNone(
                     jsonschema.validate(
-                        json.loads(obj(contact=dummy_contact).model_dump_json()),
+                        json.loads(obj_instance.model_dump_json()),
                         schema=schema,
                     )
                 )
@@ -212,17 +218,15 @@ class TestBaseCLIHelper(TestCase):
         ):
             tempdir = Path(tempdir)
             config = FastSpeech2Config(
-                **{
-                    "contact": ContactInformation(
-                        contact_name="Test Runner", contact_email="info@everyvoice.ca"
-                    ),
-                    "training": {
-                        "logger": {
-                            "save_dir": tempdir / "log",
-                            "name": "unittest",
-                        },
+                contact=ContactInformation(
+                    contact_name="Test Runner", contact_email="info@everyvoice.ca"
+                ),
+                training={
+                    "logger": {
+                        "save_dir": tempdir / "log",
+                        "name": "unittest",
                     },
-                }
+                },
             )
             save_configuration_to_log_dir(config)
 

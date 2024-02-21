@@ -230,10 +230,10 @@ class BaseTrainingConfig(PartialLoadConfig):
 
 class ContactInformation(ConfigModel):
     contact_name: str = Field(
-        description="The name of the contact person responsible for answering questions related to this model."
+        description="The name of the contact person or organization responsible for answering questions related to this model."
     )
     contact_email: EmailStr = Field(
-        description="The email address of the contact person responsible for answering questions related to this model."
+        description="The email address of the contact person or organization responsible for answering questions related to this model."
     )
 
 

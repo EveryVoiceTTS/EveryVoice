@@ -26,6 +26,10 @@ from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard import Tour, basic, dataset, prompts
 from everyvoice.wizard.basic import ConfigFormatStep
 
+CONTACT_INFO_STATE = {}
+CONTACT_INFO_STATE[SN.contact_name_step.value] = "Test Name"
+CONTACT_INFO_STATE[SN.contact_email_step.value] = "test@this.ca"
+
 
 class RecursiveAnswers(NamedTuple):
     """Recursive answer for StepAndAnswer.children_answers, see StepAndAnswer
@@ -86,8 +90,7 @@ class WizardTest(TestCase):
             config_step.state = {}
             config_step.state[SN.output_step.value] = tmpdirname
             config_step.state[SN.name_step.value] = config_step.name
-            config_step.state[SN.contact_name_step.value] = "Test Name"
-            config_step.state[SN.contact_email_step.value] = "test@this.ca"
+            config_step.state.update(CONTACT_INFO_STATE)
             config_step.state["dataset_test"] = {}
             config_step.state["dataset_test"][SN.symbol_set_step.value] = Symbols(
                 symbol_set=string.ascii_letters
@@ -186,7 +189,7 @@ class WizardTest(TestCase):
             self.assertFalse(step.validate(""))
         output = stdout.getvalue()
         self.assertIn("Sorry", output)
-        self.assertIn("EveryVoice needs a name", output)
+        self.assertIn("EveryVoice requires a name", output)
 
     def test_bad_contact_email_step(self):
         """Exercise providing an invalid contact email."""
@@ -936,8 +939,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "."
         self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state[SN.contact_name_step.value] = "Test Name"
-        self.config.state[SN.contact_email_step.value] = "test@this.ca"
+        self.config.state.update(CONTACT_INFO_STATE)
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
                 os.chdir(tmpdir)
@@ -962,8 +964,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "."
         self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state[SN.contact_name_step.value] = "Test Name"
-        self.config.state[SN.contact_email_step.value] = "test@this.ca"
+        self.config.state.update(CONTACT_INFO_STATE)
         wavs_dir = "wavs/Common-Voice"
         self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
         with capture_stdout():
@@ -990,8 +991,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "John/Smith"
         self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state[SN.contact_name_step.value] = "Test Name"
-        self.config.state[SN.contact_email_step.value] = "test@this.ca"
+        self.config.state.update(CONTACT_INFO_STATE)
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
                 os.chdir(tmpdir)
@@ -1017,8 +1017,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "John/Smith"
         self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state[SN.contact_name_step.value] = "Test Name"
-        self.config.state[SN.contact_email_step.value] = "test@this.ca"
+        self.config.state.update(CONTACT_INFO_STATE)
         wavs_dir = "wavs/Common-Voice"
         self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
         with capture_stdout():
@@ -1047,8 +1046,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "."
         self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state[SN.contact_name_step.value] = "Test Name"
-        self.config.state[SN.contact_email_step.value] = "test@this.ca"
+        self.config.state.update(CONTACT_INFO_STATE)
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
                 os.chdir(tmpdir)
@@ -1076,8 +1074,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         self.config.state[SN.output_step.value] = "John/Smith"
         self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state[SN.contact_name_step.value] = "Test Name"
-        self.config.state[SN.contact_email_step.value] = "test@this.ca"
+        self.config.state.update(CONTACT_INFO_STATE)
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
                 os.chdir(tmpdir)

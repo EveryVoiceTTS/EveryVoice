@@ -6,6 +6,7 @@ from pydantic import Field, FilePath, ValidationInfo, model_validator
 from everyvoice.config.shared_types import (
     BaseModelWithContact,
     BaseTrainingConfig,
+    ContactInformation,
     init_context,
 )
 from everyvoice.config.utils import PossiblyRelativePath, load_partials
@@ -15,21 +16,38 @@ from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import load_config_from_json_or_yaml_path
 
 
+# The contact information only needs to be registered on the main config
+class AlignerConfigNoContact(AlignerConfig):
+    contact: Optional[ContactInformation] = None
+
+
+class VocoderConfigNoContact(VocoderConfig):
+    contact: Optional[ContactInformation] = None
+
+
+class FeaturePredictionConfigNoContact(FeaturePredictionConfig):
+    contact: Optional[ContactInformation] = None
+
+
 class E2ETrainingConfig(BaseTrainingConfig):
     feature_prediction_checkpoint: Union[None, PossiblyRelativePath] = None
     vocoder_checkpoint: Union[None, PossiblyRelativePath] = None
 
 
 class EveryVoiceConfig(BaseModelWithContact):
-    aligner: AlignerConfig = Field(default_factory=AlignerConfig)
+    aligner: AlignerConfig | AlignerConfigNoContact = Field(
+        default_factory=AlignerConfigNoContact
+    )
     path_to_aligner_config_file: Optional[FilePath] = None
 
-    feature_prediction: FeaturePredictionConfig = Field(
-        default_factory=FeaturePredictionConfig
+    feature_prediction: FeaturePredictionConfig | FeaturePredictionConfigNoContact = (
+        Field(default_factory=FeaturePredictionConfigNoContact)
     )
     path_to_feature_prediction_config_file: Optional[FilePath] = None
 
-    vocoder: VocoderConfig = Field(default_factory=VocoderConfig)
+    vocoder: VocoderConfig | VocoderConfigNoContact = Field(
+        default_factory=VocoderConfigNoContact
+    )
     path_to_vocoder_config_file: Optional[FilePath] = None
 
     training: E2ETrainingConfig = Field(default_factory=E2ETrainingConfig)
