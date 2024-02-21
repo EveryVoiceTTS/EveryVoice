@@ -33,7 +33,7 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
-from everyvoice.tests.stubs import mute_logger
+from everyvoice.tests.stubs import capture_logs, mute_logger
 from everyvoice.wizard import (
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
@@ -209,6 +209,24 @@ class CLITest(TestCase):
         )
         self.assertIn("It appears to have 0.0 M parameters.", result.stdout)
         self.assertIn("Number of Parameters", result.stdout)
+
+    def test_preprocessing_with_wrong_config(self):
+        """
+        The user should have a friendly message that informs them that they used the wrong config file type.
+        """
+        with capture_logs() as output:
+            result = self.runner.invoke(
+                app,
+                [
+                    "preprocess",
+                    str(self.config_dir / "everyvoice-aligner.yaml"),
+                ],
+            )
+            self.assertEqual(result.exit_code, 1)
+            self.assertIn(
+                "We are expecting a FastSpeech2Config but it looks like you provided a DFAlignerConfig",
+                output[0],
+            )
 
 
 class TestBaseCLIHelper(TestCase):

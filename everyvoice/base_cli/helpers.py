@@ -17,6 +17,7 @@ from typing import List, Optional, Union
 import yaml
 from deepdiff import DeepDiff
 from loguru import logger
+from pydantic import ValidationError
 from tqdm import tqdm
 
 from everyvoice.exceptions import InvalidConfiguration
@@ -55,7 +56,32 @@ def load_config_base_command(
 ):
     from everyvoice.utils import update_config_from_cli_args
 
-    config = model_config.load_config_from_path(config_file)
+    try:
+        config = model_config.load_config_from_path(config_file)
+    except ValidationError as error:
+        # NOTE: To trigger this error handling code from the command line:
+        #   `everyvoice preprocess  config/everyvoice-aligner.yaml`
+        import sys
+
+        for config_type in (
+            DFAlignerConfig,
+            EveryVoiceConfig,
+            FastSpeech2Config,
+            HiFiGANConfig,
+        ):
+            try:
+                config = config_type.load_config_from_path(  # type: ignore[attr-defined]
+                    config_file
+                )
+                logger.error(
+                    f"We are expecting a {model_config.__name__} but it looks like you provided a {config_type.__name__}"
+                )
+                sys.exit(1)
+            except ValidationError:
+                pass
+
+        logger.error(f"there was a problem with your config file:\n{error}")
+        sys.exit(1)
 
     config = update_config_from_cli_args(config_args, config)
     return config
