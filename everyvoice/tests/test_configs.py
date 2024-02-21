@@ -5,6 +5,7 @@ import tempfile
 import time
 from pathlib import Path
 from typing import Callable
+from unittest import TestCase
 
 import yaml
 from pydantic import ValidationError
@@ -565,7 +566,7 @@ class LoadConfigTest(BasicTestCase):
                 config = AlignerConfig.load_config_from_path(tempdir / "aligner.json")
 
 
-class BaseTrainingConfigTest(BasicTestCase):
+class BaseTrainingConfigTest(TestCase):
     """
     Validate BaseTrainingConfig
     """

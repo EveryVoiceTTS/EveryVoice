@@ -100,6 +100,107 @@
       "title": "AdamWOptimizer",
       "type": "object"
     },
+    "AlignerConfigNoContact": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "model": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DFAlignerModelConfig"
+            }
+          ],
+          "description": "The model configuration settings."
+        },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Model Config File"
+        },
+        "training": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DFAlignerTrainingConfig"
+            }
+          ],
+          "description": "The training configuration hyperparameters."
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Training Config File"
+        },
+        "preprocessing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/PreprocessingConfig"
+            }
+          ],
+          "description": "The preprocessing configuration, including information about audio settings."
+        },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Preprocessing Config File"
+        },
+        "text": {
+          "$ref": "#/$defs/TextConfig"
+        },
+        "path_to_text_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Text Config File"
+        }
+      },
+      "title": "AlignerConfigNoContact",
+      "type": "object"
+    },
     "AudioConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -264,12 +365,12 @@
       "additionalProperties": false,
       "properties": {
         "contact_name": {
-          "description": "The name of the contact person responsible for answering questions related to this model.",
+          "description": "The name of the contact person or organization responsible for answering questions related to this model.",
           "title": "Contact Name",
           "type": "string"
         },
         "contact_email": {
-          "description": "The email address of the contact person responsible for answering questions related to this model.",
+          "description": "The email address of the contact person or organization responsible for answering questions related to this model.",
           "format": "email",
           "title": "Contact Email",
           "type": "string"
@@ -280,107 +381,6 @@
         "contact_email"
       ],
       "title": "ContactInformation",
-      "type": "object"
-    },
-    "DFAlignerConfig": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "contact": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/ContactInformation"
-            }
-          ],
-          "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
-        },
-        "model": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/DFAlignerModelConfig"
-            }
-          ],
-          "description": "The model configuration settings."
-        },
-        "path_to_model_config_file": {
-          "anyOf": [
-            {
-              "format": "file-path",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The path of a preprocessing configuration file.",
-          "title": "Path To Model Config File"
-        },
-        "training": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/DFAlignerTrainingConfig"
-            }
-          ],
-          "description": "The training configuration hyperparameters."
-        },
-        "path_to_training_config_file": {
-          "anyOf": [
-            {
-              "format": "file-path",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The path of a preprocessing configuration file.",
-          "title": "Path To Training Config File"
-        },
-        "preprocessing": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/PreprocessingConfig"
-            }
-          ],
-          "description": "The preprocessing configuration, including information about audio settings."
-        },
-        "path_to_preprocessing_config_file": {
-          "anyOf": [
-            {
-              "format": "file-path",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The path of a preprocessing configuration file.",
-          "title": "Path To Preprocessing Config File"
-        },
-        "text": {
-          "$ref": "#/$defs/TextConfig"
-        },
-        "path_to_text_config_file": {
-          "anyOf": [
-            {
-              "format": "file-path",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "title": "Path To Text Config File"
-        }
-      },
-      "required": [
-        "contact"
-      ],
-      "title": "DFAlignerConfig",
       "type": "object"
     },
     "DFAlignerExtractionMethod": {
@@ -753,113 +753,6 @@
       "title": "E2ETrainingConfig",
       "type": "object"
     },
-    "FastSpeech2Config": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "additionalProperties": false,
-      "properties": {
-        "contact": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/ContactInformation"
-            }
-          ],
-          "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
-        },
-        "model": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/FastSpeech2ModelConfig"
-            }
-          ],
-          "description": "The model configuration settings."
-        },
-        "path_to_model_config_file": {
-          "anyOf": [
-            {
-              "format": "file-path",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The path of a model configuration file.",
-          "title": "Path To Model Config File"
-        },
-        "training": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/FastSpeech2TrainingConfig"
-            }
-          ],
-          "description": "The training configuration hyperparameters."
-        },
-        "path_to_training_config_file": {
-          "anyOf": [
-            {
-              "format": "file-path",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The path of a training configuration file.",
-          "title": "Path To Training Config File"
-        },
-        "preprocessing": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/PreprocessingConfig"
-            }
-          ],
-          "description": "The preprocessing configuration, including information about audio settings."
-        },
-        "path_to_preprocessing_config_file": {
-          "anyOf": [
-            {
-              "format": "file-path",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The path of a preprocessing configuration file.",
-          "title": "Path To Preprocessing Config File"
-        },
-        "text": {
-          "allOf": [
-            {
-              "$ref": "#/$defs/TextConfig"
-            }
-          ],
-          "description": "The text configuration."
-        },
-        "path_to_text_config_file": {
-          "anyOf": [
-            {
-              "format": "file-path",
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "The path of a text configuration file.",
-          "title": "Path To Text Config File"
-        }
-      },
-      "required": [
-        "contact"
-      ],
-      "title": "FastSpeech2Config",
-      "type": "object"
-    },
     "FastSpeech2ModelConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -1138,22 +1031,25 @@
       "title": "FastSpeech2TrainingConfig",
       "type": "object"
     },
-    "HiFiGANConfig": {
+    "FeaturePredictionConfigNoContact": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
       "properties": {
         "contact": {
-          "allOf": [
+          "anyOf": [
             {
               "$ref": "#/$defs/ContactInformation"
+            },
+            {
+              "type": "null"
             }
           ],
-          "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+          "default": null
         },
         "model": {
           "allOf": [
             {
-              "$ref": "#/$defs/HiFiGANModelConfig"
+              "$ref": "#/$defs/FastSpeech2ModelConfig"
             }
           ],
           "description": "The model configuration settings."
@@ -1175,7 +1071,7 @@
         "training": {
           "allOf": [
             {
-              "$ref": "#/$defs/HiFiGANTrainingConfig"
+              "$ref": "#/$defs/FastSpeech2TrainingConfig"
             }
           ],
           "description": "The training configuration hyperparameters."
@@ -1215,12 +1111,31 @@
           "default": null,
           "description": "The path of a preprocessing configuration file.",
           "title": "Path To Preprocessing Config File"
+        },
+        "text": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/TextConfig"
+            }
+          ],
+          "description": "The text configuration."
+        },
+        "path_to_text_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a text configuration file.",
+          "title": "Path To Text Config File"
         }
       },
-      "required": [
-        "contact"
-      ],
-      "title": "HiFiGANConfig",
+      "title": "FeaturePredictionConfigNoContact",
       "type": "object"
     },
     "HiFiGANModelConfig": {
@@ -1952,6 +1867,91 @@
       },
       "title": "VariancePredictors",
       "type": "object"
+    },
+    "VocoderConfigNoContact": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "model": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANModelConfig"
+            }
+          ],
+          "description": "The model configuration settings."
+        },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a model configuration file.",
+          "title": "Path To Model Config File"
+        },
+        "training": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANTrainingConfig"
+            }
+          ],
+          "description": "The training configuration hyperparameters."
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a training configuration file.",
+          "title": "Path To Training Config File"
+        },
+        "preprocessing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/PreprocessingConfig"
+            }
+          ],
+          "description": "The preprocessing configuration, including information about audio settings."
+        },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Preprocessing Config File"
+        }
+      },
+      "title": "VocoderConfigNoContact",
+      "type": "object"
     }
   },
   "$schema": "http://json-schema.org/draft-07/schema#",
@@ -1966,7 +1966,7 @@
       "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
     },
     "aligner": {
-      "$ref": "#/$defs/DFAlignerConfig"
+      "$ref": "#/$defs/AlignerConfigNoContact"
     },
     "path_to_aligner_config_file": {
       "anyOf": [
@@ -1982,7 +1982,7 @@
       "title": "Path To Aligner Config File"
     },
     "feature_prediction": {
-      "$ref": "#/$defs/FastSpeech2Config"
+      "$ref": "#/$defs/FeaturePredictionConfigNoContact"
     },
     "path_to_feature_prediction_config_file": {
       "anyOf": [
@@ -1998,7 +1998,7 @@
       "title": "Path To Feature Prediction Config File"
     },
     "vocoder": {
-      "$ref": "#/$defs/HiFiGANConfig"
+      "$ref": "#/$defs/VocoderConfigNoContact"
     },
     "path_to_vocoder_config_file": {
       "anyOf": [
