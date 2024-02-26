@@ -121,6 +121,7 @@ class OutputPathStep(Step):
             "Where should the Configuration Wizard save your files?",
             default=".",
             style=CUSTOM_QUESTIONARY_STYLE,
+            only_directories=True,
         ).unsafe_ask()
 
     def validate(self, response):

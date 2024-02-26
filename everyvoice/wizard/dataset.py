@@ -55,7 +55,9 @@ class WavsDirStep(Step):
 
     def prompt(self):
         return questionary.path(
-            "Where are your audio files?", style=CUSTOM_QUESTIONARY_STYLE
+            "Where are your audio files?",
+            style=CUSTOM_QUESTIONARY_STYLE,
+            only_directories=True,
         ).unsafe_ask()
 
     def validate(self, response):
