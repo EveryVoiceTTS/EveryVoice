@@ -11,6 +11,12 @@ from typing import List, Optional
 import typer
 
 
+def complete_path() -> list[str]:
+    # https://github.com/tiangolo/typer/discussions/625
+    # Work-around for path completion bug in CLI autocompletion
+    return []
+
+
 def load_config_base_command_interface(
     config_file: Path = typer.Argument(
         ...,
@@ -18,6 +24,7 @@ def load_config_base_command_interface(
         dir_okay=False,
         file_okay=True,
         help="The path to your model configuration file.",
+        autocompletion=complete_path,
     ),
     config_args: List[str] = typer.Option(None, "--config", "-c"),
 ):
@@ -31,6 +38,7 @@ def preprocess_base_command_interface(
         dir_okay=False,
         file_okay=True,
         help="The path to your model configuration file.",
+        autocompletion=complete_path,
     ),
     config_args: List[str] = typer.Option(
         None, "-c", "--config-args", help="Override the configuration."
@@ -59,6 +67,7 @@ def train_base_command_interface(
         dir_okay=False,
         file_okay=True,
         help="The path to your model configuration file.",
+        autocompletion=complete_path,
     ),
     config_args: List[str] = typer.Option(
         None, "-c", "--config-args", help="Overwrite the configuration"
@@ -92,6 +101,7 @@ def inference_base_command_interface(
         dir_okay=False,
         file_okay=True,
         help="The path to your model configuration file.",
+        autocompletion=complete_path,
     ),
     config_args: List[str] = typer.Option(None, "--config", "-c"),
     accelerator: str = typer.Option(

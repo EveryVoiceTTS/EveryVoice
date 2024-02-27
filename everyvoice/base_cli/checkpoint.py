@@ -12,6 +12,8 @@ import typer
 from pydantic import BaseModel
 from typing_extensions import Annotated
 
+from everyvoice.base_cli.interfaces import complete_path
+
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
     help="Extract checkpoint's hyperparameters.",
@@ -90,6 +92,7 @@ def inspect(
         dir_okay=False,
         file_okay=True,
         help="The path to your model checkpoint file.",
+        autocompletion=complete_path,
     ),
     show_config: Annotated[
         bool,

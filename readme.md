@@ -63,7 +63,7 @@ pip install -e .
 Before you can run the test suites, you'll also need to install the dev dependencies:
 
 ```sh
-pip intall -r requirements.dev.txt
+pip install -r requirements.dev.txt
 ```
 
 ### Documentation

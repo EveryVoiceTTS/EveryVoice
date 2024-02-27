@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
+from everyvoice.base_cli.interfaces import complete_path
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     align_single as ctc_segment,
 )
@@ -243,7 +244,13 @@ SCHEMAS_TO_OUTPUT: dict[str, type[BaseModel]] = {}
 @app.command(hidden=True)
 def update_schemas(
     out_dir: Path = typer.Option(
-        None, "-o", "--out-dir", file_okay=False, dir_okay=True, exists=True
+        None,
+        "-o",
+        "--out-dir",
+        file_okay=False,
+        dir_okay=True,
+        exists=True,
+        autocompletion=complete_path,
     ),
 ):
     """Update the JSON Schemas. This is hidden because you shouldn't be calling this unless you are
