@@ -2,6 +2,14 @@
 
 Feel free to dive in! [Open an issue](https://github.com/roedoejet/EveryVoice/issues/new) or submit PRs.
 
+Issues regarding the submodules should also be submitted on the main
+[EveryVoice repo](https://github.com/roedoejet/EveryVoice), with the tag
+`[FastSpeech2]`, `[HiFiGAN]`, `[DeepForceAligner]`, or `[wav2vec2aligner]`
+at the beginning of the issue title, as appropriate.
+
+To submit PRs for the submodules, please submit a PR with the code changes to the
+submodule repo, accompanied with a PR to this repo to update the submodules reference.
+
 This repo follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 
 This repo uses automated tools to standardize the formatting of code, text files and
