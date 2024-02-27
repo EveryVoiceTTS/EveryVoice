@@ -279,7 +279,7 @@ class AdamWOptimizer(BaseOptimizer):
 
 class NoamOptimizer(AdamOptimizer):
     warmup_steps: int = Field(
-        4000,
+        1000,
         description="The number of steps to increase the learning rate before starting to decrease it.",
     )
     name: str = Field("noam", description="The name of the optimizer to use.")
