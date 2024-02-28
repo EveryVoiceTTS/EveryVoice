@@ -2,9 +2,9 @@
 
 ## Step 1: Make sure you have Permission!
 
-So, you want to build a text-to-speech system for a new language or dataset - cool! But, just because you **can** build a text-to-speech system, doesn't mean you **should**. There are a lot of tricky ethical
-questions around text-to-speech. It's not ethical to just use audio you find somewhere if it doesn't have explicit permission to use it for the purposes of text-to-speech. The first step is to make sure you have
-permission to use the data in question and that whoever contributed their voice to the data you want to use is aware and supportive of your goal.
+So, you want to build a text-to-speech system for a new language or dataset - cool! But, just because you **can** build a text-to-speech system, doesn't mean you **should**. There are a lot of important ethical questions around text-to-speech. For example, it's not ethical to just use audio you find somewhere online if it doesn't have explicit permission to use it for the purposes of text-to-speech. The first step is always to make sure you have permission to use the data in question and that whoever contributed their voice to the data you want to use is aware and supportive of your goal.
+
+Creating a text-to-speech model without permission is unethical, but even when you do have permission, you should take great care in how you distribute the model you have created. Increasingly, text-to-speech technology is used in fraud, unauthorized impersonation. The technology has also been used to disenfranchise voice actors and other professionals. When you create an EveryVoice model, you are responsible for ensuring the model is only used and distributed according to the permissions you have. To help with this accountability, you will be required by EveryVoice to provide a full name and contact information that will also be distributed with the model.
 
 ## Step 2: Gather Your Data
 
@@ -62,7 +62,17 @@ Your models need to do a number of preprocessing steps in order to prepare for t
 everyvoice preprocess config/{{ config_filename('text-to-spec') }}
 ```
 
-## Step 6: Train your Vocoder
+## Step 6: Select a Vocoder
+
+So you don't need to train your own vocoder, EveryVoice has a variety of publicly released vocoders available [here](TODO). Follow the instructions there for downloading the checkpoints.
+
+EveryVoice is also compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint, which is very good quality. You can find it [here](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model).
+
+Using a pre-trained vocoder is recommended, and the above checkpoints should work well even for new languages.
+
+### Train your own Vocoder
+
+You might want to train your own vocoder, but this takes a long time (up to 2 weeks on a single GPU), uses a lot of electricity, and unless you know what you are doing, you are unlikely to improve upon the publicly available models discussed above, even for a new language.
 
 ```bash
 everyvoice train spec-to-wav config/{{ config_filename('spec-to-wav') }}
@@ -80,7 +90,7 @@ Which would use the GPU accelerator and specify 1 device/chip.
 
 To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the `config/{{ config_filename('text-to-spec') }}`
 
-At the bottom of that file you'll find a key called vocoder_path. Add the absolute path to your trained vocder (here it would be `/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.)
+At the bottom of that file you'll find a key called `vocoder_path`. Add the absolute path to your trained vocder (here it would be `/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.)
 
 Once you've replaced the vocoder_path key, you can train your feature prediction network:
 
