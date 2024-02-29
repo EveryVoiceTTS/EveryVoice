@@ -50,7 +50,7 @@ class NameStep(Step):
 
     def validate(self, response):
         if len(response) == 0:
-            print("Sorry, your project needs a name.")
+            print("Sorry, your project needs a name. ")
             return False
         sanitized_path = slugify(response)
         if not sanitized_path == response:
@@ -70,7 +70,7 @@ class ContactNameStep(Step):
     DEFAULT_NAME = StepNames.contact_name_step
 
     def prompt(self):
-        return input("What is your full name?")
+        return input("What is your full name? ")
 
     def validate(self, response):
         # Some languages don't use first and last names, so we can't necessarily check that response.split() > 1
@@ -88,7 +88,7 @@ class ContactEmailStep(Step):
     DEFAULT_NAME = StepNames.contact_email_step
 
     def prompt(self):
-        return input("Please provide a contact email address for your models.")
+        return input("Please provide a contact email address for your models. ")
 
     def validate(self, response):
         try:
