@@ -16,11 +16,29 @@ with open("everyvoice/_version.py", "r", encoding="utf8") as version_file:
 
 this_directory = path.abspath(path.dirname(__file__))
 
-with open(path.join(this_directory, "readme.md"), encoding="utf8") as f:
+with open(path.join(this_directory, "README.md"), encoding="utf8") as f:
     long_description = f.read()
 
 with open(path.join(this_directory, "requirements.txt"), encoding="utf8") as f:
     REQS = f.read().splitlines()
+
+# Get a list of submodules
+SUBMODULE_PATHS = [
+    "everyvoice/model/feature_prediction/FastSpeech2_lightning/fs2",
+    "everyvoice/model/vocoder/HiFiGAN_iSTFT_lightning/hfgl",
+    "everyvoice/model/aligner/DeepForcedAligner/dfaligner",
+    "everyvoice/model/aligner/wav2vec2aligner/aligner",
+]
+SUBMODULE_PACKAGES = []
+
+# For each submodule
+for submodule_path in SUBMODULE_PATHS:
+    # append the submodule path to the list of submodule packages
+    submodule = submodule_path.replace("/", ".")
+    SUBMODULE_PACKAGES.append(submodule)
+    # then use find_packages to automatically find the rest
+    packages = find_packages(submodule_path)
+    SUBMODULE_PACKAGES += [submodule + f".{pkg}" for pkg in packages]
 
 setup(
     name="everyvoice",
@@ -34,7 +52,7 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     platform=["any"],
-    packages=find_packages(),
+    packages=find_packages() + SUBMODULE_PACKAGES,
     include_package_data=True,
     install_requires=REQS,
     entry_points={"console_scripts": ["everyvoice = everyvoice.cli:app"]},
@@ -43,6 +61,6 @@ setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: POSIX :: Linux",
-        "Operating System :: MacOS"
+        "Operating System :: MacOS",
     ],
 )
