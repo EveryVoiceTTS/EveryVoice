@@ -153,6 +153,21 @@ class PreprocessingTest(BasicTestCase):
             # check all same length
             self.assertEqual(complex_feats.size(1), linear_feats.size(1))
 
+    def test_bad_pitch(self):
+        """Some files don't have any pitch values so we should make sure we handle these properly"""
+        pyworld_config = FeaturePredictionConfig(
+            contact=self.contact, preprocessing=PreprocessingConfig()
+        )
+        preprocessor_pyworld = Preprocessor(pyworld_config)
+        audio = torch.zeros(22050)
+        feats = self.preprocessor.extract_spectral_features(
+            audio, self.preprocessor.input_spectral_transform
+        )
+        frame_pitch_pyworld = preprocessor_pyworld.extract_pitch(audio)
+        self.assertEqual(frame_pitch_pyworld.max(), 0)
+        self.assertEqual(frame_pitch_pyworld.min(), 0)
+        self.assertEqual(frame_pitch_pyworld.size(0), feats.size(1))
+
     def test_pitch(self):
         pyworld_config = VocoderConfig(
             contact=self.contact, preprocessing=PreprocessingConfig()

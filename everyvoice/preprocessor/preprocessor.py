@@ -217,7 +217,7 @@ class Preprocessor:
             - Christoph Minxhoffer reported no significant differences with continuous wavelet transform so it is not implemented here
 
         Args:
-            spectral_feature_tensor (Tensor): tensor of spectral features extracted from audio
+            audio_tensor (Tensor): 1D tensor of audio samples
         """
         import pyworld as pw  # This isn't a very good place for an import,
 
@@ -241,7 +241,11 @@ class Preprocessor:
             self.input_sampling_rate,
         )
         pitch[pitch == 0] = np.nan
-        pitch = self._interpolate(pitch)
+        try:
+            pitch = self._interpolate(pitch)
+        except ValueError:
+            # TODO: we should warn the user about pitch-less samples
+            pitch[np.isnan(pitch)] = 0
         pitch = torch.tensor(pitch).float()
         return pitch
 

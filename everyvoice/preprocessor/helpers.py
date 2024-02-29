@@ -4,7 +4,7 @@ from pathlib import Path
 import torch
 
 
-def save_tensor(tensor: torch.Tensor, path: Path):
+def save_tensor(tensor: torch.Tensor, path: str | Path):
     """Create hierarchy before saving a tensor."""
     path = Path(path)
     if not path.parent.exists():
