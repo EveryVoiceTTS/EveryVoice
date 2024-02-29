@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Create a conda environment for EveryVoice development, automating all the
-# manual instructions in readme.md
+# manual instructions in README.md
 
 # Default versions:
 CUDA_VERSION=11.8
