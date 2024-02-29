@@ -145,7 +145,6 @@ def relative_to_absolute_path(
     from.
     """
     if value is None:
-        # TODO: Shouldn't it be an error if the user provides None?
         return value
 
     try:
@@ -191,7 +190,7 @@ def path_is_a_directory(
 ) -> Path | None:
     """
     Helper function to annotate a type.
-    Veriries ala `PathType("dir")` that `value` is a directory.
+    Verifies ala `PathType("dir")` that `value` is a directory.
     """
     if (
         info
@@ -199,12 +198,15 @@ def path_is_a_directory(
         and (writing_config := info.context.get("writing_config", None))
     ):
         # We are writing the original config and must temporarily resolve the path.
-        assert (writing_config.resolve() / value).is_dir()
+        tmp_path = writing_config.resolve() / value
+        if not tmp_path.is_dir():
+            raise ValueError(f"{tmp_path} is not a directory")
     else:
         try:
             # Make sure value is a path because it can be a string when we load a model that is not partial.
             path = Path(value)
-            assert path.is_dir()
+            if not path.is_dir():
+                raise ValueError(f"{path} is not a directory")
         except TypeError as e:
             # Pydantic needs ValueErrors to raise its ValidationErrors
             raise ValueError from e
