@@ -5,11 +5,11 @@ from typing import Any, Callable, Dict, Optional, Sequence, Union
 from loguru import logger
 from pydantic import PlainSerializer, WithJsonSchema
 from pydantic.functional_validators import BeforeValidator
-from pydantic.types import PathType
 from typing_extensions import Annotated
 
 from everyvoice.utils import (
     load_config_from_json_or_yaml_path,
+    path_is_a_directory,
     path_must_exist,
     relative_to_absolute_path,
 )
@@ -116,7 +116,7 @@ PossiblyRelativePath = Annotated[Path, BeforeValidator(relative_to_absolute_path
 # back out calling all "after" validators.
 PossiblyRelativePathMustExist = Annotated[
     Path,
-    PathType("dir"),
+    BeforeValidator(path_is_a_directory),
     BeforeValidator(path_must_exist),
     BeforeValidator(relative_to_absolute_path),
 ]
