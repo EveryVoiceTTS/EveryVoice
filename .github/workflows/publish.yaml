@@ -13,6 +13,8 @@ on:
 jobs:
   test:
     uses: ./.github/workflows/test.yml
+    secrets: inherit
+
   build:
     name: Build distribution 📦
     runs-on: ubuntu-latest
