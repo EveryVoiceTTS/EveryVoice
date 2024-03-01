@@ -170,9 +170,9 @@ class CLITest(TestCase):
             self.assertEqual(result.exit_code, 0)
 
     def test_update_schema(self):
-        _ = self.runner.invoke(app, ["update-schemas"])
-        # self.assertNotEqual(result.exit_code, 0)
-        # self.assertIn("FileExistsError", str(result))
+        result = self.runner.invoke(app, ["update-schemas"])
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("FileExistsError", str(result))
         dummy_contact = ContactInformation(
             contact_name="Test Runner", contact_email="info@everyvoice.ca"
         )

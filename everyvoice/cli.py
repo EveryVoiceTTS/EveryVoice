@@ -270,14 +270,17 @@ def update_schemas(
     from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
     from everyvoice.model.vocoder.config import VocoderConfig
 
+    # We should not be changing the schema for patches, so only include major/minor version
+    MAJOR_MINOR_VERSION = ".".join(VERSION.split(".")[:2])
+
     SCHEMAS_TO_OUTPUT.update(
         {
-            f"{ALIGNER_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": AlignerConfig,
-            f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": EveryVoiceConfig,
-            f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": FeaturePredictionConfig,
-            f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": PreprocessingConfig,
-            f"{TEXT_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": TextConfig,
-            f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{VERSION}.json": VocoderConfig,
+            f"{ALIGNER_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": AlignerConfig,
+            f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": EveryVoiceConfig,
+            f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": FeaturePredictionConfig,
+            f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": PreprocessingConfig,
+            f"{TEXT_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": TextConfig,
+            f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": VocoderConfig,
         }
     )
 
