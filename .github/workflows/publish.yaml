@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/p/EveryVoice  # Replace <package-name> with your PyPI project name
+      url: https://pypi.org/p/everyvoice
     permissions:
       id-token: write  # IMPORTANT: mandatory for trusted publishing
     steps:
@@ -64,10 +64,10 @@ jobs:
         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
         repository-url: https://test.pypi.org/legacy/
         verbose: true
-    # - name: Publish distribution 📦 to PyPI
-    #   uses: pypa/gh-action-pypi-publish@release/v1
-    #   with:
-    #     password: ${{ secrets.PYPI_API_TOKEN }}
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
 
 
   github-release:
@@ -98,20 +98,17 @@ jobs:
       with:
         token: ${{ github.token }}
         tag: ${{ github.ref_name }}
-    - name: verbose (https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-      env:
-        TO_PRINT: ${{ steps.changelog.outputs.changes }}
-      run: echo "$TO_PRINT"
-
-    # - name: Create Release
-    #   uses: ncipollo/release-action@v1.12.0
-    #   with:
-    #     allowUpdates: true
-    #     name: ${{ github.ref_name }}
-    #     tag: ${{ github.ref_name }}
-    #     body: ${{ steps.changelog.outputs.changes }}
-    #     token: ${{ github.token }}
+    - name: Create Release
+      uses: ncipollo/release-action@v1.12.0
+      with:
+        allowUpdates: true
+        name: ${{ github.ref_name }}
+        tag: ${{ github.ref_name }}
+        body: ${{ steps.changelog.outputs.changes }}
+        token: ${{ github.token }}
   build-docs:
+    needs:
+      - github-release
     uses: ./.github/workflows/docs.yml
     secrets: inherit
 
@@ -134,10 +131,6 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
-      # - name: Deploy docs with mike 🚀
-      #   run: |
-      #     mike deploy --push --update-aliases latest ${{ github.ref_name }} stable
-      - name: verbose (https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-        env:
-          TO_PRINT: ${{ github.ref_name }}
-        run: echo "$TO_PRINT"
+      - name: Deploy docs with mike 🚀
+        run: |
+          mike deploy --push --update-aliases latest ${{ github.ref_name }} stable
