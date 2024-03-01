@@ -44,7 +44,6 @@ jobs:
   publish-to-pypi:
     name: >-
       Publish EveryVoice distribution 📦 to PyPI
-    if: startsWith(github.ref, 'refs/tags/v')  # only publish to PyPI on tag pushes
     needs:
       - build
     runs-on: ubuntu-latest
@@ -112,17 +111,33 @@ jobs:
     #     tag: ${{ github.ref_name }}
     #     body: ${{ steps.changelog.outputs.changes }}
     #     token: ${{ github.token }}
+  build-docs:
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
 
   doc-deploy:
     runs-on: ubuntu-latest
     needs:
-      - github-release
+      - build-docs
     steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SGILE_PAT }}
+          submodules: recursive
+          fetch-depth: 0 # fetch all commits/branches
+      - name: Download the latest docs
+        uses: actions/download-artifact@v4
+        with:
+          name: latest-docs
+          path: site/
       - name: Setup doc deploy
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
       # - name: Deploy docs with mike 🚀
       #   run: |
-      #     mkdocs build
       #     mike deploy --push --update-aliases latest ${{ github.ref_name }} stable
+      - name: verbose (https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+        env:
+          TO_PRINT: ${{ github.ref_name }}
+        run: echo "$TO_PRINT"
