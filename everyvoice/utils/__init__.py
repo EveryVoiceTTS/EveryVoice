@@ -144,14 +144,19 @@ def relative_to_absolute_path(
     paths or resolve them with respect to the configuration file they came
     from.
     """
-    if value is None or info is None:
+    if value is None:
         return value
 
     try:
-        # Make sure value is a path because it can be a string when we load a model that is not partial.
+        # Make sure value is a path because it can be a string when we load a
+        # model that is not partial.
         path = Path(value)
-        if info.context and not path.is_absolute():
-            config_path = info.context.get("config_path", Path("."))
+        if (
+            not path.is_absolute()
+            and info
+            and info.context
+            and (config_path := info.context.get("config_path", None))
+        ):
             path = (config_path.parent / path).resolve()
         return path
     except TypeError as e:
@@ -159,15 +164,55 @@ def relative_to_absolute_path(
         raise ValueError from e
 
 
-def path_must_exist(value: Any, info: Optional[ValidationInfo] = None) -> Path | None:
+def directory_path_must_exist(
+    value: Any, info: Optional[ValidationInfo] = None
+) -> Path | None:
     """
     Helper function to annotate a type.
     Creates a directory if it doesn't exist.
     """
     assert isinstance(value, Path)
-    if not value.exists():
-        logger.info(f"Directory at {value} does not exist. Creating...")
-        value.mkdir(parents=True, exist_ok=True)
+    if (
+        info
+        and info.context
+        and (writing_config := info.context.get("writing_config", None))
+    ):
+        # We are writing the original config and must temporarily resolve the path.
+        (writing_config.resolve() / value).mkdir(parents=True, exist_ok=True)
+    else:
+        if not value.exists():
+            logger.info(f"Directory at {value} does not exist. Creating...")
+            value.mkdir(parents=True, exist_ok=True)
+
+    return value
+
+
+def path_is_a_directory(
+    value: Any, info: Optional[ValidationInfo] = None
+) -> Path | None:
+    """
+    Helper function to annotate a type.
+    Verifies ala `PathType("dir")` that `value` is a directory.
+    """
+    if (
+        info
+        and info.context
+        and (writing_config := info.context.get("writing_config", None))
+    ):
+        # We are writing the original config and must temporarily resolve the path.
+        tmp_path = writing_config.resolve() / value
+        if not tmp_path.is_dir():
+            raise ValueError(f"{tmp_path} is not a directory")
+    else:
+        try:
+            # Make sure value is a path because it can be a string when we load a model that is not partial.
+            path = Path(value)
+            if not path.is_dir():
+                raise ValueError(f"{path} is not a directory")
+        except TypeError as e:
+            # Pydantic needs ValueErrors to raise its ValidationErrors
+            raise ValueError from e
+
     return value
 
 
