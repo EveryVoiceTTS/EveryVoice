@@ -43,7 +43,7 @@ jobs:
         run: |
           cd everyvoice && coverage run run_tests.py dev
           coverage xml
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: false # optional (default = false)
           token: ${{ secrets.CODECOV_TOKEN }}
