@@ -164,7 +164,9 @@ def relative_to_absolute_path(
         raise ValueError from e
 
 
-def path_must_exist(value: Any, info: Optional[ValidationInfo] = None) -> Path | None:
+def directory_path_must_exist(
+    value: Any, info: Optional[ValidationInfo] = None
+) -> Path | None:
     """
     Helper function to annotate a type.
     Creates a directory if it doesn't exist.

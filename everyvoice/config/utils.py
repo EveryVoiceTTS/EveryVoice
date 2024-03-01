@@ -8,9 +8,9 @@ from pydantic.functional_validators import BeforeValidator
 from typing_extensions import Annotated
 
 from everyvoice.utils import (
+    directory_path_must_exist,
     load_config_from_json_or_yaml_path,
     path_is_a_directory,
-    path_must_exist,
     relative_to_absolute_path,
 )
 
@@ -117,6 +117,6 @@ PossiblyRelativePath = Annotated[Path, BeforeValidator(relative_to_absolute_path
 PossiblyRelativePathMustExist = Annotated[
     Path,
     BeforeValidator(path_is_a_directory),
-    BeforeValidator(path_must_exist),
+    BeforeValidator(directory_path_must_exist),
     BeforeValidator(relative_to_absolute_path),
 ]
