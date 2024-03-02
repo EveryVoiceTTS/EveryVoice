@@ -5,7 +5,7 @@ from os import path
 
 from setuptools import find_packages, setup
 
-# Ugly hack to read the current version number without importing g2p:
+# Ugly hack to read the current version number without importing everyvoice:
 with open("everyvoice/_version.py", "r", encoding="utf8") as version_file:
     namespace: dict = {}
     exec(version_file.read(), namespace)
