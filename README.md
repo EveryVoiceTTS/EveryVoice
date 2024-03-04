@@ -7,6 +7,10 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
 
 ## Quickstart
 
+### Install conda
+
+First, you'll need to install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [conda](https://docs.conda.io/projects/conda/en/stable/).
+
 ### Clone the repo
 
 ```sh
@@ -30,47 +34,13 @@ Add the option `--cuda CUDA_VERSION` if you need to override the default CUDA ve
 
 ### Environment and installation – manual
 
-#### Create the environment
-
-Use conda to create a new environment based on Python 3.10, replacing `cu118` below (for
-CUDA 11.8) by your actual CUDA version tag (118 or higher), or by `cpu` for a CPU-only installation:
-
-```sh
-conda create --name EveryVoice python=3.10
-conda activate EveryVoice
-CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-pip install cython
-conda install sox -c conda-forge
-```
-
-Installation will require a fair bit of space on `~/.cache` and your `$TMPDIR`
-(`/tmp` by default, if `$TMPDIR` is not set).  If you get the error
-`OSError: [Errno 28] No space left on device` during installation, you may need
-to do one or both of these operations:
- - `export TMPDIR=/path/to/a/large/tmp/space` (or maybe `export TMPDIR=.`)
- - `mkdir /path/to/a/large/filesystem/.cache; ln -s /path/to/a/large/filesystem/.cache ~/.cache`
-
-#### Install
-
-Install EveryVoice locally from your cloned sandbox:
-
-```sh
-pip install -e .
-```
-
-#### Dev dependencies
-
-Before you can run the test suites, you'll also need to install the dev dependencies:
-
-```sh
-pip install -r requirements.dev.txt
-```
+If the automated installation process does not work for you, or if you prefer to do the full installation manually, please refer to [EveryVoice / Installation](https://docs.everyvoice.ca/latest/install/#manual-installation).
 
 ### Documentation
 
 Read the full [EveryVoice documentation](https://docs.everyvoice.ca/).
 
-In particular, read the [Guides](https://docs.everyvoice.ca/guides/index.html) to get familiar with the whole process.
+In particular, read the [Guides](https://docs.everyvoice.ca/latest/guides/custom/) to get familiar with the whole process.
 
 ## Contributing
 
