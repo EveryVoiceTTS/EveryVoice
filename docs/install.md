@@ -1,6 +1,6 @@
 # Installation
 
-In order to train on GPUs, you must install PyTorch and Cuda, Python 3.10 or more recent, a number of other dependencies, and EveryVoice itself.
+In order to use EveryVoice on GPUs, you must install PyTorch and Cuda, Python 3.10 or more recent, a number of other dependencies, and EveryVoice itself. The following sections describe three ways to accomplish this:
 
 ## Using Pip
 
