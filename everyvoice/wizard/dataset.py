@@ -515,23 +515,29 @@ class SoxEffectsStep(Step):
             0: ["rate", "22050"],
             1: ["norm", "-3.0"],
             2: [
-                "silence",
-                "1",
-                "0.1",
-                "0.1%",
-                "reverse",  # reverse the clip to trim silence from end
-                "silence",
-                "1",
-                "0.1",
-                "0.1%",
-                "reverse",  # reverse the clip again to revert to the right direction :)
+                [
+                    "silence",
+                    "1",
+                    "0.1",
+                    "0.1%",
+                ],
+                ["reverse"],  # reverse the clip to trim silence from end
+                ["silence", "1", "0.1", "0.1%"],
+                [
+                    "reverse"
+                ],  # reverse the clip again to revert to the right direction :)
             ],
             3: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
         }
         self.state["sox_effects"] = [["channel", "1"]]
         if self.response:
             for effect in self.response:
-                self.state["sox_effects"].append(audio_effects[effect])
+                if (
+                    effect == 2
+                ):  # trimming leading and trailing silence is now a list of lists.
+                    self.state["sox_effects"] += audio_effects[effect]
+                else:
+                    self.state["sox_effects"].append(audio_effects[effect])
 
 
 class SymbolSetStep(Step):
