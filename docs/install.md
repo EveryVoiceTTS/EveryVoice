@@ -6,7 +6,7 @@ In order to use EveryVoice on GPUs, you must install PyTorch and Cuda, Python 3.
 
 We hope direct installation from PyPI will work:
 
- - Follow the [PyTorch installation instructions](https://pytorch.org/get-started/locally/) relevant to your hardware.
+ - Follow the [PyTorch installation instructions](https://pytorch.org/get-started/locally/) relevant to your hardware, but specify version 2.1.0: `torch==2.1.0`, and `torchaudio==2.1.0`.
 
  - Install EveryVoice:
 
@@ -57,6 +57,7 @@ CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://downlo
 ```
 
 Alternatively, you can follow the [PyTorch installation instructions](https://pytorch.org/get-started/locally/) relevant to your hardware.
+Make sure you specify the version declared in `requirements.torch.txt`, which is 2.1.0 at the moment.
 
 ### Other potentially tricky dependencies
 
