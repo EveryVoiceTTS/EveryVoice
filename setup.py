@@ -42,7 +42,7 @@ for submodule_path in SUBMODULE_PATHS:
 
 setup(
     name="everyvoice",
-    python_requires=">=3.10",
+    python_requires=">=3.10, <3.12",
     version=VERSION,
     author="Aidan Pine",
     author_email="hello@aidanpine.ca",
@@ -59,6 +59,8 @@ setup(
     zip_safe=False,
     classifiers=[
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: MIT License",
         "Operating System :: POSIX :: Linux",
         "Operating System :: MacOS",
