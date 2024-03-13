@@ -969,7 +969,7 @@
 <p>We hope direct installation from PyPI will work:</p>
 <ul>
 <li>
-<p>Follow the <a href="https://pytorch.org/get-started/locally/">PyTorch installation instructions</a> relevant to your hardware.</p>
+<p>Follow the <a href="https://pytorch.org/get-started/locally/">PyTorch installation instructions</a> relevant to your hardware, but specify version 2.1.0: <code>torch==2.1.0</code>, and <code>torchaudio==2.1.0</code>.</p>
 </li>
 <li>
 <p>Install EveryVoice:</p>
@@ -1005,7 +1005,8 @@ conda<span class="w"> </span>activate<span class="w"> </span>EveryVoice
 CUDA 11.8) by your actual CUDA version tag (118 or higher), or by <code>cpu</code> for a CPU-only installation:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">CUDA_TAG</span><span class="o">=</span>cu118<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.torch.txt<span class="w"> </span>--find-links<span class="w"> </span>https://download.pytorch.org/whl/torch_stable.html
 </code></pre></div>
-<p>Alternatively, you can follow the <a href="https://pytorch.org/get-started/locally/">PyTorch installation instructions</a> relevant to your hardware.</p>
+<p>Alternatively, you can follow the <a href="https://pytorch.org/get-started/locally/">PyTorch installation instructions</a> relevant to your hardware.
+Make sure you specify the version declared in <code>requirements.torch.txt</code>, which is 2.1.0 at the moment.</p>
 <h3 id="other-potentially-tricky-dependencies">Other potentially tricky dependencies<a class="headerlink" href="#other-potentially-tricky-dependencies" title="Permanent link">&para;</a></h3>
 <p>These requirements sometimes require being run separately:
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>cython
