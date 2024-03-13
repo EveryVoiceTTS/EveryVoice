@@ -4,6 +4,7 @@ import tempfile
 from pathlib import Path
 
 import torch
+import torchaudio
 from pydantic_core._pydantic_core import ValidationError
 from torch import float32
 
@@ -89,6 +90,56 @@ class PreprocessingTest(BasicTestCase):
             )
             self.assertEqual(sr, 22050)
             self.assertEqual(audio.dtype, float32)
+
+    def test_remove_silence(self):
+        audio_path_with_silence = str(
+            self.data_dir / ("440tone-with-leading-trailing-silence.wav")
+        )
+        config = FeaturePredictionConfig(contact=self.contact)
+        sox_effects = config.preprocessing.source_data[0].sox_effects + [
+            [
+                "silence",
+                "1",
+                "0.1",
+                "0.1%",
+            ],
+            ["reverse"],  # reverse the clip to trim silence from end
+            ["silence", "1", "0.1", "0.1%"],
+            ["reverse"],  # reverse the clip again to revert to the right direction :)
+        ]
+        raw_audio, raw_sr = torchaudio.load(audio_path_with_silence)
+        processed_audio, processed_sr = self.preprocessor.process_audio(
+            audio_path_with_silence,
+            use_effects=True,
+            sox_effects=sox_effects,
+        )
+        self.assertEqual(
+            raw_sr, processed_sr, "Sampling Rate should not be changed by default"
+        )
+        self.assertEqual(
+            raw_audio.size()[1] / raw_sr,
+            3.5,
+            "Should be exactly 3.5 seconds of audio at 44100 Hz sampling rate",
+        )
+        self.assertAlmostEqual(
+            processed_audio.size()[0] / processed_sr,
+            2.5,
+            4,
+            msg="Should be about half a second of silence removed from the beginning and end",
+        )
+        # should work with resampling too
+        rs_processed_audio, rs_processed_sr = self.preprocessor.process_audio(
+            audio_path_with_silence,
+            use_effects=True,
+            resample_rate=22050,
+            sox_effects=sox_effects,
+        )
+        self.assertAlmostEqual(
+            rs_processed_audio.size()[0] / rs_processed_sr,
+            2.5,
+            4,
+            msg="Should be about half a second of silence removed from the beginning and end when resampled too",
+        )
 
     def test_process_empty_audio(self):
         for fn in ["empty.wav", "zeros.wav"]:

@@ -415,13 +415,15 @@ class WizardTest(TestCase):
                     "1",
                     "0.1",
                     "0.1%",
-                    "reverse",
+                ],
+                ["reverse"],
+                [
                     "silence",
                     "1",
                     "0.1",
                     "0.1%",
-                    "reverse",
                 ],
+                ["reverse"],
             ],
         )
 
