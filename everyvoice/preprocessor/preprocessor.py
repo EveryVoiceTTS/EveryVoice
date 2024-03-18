@@ -115,7 +115,7 @@ class Preprocessor:
         self,
         wav_path: Path,
         normalize=True,
-        use_effects=False,
+        use_effects=True,
         resample_rate=None,
         sox_effects=None,
         save_wave=False,
