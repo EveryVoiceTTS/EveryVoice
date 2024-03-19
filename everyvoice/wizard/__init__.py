@@ -34,7 +34,7 @@ class _Step:
             f"This step ({self.name}) doesn't have a prompt method implemented. Please implement one."
         )
 
-    def validate(self, response):
+    def validate(self, response) -> bool:
         """Validate the response.
 
         Raises:
