@@ -1,21 +1,20 @@
 import re
 from collections import Counter
 from itertools import chain
-from typing import Dict, List, Union
+from typing import Dict, List
 
 from loguru import logger
 from nltk.tokenize import RegexpTokenizer
 
+from everyvoice.config.text_config import TextConfig
 from everyvoice.exceptions import ConfigError
-from everyvoice.model.aligner.config import AlignerConfig
-from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.text.features import get_features
 
 
 class TextProcessor:
-    def __init__(self, config: Union[AlignerConfig, FeaturePredictionConfig]):
+    def __init__(self, config: TextConfig):
         self.config = config
-        self._all_symbols = self.config.text.symbols.model_dump()
+        self._all_symbols = self.config.symbols.model_dump()
         if "pad" in self._all_symbols:
             assert isinstance(self._all_symbols["pad"], str)
         self._pad_symbol = self._all_symbols["pad"]
@@ -31,7 +30,7 @@ class TextProcessor:
         )
         self.symbols.insert(0, self._pad_symbol)
 
-        self.to_replace = config.text.model_dump().get("to_replace", {})
+        self.to_replace = config.to_replace
         self.missing_symbols: Counter[str] = Counter()
         self.duplicate_symbols: Counter[str] = Counter()
 
@@ -98,7 +97,7 @@ class TextProcessor:
     def clean_text(self, text: str) -> str:
         """Converts some text to cleaned text"""
         text = self.replace_cleaner(text)
-        for cleaner_fn in self.config.text.cleaners:
+        for cleaner_fn in self.config.cleaners:
             try:
                 text = cleaner_fn(text)
             except Exception as e:

@@ -19,10 +19,7 @@ class TextTest(BasicTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.base_text_processor = TextProcessor(
-            FeaturePredictionConfig(
-                contact=self.contact,
-                text=TextConfig(symbols=Symbols(letters=string.ascii_letters)),
-            )
+            TextConfig(symbols=Symbols(letters=string.ascii_letters)),
         )
 
     def test_text_to_sequence(self):
@@ -101,7 +98,7 @@ class TextTest(BasicTestCase):
                 )
             ),
         )
-        moh_text_processor = TextProcessor(moh_config)
+        moh_text_processor = TextProcessor(moh_config.text)
         tokens = moh_text_processor.text_to_tokens("shéːkon")
         feats = moh_text_processor.text_to_phonological_features("shéːkon")
         self.assertEqual(len(tokens), len(feats))
@@ -113,34 +110,19 @@ class TextTest(BasicTestCase):
 
     def test_duplicate_symbols(self):
         duplicate_symbols_text_processor = TextProcessor(
-            FeaturePredictionConfig(
-                contact=self.contact,
-                text=TextConfig(
-                    symbols=Symbols(letters=string.ascii_letters, duplicate=["e"])
-                ),
-            )
+            TextConfig(symbols=Symbols(letters=string.ascii_letters, duplicate=["e"]))
         )
         self.assertIn("e", duplicate_symbols_text_processor.duplicate_symbols)
 
     def test_bad_symbol_configuration(self):
         with self.assertRaises(TypeError):
             TextProcessor(
-                FeaturePredictionConfig(
-                    contact=self.contact,
-                    text=TextConfig(
-                        symbols=Symbols(letters=string.ascii_letters, bad=[1])
-                    ),
-                )
+                TextConfig(symbols=Symbols(letters=string.ascii_letters, bad=[1]))
             )
 
     def test_dipgrahs(self):
         digraph_text_processor = TextProcessor(
-            FeaturePredictionConfig(
-                contact=self.contact,
-                text=TextConfig(
-                    symbols=Symbols(letters=string.ascii_letters, digraph=["ee"])
-                ),
-            )
+            TextConfig(symbols=Symbols(letters=string.ascii_letters, digraph=["ee"]))
         )
         text = "ee"  # should be treated as "ee" and not two instances of "e"
         sequence = digraph_text_processor.text_to_sequence(text)
@@ -149,12 +131,7 @@ class TextTest(BasicTestCase):
     def test_normalization(self):
         # This test doesn't really test very much, but just here to highlight that base cleaning involves NFC
         accented_text_processor = TextProcessor(
-            FeaturePredictionConfig(
-                contact=self.contact,
-                text=TextConfig(
-                    symbols=Symbols(letters=string.ascii_letters, accented=["é"])
-                ),
-            )
+            TextConfig(symbols=Symbols(letters=string.ascii_letters, accented=["é"])),
         )
         text = "he\u0301llo world"
         sequence = accented_text_processor.text_to_sequence(text)
