@@ -20,7 +20,7 @@ class E2EDataset(Dataset):
         self.use_segments = use_segments
         self.lookup = LookupTables(config)
         self.sep = "--"
-        self.text_processor = TextProcessor(config.feature_prediction)
+        self.text_processor = TextProcessor(config.feature_prediction.text)
         self.preprocessed_dir = Path(
             self.config.feature_prediction.preprocessing.save_dir
         )

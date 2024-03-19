@@ -15,7 +15,7 @@ from everyvoice.config.utils import (
 from everyvoice.utils import generic_dict_loader, load_config_from_json_or_yaml_path
 
 
-class AudioSpecTypeEnum(Enum):
+class AudioSpecTypeEnum(str, Enum):
     mel = "mel"  # TorchAudio implementation
     mel_librosa = "mel-librosa"  # Librosa implementation
     linear = "linear"  # TorchAudio Linear Spectrogram
