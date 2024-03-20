@@ -15,6 +15,12 @@ from everyvoice.config.utils import (
 from everyvoice.utils import generic_dict_loader, load_config_from_json_or_yaml_path
 
 
+class DatasetTextRepresentation(str, Enum):
+    characters = "characters"
+    ipa_phones = "ipa_phones"
+    arpabet = "arpabet"  # always gets mapped to phones
+
+
 class AudioSpecTypeEnum(str, Enum):
     mel = "mel"  # TorchAudio implementation
     mel_librosa = "mel-librosa"  # Librosa implementation
@@ -92,6 +98,10 @@ class AudioConfig(ConfigModel):
 
 
 class Dataset(PartialLoadConfig):
+    dataset_text_representation: DatasetTextRepresentation = Field(
+        DatasetTextRepresentation.characters,
+        description="The level of representation used in the text of your Dataset.",
+    )
     label: str = Field("YourDataSet", description="A label for the source of data")
     data_dir: PossiblyRelativePath = Field(
         Path("/please/create/a/path/to/your/dataset/data"),

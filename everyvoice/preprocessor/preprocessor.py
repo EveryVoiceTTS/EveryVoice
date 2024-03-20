@@ -35,7 +35,7 @@ from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor.attention_prior import BetaBinomialInterpolator
 from everyvoice.preprocessor.helpers import Counters, Scaler, save_tensor
-from everyvoice.text import TextProcessor
+from everyvoice.text.text_processor import TextProcessor
 from everyvoice.utils import (
     generic_dict_loader,
     n_times,
@@ -292,12 +292,12 @@ class Preprocessor:
         """
         if text_processor is None:
             raise ValueError("Text processor not initialized")
-        if use_pfs:
-            return torch.Tensor(
-                text_processor.text_to_phonological_features(text, quiet)
-            ).long()
-        else:
-            return torch.Tensor(text_processor.text_to_sequence(text, quiet)).long()
+        # TODO: to use pfs, we'll need to pass in the lang_id as well
+        return torch.Tensor(
+            text_processor.encode_text(
+                text=text, quiet=quiet, encode_as_phonological_features=use_pfs
+            )
+        ).long()
 
     def print_duration(self):
         """Convert seconds to a human readable format"""
@@ -679,7 +679,7 @@ class Preprocessor:
             data_point = {k: v for k, v in item.items()}
             raw_text = item["text"]
             n_words = len(raw_text.split(word_seg_token))
-            n_chars = len(self.text_processor.text_to_sequence(raw_text))
+            n_chars = len(self.text_processor.encode_text(raw_text))
             audio = torch.load(
                 self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.pt")
             )

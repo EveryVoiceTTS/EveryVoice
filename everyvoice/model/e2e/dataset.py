@@ -7,8 +7,8 @@ from torch.utils.data import Dataset
 
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.model.e2e.config import EveryVoiceConfig
-from everyvoice.text import TextProcessor
 from everyvoice.text.lookups import LookupTables
+from everyvoice.text.text_processor import TextProcessor
 from everyvoice.utils import _flatten, check_dataset_size
 from everyvoice.utils.heavy import get_segments
 
