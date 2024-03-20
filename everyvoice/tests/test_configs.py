@@ -278,14 +278,9 @@ class ConfigTest(BasicTestCase):
     def test_changes(self):
         """Test that the changes to the config are correct"""
         self.config.update_config(
-            {"feature_prediction": {"text": {"symbols": {"pad": "FOO"}}}}
-        )
-        self.assertEqual(self.config.feature_prediction.text.symbols.pad, "FOO")
-        self.config.update_config(
             {"feature_prediction": {"text": {"cleaners": ["everyvoice.utils.lower"]}}}
         )
         self.assertEqual(self.config.feature_prediction.text.cleaners, [lower])
-        self.assertEqual(self.config.feature_prediction.text.symbols.pad, "FOO")
 
     def test_load_empty_config(self):
         with tempfile.NamedTemporaryFile(prefix="test", mode="w", suffix=".yaml") as tf:

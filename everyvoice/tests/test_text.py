@@ -8,9 +8,9 @@ from unittest import TestCase
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.text import TextProcessor
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
+from everyvoice.text.text_processor import TextProcessor
 from everyvoice.utils import generic_dict_loader
 
 
@@ -25,37 +25,33 @@ class TextTest(BasicTestCase):
 
     def test_text_to_sequence(self):
         text = "hello world"
-        sequence = self.base_text_processor.text_to_sequence(text)
-        self.assertEqual(
-            self.base_text_processor.token_sequence_to_text(sequence), text
-        )
+        sequence = self.base_text_processor.encode_text(text)
+        self.assertEqual(self.base_text_processor.decode_tokens(sequence), text)
 
     def test_token_sequence_to_text(self):
         sequence = [10, 7, 14, 14, 17, 1, 25, 17, 20, 14, 6]
-        self.assertEqual(
-            self.base_text_processor.text_to_sequence("hello world"), sequence
-        )
+        self.assertEqual(self.base_text_processor.encode_text("hello world"), sequence)
 
     def test_hardcoded_symbols(self):
         self.assertEqual(
-            self.base_text_processor.text_to_sequence("_ "),
+            self.base_text_processor.encode_text("\x80 "),
             [0, 1],
-            "pad should be underscore and index 0, whitespace should be index 1",
+            "pad should be Unicode PAD symbol and index 0, whitespace should be index 1",
         )
 
     def test_cleaners(self):
         text = "hello world"
         text_upper = "HELLO WORLD"
-        sequence = self.base_text_processor.text_to_sequence(text_upper)
-        self.assertEqual(
-            self.base_text_processor.token_sequence_to_text(sequence), text
-        )
+        sequence = self.base_text_processor.encode_text(text_upper)
+        self.assertEqual(self.base_text_processor.decode_tokens(sequence), text)
 
     def test_punctuation(self):
         text = "hello! How are you? My name's: foo;."
-        tokens = self.base_text_processor.text_to_tokens(text)
+        tokens = self.base_text_processor.apply_tokenization(
+            self.base_text_processor.normalize_text(text)
+        )
         self.assertEqual(
-            self.base_text_processor.punctuation_cleaner(tokens),
+            self.base_text_processor.apply_punctuation_rules(tokens),
             [
                 "h",
                 "e",
@@ -116,7 +112,7 @@ class TextTest(BasicTestCase):
                         "aː",
                         "ʌ̃",
                         "èː",
-                        "éː",
+                        "éː",
                         "iː",
                         "íː",
                         "ìː",
@@ -136,7 +132,7 @@ class TextTest(BasicTestCase):
                         "k",
                         "n",
                         "ṹ",
-                        "ũ",
+                        "ũ",
                         "ó",
                         "o",
                         "r",
@@ -152,14 +148,23 @@ class TextTest(BasicTestCase):
             ),
         )
         moh_text_processor = TextProcessor(moh_config.text)
-        tokens = moh_text_processor.text_to_tokens("shéːkon")
-        feats = moh_text_processor.text_to_phonological_features("shéːkon")
-        self.assertEqual(len(tokens), len(feats))
+        normalized_text = moh_text_processor.normalize_text("shéːkon")
+        one_hot_tokens = moh_text_processor.encode_text(
+            normalized_text, quiet=True
+        )  # this finds ː as OOV
+        g2p_tokens = moh_text_processor.encode_text(
+            normalized_text, lang_id="moh", apply_g2p=True
+        )
+        feats = moh_text_processor.encode_text(
+            normalized_text,
+            lang_id="moh",
+            apply_g2p=True,
+            encode_as_phonological_features=True,
+        )
+        self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens), "séːɡũ")
+        self.assertEqual(len(g2p_tokens), len(feats))
+        self.assertNotEqual(len(g2p_tokens), len(one_hot_tokens))
         self.assertEqual(len(feats[0]), moh_config.model.phonological_feats_size)
-        extra_tokens = moh_text_processor.text_to_tokens("shéːkon7")
-        extra_feats = moh_text_processor.text_to_phonological_features("shéːkon7")
-        self.assertEqual(len(feats), len(extra_feats))
-        self.assertEqual(len(extra_feats), len(extra_tokens))
 
     def test_duplicate_symbols(self):
         duplicate_symbols_text_processor = TextProcessor(
@@ -178,7 +183,7 @@ class TextTest(BasicTestCase):
             TextConfig(symbols=Symbols(letters=string.ascii_letters, digraph=["ee"]))
         )
         text = "ee"  # should be treated as "ee" and not two instances of "e"
-        sequence = digraph_text_processor.text_to_sequence(text)
+        sequence = digraph_text_processor.encode_text(text)
         self.assertEqual(len(sequence), 1)
 
     def test_normalization(self):
@@ -187,21 +192,17 @@ class TextTest(BasicTestCase):
             TextConfig(symbols=Symbols(letters=string.ascii_letters, accented=["é"])),
         )
         text = "he\u0301llo world"
-        sequence = accented_text_processor.text_to_sequence(text)
-        self.assertNotEqual(
-            accented_text_processor.token_sequence_to_text(sequence), text
-        )
+        sequence = accented_text_processor.encode_text(text)
+        self.assertNotEqual(accented_text_processor.decode_tokens(sequence), text)
         self.assertEqual(
-            accented_text_processor.token_sequence_to_text(sequence),
+            accented_text_processor.decode_tokens(sequence),
             normalize("NFC", text),
         )
 
     def test_missing_symbol(self):
         text = "h3llo world"
-        sequence = self.base_text_processor.text_to_sequence(text)
-        self.assertNotEqual(
-            self.base_text_processor.token_sequence_to_text(sequence), text
-        )
+        sequence = self.base_text_processor.encode_text(text)
+        self.assertNotEqual(self.base_text_processor.decode_tokens(sequence), text)
         self.assertIn("3", self.base_text_processor.missing_symbols)
         self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
 
@@ -320,12 +321,28 @@ class TestG2p(BasicTestCase):
     def test_basic_g2p(self):
         eng_g2p = get_g2p_engine("eng")
         self.assertEqual(
-            eng_g2p("hello world"), ["h", "ʌ", "l", "o", "ʊ", "w", "ɜ˞", "l", "d"]
+            eng_g2p("hello world"), ["h", "ʌ", "l", "o", "ʊ", " ", "w", "ɜ˞", "l", "d"]
         )
         # keep's punctuation
         self.assertEqual(
             eng_g2p('hello "world"!!?'),
-            ["h", "ʌ", "l", "o", "ʊ", '"', "w", "ɜ˞", "l", "d", '"', "!", "!", "?"],
+            [
+                "h",
+                "ʌ",
+                "l",
+                "o",
+                "ʊ",
+                " ",
+                '"',
+                "w",
+                "ɜ˞",
+                "l",
+                "d",
+                '"',
+                "!",
+                "!",
+                "?",
+            ],
         )
         # another language
         str_g2p = get_g2p_engine("str")

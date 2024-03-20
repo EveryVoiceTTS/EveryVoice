@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -8,35 +8,31 @@ from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 
 
 class Punctuation(BaseModel):
-    exclamations: List[str] = Field(
+    exclamations: list[str] = Field(
         ["!", "¡"],
         description="Exclamation punctuation symbols used in your datasets. Replaces these symbols with <EXCL> internally.",
     )
-    question_symbols: List[str] = Field(
+    question_symbols: list[str] = Field(
         ["?", "¿"],
         description="Question/interrogative punctuation symbols used in your datasets. Replaces these symbols with <QINT> internally.",
     )
-    quotemarks: List[str] = Field(
+    quotemarks: list[str] = Field(
         ['"', "'", "“", "”", "«", "»"],
         description="Quotemark punctuation symbols used in your datasets. Replaces these symbols with <QUOTE> internally.",
     )
-    big_breaks: List[str] = Field(
+    big_breaks: list[str] = Field(
         [".", ":", ";", "…"],
         description="Punctuation symbols indicating a 'big break' used in your datasets. Replaces these symbols with <BB> internally.",
     )
-    small_breaks: List[str] = Field(
+    small_breaks: list[str] = Field(
         [",", "-", "—"],
         description="Punctuation symbols indicating a 'small break' used in your datasets. Replaces these symbols with <SB> internally.",
     )
 
 
 class Symbols(BaseModel):
-    silence: Union[str, List[str]] = Field(
+    silence: list[str] = Field(
         ["<SIL>"], description="The symbol(s) used to indicate silence."
-    )
-    pad: str = Field(
-        "_",
-        description="The symbol used to indicate padding. Batches are length-normalized by adding this padding character so that each utterance in the batch is the same length.",
     )
     punctuation: Punctuation = Field(
         default_factory=Punctuation,
@@ -48,7 +44,7 @@ class Symbols(BaseModel):
 class TextConfig(ConfigModel):
     symbols: Symbols = Field(default_factory=Symbols)
     to_replace: Dict[str, str] = {}  # Happens before cleaners
-    cleaners: List[PossiblySerializedCallable] = [
+    cleaners: list[PossiblySerializedCallable] = [
         lower,
         collapse_whitespace,
         nfc_normalize,
