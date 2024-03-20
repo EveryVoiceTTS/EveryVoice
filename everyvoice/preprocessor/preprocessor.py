@@ -4,6 +4,7 @@
     - extracts energy
     - extracts inputs (ex. phonological feats)
 """
+
 import functools
 import multiprocessing as mp
 import random
@@ -321,9 +322,11 @@ class Preprocessor:
             ],
             [
                 "duplicate symbols",
-                len(self.text_processor.duplicate_symbols)
-                if self.text_processor
-                else 0,
+                (
+                    len(self.text_processor.duplicate_symbols)
+                    if self.text_processor
+                    else 0
+                ),
             ],
             ["skipped processes", self.counters.value("skipped_processes")],
             ["nans", self.counters.value("nans")],
