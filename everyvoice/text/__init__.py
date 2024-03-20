@@ -22,14 +22,43 @@ class TextProcessor:
         self.symbols = sorted(
             list(
                 chain.from_iterable(
-                    list(v) for k, v in self._all_symbols.items() if k != "pad"
+                    list(v)
+                    for k, v in self._all_symbols.items()
+                    if k not in ("pad", "punctuation")
                 )
             ),
             key=len,
             reverse=True,
         )
         self.symbols.insert(0, self._pad_symbol)
+        # Add whitespace
+        self.symbols.insert(1, " ")
+        # Add punctuation
+        # Add an internal hash to convert from the type of Punctuation to the internal representation
+        self.punctuation_internal_hash = {
+            "exclamations": "<EXCL>",
+            "question_symbols": "<QINT>",
+            "quotemarks": "<QUOTE>",
+            "big_breaks": "<BB>",
+            "small_breaks": "<SB>",
+        }
+        # Create a hash table from punctuation to the internal ID
+        self.punctuation_to_internal_id = {}
+        self.punctuation_characters = []
+        for (
+            punctuation_type,
+            punctuation_type_values,
+        ) in self.config.symbols.punctuation.model_dump().items():
+            self.punctuation_characters += punctuation_type_values
+            self.punctuation_to_internal_id.update(
+                {
+                    v: self.punctuation_internal_hash[punctuation_type]
+                    for v in punctuation_type_values
+                }
+            )
 
+        # Add the internal punctuation IDs to the symbols list
+        self.symbols += list(self.punctuation_internal_hash.values())
         self.to_replace = config.to_replace
         self.missing_symbols: Counter[str] = Counter()
         self.duplicate_symbols: Counter[str] = Counter()
@@ -48,13 +77,29 @@ class TextProcessor:
                 self._id_to_symbol[i] = s
 
         self._tokenizer = RegexpTokenizer(
-            "|".join([re.escape(x) for x in self.symbols])
+            "|".join([re.escape(x) for x in self.symbols + self.punctuation_characters])
         )
         self._missing_symbol_finder = RegexpTokenizer(
-            "|".join([re.escape(x) for x in self.symbols]),
+            "|".join(
+                [re.escape(x) for x in self.symbols + self.punctuation_characters]
+            ),
             gaps=True,
             discard_empty=True,
         )
+
+    def punctuation_cleaner(self, tokenized_text: list[str]) -> list[str]:
+        """Given some text, normalize all punctuation according to internal representation
+
+        Args:
+            text (list[str]): tokenized text with punctuation
+
+        Returns:
+            list[str]: tokenized text with normalized punctuation
+        """
+        return [
+            self.punctuation_to_internal_id.get(token, token)
+            for token in tokenized_text
+        ]
 
     def replace_cleaner(self, text: str) -> str:
         """Given some text and a list of replacement operations in the form of input/output key value pairs,
