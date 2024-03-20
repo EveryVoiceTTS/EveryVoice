@@ -10,6 +10,7 @@ from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.text import TextProcessor
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
+from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
 from everyvoice.utils import generic_dict_loader
 
 
@@ -30,9 +31,16 @@ class TextTest(BasicTestCase):
         )
 
     def test_token_sequence_to_text(self):
-        sequence = [27, 24, 31, 31, 34, 19, 42, 34, 37, 31, 23]
+        sequence = [10, 7, 14, 14, 17, 1, 25, 17, 20, 14, 6]
         self.assertEqual(
             self.base_text_processor.text_to_sequence("hello world"), sequence
+        )
+
+    def test_hardcoded_symbols(self):
+        self.assertEqual(
+            self.base_text_processor.text_to_sequence("_ "),
+            [0, 1],
+            "pad should be underscore and index 0, whitespace should be index 1",
         )
 
     def test_cleaners(self):
@@ -41,6 +49,51 @@ class TextTest(BasicTestCase):
         sequence = self.base_text_processor.text_to_sequence(text_upper)
         self.assertEqual(
             self.base_text_processor.token_sequence_to_text(sequence), text
+        )
+
+    def test_punctuation(self):
+        text = "hello! How are you? My name's: foo;."
+        tokens = self.base_text_processor.text_to_tokens(text)
+        self.assertEqual(
+            self.base_text_processor.punctuation_cleaner(tokens),
+            [
+                "h",
+                "e",
+                "l",
+                "l",
+                "o",
+                "<EXCL>",
+                " ",
+                "h",
+                "o",
+                "w",
+                " ",
+                "a",
+                "r",
+                "e",
+                " ",
+                "y",
+                "o",
+                "u",
+                "<QINT>",
+                " ",
+                "m",
+                "y",
+                " ",
+                "n",
+                "a",
+                "m",
+                "e",
+                "<QUOTE>",
+                "s",
+                "<BB>",
+                " ",
+                "f",
+                "o",
+                "o",
+                "<BB>",
+                "<BB>",
+            ],
         )
 
     def test_phonological_features(self):
@@ -256,3 +309,29 @@ class LookupTablesTest(TestCase):
             {},
             "Speaker lookup tables differ.",
         )
+
+
+class TestG2p(BasicTestCase):
+    """Test G2P"""
+
+    def test_many_available_langs(self):
+        self.assertGreaterEqual(len(AVAILABLE_G2P_ENGINES), 20)
+
+    def test_basic_g2p(self):
+        eng_g2p = get_g2p_engine("eng")
+        self.assertEqual(
+            eng_g2p("hello world"), ["h", "ʌ", "l", "o", "ʊ", "w", "ɜ˞", "l", "d"]
+        )
+        # keep's punctuation
+        self.assertEqual(
+            eng_g2p('hello "world"!!?'),
+            ["h", "ʌ", "l", "o", "ʊ", '"', "w", "ɜ˞", "l", "d", '"', "!", "!", "?"],
+        )
+        # another language
+        str_g2p = get_g2p_engine("str")
+        self.assertEqual(
+            str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"]
+        )
+        # test lang_id missing
+        with self.assertRaises(NotImplementedError):
+            get_g2p_engine("boop")
