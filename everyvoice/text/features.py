@@ -40,9 +40,7 @@ def get_tone_features(text: List[str]) -> List[List[int]]:
             "ó",
         ]
     ]
-    low_tone_chars = [
-        normalize("NFC", x) for x in ["òː", "ũ̀ː", "ìː", "èː", "ʌ̃̀ː", "àː"]
-    ]
+    low_tone_chars = [normalize("NFC", x) for x in ["òː", "ũ̀ː", "ìː", "èː", "ʌ̃̀ː", "àː"]]
     for char in text:
         char = normalize("NFC", char)
         if char in high_tone_chars:

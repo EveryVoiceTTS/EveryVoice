@@ -61,9 +61,9 @@ class CLITest(TestCase):
         # TODO: Here's a stub for getting synthesis unit tests working
         #       I believe we'll need to also pass a stats object to the created spec_model
         # TODO: add a test for making sure that `preprocessing` and `logs_and_checkpoints` folders don't get created.
-        os.environ[
-            "PYTORCH_ENABLE_MPS_FALLBACK"
-        ] = "1"  # Fallback for running tests on Mac
+        os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
+            "1"  # Fallback for running tests on Mac
+        )
         import random
 
         import torch

@@ -1,6 +1,7 @@
 """
 CLI command to inspect EveryVoice's checkpoints.
 """
+
 import json
 import warnings
 from collections import defaultdict
