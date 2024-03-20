@@ -614,7 +614,7 @@ class WizardTest(TestCase):
                 "monkey tour 1",
                 [
                     StepAndAnswer(basic.NameStep(), Say("my-dataset-name")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdirname)),
+                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdirname))),
                 ],
             )
         self.assertEqual(tour.state[SN.name_step.value], "my-dataset-name")
@@ -626,10 +626,10 @@ class WizardTest(TestCase):
             tour = self.monkey_run_tour(
                 "monkey tour 2",
                 [
-                    StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
+                    StepAndAnswer(dataset.WavsDirStep(), Say(str(data_dir))),
                     StepAndAnswer(
                         dataset.FilelistStep(),
-                        Say(data_dir / "metadata.csv"),
+                        Say(str(data_dir / "metadata.csv")),
                     ),
                     StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
                     StepAndAnswer(
@@ -673,13 +673,14 @@ class WizardTest(TestCase):
                     StepAndAnswer(basic.NameStep(), Say("project")),
                     StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
                     StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
+                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
                     StepAndAnswer(
-                        dataset.WavsDirStep(state_subset="dataset_0"), Say(data_dir)
+                        dataset.WavsDirStep(state_subset="dataset_0"),
+                        Say(str(data_dir)),
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        Say(data_dir / "language-col.tsv"),
+                        Say(str(data_dir / "language-col.tsv")),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(state_subset="dataset_0"), Say("tsv")
@@ -740,13 +741,13 @@ class WizardTest(TestCase):
                     StepAndAnswer(basic.NameStep(), Say("project")),
                     StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
                     StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
+                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
                     StepAndAnswer(
-                        dataset.WavsDirStep(state_subset="dataset_0"), Say(tmpdir)
+                        dataset.WavsDirStep(state_subset="dataset_0"), Say(str(tmpdir))
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        Say(tmpdir / "filelist.psv"),
+                        Say(str(tmpdir / "filelist.psv")),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(state_subset="dataset_0"),
@@ -812,11 +813,11 @@ class WizardTest(TestCase):
                     StepAndAnswer(basic.NameStep(), Say("project")),
                     StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
                     StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
-                    StepAndAnswer(dataset.WavsDirStep(), Say(tmpdir)),
+                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
+                    StepAndAnswer(dataset.WavsDirStep(), Say(str(tmpdir))),
                     StepAndAnswer(
                         dataset.FilelistStep(),
-                        Say(tmpdir / "filelist.psv"),
+                        Say(str(tmpdir / "filelist.psv")),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(),
