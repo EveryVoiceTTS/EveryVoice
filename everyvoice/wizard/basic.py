@@ -45,9 +45,9 @@ class NameStep(Step):
     DEFAULT_NAME = StepNames.name_step
 
     def prompt(self):
-        return questionary.text(
+        return input(
             "What would you like to call this project? This name should reflect the model you intend to train, e.g. 'my-sinhala-project' or 'english-french-model' or something similarly descriptive of your project: "
-        ).unsafe_ask()
+        )
 
     def validate(self, response):
         if len(response) == 0:
@@ -118,14 +118,16 @@ class OutputPathStep(Step):
     DEFAULT_NAME = StepNames.output_step
 
     def prompt(self):
-        path = questionary.path(
+        return questionary.path(
             "Where should the Configuration Wizard save your files?",
             default=".",
             style=CUSTOM_QUESTIONARY_STYLE,
             only_directories=True,
         ).unsafe_ask()
 
-        return path.strip()
+    def sanitize_input(self, response):
+        response = super().sanitize_input(response)
+        return response.strip()
 
     def validate(self, response) -> bool:
         path = Path(response)

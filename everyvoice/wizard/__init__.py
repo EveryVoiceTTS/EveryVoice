@@ -34,6 +34,12 @@ class _Step:
             f"This step ({self.name}) doesn't have a prompt method implemented. Please implement one."
         )
 
+    def sanitize_input(self, response):
+        """
+        Perform data sanitization of user provided input.
+        """
+        return response
+
     def validate(self, response) -> bool:
         """Validate the response.
 
@@ -92,6 +98,7 @@ class Step(_Step, NodeMixin):
         If this method returns something truthy, continue, otherwise ask the prompt again.
         """
         self.response = self.prompt()
+        self.response = self.sanitize_input(self.response)
         if self.validate(self.response):
             self.completed = True
             try:

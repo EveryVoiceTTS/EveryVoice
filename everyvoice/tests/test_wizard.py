@@ -877,16 +877,14 @@ class WizardTest(TestCase):
         with capture_stdout(), tempfile.TemporaryDirectory() as tmpdirname:
             with create_pipe_input() as pipe_input:
                 # NOTE: we use `` to replace the `.` with our path with leading spaces.
-                pipe_input.send_text(
-                    f"output_dir_with_leading_spaces\n  {tmpdirname}\n"
-                )
+                pipe_input.send_text(f"  {tmpdirname}\n")
                 with create_app_session(input=pipe_input, output=DummyOutput()):
                     tour = Tour(
-                        "trimming leading spaces",
-                        [
-                            basic.NameStep(),
+                        name="trimming leading spaces",
+                        steps=[
                             basic.OutputPathStep(),
                         ],
+                        state={SN.name_step.value: "output_dir_with_leading_spaces"},
                     )
                     tour.run()
         self.assertFalse(tour.state[SN.output_step.value].startswith(" "))

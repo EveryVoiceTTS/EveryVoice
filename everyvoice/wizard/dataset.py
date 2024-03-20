@@ -54,13 +54,15 @@ class WavsDirStep(Step):
     DEFAULT_NAME = StepNames.wavs_dir_step
 
     def prompt(self):
-        path = questionary.path(
+        return questionary.path(
             "Where are your audio files?",
             style=CUSTOM_QUESTIONARY_STYLE,
             only_directories=True,
         ).unsafe_ask()
 
-        return path.strip()
+    def sanitize_input(self, response):
+        response = super().sanitize_input(response)
+        return response.strip()
 
     def validate(self, response) -> bool:
         valid_path = validate_path(response, is_dir=True, exists=True)
@@ -106,11 +108,13 @@ class FilelistStep(Step):
     DEFAULT_NAME = StepNames.filelist_step
 
     def prompt(self):
-        path = questionary.path(
+        return questionary.path(
             "Where is your data filelist?", style=CUSTOM_QUESTIONARY_STYLE
         ).unsafe_ask()
 
-        return path.strip()
+    def sanitize_input(self, response):
+        response = super().sanitize_input(response)
+        return response.strip()
 
     def validate(self, response) -> bool:
         return validate_path(response, is_file=True, exists=True)
