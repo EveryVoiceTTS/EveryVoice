@@ -155,12 +155,14 @@ class Preprocessor:
             if update_counters:
                 self.counters.increment("audio_empty")
             return None, None
+
         if use_effects and sox_effects:
             audio, sr = apply_effects_tensor(
                 audio,
                 sr,
                 sox_effects,
             )
+
         if resample_rate is not None and resample_rate != sr:
             audio = resample(audio, sr, resample_rate)
             sr = resample_rate
@@ -439,7 +441,9 @@ class Preprocessor:
             / self.sep.join([item["basename"], item["speaker"], item["language"], fn])
         )
 
-    def process_one_audio(self, item: dict, data_dir) -> Optional[dict]:
+    def process_one_audio(
+        self, item: dict, data_dir, sox_effects: list[list]
+    ) -> Optional[dict]:
         """Process one audio item
 
         Return:
@@ -473,6 +477,7 @@ class Preprocessor:
             input_audio, _ = self.process_audio(
                 audio_path,
                 resample_rate=self.input_sampling_rate,
+                sox_effects=sox_effects,
             )
             if input_audio is None:
                 return None
@@ -486,6 +491,7 @@ class Preprocessor:
             output_audio, _ = self.process_audio(
                 audio_path,
                 resample_rate=self.output_sampling_rate,
+                sox_effects=sox_effects,
                 update_counters=False,
             )
             if output_audio is not None:
@@ -499,6 +505,7 @@ class Preprocessor:
         for dataset in tqdm(self.datasets, total=len(self.datasets), desc="Dataset"):
             data_dir = Path(dataset.data_dir)
             filelist = dataset.filelist_loader(dataset.filelist)
+            sox_effects = dataset.sox_effects
             if self.debug:
                 filelist = filelist[:10]
                 logger.info(
@@ -522,7 +529,7 @@ class Preprocessor:
                         backend="loky",
                         batch_size=batch_size,
                     )(
-                        delayed(self.process_one_audio)(item, data_dir)
+                        delayed(self.process_one_audio)(item, data_dir, sox_effects)
                         for item in filelist
                     )
                 filtered_filelist.extend(
@@ -530,7 +537,7 @@ class Preprocessor:
                 )
             else:
                 for item in tqdm(filelist, desc="Processing Audio on 1 CPU"):
-                    processed_item = self.process_one_audio(item, data_dir)
+                    processed_item = self.process_one_audio(item, data_dir, sox_effects)
                     if processed_item is not None:
                         filtered_filelist.append(processed_item)
         return filtered_filelist

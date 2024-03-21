@@ -529,7 +529,7 @@ class SoxEffectsStep(Step):
             ],
             3: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
         }
-        self.state["sox_effects"] = [["channel", "1"]]
+        self.state["sox_effects"] = [["channels", "1"]]
         if self.response:
             for effect in self.response:
                 if (
