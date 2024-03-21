@@ -29,6 +29,10 @@ from everyvoice.model.aligner.DeepForcedAligner.dfaligner.config import (
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
+    HiFiGANModelConfig,
+    HiFiGANTrainingConfig,
+)
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.utils import (
     expand_config_string_syntax,
@@ -628,3 +632,41 @@ class BaseTrainingConfigTest(TestCase):
                 ckpt_epochs=1,
                 ckpt_steps=1,
             )
+
+
+class HiFiGANModelConfigTest(TestCase):
+    """
+    This class should really be under HiFiGan.
+    """
+
+    def test_invalide_resblock(self):
+        """
+        Validate that we get a nice error message when the user provides a
+        resblock that is not part of the enum's values.
+        """
+        from pydantic_core._pydantic_core import ValidationError
+
+        with self.assertRaisesRegex(
+            ValidationError,
+            r"Input should be '1' or '2' \[type=enum, input_value='BAD', input_type=str\]",
+        ):
+            HiFiGANModelConfig(resblock="BAD")
+
+
+class HiFiGANTrainingConfigTest(TestCase):
+    """
+    This class should really be under HiFiGan.
+    """
+
+    def test_invalid_gan_type(self):
+        """
+        Validate that we get a nice error message when the user provides a
+        gan_type that is not part of the enum's values.
+        """
+        from pydantic_core._pydantic_core import ValidationError
+
+        with self.assertRaisesRegex(
+            ValidationError,
+            r"Input should be 'original' or 'wgan' \[type=enum, input_value='BAD', input_type=str\]",
+        ):
+            HiFiGANTrainingConfig(gan_type="BAD")
