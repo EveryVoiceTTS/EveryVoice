@@ -60,15 +60,21 @@ class WavsDirStep(Step):
             only_directories=True,
         ).unsafe_ask()
 
-    def validate(self, response):
+    def sanitize_input(self, response):
+        response = super().sanitize_input(response)
+        return response.strip()
+
+    def validate(self, response) -> bool:
         valid_path = validate_path(response, is_dir=True, exists=True)
         if not valid_path:
             return False
-        valid_path = Path(response).expanduser()
-        contains_wavs = glob(os.path.join(valid_path, "**/*.wav"), recursive=True)
+        path_expanded = Path(response).expanduser()
+        contains_wavs = (
+            len(glob(os.path.join(path_expanded, "**/*.wav"), recursive=True)) > 0
+        )
         if not contains_wavs:
             print(
-                f"Sorry, no .wav files were found in '{valid_path}'. Please choose a directory with audio files."
+                f"Sorry, no .wav files were found in '{path_expanded}'. Please choose a directory with audio files."
             )
         return valid_path and contains_wavs
 
@@ -106,7 +112,11 @@ class FilelistStep(Step):
             "Where is your data filelist?", style=CUSTOM_QUESTIONARY_STYLE
         ).unsafe_ask()
 
-    def validate(self, response):
+    def sanitize_input(self, response):
+        response = super().sanitize_input(response)
+        return response.strip()
+
+    def validate(self, response) -> bool:
         return validate_path(response, is_file=True, exists=True)
 
 

@@ -125,12 +125,17 @@ class OutputPathStep(Step):
             only_directories=True,
         ).unsafe_ask()
 
-    def validate(self, response):
+    def sanitize_input(self, response):
+        response = super().sanitize_input(response)
+        return response.strip()
+
+    def validate(self, response) -> bool:
         path = Path(response)
         if path.is_file():
             print(f"Sorry, '{path}' is a file. Please select a directory.")
             return False
-        output_path = path / self.state.get(StepNames.name_step.value)
+        assert self.state is not None, "OutputPathStep requires NameStep"
+        output_path = path / self.state.get(StepNames.name_step.value, "DEFAULT_NAME")
         if output_path.exists():
             print(
                 f"Sorry, '{output_path}' already exists. Please choose another output directory or start again and choose a different project name."
@@ -139,7 +144,10 @@ class OutputPathStep(Step):
         return True
 
     def effect(self):
-        output_path = Path(self.response) / self.state.get(StepNames.name_step.value)
+        assert self.state is not None, "OutputPathStep requires NameStep"
+        output_path = Path(self.response) / self.state.get(
+            StepNames.name_step.value, "DEFAULT_NAME"
+        )
         output_path.mkdir(parents=True, exist_ok=True)
         print(f"The Configuration Wizard 🧙 will put your files here: '{output_path}'")
 

@@ -13,6 +13,11 @@ from unittest import TestCase
 import yaml
 from anytree import RenderTree
 
+# [Unit testing questionary](https://github.com/prompt-toolkit/python-prompt-toolkit/blob/master/docs/pages/advanced_topics/unit_testing.rst)
+from prompt_toolkit.application import create_app_session
+from prompt_toolkit.input import create_pipe_input
+from prompt_toolkit.output import DummyOutput
+
 from everyvoice.config.text_config import Symbols
 from everyvoice.tests.stubs import (
     QuestionaryStub,
@@ -556,7 +561,7 @@ class WizardTest(TestCase):
             steps_and_answers: a list of steps, answers, and optional recursive answers
                 (Step, Answer/Monkey, optional [children answers/monkeys])
                 where
-                 - Step is an instantiated subclass if Step
+                 - Step is an instantiated subclass of Step
                  - either:
                    - Answer is an instance of Say to get patched in for Step's prompt method
                    or
@@ -609,7 +614,7 @@ class WizardTest(TestCase):
                 "monkey tour 1",
                 [
                     StepAndAnswer(basic.NameStep(), Say("my-dataset-name")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdirname)),
+                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdirname))),
                 ],
             )
         self.assertEqual(tour.state[SN.name_step.value], "my-dataset-name")
@@ -621,10 +626,10 @@ class WizardTest(TestCase):
             tour = self.monkey_run_tour(
                 "monkey tour 2",
                 [
-                    StepAndAnswer(dataset.WavsDirStep(), Say(data_dir)),
+                    StepAndAnswer(dataset.WavsDirStep(), Say(str(data_dir))),
                     StepAndAnswer(
                         dataset.FilelistStep(),
-                        Say(data_dir / "metadata.csv"),
+                        Say(str(data_dir / "metadata.csv")),
                     ),
                     StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
                     StepAndAnswer(
@@ -668,13 +673,14 @@ class WizardTest(TestCase):
                     StepAndAnswer(basic.NameStep(), Say("project")),
                     StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
                     StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
+                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
                     StepAndAnswer(
-                        dataset.WavsDirStep(state_subset="dataset_0"), Say(data_dir)
+                        dataset.WavsDirStep(state_subset="dataset_0"),
+                        Say(str(data_dir)),
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        Say(data_dir / "language-col.tsv"),
+                        Say(str(data_dir / "language-col.tsv")),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(state_subset="dataset_0"), Say("tsv")
@@ -735,13 +741,13 @@ class WizardTest(TestCase):
                     StepAndAnswer(basic.NameStep(), Say("project")),
                     StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
                     StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
+                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
                     StepAndAnswer(
-                        dataset.WavsDirStep(state_subset="dataset_0"), Say(tmpdir)
+                        dataset.WavsDirStep(state_subset="dataset_0"), Say(str(tmpdir))
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        Say(tmpdir / "filelist.psv"),
+                        Say(str(tmpdir / "filelist.psv")),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(state_subset="dataset_0"),
@@ -807,11 +813,11 @@ class WizardTest(TestCase):
                     StepAndAnswer(basic.NameStep(), Say("project")),
                     StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
                     StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(tmpdir / "out")),
-                    StepAndAnswer(dataset.WavsDirStep(), Say(tmpdir)),
+                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
+                    StepAndAnswer(dataset.WavsDirStep(), Say(str(tmpdir))),
                     StepAndAnswer(
                         dataset.FilelistStep(),
-                        Say(tmpdir / "filelist.psv"),
+                        Say(str(tmpdir / "filelist.psv")),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(),
@@ -863,6 +869,55 @@ class WizardTest(TestCase):
         with monkeypatch(step, "prompt", Say("no/such/directory")):
             with capture_stdout(), self.assertRaises(SystemExit):
                 step.run()
+
+    def test_leading_white_space_in_outpath(self):
+        """
+        Make sure we strip leading spaces when the user accidentally adds a
+        leading space when specifying an output path.
+        """
+        with capture_stdout(), tempfile.TemporaryDirectory() as tmpdirname:
+            with create_pipe_input() as pipe_input:
+                # NOTE: we use `` to replace the `.` with our path with leading spaces.
+                pipe_input.send_text(f"  {tmpdirname}\n")
+                with create_app_session(input=pipe_input, output=DummyOutput()):
+                    tour = Tour(
+                        name="trimming leading spaces",
+                        steps=[
+                            basic.OutputPathStep(),
+                        ],
+                        state={SN.name_step.value: "output_dir_with_leading_spaces"},
+                    )
+                    tour.run()
+        self.assertFalse(tour.state[SN.output_step.value].startswith(" "))
+        self.assertEqual(tour.state[SN.output_step.value], tmpdirname)
+
+    def test_leading_white_space_in_wav_dir(self):
+        """
+        Make sure we strip leading spaces when the user accidentally adds a
+        leading space when specifying a wav directory.
+        """
+        step = dataset.WavsDirStep()
+        path = Path(__file__).parent
+        with create_pipe_input() as pipe_input:
+            pipe_input.send_text(f" {path}\n")
+            with create_app_session(input=pipe_input, output=DummyOutput()):
+                step.run()
+        self.assertFalse(step.response.startswith(" "))
+        self.assertEqual(step.response, str(path))
+
+    def test_leading_white_space_in_filelist(self):
+        """
+        Make sure we strip leading spaces when the user accidentally adds a
+        leading space when specifying a filelist.
+        """
+        step = dataset.FilelistStep()
+        path = Path(__file__).parent / "data/unit-test-case1.psv"
+        with create_pipe_input() as pipe_input:
+            pipe_input.send_text(f" {path}\n")
+            with create_app_session(input=pipe_input, output=DummyOutput()):
+                step.run()
+        self.assertFalse(step.response.startswith(" "))
+        self.assertEqual(step.response, str(path))
 
 
 class WavFileDirectoryRelativePathTest(TestCase):
