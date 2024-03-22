@@ -9,8 +9,8 @@ from tqdm import tqdm
 
 from everyvoice.config.text_config import Symbols
 from everyvoice.utils import (
-    generic_csv_reader,
-    generic_dict_loader,
+    generic_csv_filelist_reader,
+    generic_psv_filelist_reader,
     read_festival,
     slugify,
 )
@@ -136,7 +136,7 @@ class FilelistFormatStep(Step):
     def looks_like_sv(self, file_type, separator) -> bool:
         assert self.state
         filelist_path = self.state.get(StepNames.filelist_step.value)
-        initial_records = generic_csv_reader(
+        initial_records = generic_csv_filelist_reader(
             filelist_path, delimiter=separator, record_limit=10
         )
 
@@ -196,7 +196,7 @@ class FilelistFormatStep(Step):
             self.state["filelist_headers"] = list(filelist_data_dict[0].keys())
             self.state["filelist_data"] = filelist_data_dict
         else:
-            self.state["filelist_data"] = generic_csv_reader(
+            self.state["filelist_data"] = generic_csv_filelist_reader(
                 filelist_path, delimiter=self.state.get("filelist_delimiter")
             )
             self.state["filelist_headers"] = list(self.state["filelist_data"][0])
@@ -429,7 +429,7 @@ def reload_filelist_data_as_dict(state):
         "tsv",
         "csv",
     ]:
-        state["filelist_data"] = generic_dict_loader(
+        state["filelist_data"] = generic_psv_filelist_reader(
             filelist_path,
             delimiter=state.get("filelist_delimiter"),
             fieldnames=state["filelist_headers"],

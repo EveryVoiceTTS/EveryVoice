@@ -314,7 +314,7 @@ class TextProcessor:
         lang_id: Optional[str] = None,
         quiet: bool = False,
         find_missing: bool = True,
-    ) -> list[int] | list[list[int]]:
+    ) -> list[int] | npt.NDArray[np.int_]:
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
         Args:
             text: string to convert to a sequence

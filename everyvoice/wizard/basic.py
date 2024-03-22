@@ -22,7 +22,7 @@ from everyvoice.model.feature_prediction.config import (
     FeaturePredictionConfig,
 )
 from everyvoice.model.vocoder.config import VocoderConfig
-from everyvoice.utils import generic_psv_dict_reader, slugify, write_filelist
+from everyvoice.utils import generic_psv_filelist_reader, slugify, write_filelist
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
@@ -229,7 +229,7 @@ class ConfigFormatStep(Step):
                 }
             write_filelist(filelist_data, (config_dir / new_filelist_path).absolute())
             sox_effects = dataset_state["sox_effects"]
-            filelist_loader = generic_psv_dict_reader
+            filelist_loader = generic_psv_filelist_reader
 
             datasets.append(
                 Dataset(

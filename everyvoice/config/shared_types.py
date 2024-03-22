@@ -21,7 +21,7 @@ from everyvoice.config.utils import (
     PossiblyRelativePathMustExist,
     PossiblySerializedCallable,
 )
-from everyvoice.utils import generic_dict_loader, get_current_time
+from everyvoice.utils import generic_psv_filelist_reader, get_current_time
 
 _init_context_var = ContextVar("_init_context_var", default=None)
 
@@ -207,7 +207,7 @@ class BaseTrainingConfig(PartialLoadConfig):
         description="The path to a filelist containing samples belonging to your validation set.",
     )
     filelist_loader: PossiblySerializedCallable = Field(
-        generic_dict_loader,
+        generic_psv_filelist_reader,
         description="Advanced. The function to use to load the filelist.",
     )
     logger: LoggerConfig = Field(

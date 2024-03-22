@@ -11,7 +11,7 @@ from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
 from everyvoice.text.text_processor import TextProcessor
-from everyvoice.utils import generic_dict_loader
+from everyvoice.utils import generic_psv_filelist_reader
 
 
 class TextTest(BasicTestCase):
@@ -240,8 +240,8 @@ class LookupTablesTest(TestCase):
         base_path = Path(__file__).parent / "data/lookuptable/"
         lang2id, speaker2id = lookuptables_from_data(
             (
-                generic_dict_loader(base_path / "training_filelist.psv"),
-                generic_dict_loader(base_path / "validation_filelist.psv"),
+                generic_psv_filelist_reader(base_path / "training_filelist.psv"),
+                generic_psv_filelist_reader(base_path / "validation_filelist.psv"),
             )
         )
         self.assertDictEqual(
@@ -267,10 +267,10 @@ class LookupTablesTest(TestCase):
         lang2id, speaker2id = lookuptables_from_data(
             (
                 remove_language(
-                    generic_dict_loader(base_path / "training_filelist.psv")
+                    generic_psv_filelist_reader(base_path / "training_filelist.psv")
                 ),
                 remove_language(
-                    generic_dict_loader(base_path / "validation_filelist.psv")
+                    generic_psv_filelist_reader(base_path / "validation_filelist.psv")
                 ),
             )
         )
@@ -295,10 +295,10 @@ class LookupTablesTest(TestCase):
         lang2id, speaker2id = lookuptables_from_data(
             (
                 remove_speaker(
-                    generic_dict_loader(base_path / "training_filelist.psv")
+                    generic_psv_filelist_reader(base_path / "training_filelist.psv")
                 ),
                 remove_speaker(
-                    generic_dict_loader(base_path / "validation_filelist.psv")
+                    generic_psv_filelist_reader(base_path / "validation_filelist.psv")
                 ),
             )
         )

@@ -19,7 +19,7 @@ path_to_preprocessing_config_file: everyvoice-shared-data.yaml
 training:
   batch_size: 16
   ckpt_epochs: 1
-  filelist_loader: everyvoice.utils.generic_dict_loader
+  filelist_loader: everyvoice.utils.generic_psv_filelist_reader
   finetune: false
   gan_type: original
   generator_warmup_steps: 0

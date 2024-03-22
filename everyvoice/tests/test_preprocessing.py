@@ -3,7 +3,6 @@
 import shutil
 import tempfile
 from pathlib import Path
-from string import ascii_lowercase
 
 import torch
 import torchaudio
@@ -23,7 +22,7 @@ from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.stubs import capture_stdout, mute_logger
-from everyvoice.utils import read_filelist
+from everyvoice.utils import generic_psv_filelist_reader
 
 
 class PreprocessingTest(BasicTestCase):
@@ -37,7 +36,6 @@ class PreprocessingTest(BasicTestCase):
     fp_config = FeaturePredictionConfig(
         text=TextConfig(
             symbols=Symbols(
-                letters=list(ascii_lowercase),
                 ipa=["ɔ", "æ", "ɡ", "ɛ", "ð", "ɜ˞", "ʌ", "ɑ", "ɹ", "ʃ", "ɪ", "ʊ", "ʒ"],
             )
         ),
@@ -67,7 +65,7 @@ class PreprocessingTest(BasicTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.preprocess()
-        self.filelist = read_filelist(self.data_dir / "metadata.csv")
+        self.filelist = generic_psv_filelist_reader(self.data_dir / "metadata.csv")
 
     # def test_compute_stats(self):
     #     feat_prediction_config = EveryVoiceConfig.load_config_from_path().feature_prediction
@@ -85,15 +83,14 @@ class PreprocessingTest(BasicTestCase):
     # )
 
     def test_read_filelist(self):
-        self.assertEqual(self.filelist[1]["filename"], "LJ050-0269")
-        self.assertNotIn("speaker", self.filelist[0].keys())
+        self.assertEqual(self.filelist[0]["basename"], "LJ050-0269")
 
     def test_process_audio_for_alignment(self):
         config = AlignerConfig(contact=self.contact)
         for entry in self.filelist[1:]:
             # This just applies the SOX effects
             audio, sr = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav"),
+                self.wavs_dir / (entry["basename"] + ".wav"),
                 use_effects=True,
                 sox_effects=config.preprocessing.source_data[0].sox_effects,
             )
@@ -159,7 +156,7 @@ class PreprocessingTest(BasicTestCase):
     def test_process_audio(self):
         for entry in self.filelist[1:]:
             audio, sr = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             self.assertEqual(sr, 22050)
             self.assertEqual(audio.dtype, float32)
@@ -182,12 +179,12 @@ class PreprocessingTest(BasicTestCase):
 
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             # ming024_feats = np.load(
             #     self.data_dir
             #     / "ming024"
-            #     / ("eng-LJSpeech-mel-" + entry["filename"] + ".npy")
+            #     / ("eng-LJSpeech-mel-" + entry["basename"] + ".npy")
             # )
             feats = self.preprocessor.extract_spectral_features(
                 audio, self.preprocessor.input_spectral_transform
@@ -236,14 +233,14 @@ class PreprocessingTest(BasicTestCase):
 
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             dur_path = (
                 self.lj_preprocessed
                 / "duration"
                 / self.preprocessor.sep.join(
                     [
-                        entry["filename"],
+                        entry["basename"],
                         entry.get("speaker", "default"),
                         entry.get("language", "default"),
                         "duration.pt",
@@ -257,7 +254,7 @@ class PreprocessingTest(BasicTestCase):
             # ming024_pitch = np.load(
             #     self.data_dir
             #     / "ming024"
-            #     / ("eng-LJSpeech-pitch-" + entry["filename"] + ".npy")
+            #     / ("eng-LJSpeech-pitch-" + entry["basename"] + ".npy")
             # )
             # Ensure avg pitch for each phone
             frame_pitch_pyworld = preprocessor_pyworld.extract_pitch(audio)
@@ -274,14 +271,14 @@ class PreprocessingTest(BasicTestCase):
     def test_duration(self):
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             dur_path = (
                 self.lj_preprocessed
                 / "duration"
                 / self.preprocessor.sep.join(
                     [
-                        entry["filename"],
+                        entry["basename"],
                         entry.get("speaker", "default"),
                         entry.get("language", "default"),
                         "duration.pt",
@@ -295,7 +292,7 @@ class PreprocessingTest(BasicTestCase):
             # ming024_durs = np.load(
             #     self.data_dir
             #     / "ming024"
-            #     / ("eng-LJSpeech-duration-" + entry["filename"] + ".npy")
+            #     / ("eng-LJSpeech-duration-" + entry["basename"] + ".npy")
             # )
             # Ensure durations same number of frames as spectral features
             # note: this is off by a few frames due to mismatches in hop size between the aligner the test data
@@ -310,14 +307,14 @@ class PreprocessingTest(BasicTestCase):
         preprocessor = Preprocessor(frame_energy_config)
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             dur_path = (
                 self.lj_preprocessed
                 / "duration"
                 / self.preprocessor.sep.join(
                     [
-                        entry["filename"],
+                        entry["basename"],
                         entry.get("speaker", "default"),
                         entry.get("language", "default"),
                         "duration.pt",
@@ -328,7 +325,7 @@ class PreprocessingTest(BasicTestCase):
             # ming024_energy = np.load(
             #     self.data_dir
             #     / "ming024"
-            #     / ("eng-LJSpeech-energy-" + entry["filename"] + ".npy")
+            #     / ("eng-LJSpeech-energy-" + entry["basename"] + ".npy")
             # )
             feats = self.preprocessor.extract_spectral_features(
                 audio, self.preprocessor.input_spectral_transform
@@ -524,7 +521,7 @@ class PreprocessingTest(BasicTestCase):
             fp_config.preprocessing.source_data[0].data_dir = self.data_dir
             input_filelist = tmpdir / "empty-metadata.psv"
             with open(input_filelist, mode="w") as f:
-                print("basename|raw_text|text|speaker|language", file=f)
+                print("basename|raw_text|characters|speaker|language", file=f)
                 print("empty|foo bar baz|foo bar baz|noone|und", file=f)
             fp_config.preprocessing.source_data[0].filelist = input_filelist
             fp_config.preprocessing.save_dir = preprocessed
@@ -585,10 +582,12 @@ class PreprocessingHierarchyTest(BasicTestCase):
                     to_process=("audio", "text", "spec", "attn", "energy", "pitch"),
                 )
 
-            for t in ("audio", "text", "spec", "attn", "energy", "pitch"):
+            for t in ("audio", "spec", "attn", "energy", "pitch"):
                 # There are two speakers
                 sources = [d.name for d in tmpdir.glob(f"**/{t}/*")]
-                self.assertSetEqual(set(sources), set(("LJ010", "LJ050")))
+                self.assertSetEqual(
+                    set(sources), set(("LJ010", "LJ050")), f"failed for {t}"
+                )
                 # First speaker has one recording
                 files = list(tmpdir.glob(f"**/{t}/LJ010/*.pt"))
                 self.assertEqual(len(files), 1)

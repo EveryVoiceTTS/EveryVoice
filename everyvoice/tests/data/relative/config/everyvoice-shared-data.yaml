@@ -9,7 +9,7 @@ save_dir: ../preprocessed
 source_data:
 - data_dir: ../../lj/wavs
   filelist: ../r-filelist.psv
-  filelist_loader: everyvoice.utils.generic_dict_loader
+  filelist_loader: everyvoice.utils.generic_psv_filelist_reader
   label: dataset_0
   sox_effects:
   - [channel, '1']
