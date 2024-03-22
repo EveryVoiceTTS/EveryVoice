@@ -1,2 +1,2 @@
-basename|raw_text|text|speaker|language|clean_text|label
+basename|raw_text|characters|speaker|language|clean_text|label
 LJ050-0273|The Commission has, however, from its examination of the facts of President Kennedy's assassination|The Commission has, however, from its examination of the facts of President Kennedy's assassination|default|default|the commission has, however, from its examination of the facts of president kennedy's assassination|LJ_TEST

@@ -7,7 +7,7 @@ path_to_vocoder_config_file: everyvoice-spec-to-wav.yaml
 training:
   batch_size: 16
   ckpt_epochs: 1
-  filelist_loader: everyvoice.utils.generic_dict_loader
+  filelist_loader: everyvoice.utils.generic_psv_filelist_reader
   logger: {name: E2E-Experiment, save_dir: ../logs_and_checkpoints, sub_dir_callable: everyvoice.utils.get_current_time,
     version: base}
   max_epochs: 1000

@@ -12,7 +12,10 @@ from everyvoice.config.utils import (
     PossiblySerializedCallable,
     load_partials,
 )
-from everyvoice.utils import generic_dict_loader, load_config_from_json_or_yaml_path
+from everyvoice.utils import (
+    generic_psv_filelist_reader,
+    load_config_from_json_or_yaml_path,
+)
 
 
 class DatasetTextRepresentation(str, Enum):
@@ -112,7 +115,7 @@ class Dataset(PartialLoadConfig):
         description="The path to your dataset's filelist.",
     )
     filelist_loader: PossiblySerializedCallable = Field(
-        generic_dict_loader,
+        generic_psv_filelist_reader,
         description="Advanced. The file-loader function to use to load your dataset's filelist.",
     )
     sox_effects: list = Field(

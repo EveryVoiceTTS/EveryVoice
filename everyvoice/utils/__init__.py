@@ -5,10 +5,10 @@ import re
 import sys
 from contextlib import contextmanager
 from datetime import datetime
+from functools import partial
 from itertools import islice
-from os.path import splitext
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional
 from unicodedata import normalize
 
 import yaml
@@ -269,19 +269,6 @@ def nfc_normalize(text):
     return normalize("NFC", text)
 
 
-def load_lj_metadata_hifigan(path):
-    with open(path, "r", newline="", encoding="utf8") as f:
-        reader = csv.DictReader(
-            f,
-            fieldnames=["basename", "raw_text", "text"],
-            delimiter="|",
-            quoting=csv.QUOTE_NONE,
-            escapechar="\\",
-        )
-        files = list(reader)
-    return files
-
-
 def read_festival(
     path,
     record_limit: int = 0,  # if non-zero, read only this many records
@@ -339,15 +326,34 @@ def sniff_and_return_filelist_data(path):
 
 
 def generic_dict_loader(
-    path,
+    path: str | os.PathLike,
     delimiter="|",
     quoting=csv.QUOTE_NONE,
     escapechar="\\",
     fieldnames=None,
     file_has_header_line=True,
-):
+    record_limit: int = 0,
+) -> list[dict]:
+    """This is the base function that should be used to parse *sv style tabular filelists.
+        The psv variant can also be imported with generic_psv_filelist_reader
+        The csv variant can be imported with generic_csv_filelist_reader
+
+    Args:
+        path (_type_): path to *sv tabular filelist
+        delimiter (str, optional): column delimiter. Defaults to "|".
+        quoting (_type_, optional): quoting strategy. Defaults to csv.QUOTE_NONE.
+        escapechar (str, optional): escape character. Defaults to "\".
+        fieldnames (_type_, optional): fieldnames to parse. Defaults to None.
+        file_has_header_line (bool, optional): whether file has header line. Defaults to True.
+        record_limit (int): if non-zero, read only this many records. Defaults to 0.
+
+    Returns:
+        list[dict]: a list of dicts representing the rows in the filelist
+    """
     assert fieldnames is not None or file_has_header_line
     with open(path, "r", newline="", encoding="utf8") as f:
+        if record_limit:
+            f = islice(f, record_limit)
         reader = csv.DictReader(
             f,
             fieldnames=fieldnames,
@@ -359,32 +365,16 @@ def generic_dict_loader(
         # line.  Skip it if the file has a header line.
         if fieldnames and file_has_header_line:
             next(reader)
-        files = list(reader)
+        files = []
+        for file in list(reader):
+            if "basename" in file:
+                file["basename"] = os.path.splitext(file["basename"])[0]
+            files.append(file)
     return files
 
 
-generic_psv_dict_reader = generic_dict_loader
-
-
-def generic_csv_reader(
-    path,
-    delimiter=",",
-    quoting=csv.QUOTE_NONE,
-    escapechar="\\",
-    record_limit: int = 0,  # if non-zero, read only this many records
-):
-    f: Iterable[str]
-    with open(path, "r", newline="", encoding="utf8") as f:
-        if record_limit:
-            f = islice(f, record_limit)
-        reader = csv.reader(
-            f,
-            delimiter=delimiter,
-            quoting=quoting,
-            escapechar=escapechar,
-        )
-        files = list(reader)
-    return files
+generic_psv_filelist_reader = generic_dict_loader
+generic_csv_filelist_reader = partial(generic_dict_loader, delimiter=",")
 
 
 def collapse_whitespace(text):
@@ -393,29 +383,6 @@ def collapse_whitespace(text):
     ' asdf qwer '
     """
     return re.sub(_whitespace_re, " ", text)
-
-
-def read_filelist(
-    filelist_path: Union[str, os.PathLike],
-    filename_col: int = 0,
-    filename_suffix: str = "",
-    text_col: int = 1,
-    delimiter: str = "|",
-    speaker_col=None,
-    language_col=None,
-):
-    data = []
-    with open(filelist_path, encoding="utf8") as f:
-        reader = csv.reader(f, delimiter=delimiter)
-        for line in reader:
-            fn, _ = splitext(line[filename_col])
-            entry = {"text": line[text_col], "filename": fn + filename_suffix}
-            if speaker_col:
-                entry["speaker"] = line[speaker_col]
-            if language_col:
-                entry["language"] = line[language_col]
-            data.append(entry)
-    return data
 
 
 @contextmanager
