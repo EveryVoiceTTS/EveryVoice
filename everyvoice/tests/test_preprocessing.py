@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
+import shutil
 import tempfile
 from pathlib import Path
+from string import ascii_lowercase
 
 import torch
 import torchaudio
@@ -14,6 +16,7 @@ from everyvoice.config.preprocessing_config import (
     PreprocessingConfig,
 )
 from everyvoice.config.shared_types import ContactInformation
+from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
@@ -32,9 +35,15 @@ class PreprocessingTest(BasicTestCase):
     lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
 
     fp_config = FeaturePredictionConfig(
+        text=TextConfig(
+            symbols=Symbols(
+                letters=list(ascii_lowercase),
+                ipa=["ɔ", "æ", "ɡ", "ɛ", "ð", "ɜ˞", "ʌ", "ɑ", "ɹ", "ʃ", "ɪ", "ʊ", "ʒ"],
+            )
+        ),
         contact=ContactInformation(
             contact_name="Test Runner", contact_email="info@everyvoice.ca"
-        )
+        ),
     )
     fp_config.preprocessing.source_data[0].data_dir = data_dir / "lj" / "wavs"
     fp_config.preprocessing.source_data[0].filelist = data_dir / "metadata.csv"
@@ -337,6 +346,102 @@ class PreprocessingTest(BasicTestCase):
     def test_sanity(self):
         """TODO: make sanity checking code for each type of data, maybe also data analysis tooling"""
         pass
+
+    def test_text_processing(self):
+        characters_eng_filelist = (
+            self.data_dir / "metadata_characters_supported_lang.csv"
+        )
+        characters_default_filelist = (
+            self.data_dir / "metadata_characters_no_supported_lang.csv"
+        )
+        arpabet_filelist = self.data_dir / "metadata_arpabet.csv"
+        phones_filelist = self.data_dir / "metadata_phones.csv"
+        mixed_representation_filelist = (
+            self.data_dir / "metadata_mixed_representation.csv"
+        )
+        fp_config = FeaturePredictionConfig(**self.fp_config.model_dump())
+        filelists_to_test = [
+            {
+                "path": characters_eng_filelist,
+                "contains_characters": True,
+                "contains_phones": True,
+            },  # will take characters and apply eng g2p
+            {
+                "path": characters_default_filelist,
+                "contains_characters": True,
+                "contains_phones": False,
+            },  # will just tokenize characters
+            {
+                "path": arpabet_filelist,
+                "contains_characters": False,
+                "contains_phones": True,
+            },  # will convert arpabet to phones
+            {
+                "path": phones_filelist,
+                "contains_characters": False,
+                "contains_phones": True,
+            },  # will just tokenize phones
+            {
+                "path": mixed_representation_filelist,
+                "contains_characters": True,
+                "contains_phones": True,
+            },  # will tokenize characters and tokenize phones
+        ]
+        for filelist_test_info in filelists_to_test:
+            with tempfile.TemporaryDirectory(prefix="inputs", dir=".") as tmpdir:
+                tmpdir = Path(tmpdir)
+                preprocessed_dir = tmpdir / "preprocessed"
+                preprocessed_dir.mkdir(parents=True, exist_ok=True)
+                output_filelist = preprocessed_dir / "preprocessed_filelist.psv"
+                shutil.copyfile(filelist_test_info["path"], output_filelist)
+                fp_config.preprocessing.source_data[0].filelist = filelist_test_info[
+                    "path"
+                ]
+                fp_config.preprocessing.save_dir = preprocessed_dir
+                preprocessor = Preprocessor(fp_config)
+                with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
+                    preprocessor.preprocess(
+                        output_path=output_filelist, cpus=1, to_process=["text"]
+                    )
+                self.assertIn("You've finished preprocessing: text", output.getvalue())
+                processed_filelist = preprocessor.load_filelist(output_filelist)
+                characters = [
+                    x["character_tokens"]
+                    for x in processed_filelist
+                    if "character_tokens" in x
+                ]
+                phones = [
+                    x["phone_tokens"] for x in processed_filelist if "phone_tokens" in x
+                ]
+                if filelist_test_info["contains_characters"]:
+                    self.assertEqual(
+                        len(characters),
+                        5,
+                        f'failed finding characters in {filelist_test_info["path"]}',
+                    )
+                    self.assertEqual(
+                        characters[0],
+                        "t/h/e/ /e/s/s/e/n/t/i/a/l/ /t/e/r/m/s/ /o/f/ /s/u/c/h/ /m/e/m/o/r/a/n/d/a/ /m/i/g/h/t/ /w/e/l/l/ /b/e/ /e/m/b/o/d/i/e/d/ /i/n/ /a/n/ /e/x/e/c/u/t/i/v/e/ /o/r/d/e/r/<BB>",
+                        f'failed in {filelist_test_info["path"]}',
+                    )
+                if filelist_test_info["contains_phones"]:
+                    self.assertEqual(
+                        len(phones),
+                        5,
+                        f'failed finding phones in {filelist_test_info["path"]}',
+                    )
+                    if "arpabet" in filelist_test_info["path"].stem:
+                        # arpabet uses space for phone boundaries
+                        self.assertEqual(
+                            phones[0],
+                            "ð/ /ʌ/ /e/ /s/ /e/ /n/ /ʃ/ /ʌ/ /l/ /t/ /r/ /m/ /z/ /ʌ/ /v/ /s/ /ʌ/ /c/h/ /m/ /e/ /m/ /r/ /æ/ /n/ /d/ /ʌ/ /m/ /a/ɪ/ /t/ /w/ /e/ /l/ /b/ /i/ /ɪ/ /m/ /b/ /ɑ/ /d/ /i/ /d/ /ɪ/ /n/ /æ/ /n/ /ɪ/ /g/ /z/ /e/ /k/ /j/ /ʌ/ /t/ /ɪ/ /v/ /ɔ/ /r/ /d/ /r/ /<BB>",
+                        )
+                    else:
+                        self.assertEqual(
+                            phones[0],
+                            "ð/ʌ/ /ɛ/s/ɛ/n/ʃ/ʌ/l/ /t/ɜ˞/m/z/ /ʌ/v/ /s/ʌ/t/ʃ/ /m/ɛ/m/ɜ˞/æ/n/d/ʌ/ /m/a/ɪ/t/ /w/ɛ/l/ /b/i/ /ɪ/m/b/ɑ/d/i/d/ /ɪ/n/ /æ/n/ /ɪ/ɡ/z/ɛ/k/j/ʌ/t/ɪ/v/ /ɔ/ɹ/d/ɜ˞/<BB>",
+                            f'failed in {filelist_test_info["path"]}',
+                        )
 
     def test_incremental_preprocess(self):
         with tempfile.TemporaryDirectory(prefix="incremental", dir=".") as tmpdir:

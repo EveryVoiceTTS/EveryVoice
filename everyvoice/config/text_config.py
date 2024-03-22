@@ -9,7 +9,7 @@ from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 
 class Punctuation(BaseModel):
     exclamations: list[str] = Field(
-        ["!", "¡"],
+        ["!", "¡"],  # TODO: consider how to handle utt final punctuation like ! ? and .
         description="Exclamation punctuation symbols used in your datasets. Replaces these symbols with <EXCL> internally.",
     )
     question_symbols: list[str] = Field(
@@ -21,12 +21,16 @@ class Punctuation(BaseModel):
         description="Quotemark punctuation symbols used in your datasets. Replaces these symbols with <QUOTE> internally.",
     )
     big_breaks: list[str] = Field(
-        [".", ":", ";", "…"],
+        [".", ":", ";"],
         description="Punctuation symbols indicating a 'big break' used in your datasets. Replaces these symbols with <BB> internally.",
     )
     small_breaks: list[str] = Field(
         [",", "-", "—"],
         description="Punctuation symbols indicating a 'small break' used in your datasets. Replaces these symbols with <SB> internally.",
+    )
+    ellipsis: list[str] = Field(
+        ["…"],
+        description="Punctuation symbols indicating an ellipsis used in your datasets. Replaces these symbols with <EPS> internally.",
     )
 
 

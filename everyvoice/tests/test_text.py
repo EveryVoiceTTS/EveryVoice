@@ -325,7 +325,7 @@ class TestG2p(BasicTestCase):
         )
         # keep's punctuation
         self.assertEqual(
-            eng_g2p('hello "world"!!?'),
+            eng_g2p('hello "world"!!?.'),
             [
                 "h",
                 "ʌ",
@@ -342,6 +342,7 @@ class TestG2p(BasicTestCase):
                 "!",
                 "!",
                 "?",
+                ".",
             ],
         )
         # another language

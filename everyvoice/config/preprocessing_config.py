@@ -17,7 +17,7 @@ from everyvoice.utils import generic_dict_loader, load_config_from_json_or_yaml_
 
 class DatasetTextRepresentation(str, Enum):
     characters = "characters"
-    ipa_phones = "ipa_phones"
+    ipa_phones = "phones"
     arpabet = "arpabet"  # always gets mapped to phones
 
 
