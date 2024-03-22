@@ -8,6 +8,7 @@ from panphon import FeatureTable
 from everyvoice.config.text_config import TextConfig
 
 
+# TODO: support primary and secondary stress
 class PhonologicalFeatureCalculator:
     def __init__(self, text_config: TextConfig, punctuation_hash: dict):
         self.config = text_config
@@ -84,22 +85,24 @@ class PhonologicalFeatureCalculator:
         """
         punctuation_features = []
         for char in tokens:
-            if char == self.punctuation_hash["exclamations"]:
-                punctuation_features.append([1, 0, 0, 0, 0, 0, 0])
+            if char == " ":
+                punctuation_features.append([1, 0, 0, 0, 0, 0, 0, 0])
             elif char == self.punctuation_hash["question_symbols"]:
-                punctuation_features.append([0, 1, 0, 0, 0, 0, 0])
+                punctuation_features.append([0, 1, 0, 0, 0, 0, 0, 0])
             elif char == self.punctuation_hash["big_breaks"]:
-                punctuation_features.append([0, 0, 1, 0, 0, 0, 0])
+                punctuation_features.append([0, 0, 1, 0, 0, 0, 0, 0])
             elif char == self.punctuation_hash["small_breaks"]:
-                punctuation_features.append([0, 0, 0, 1, 0, 0, 0])
+                punctuation_features.append([0, 0, 0, 1, 0, 0, 0, 0])
             elif char == self.punctuation_hash["quotemarks"]:
-                punctuation_features.append([0, 0, 0, 0, 1, 0, 0])
+                punctuation_features.append([0, 0, 0, 0, 1, 0, 0, 0])
             elif char in self.config.symbols.silence:
-                punctuation_features.append([0, 0, 0, 0, 0, 1, 0])
-            elif char == " ":
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 1])
+                punctuation_features.append([0, 0, 0, 0, 0, 1, 0, 0])
+            elif char in self.punctuation_hash["ellipsis"]:
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 1, 0])
+            elif char == self.punctuation_hash["exclamations"]:
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 1])
             else:
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 0])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0])
         return np.array(punctuation_features).astype("int")
 
     def token_to_segmental_features(self, token: str) -> npt.NDArray[np.int_]:
@@ -149,7 +152,7 @@ class PhonologicalFeatureCalculator:
             tokens (list[str]): a list of IPA and normalized punctuation tokens
 
         Returns:
-            npt.NDArray[np.int_]: a thirty-eight-dimensional encoding of segmental (22), tone(7), and punctuation (7) features
+            npt.NDArray[np.int_]: a thirty-nine-dimensional encoding of segmental (22), tone(7), and punctuation (7) features
         """
         if not tokens:
             return np.array([])

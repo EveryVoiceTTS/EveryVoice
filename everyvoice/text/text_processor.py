@@ -45,6 +45,12 @@ class TextProcessor:
             key=len,
             reverse=True,
         )
+        # Keep a list of valid punctuation
+        self.punctuation = set(
+            item
+            for cat in self.config.symbols.punctuation.model_dump().values()
+            for item in cat
+        )
         # clean symbols with same cleaners as text cleaners
         # TODO: do I need to clean the symbols?
         # self.symbols = [self.apply_cleaners(x) for x in self.symbols]
@@ -59,6 +65,7 @@ class TextProcessor:
             "quotemarks": "<QUOTE>",
             "big_breaks": "<BB>",
             "small_breaks": "<SB>",
+            "ellipsis": "<EPS>",
         }
         # Create a hash table from punctuation to the internal ID
         self.punctuation_to_internal_id = {}
@@ -260,7 +267,7 @@ class TextProcessor:
         ), f"The g2p engine for {lang_id} produced {type(tokens)} but must produce a list of tokenized phones."
         valid_tokens = []
         for token in tokens:
-            if token in self._symbol_to_id:
+            if token in self._symbol_to_id or token in self.punctuation:
                 valid_tokens.append(token)
             else:
                 if find_missing:
@@ -340,8 +347,6 @@ class TextProcessor:
                 f"You tried to apply g2p for language '{lang_id}', but no g2p engine exists for that language. Please see the <TODO: docs>."
             )
 
-        assert lang_id is not None
-
         if normalize_text:
             text = self.normalize_text(text)
         if apply_g2p:
@@ -367,7 +372,31 @@ class TextProcessor:
         """Converts a sequence of IDs to a sequence of text characters"""
         return [self._id_to_symbol[symbol_id] for symbol_id in sequence]
 
-    def decode_tokens(self, sequence: List[int]) -> str:
+    def encode_string_tokens(self, sequence: list[str]) -> list[int]:
+        """Encode a sequence of string tokens
+
+        Args:
+            sequence (list[str]): a list of string tokens
+
+        Returns:
+            list[int]: a list of token indices
+
+        >>> tp = TextProcessor(TextConfig())
+        >>> tp.decode_tokens(['\x80', '<SIL>', '\x80', '\x80'])
+        [0, 1, 2, 0, 0]
+        """
+        # TODO: catch errors
+        return [self._symbol_to_id[token] for token in sequence]
+
+    def encode_escaped_string_sequence(
+        self, string_of_tokens: str, split_character="/"
+    ):
+        assert (
+            len(split_character) >= 1
+        ), "An escaped string sequence must have a character to split on (default is '/')"
+        return self.encode_string_tokens(string_of_tokens.split(split_character))
+
+    def decode_tokens(self, sequence: List[int], join_character="/") -> str:
         """Decode a sequence of encoded phone or character tokens into a sequence of strings
 
         Args:
@@ -381,4 +410,4 @@ class TextProcessor:
         '\x80 <SIL>\x80\x80'
 
         """
-        return "".join(self._token_sequence_to_text_sequence(sequence))
+        return join_character.join(self._token_sequence_to_text_sequence(sequence))

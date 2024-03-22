@@ -1,6 +1,7 @@
 from collections.abc import Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
+from enum import Enum
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, Iterator, Tuple, Union
@@ -23,6 +24,12 @@ from everyvoice.config.utils import (
 from everyvoice.utils import generic_dict_loader, get_current_time
 
 _init_context_var = ContextVar("_init_context_var", default=None)
+
+
+class TargetTrainingTextRepresentationLevel(str, Enum):
+    characters = "characters"
+    ipa_phones = "phones"
+    phonological_features = "phonological_features"
 
 
 @contextmanager

@@ -30,8 +30,8 @@ def get_g2p_engine(lang_id: str):
         phonemizer = make_g2p(lang_id, f"{lang_id}-ipa")
 
         def g2p_engine(normalized_input_text: str) -> list[str]:
-            # ipatok strips whitespace and underscores, so as a hack, we convert them to the private use area first
-            PUA_CHARS = ["_", " "]
+            # ipatok strips some important characters, so as a hack, we convert them to the private use area first
+            PUA_CHARS = ["_", " ", ".", "ˈ", "ˌ"]
             text = phonemizer(normalized_input_text).output_string
             for i, char in enumerate(PUA_CHARS):
                 text = text.replace(char, chr(983040 + i))
