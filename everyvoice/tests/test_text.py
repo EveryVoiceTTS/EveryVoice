@@ -26,7 +26,7 @@ class TextTest(BasicTestCase):
     def test_text_to_sequence(self):
         text = "hello world"
         sequence = self.base_text_processor.encode_text(text)
-        self.assertEqual(self.base_text_processor.decode_tokens(sequence), text)
+        self.assertEqual(self.base_text_processor.decode_tokens(sequence, ""), text)
 
     def test_token_sequence_to_text(self):
         sequence = [10, 7, 14, 14, 17, 1, 25, 17, 20, 14, 6]
@@ -43,7 +43,7 @@ class TextTest(BasicTestCase):
         text = "hello world"
         text_upper = "HELLO WORLD"
         sequence = self.base_text_processor.encode_text(text_upper)
-        self.assertEqual(self.base_text_processor.decode_tokens(sequence), text)
+        self.assertEqual(self.base_text_processor.decode_tokens(sequence, ""), text)
 
     def test_punctuation(self):
         text = "hello! How are you? My name's: foo;."
@@ -161,7 +161,7 @@ class TextTest(BasicTestCase):
             apply_g2p=True,
             encode_as_phonological_features=True,
         )
-        self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens), "séːɡũ")
+        self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens, ""), "séːɡũ")
         self.assertEqual(len(g2p_tokens), len(feats))
         self.assertNotEqual(len(g2p_tokens), len(one_hot_tokens))
         self.assertEqual(len(feats[0]), moh_config.model.phonological_feats_size)
@@ -193,9 +193,9 @@ class TextTest(BasicTestCase):
         )
         text = "he\u0301llo world"
         sequence = accented_text_processor.encode_text(text)
-        self.assertNotEqual(accented_text_processor.decode_tokens(sequence), text)
+        self.assertNotEqual(accented_text_processor.decode_tokens(sequence, ""), text)
         self.assertEqual(
-            accented_text_processor.decode_tokens(sequence),
+            accented_text_processor.decode_tokens(sequence, ""),
             normalize("NFC", text),
         )
 
