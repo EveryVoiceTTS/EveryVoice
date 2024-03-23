@@ -272,11 +272,13 @@ def nfc_normalize(text):
 def read_festival(
     path,
     record_limit: int = 0,  # if non-zero, read only this many records
+    text_field_name: str = "text",
 ):
     """Read Festival format into filelist
     Args:
         path (Path): Path to festival format filelist
         record_limit: if non-zero, read only that many records
+        text_field_name (str): the keyname for the returned text. Default is 'text'.
     Raises:
         ValueError: the file is not valid festival input
     """
@@ -299,7 +301,7 @@ def read_festival(
             if match := re.search(festival_pattern, line.strip()):
                 basename = match["basename"].strip()
                 text = match["text"].strip()
-                data.append({"basename": basename, "text": text})
+                data.append({"basename": basename, text_field_name: text})
             else:
                 raise ValueError(f'File {path} is not in the "festival" format.')
     return data

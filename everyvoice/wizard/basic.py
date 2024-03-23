@@ -183,17 +183,19 @@ class ConfigFormatStep(Step):
         log_dir_relative_to_configs = Path("..") / "logs_and_checkpoints"
         datasets = []
         # Text Configuration
-        punctuation = []
         symbols = {}
         multispeaker = False
         multilingual = False
         for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
             dataset_state = self.state[dataset]
             # Gather Symbols for Text Configuration
-            punctuation += dataset_state[StepNames.symbol_set_step.value].punctuation
-            symbols[f"{dataset}-symbols"] = dataset_state[
-                StepNames.symbol_set_step.value
-            ].symbol_set
+            # rename keys based on dataset name:
+            dataset_name = dataset_state[StepNames.dataset_name_step.value]
+            dataset_symbols = {
+                f"{dataset_name}_{k}": v
+                for k, v in dataset_state[StepNames.symbol_set_step.value].items()
+            }
+            symbols.update(dataset_symbols)
             if (
                 dataset_state.get(StepNames.data_has_language_value_step.value, "no")
                 == "yes"
@@ -213,8 +215,7 @@ class ConfigFormatStep(Step):
                 else:
                     wavs_dir = Path.cwd() / wavs_dir
             new_filelist_path = (
-                Path("..")
-                / f"{dataset_state[StepNames.dataset_name_step.value]}-filelist.psv"
+                Path("..") / f"{dataset_name}-filelist.psv"
             ).expanduser()
             filelist_data = dataset_state["filelist_data"]
             for i, entry in enumerate(filelist_data):
@@ -240,9 +241,7 @@ class ConfigFormatStep(Step):
                     sox_effects=sox_effects,
                 )
             )
-        text_config = TextConfig(
-            symbols=Symbols(punctuation=list(set(punctuation)), **symbols)
-        )
+        text_config = TextConfig(symbols=Symbols(**symbols))
         text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
         write_dict_to_config(
             json.loads(text_config.model_dump_json(exclude_none=False)),
