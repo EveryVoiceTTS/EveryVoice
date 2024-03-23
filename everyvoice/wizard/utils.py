@@ -1,8 +1,37 @@
+import csv
 import json
+from itertools import islice
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Iterable
 
 import yaml
+
+
+def read_unknown_tabular_filelist(
+    path,
+    delimiter=",",
+    quoting=csv.QUOTE_NONE,
+    escapechar="\\",
+    record_limit: int = 0,  # if non-zero, read only this many records
+) -> list[list[str]]:
+    """Returns a list of list of cell values instead of a list of dicts as with
+        the standard everyvoice.utils.generic_*sv_filelist_reader
+
+    Returns:
+        list[list[str]]: a list of rows containing a list of cell values
+    """
+    f: Iterable[str]
+    with open(path, "r", newline="", encoding="utf8") as f:
+        if record_limit:
+            f = islice(f, record_limit)
+        reader = csv.reader(
+            f,
+            delimiter=delimiter,
+            quoting=quoting,
+            escapechar=escapechar,
+        )
+        files = list(reader)
+    return files
 
 
 def write_dict_to_config(config: Dict, path: Path):

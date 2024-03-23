@@ -163,6 +163,10 @@ class StepNames(Enum):
     wavs_dir_step = "Wavs Dir Step"
     filelist_step = "Filelist Step"
     filelist_format_step = "Filelist Format Step"
+    filelist_text_representation_step = "Filelist Text Representation Step"
+    target_training_representation_step = (
+        "Target Training Representation Step"  # TODO: maybe don't need
+    )
     data_has_header_line_step = "Filelist Has Header Line Step"
     basename_header_step = "Basename Header Step"
     text_header_step = "Text Header Step"
