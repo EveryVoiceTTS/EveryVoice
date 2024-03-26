@@ -18,7 +18,6 @@ from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 
-from everyvoice.config.text_config import Symbols
 from everyvoice.tests.stubs import (
     QuestionaryStub,
     Say,
@@ -97,9 +96,9 @@ class WizardTest(TestCase):
             config_step.state[SN.name_step.value] = config_step.name
             config_step.state.update(CONTACT_INFO_STATE)
             config_step.state["dataset_test"] = {}
-            config_step.state["dataset_test"][SN.symbol_set_step.value] = Symbols(
-                symbol_set=string.ascii_letters
-            )
+            config_step.state["dataset_test"][SN.symbol_set_step.value] = {
+                "characters": list(string.ascii_letters)
+            }
             config_step.state["dataset_test"][SN.wavs_dir_step.value] = (
                 Path(tmpdirname) / "test"
             )
@@ -354,7 +353,7 @@ class WizardTest(TestCase):
         with patch_menu_prompt(1):  # 1 is "yes"
             step.run()
         self.assertEqual(step.state[SN.data_has_header_line_step.value], "yes")
-        self.assertEqual(len(step.state["filelist_data"]), 4)
+        self.assertEqual(len(step.state["filelist_data_list"]), 4)
 
         step = format_step.children[1]
         with patch_menu_prompt(1):  # 1 is second column
@@ -365,9 +364,13 @@ class WizardTest(TestCase):
         step = tour.steps[2].children[2]
         with patch_menu_prompt(1):  # 1 is second remaining column, i.e., third column
             step.run()
-        # print(step.state["filelist_headers"])
         self.assertEqual(step.state["filelist_headers"][2], "text")
-
+        text_representation_step = find_step(
+            SN.filelist_text_representation_step, tour.steps
+        )
+        with patch_menu_prompt(0):  # 0 is "characters"
+            text_representation_step.run()
+        self.assertEqual(step.state["filelist_headers"][2], "characters")
         speaker_step = find_step(SN.data_has_speaker_value_step, tour.steps)
         children_before = len(speaker_step.children)
         with patch_menu_prompt(0):  # 0 is "no"
@@ -388,7 +391,7 @@ class WizardTest(TestCase):
         # print(select_lang_step.state)
         self.assertEqual(
             select_lang_step.state["filelist_headers"],
-            ["unknown_0", "basename", "text", "unknown_3"],
+            ["unknown_0", "basename", "characters", "unknown_3"],
         )
 
         text_processing_step = find_step(SN.text_processing_step, tour.steps)
@@ -398,7 +401,7 @@ class WizardTest(TestCase):
                 text_processing_step.run()
         # print(text_processing_step.state)
         self.assertEqual(
-            text_processing_step.state["filelist_data"][1]["text"],
+            text_processing_step.state["filelist_data"][1]["characters"],
             "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
         )
 
@@ -434,16 +437,9 @@ class WizardTest(TestCase):
 
         symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
         self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
-        with patch_menu_prompt([(0, 1, 2), (9), ()], multi=True):
-            symbol_set_step.run()
-        # print(symbol_set_step.state)
-        self.assertEqual(symbol_set_step.state["banned_symbols"], "z")
-        self.assertEqual(symbol_set_step.response.punctuation, ["\t", " ", ":"])
-        self.assertEqual(
-            symbol_set_step.response.symbol_set,
-            ["a", "c", "d", "e", "f", "n", "s", "t", "x", "à", "é", "ê"],
-        )
-        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 2)
+        symbol_set_step.run()
+        self.assertEqual(len(symbol_set_step.state[SN.symbol_set_step.value]), 2)
+        self.assertIn("t͡s", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
 
     def test_wrong_fileformat_psv(self):
         tour = Tour(
@@ -633,6 +629,9 @@ class WizardTest(TestCase):
                     ),
                     StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
                     StepAndAnswer(
+                        dataset.FilelistTextRepresentationStep(), Say("characters")
+                    ),
+                    StepAndAnswer(
                         dataset.HasSpeakerStep(),
                         Say("yes"),
                         children_answers=[RecursiveAnswers(Say(3))],
@@ -645,7 +644,7 @@ class WizardTest(TestCase):
                     StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
                     StepAndAnswer(
                         dataset.SymbolSetStep(),
-                        patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
+                        Say(True),
                     ),
                     StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
                     StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
@@ -686,6 +685,16 @@ class WizardTest(TestCase):
                         dataset.FilelistFormatStep(state_subset="dataset_0"), Say("tsv")
                     ),
                     StepAndAnswer(
+                        dataset.FilelistTextRepresentationStep(
+                            state_subset="dataset_0"
+                        ),
+                        Say("characters"),
+                    ),
+                    StepAndAnswer(
+                        dataset.TextProcessingStep(state_subset="dataset_0"),
+                        Say([0, 1]),
+                    ),
+                    StepAndAnswer(
                         dataset.HasSpeakerStep(state_subset="dataset_0"),
                         Say("yes"),
                         children_answers=[RecursiveAnswers(Say(2))],
@@ -696,12 +705,8 @@ class WizardTest(TestCase):
                         children_answers=[RecursiveAnswers(Say(3))],
                     ),
                     StepAndAnswer(
-                        dataset.TextProcessingStep(state_subset="dataset_0"),
-                        Say([0, 1]),
-                    ),
-                    StepAndAnswer(
                         dataset.SymbolSetStep(state_subset="dataset_0"),
-                        patch_menu_prompt([(0, 1, 2, 3, 4), (), ()], multi=True),
+                        Say(True),
                     ),
                     StepAndAnswer(
                         dataset.SoxEffectsStep(state_subset="dataset_0"), Say([0])
@@ -759,6 +764,12 @@ class WizardTest(TestCase):
                         ],
                     ),
                     StepAndAnswer(
+                        dataset.FilelistTextRepresentationStep(
+                            state_subset="dataset_0"
+                        ),
+                        Say("characters"),
+                    ),
+                    StepAndAnswer(
                         dataset.HasSpeakerStep(state_subset="dataset_0"),
                         Say("no"),
                     ),
@@ -773,7 +784,7 @@ class WizardTest(TestCase):
                     ),
                     StepAndAnswer(
                         dataset.SymbolSetStep(state_subset="dataset_0"),
-                        monkeypatch(dataset, "get_response_from_menu_prompt", Say([])),
+                        Say(True),
                     ),
                     StepAndAnswer(
                         dataset.SoxEffectsStep(state_subset="dataset_0"),
@@ -824,6 +835,9 @@ class WizardTest(TestCase):
                         Say("psv"),
                     ),
                     StepAndAnswer(
+                        dataset.FilelistTextRepresentationStep(), Say("characters")
+                    ),
+                    StepAndAnswer(
                         dataset.HasSpeakerStep(),
                         patch_menu_prompt(1),
                         children_answers=[RecursiveAnswers(Say("foo"))],
@@ -842,7 +856,7 @@ class WizardTest(TestCase):
                     ),
                 ],
             )
-            self.assertEqual(tour.state["filelist_headers"], ["basename", "text"])
+            self.assertEqual(tour.state["filelist_headers"], ["basename", "characters"])
             self.assertEqual(tour.state[SN.data_has_speaker_value_step.value], "no")
             self.assertEqual(tour.state[SN.data_has_language_value_step.value], "no")
 
@@ -938,23 +952,9 @@ class WavFileDirectoryRelativePathTest(TestCase):
             "dataset_0": {
                 SN.dataset_name_step.value: "unit",
                 SN.wavs_dir_step.value: "Common-Voice",
-                SN.symbol_set_step.value: Symbols(
-                    silence=["<SIL>"],
-                    pad="_",
-                    punctuation=[],
-                    symbol_set=[
-                        " ",
-                        ",",
-                        ".",
-                        "A",
-                        "D",
-                        "E",
-                        "H",
-                        "I",
-                        "J",
-                        "K",
-                    ],
-                ),
+                SN.symbol_set_step.value: {
+                    "characters": [" ", ",", ".", "A", "D", "E", "H", "I", "J", "K"]
+                },
                 "filelist_data": [
                     {
                         "text": "Sentence 1",
