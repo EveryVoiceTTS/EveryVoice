@@ -561,6 +561,8 @@ class TextProcessingStep(Step):
             0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
             1: {"fn": lambda x: normalize("NFC", x), "desc": "NFC Normalization"},
         }
+        if "symbols" not in self.state:
+            self.state["symbols"] = {}
         if self.response:
             for process in self.response:
                 process_fn = process_lookup[process]["fn"]
@@ -633,16 +635,24 @@ class SymbolSetStep(Step):
     DEFAULT_NAME = StepNames.symbol_set_step
 
     def prompt(self):
+        # TODO: This is a bit of a weird step, since it doesn't really prompt anything, it just applies the effect of trying to find
+        #       character graphemes/phones. I'd still like to keep it here, since we might add more to this step in the future, and
+        #       I don't want to lump the grapheme clustering logic into the effect of another step.
+        print(
+            f"We will now read your entire dataset and try to determine the characters and/or phones in your dataset according to Unicode Grapheme clustering rules. Please carefully check your {TEXT_CONFIG_FILENAME_PREFIX}.yaml file (which is created at the end of the wizard) and adjust the symbol set as appropriate. If your language uses standard punctuation symbols to represent sounds, it is extra important that you go remove any of these symbols from the punctuation categories."
+        )
+        return True
+
+    def validate(self, response):
+        return bool(response)
+
+    def effect(self):
         # if characters guess graphemes
         character_graphemes = guess_graphemes_in_text_lines(
             [x.get("characters", "") for x in self.state["filelist_data"]]
         )
         phone_graphemes = guess_ipa_phones_in_text_lines(
             [x.get("phones", "") for x in self.state["filelist_data"]]
-        )
-
-        print(
-            f"We will now read your entire dataset and try to determine the characters and/or phones in your dataset according to Unicode Grapheme clustering rules. Please carefully check your {TEXT_CONFIG_FILENAME_PREFIX}.yaml file (which is created at the end of the wizard) and adjust the symbol set as appropriate. If your language uses standard punctuation symbols to represent sounds, it is extra important that you go remove any of these symbols from the punctuation categories."
         )
         if not phone_graphemes and not character_graphemes:
             return
@@ -651,10 +661,7 @@ class SymbolSetStep(Step):
             symbols["characters"] = sorted(list(character_graphemes))
         if phone_graphemes:
             symbols["phones"] = sorted(list(phone_graphemes))
-        return symbols
-
-    def validate(self, response):
-        return bool(response)
+        self.state[StepNames.symbol_set_step.value] = symbols
 
 
 def return_dataset_steps(dataset_index=0):
