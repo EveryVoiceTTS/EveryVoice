@@ -281,37 +281,6 @@ class Preprocessor:
         """
         return torch.linalg.norm(spectral_feature_tensor, dim=0)
 
-    # This method is static because we want to use it in Datasets without setting the Preprocessor as an attribute
-    @staticmethod
-    def extract_text_inputs(
-        text,
-        text_processor: TextProcessor,
-        lang_id: Optional[str] = None,
-        apply_g2p=True,
-        use_pfs=False,
-        quiet=False,
-    ) -> list[int] | npt.NDArray[np.int_]:
-        """
-        Given some text and a text_processor, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
-
-        Args:
-            text (str): text
-            text_processor (TextProcessor): a text processor
-            lang_id (Optional[str]): the language id of the text - required for text_processing that applies g2p
-            apply_g2p (bool): whether to apply g2p. required for calculating phonological features and phone-based encoding.
-            use_pfs (bool): whether to encode text as phonological features (if False, will use one-hot encoding)
-            quiet (bool): suppress warnings
-        """
-        if text_processor is None:
-            raise ValueError("Text processor not initialized")
-        return text_processor.encode_text(
-            text=text,
-            quiet=quiet,
-            encode_as_phonological_features=use_pfs,
-            lang_id=lang_id,
-            apply_g2p=apply_g2p,
-        )
-
     def print_duration(self):
         """Convert seconds to a human readable format"""
         seconds = int(self.counters.value("duration"))
@@ -667,10 +636,13 @@ class Preprocessor:
         self,
         item,
         use_pfs=False,
-        specific_target_text_representation: Optional[
+        specific_text_representation: Optional[
             TargetTrainingTextRepresentationLevel
         ] = None,
-    ) -> tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]]:
+        encode_as_string=True,
+    ) -> tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]] | tuple[
+        Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.int_]]
+    ]:
         """Process text into characters, phones, and/or phonological features.
             If specific_text_representation is supplied, then only that representation is processed.
             Otherwise:
@@ -684,13 +656,14 @@ class Preprocessor:
             item (_type_): an item from the filelist
             use_pfs (bool, optional): whether to generate phonological features. Defaults to False.
             specific_text_representation (Optional[DatasetTextRepresentation], optional): a specific representation to process if you don't want the method to create all available representations, useful for synthesis. Defaults to None.
+            encode_as_string (bool, optional): whether to return characters and phones as /-joined strings (when True) or lists of ints (when False). Defaults to True.
 
         Returns:
-            tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]: returns an optional characters string, an optional phones string, and an optional multi-hot phonological feature vector
+            tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]]|tuple[Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.int_]]]: if encode_as_string is true, returns an optional characters string, an optional phones string, and an optional multi-hot phonological feature vector. if encode_as_string is false, returns a list of ints for characters and phones
         """
-        if specific_target_text_representation is not None:
+        if specific_text_representation is not None:
             raise NotImplementedError(
-                "Sorry 'specific_target_text_representation' isn't implemented yet, please set it to None."
+                "Sorry 'specific_text_representation' isn't implemented yet, please set it to None."
             )  # TODO: refactor so that you don't *need* to generate all possible representations, to make synthesis faster.
         if self.text_processor is None:
             raise NotImplementedError(
@@ -706,53 +679,59 @@ class Preprocessor:
             DatasetTextRepresentation.arpabet.value in item
             and DatasetTextRepresentation.ipa_phones.value not in item
         ):
-            phone_tokens = self.extract_text_inputs(
-                ARPABET_TO_IPA_TRANSDUCER(
+            phone_tokens = self.text_processor.encode_text(
+                text=ARPABET_TO_IPA_TRANSDUCER(
                     item[DatasetTextRepresentation.arpabet.value]
                 ).output_string,
-                self.text_processor,
-                apply_g2p=False,
                 quiet=True,
+                apply_g2p=False,
             )
         # if dataset is chars, tokenize them for saving to filelist
         if DatasetTextRepresentation.characters.value in item:
-            character_tokens = self.extract_text_inputs(
-                item[DatasetTextRepresentation.characters.value],
-                self.text_processor,
+            character_tokens = self.text_processor.encode_text(
+                text=item[DatasetTextRepresentation.characters.value],
                 apply_g2p=False,
-                use_pfs=False,
+                encode_as_phonological_features=False,
                 quiet=True,
             )
-            if item["language"] in AVAILABLE_G2P_ENGINES:
-                phone_tokens = self.extract_text_inputs(
-                    item[DatasetTextRepresentation.characters.value],
-                    self.text_processor,
+            # if g2p available, and phones don't already exist, process and tokenize them for saving to filelist
+            if (
+                item["language"] in AVAILABLE_G2P_ENGINES
+                and DatasetTextRepresentation.ipa_phones.value not in item
+            ):
+                phone_tokens = self.text_processor.encode_text(
+                    text=item[DatasetTextRepresentation.characters.value],
                     apply_g2p=True,
                     lang_id=item["language"],
-                    use_pfs=False,
+                    encode_as_phonological_features=False,
                     quiet=True,
                 )
-        # if dataset is phones or if g2p available, process and tokenize them for saving to filelist
+        # if dataset is phones
         if DatasetTextRepresentation.ipa_phones.value in item:
-            phone_tokens = self.extract_text_inputs(
-                item[DatasetTextRepresentation.ipa_phones.value],
-                self.text_processor,
+            phone_tokens = self.text_processor.encode_text(
+                text=item[DatasetTextRepresentation.ipa_phones.value],
                 apply_g2p=False,
-                use_pfs=False,
+                encode_as_phonological_features=False,
                 quiet=True,
             )
-        # add to filelist
-        if phone_tokens is not None:
-            if use_pfs:
-                pfs = self.text_processor.calculate_phonological_features(
-                    self.text_processor._token_sequence_to_text_sequence(phones)
-                )
-            phones = self.text_processor.decode_tokens(phone_tokens, join_character="/")
-        if character_tokens is not None:
-            characters = self.text_processor.decode_tokens(
-                character_tokens, join_character="/"
+        # calculate pfs
+        if phone_tokens and use_pfs:
+            pfs = self.text_processor.calculate_phonological_features(
+                self.text_processor._token_sequence_to_text_sequence(phones)
             )
-        return (characters, phones, pfs)
+        # encode to string
+        if encode_as_string:
+            if phone_tokens is not None:
+                phones = self.text_processor.decode_tokens(
+                    phone_tokens, join_character="/"
+                )
+            if character_tokens is not None:
+                characters = self.text_processor.decode_tokens(
+                    character_tokens, join_character="/"
+                )
+            return (characters, phones, pfs)
+        else:
+            return (character_tokens, phone_tokens, pfs)
 
     def process_spec(self, item):
         input_audio_path = self.create_path(
