@@ -9,10 +9,7 @@ from tqdm import tqdm
 
 from everyvoice.config.preprocessing_config import DatasetTextRepresentation
 from everyvoice.config.shared_types import TargetTrainingTextRepresentationLevel
-from everyvoice.text.utils import (
-    guess_graphemes_in_text_lines,
-    guess_ipa_phones_in_text_lines,
-)
+from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
 from everyvoice.utils import generic_psv_filelist_reader, read_festival, slugify
 from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, Step, StepNames, Tour
 from everyvoice.wizard.prompts import (
@@ -647,13 +644,15 @@ class SymbolSetStep(Step):
         return bool(response)
 
     def effect(self):
-        # if characters guess graphemes
-        character_graphemes = guess_graphemes_in_text_lines(
-            [x.get("characters", "") for x in self.state["filelist_data"]]
-        )
-        phone_graphemes = guess_ipa_phones_in_text_lines(
-            [x.get("phones", "") for x in self.state["filelist_data"]]
-        )
+        character_graphemes = set()
+        phone_graphemes = set()
+        for item in tqdm(
+            self.state["filelist_data"], desc="Finding all symbols in your dataset"
+        ):
+            if "characters" in item:
+                character_graphemes.update(guess_graphemes_in_text(item["characters"]))
+            if "phones" in item:
+                phone_graphemes.update(guess_ipa_phones_in_text(item["phones"]))
         if not phone_graphemes and not character_graphemes:
             return
         symbols = {}
