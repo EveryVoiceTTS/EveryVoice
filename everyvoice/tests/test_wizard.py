@@ -413,7 +413,7 @@ class WizardTest(TestCase):
         self.assertEqual(
             sox_effects_step.state["sox_effects"],
             [
-                ["channel", "1"],
+                ["channels", "1"],
                 ["rate", "22050"],
                 [
                     "silence",
