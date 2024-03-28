@@ -3,17 +3,24 @@ import doctest
 from pathlib import Path
 from unittest import TestCase
 
+from pep440 import is_canonical
 from pydantic import BaseModel
 from pydantic.functional_validators import BeforeValidator
 from typing_extensions import Annotated
 
 import everyvoice.utils
+from everyvoice._version import VERSION
 from everyvoice.config.shared_types import init_context
 from everyvoice.utils import (
     directory_path_must_exist,
     path_is_a_directory,
     relative_to_absolute_path,
 )
+
+
+class VersionTest(TestCase):
+    def test_version_is_pep440_compliant(self):
+        self.assertTrue(is_canonical(VERSION))
 
 
 class UtilsTest(TestCase):

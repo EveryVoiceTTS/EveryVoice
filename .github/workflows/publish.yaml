@@ -1,0 +1,136 @@
+# [Packaging Python Projects](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
+# [Python Packaging Guide](https://packaging.python.org/en/latest/guides/publishing-package-distribution-releases-using-github-actions-ci-cd-workflows/#the-whole-ci-cd-workflow)
+# [Publishing to package registries](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries)
+# [GitHub Contexts](https://docs.github.com/en/actions/learn-github-actions/contexts)
+# NOTE: It is recommended to have separate environment, one to build and one to publish for better security.
+name: Publish EveryVoice distribution 📦 to PyPI
+
+on:
+  push:
+    tags:
+      - v[0-9]+.**
+
+jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+
+  build:
+    name: Build distribution 📦
+    runs-on: ubuntu-latest
+    needs:
+      - test
+    steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.SGILE_PAT }}
+        submodules: recursive
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+    - name: Install pypa/build
+      run: python3 -m pip install build
+    - name: Build a binary wheel and a source tarball
+      run: python -m build --sdist --wheel
+    - name: Store the distribution packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+
+
+  publish-to-pypi:
+    name: >-
+      Publish EveryVoice distribution 📦 to PyPI
+    needs:
+      - build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/everyvoice
+    permissions:
+      id-token: write  # IMPORTANT: mandatory for trusted publishing
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Publish distribution 📦 to TestPyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+        repository-url: https://test.pypi.org/legacy/
+        verbose: true
+    - name: Publish distribution 📦 to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}
+
+
+  github-release:
+    name: >-
+      Sign the EveryVoice distribution 📦 with Sigstore
+      and upload them to GitHub Release
+    needs:
+      - publish-to-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # IMPORTANT: mandatory for making GitHub Releases
+      id-token: write  # IMPORTANT: mandatory for sigstore
+    steps:
+    - name: Download all the dists
+      uses: actions/download-artifact@v4
+      with:
+        name: python-package-distributions
+        path: dist/
+    - name: Sign the dists with Sigstore
+      uses: sigstore/gh-action-sigstore-python@v1.2.3
+      with:
+        inputs: >-
+          ./dist/*.tar.gz
+          ./dist/*.whl
+    - name: Update CHANGELOG
+      id: changelog
+      uses: requarks/changelog-action@v1
+      with:
+        token: ${{ github.token }}
+        tag: ${{ github.ref_name }}
+    - name: Create Release
+      uses: ncipollo/release-action@v1.12.0
+      with:
+        allowUpdates: true
+        name: ${{ github.ref_name }}
+        tag: ${{ github.ref_name }}
+        body: ${{ steps.changelog.outputs.changes }}
+        token: ${{ github.token }}
+  build-docs:
+    needs:
+      - github-release
+    uses: ./.github/workflows/docs.yml
+    secrets: inherit
+
+  doc-deploy:
+    runs-on: ubuntu-latest
+    needs:
+      - build-docs
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SGILE_PAT }}
+          submodules: recursive
+          fetch-depth: 0 # fetch all commits/branches
+      - name: Download the latest docs
+        uses: actions/download-artifact@v4
+        with:
+          name: latest-docs
+          path: site/
+      - name: Setup doc deploy
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+      - name: Deploy docs with mike 🚀
+        run: |
+          mike deploy --push --update-aliases latest ${{ github.ref_name }} stable

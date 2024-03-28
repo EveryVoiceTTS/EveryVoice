@@ -171,13 +171,17 @@ class CLITest(TestCase):
 
     def test_update_schema(self):
         result = self.runner.invoke(app, ["update-schemas"])
+        # The following two assertions will fail when we change the major or  minor
+        # version of everyvoice. It's up to us to run `everyvoice update-schemas` in
+        # that case and commit the results, and these assertions here will remind us we
+        # forgot to do so.
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("FileExistsError", str(result))
         dummy_contact = ContactInformation(
             contact_name="Test Runner", contact_email="info@everyvoice.ca"
         )
         with tempfile.TemporaryDirectory() as tmpdir:
-            result = self.runner.invoke(app, ["update-schemas", "-o", tmpdir])
+            _ = self.runner.invoke(app, ["update-schemas", "-o", tmpdir])
             for filename, obj in SCHEMAS_TO_OUTPUT.items():
                 with open(Path(tmpdir) / filename, encoding="utf8") as f:
                     schema = json.load(f)
