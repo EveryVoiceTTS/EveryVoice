@@ -1,6 +1,10 @@
+:construction: :construction: Warning! This repository is not quite ready yet. We're releasing it publicly in alpha, but it should be expected to change drastically over the coming months. :construction: :construction:
+
 # EveryVoice TTS Toolkit 💬
 
 [![codecov](https://codecov.io/gh/roedoejet/EveryVoice/branch/main/graph/badge.svg?token=yErCxf64IU)](https://codecov.io/gh/roedoejet/EveryVoice)
+[![Documentation](https://github.com/roedoejet/EveryVoice/actions/workflows/docs.yml/badge.svg)](https://docs.everyvoice.ca)
+[![Build Status](https://github.com/roedoejet/EveryVoice/actions/workflows/test.yml/badge.svg)](https://github.com/roedoejet/EveryVoice/actions)
 [![license](https://img.shields.io/badge/Licence-MIT-green)](LICENSE)
 
 This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generation for Indigenous Language Education" project.
