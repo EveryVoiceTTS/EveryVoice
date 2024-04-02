@@ -1,10 +1,12 @@
 #!/usr/bin/env python
+import doctest
 import string
 from pathlib import Path
 from typing import Dict, List
 from unicodedata import normalize
 from unittest import TestCase
 
+import everyvoice.text.utils
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.tests.basic_test_case import BasicTestCase
@@ -22,6 +24,11 @@ class TextTest(BasicTestCase):
         self.base_text_processor = TextProcessor(
             TextConfig(symbols=Symbols(letters=string.ascii_letters)),
         )
+
+    def test_run_doctest(self):
+        """Run doctests in everyvoice.utils"""
+        results = doctest.testmod(everyvoice.text.utils)
+        self.assertFalse(results.failed, results)
 
     def test_text_to_sequence(self):
         text = "hello world"
