@@ -236,14 +236,31 @@ def plot_spectrogram(spectrogram):
 
 
 def write_filelist(files, path):
+
     with open(path, "w", encoding="utf8") as f:
         if not files:
             logger.warning(f"Writing empty filelist file {path}")
             print("", file=f)  # header line, empty because we don't know the fields
             return
+        # The base set of expected fieldnames
+        fieldnames = [
+            "basename",
+            "language",
+            "speaker",
+            "characters",
+            "character_tokens",
+            "phones",
+            "phone_tokens",
+        ]
+        # The fieldnames we actually found
+        found_fieldnames = sorted(files[0].keys())
+        # Use fieldnames in the order we expect, and append unexpected ones to the end
+        fieldnames = [x for x in fieldnames if x in found_fieldnames] + [
+            x for x in found_fieldnames if x not in fieldnames
+        ]
         writer = csv.DictWriter(
             f,
-            fieldnames=files[0].keys(),
+            fieldnames=fieldnames,
             delimiter="|",
             quoting=csv.QUOTE_NONE,
             escapechar="\\",
