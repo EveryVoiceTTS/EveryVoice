@@ -1,5 +1,4 @@
-from string import ascii_lowercase
-from typing import Dict, Optional
+from typing import Dict
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -42,10 +41,6 @@ class Symbols(BaseModel):
     punctuation: Punctuation = Field(
         default_factory=Punctuation,
         description="EveryVoice will combine punctuation and normalize it into a set of five permissible types of punctuation to help tractable training.",
-    )
-    lowercase_ascii: Optional[list[str]] = Field(
-        list(ascii_lowercase),
-        description="EveryVoice adds lowercase ascii symbols by default. You can set this to None to disable it which will make for a smaller model if you don't need all ascii characters.",
     )
     model_config = ConfigDict(extra="allow")
 

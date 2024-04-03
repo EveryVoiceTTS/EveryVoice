@@ -47,12 +47,6 @@ class TextProcessor:
             for cat in self.config.symbols.punctuation.model_dump().values()
             for item in cat
         )
-        # clean symbols with same cleaners as text cleaners
-        # TODO: do I need to clean the symbols?
-        # self.symbols = [self.apply_cleaners(x) for x in self.symbols]
-        self.symbols.insert(0, self._pad_symbol)
-        # Add whitespace
-        self.symbols.insert(1, " ")
         # Add punctuation
         # Add an internal hash to convert from the type of Punctuation to the internal representation
         self.punctuation_internal_hash = {
@@ -80,13 +74,21 @@ class TextProcessor:
 
         # Add the internal punctuation IDs to the symbols list
         self.symbols += list(self.punctuation_internal_hash.values())
+        # TODO: do I need to clean the symbols? How to do this if datasets have their own cleaners
         # Remove duplicates from symbol list, and apply longest characters first
         # to apply multigraph symbols first
-        self.symbols = sorted(
-            set(self.symbols),
-            key=len,
-            reverse=True,
-        )
+        self._hardcoded_internal_symbols = [self._pad_symbol, " "]
+        self.symbols = self._hardcoded_internal_symbols + [
+            x
+            for x in sorted(
+                set(self.symbols),
+                key=lambda symbol: (
+                    -len(symbol),
+                    symbol,
+                ),  # reverse-length sort, then sort alphabetically
+            )
+            if x not in self._hardcoded_internal_symbols
+        ]
         self.to_replace = config.to_replace
         self.missing_symbols: Counter[str] = Counter()
 
