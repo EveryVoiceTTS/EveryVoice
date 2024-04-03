@@ -36,7 +36,7 @@ class TextTest(BasicTestCase):
         self.assertEqual(self.base_text_processor.decode_tokens(sequence, ""), text)
 
     def test_token_sequence_to_text(self):
-        sequence = [10, 7, 14, 14, 17, 1, 25, 17, 20, 14, 6]
+        sequence = [42, 39, 46, 46, 49, 1, 57, 49, 52, 46, 38]
         self.assertEqual(self.base_text_processor.encode_text("hello world"), sequence)
 
     def test_hardcoded_symbols(self):
