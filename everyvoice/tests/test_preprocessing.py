@@ -3,6 +3,7 @@
 import shutil
 import tempfile
 from pathlib import Path
+from string import ascii_lowercase
 
 import torch
 import torchaudio
@@ -36,6 +37,7 @@ class PreprocessingTest(BasicTestCase):
     fp_config = FeaturePredictionConfig(
         text=TextConfig(
             symbols=Symbols(
+                ascii_symbols=list(ascii_lowercase),
                 ipa=["ɔ", "æ", "ɡ", "ɛ", "ð", "ɜ˞", "ʌ", "ɑ", "ɹ", "ʃ", "ɪ", "ʊ", "ʒ"],
             )
         ),
