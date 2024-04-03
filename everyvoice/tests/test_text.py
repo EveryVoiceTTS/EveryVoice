@@ -173,11 +173,13 @@ class TextTest(BasicTestCase):
         self.assertNotEqual(len(g2p_tokens), len(one_hot_tokens))
         self.assertEqual(len(feats[0]), moh_config.model.phonological_feats_size)
 
-    def test_duplicate_symbols(self):
+    def test_duplicates_removed(self):
         duplicate_symbols_text_processor = TextProcessor(
             TextConfig(symbols=Symbols(letters=string.ascii_letters, duplicate=["e"]))
         )
-        self.assertIn("e", duplicate_symbols_text_processor.duplicate_symbols)
+        self.assertEquals(
+            len([x for x in duplicate_symbols_text_processor.symbols if x == "e"]), 1
+        )
 
     def test_bad_symbol_configuration(self):
         with self.assertRaises(TypeError):

@@ -35,15 +35,11 @@ class TextProcessor:
         ] = None
         self._all_symbols = self.config.symbols.model_dump()
         self._pad_symbol = "\x80"  # Use the Unicode PAD symbol
-        # apply longest characters first to apply multigraph symbols first
-        self.symbols = sorted(
-            list(
-                chain.from_iterable(
-                    list(v) for k, v in self._all_symbols.items() if k != "punctuation"
-                )
-            ),
-            key=len,
-            reverse=True,
+        # Combine all the symbol fields into one list (except for punctuation)
+        self.symbols = list(
+            chain.from_iterable(
+                list(v) for k, v in self._all_symbols.items() if k != "punctuation"
+            )
         )
         # Keep a list of valid punctuation
         self.punctuation = set(
@@ -84,22 +80,22 @@ class TextProcessor:
 
         # Add the internal punctuation IDs to the symbols list
         self.symbols += list(self.punctuation_internal_hash.values())
+        # Remove duplicates from symbol list, and apply longest characters first
+        # to apply multigraph symbols first
+        self.symbols = sorted(
+            set(self.symbols),
+            key=len,
+            reverse=True,
+        )
         self.to_replace = config.to_replace
         self.missing_symbols: Counter[str] = Counter()
-        self.duplicate_symbols: Counter[str] = Counter()
 
         # Mappings from symbol to numeric ID and vice versa
         self._symbol_to_id: Dict[str, int] = {}
         self._id_to_symbol: Dict[int, str] = {}
         for i, s in enumerate(self.symbols):
-            if s in self._symbol_to_id:
-                logger.warning(
-                    f"Symbol '{s}' has already been declared at position {self._symbol_to_id[s]} so we will use that index instead of the current index {i}. Please remove duplicates from your configuration."
-                )
-                self.duplicate_symbols[s] += 1
-            else:
-                self._symbol_to_id[s] = i
-                self._id_to_symbol[i] = s
+            self._symbol_to_id[s] = i
+            self._id_to_symbol[i] = s
 
         self._tokenizer = RegexpTokenizer(
             "|".join([re.escape(x) for x in self.symbols + self.punctuation_characters])
