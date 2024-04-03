@@ -7,8 +7,10 @@ from unicodedata import normalize
 import questionary
 from tqdm import tqdm
 
-from everyvoice.config.preprocessing_config import DatasetTextRepresentation
-from everyvoice.config.shared_types import TargetTrainingTextRepresentationLevel
+from everyvoice.config.type_definitions import (
+    DatasetTextRepresentation,
+    TargetTrainingTextRepresentationLevel,
+)
 from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
 from everyvoice.utils import generic_psv_filelist_reader, read_festival, slugify
 from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, Step, StepNames, Tour
@@ -452,13 +454,13 @@ class SelectLanguageStep(Step):
             print(
                 f"Your text data contains characters and the language id {isocode} is not supported by a grapheme-to-phoneme engine. If you want to train using a pronunciation form (which usually results in better quality) you will have to add a g2p engine for your language. Please see <TODO:Docs> for more information."
             )
-            self.state[
-                "model_target_training_text_representation"
-            ] = TargetTrainingTextRepresentationLevel.characters.value
+            self.state["model_target_training_text_representation"] = (
+                TargetTrainingTextRepresentationLevel.characters.value
+            )
         else:
-            self.state[
-                "model_target_training_text_representation"
-            ] = TargetTrainingTextRepresentationLevel.ipa_phones.value
+            self.state["model_target_training_text_representation"] = (
+                TargetTrainingTextRepresentationLevel.ipa_phones.value
+            )
             g2p_engine = get_g2p_engine(isocode)
         for item in self.state["filelist_data"]:
             # add language code
@@ -468,11 +470,11 @@ class SelectLanguageStep(Step):
                 DatasetTextRepresentation.arpabet.value in item
                 and DatasetTextRepresentation.ipa_phones.value not in item
             ):
-                item[
-                    DatasetTextRepresentation.ipa_phones.value
-                ] = ARPABET_TO_IPA_TRANSDUCER(
-                    item[DatasetTextRepresentation.arpabet.value]
-                ).output_string
+                item[DatasetTextRepresentation.ipa_phones.value] = (
+                    ARPABET_TO_IPA_TRANSDUCER(
+                        item[DatasetTextRepresentation.arpabet.value]
+                    ).output_string
+                )
             # if phones don't exist but g2p is available, calculate them
             if (
                 DatasetTextRepresentation.characters.value in item

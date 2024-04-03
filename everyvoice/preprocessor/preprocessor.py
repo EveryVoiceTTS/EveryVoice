@@ -30,8 +30,10 @@ from torchaudio.functional import resample
 from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
-from everyvoice.config.preprocessing_config import DatasetTextRepresentation
-from everyvoice.config.shared_types import TargetTrainingTextRepresentationLevel
+from everyvoice.config.type_definitions import (
+    DatasetTextRepresentation,
+    TargetTrainingTextRepresentationLevel,
+)
 from everyvoice.exceptions import ConfigError
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -640,9 +642,12 @@ class Preprocessor:
             TargetTrainingTextRepresentationLevel
         ] = None,
         encode_as_string=True,
-    ) -> tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]] | tuple[
-        Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.int_]]
-    ]:
+    ) -> (
+        tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]]
+        | tuple[
+            Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.int_]]
+        ]
+    ):
         """Process text into characters, phones, and/or phonological features.
             If specific_text_representation is supplied, then only that representation is processed.
             Otherwise:
