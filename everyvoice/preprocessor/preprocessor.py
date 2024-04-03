@@ -306,14 +306,6 @@ class Preprocessor:
                 "missing symbols",
                 len(self.text_processor.missing_symbols) if self.text_processor else 0,
             ],
-            [
-                "duplicate symbols",
-                (
-                    len(self.text_processor.duplicate_symbols)
-                    if self.text_processor
-                    else 0
-                ),
-            ],
             ["skipped processes", self.counters.value("skipped_processes")],
             ["nans", self.counters.value("nans")],
             ["audio_empty", self.counters.value("audio_empty")],
