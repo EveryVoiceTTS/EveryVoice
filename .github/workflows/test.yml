@@ -65,6 +65,10 @@ jobs:
             echo "Please run 'PYTHONPROFILEIMPORTTIME=1 everyvoice -h 2> importtime.txt; tuna importtime.txt' and tuck away expensive imports so that the CLI doesn't load them until it uses them."; \
             false; \
           fi
+          if grep -q shared_types importtime.txt; then \
+            echo "ERROR: please be careful not to cause shared_types to be imported when the CLI just loads. It is an expensive import."; \
+            false; \
+          fi
       - name: Report help speed in PR
         if: github.event_name == 'pull_request'
         uses: mshick/add-pr-comment@v2
