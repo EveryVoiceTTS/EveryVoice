@@ -1,7 +1,11 @@
+"""
+Types shared among all EV modules, though not always super fast to load.
+Tiny type defs that load in milliseconds can go into type_definitions.py.
+"""
+
 from collections.abc import Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
-from enum import Enum
 from functools import cached_property
 from pathlib import Path
 from typing import Any, Dict, Iterator, Tuple, Union
@@ -24,12 +28,6 @@ from everyvoice.config.utils import (
 from everyvoice.utils import generic_psv_filelist_reader, get_current_time
 
 _init_context_var = ContextVar("_init_context_var", default=None)
-
-
-class TargetTrainingTextRepresentationLevel(str, Enum):
-    characters = "characters"
-    ipa_phones = "phones"
-    phonological_features = "phonological_features"
 
 
 @contextmanager

@@ -6,6 +6,7 @@ from annotated_types import Ge, Le
 from pydantic import Field, FilePath, ValidationInfo, model_validator
 
 from everyvoice.config.shared_types import ConfigModel, PartialLoadConfig, init_context
+from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.config.utils import (
     PossiblyRelativePath,
     PossiblyRelativePathMustExist,
@@ -16,12 +17,6 @@ from everyvoice.utils import (
     generic_psv_filelist_reader,
     load_config_from_json_or_yaml_path,
 )
-
-
-class DatasetTextRepresentation(str, Enum):
-    characters = "characters"
-    ipa_phones = "phones"
-    arpabet = "arpabet"  # always gets mapped to phones
 
 
 class AudioSpecTypeEnum(str, Enum):
