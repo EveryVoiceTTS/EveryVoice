@@ -27,6 +27,14 @@ _init_context_var = ContextVar("_init_context_var", default=None)
 
 @contextmanager
 def init_context(value: Dict[str, Any]) -> Iterator[None]:
+    """
+    This context manager is use in tandem with pydantic to pass down a context to validators.
+    As described in [Using validation context with BaseModel initialization]
+    (https://docs.pydantic.dev/2.0/usage/validators/#using-validation-context-with-basemodel-initialization):
+    Although there is no way to specify a context in the standard BaseModel
+    initializer, you can work around this through the use of
+    contextvars.ContextVar and a custom __init__ method.
+    """
     token = _init_context_var.set(value)  # type: ignore
     try:
         yield
