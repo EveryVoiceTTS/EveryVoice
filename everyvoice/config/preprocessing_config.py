@@ -6,7 +6,6 @@ from annotated_types import Ge, Le
 from pydantic import Field, FilePath, ValidationInfo, model_validator
 
 from everyvoice.config.shared_types import ConfigModel, PartialLoadConfig, init_context
-from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.config.utils import (
     PossiblyRelativePath,
     PossiblyRelativePathMustExist,
@@ -96,10 +95,6 @@ class AudioConfig(ConfigModel):
 
 
 class Dataset(PartialLoadConfig):
-    dataset_text_representation: DatasetTextRepresentation = Field(
-        DatasetTextRepresentation.characters,
-        description="The level of representation used in the text of your Dataset.",
-    )
     label: str = Field("YourDataSet", description="A label for the source of data")
     data_dir: PossiblyRelativePath = Field(
         Path("/please/create/a/path/to/your/dataset/data"),
