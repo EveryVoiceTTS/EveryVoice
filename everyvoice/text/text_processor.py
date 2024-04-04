@@ -9,7 +9,7 @@ from loguru import logger
 from nltk.tokenize import RegexpTokenizer
 
 from everyvoice.config.text_config import TextConfig
-from everyvoice.exceptions import ConfigError
+from everyvoice.exceptions import ConfigError, OutOfVocabularySymbol
 from everyvoice.text.features import PhonologicalFeatureCalculator
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
 
@@ -384,7 +384,15 @@ class TextProcessor:
         [0, 1, 2, 0, 0]
         """
         # TODO: catch errors
-        return [self._symbol_to_id[token] for token in sequence]
+        encoded_tokens = []
+        for string_token in sequence:
+            try:
+                encoded_tokens.append(self._symbol_to_id[string_token])
+            except KeyError as e:
+                raise OutOfVocabularySymbol(
+                    f"Sequence {sequence} contains item {string_token}"
+                ) from e
+        return encoded_tokens
 
     def encode_escaped_string_sequence(
         self, string_of_tokens: str, split_character="/"

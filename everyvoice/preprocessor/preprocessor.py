@@ -574,11 +574,14 @@ class Preprocessor:
                 item["character_tokens"].split("/")
             )
             if "character_tokens" in item
+            and item[
+                "character_tokens"
+            ]  # character_tokens will be None in phone-based datasets. It will be the empty string in multi-source datasets which contain characters for other datasets.
             else None
         )
         phone_tokens = (
             self.text_processor.encode_string_tokens(item["phone_tokens"].split("/"))
-            if "phone_tokens" in item
+            if "phone_tokens" in item and item["phone_tokens"]
             else None
         )
         if character_tokens:
