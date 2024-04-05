@@ -401,7 +401,7 @@ class WizardTest(TestCase):
                 text_processing_step.run()
         # print(text_processing_step.state)
         self.assertEqual(
-            text_processing_step.state["filelist_data"][1]["characters"],
+            text_processing_step.state["filelist_data_list"][2][2],
             "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
         )
 

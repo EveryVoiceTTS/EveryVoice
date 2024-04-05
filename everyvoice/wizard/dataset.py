@@ -7,10 +7,7 @@ from unicodedata import normalize
 import questionary
 from tqdm import tqdm
 
-from everyvoice.config.type_definitions import (
-    DatasetTextRepresentation,
-    TargetTrainingTextRepresentationLevel,
-)
+from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
 from everyvoice.utils import generic_psv_filelist_reader, read_festival, slugify
 from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, Step, StepNames, Tour
@@ -18,7 +15,11 @@ from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
 )
-from everyvoice.wizard.utils import read_unknown_tabular_filelist
+from everyvoice.wizard.utils import (
+    apply_automatic_text_conversions,
+    read_unknown_tabular_filelist,
+    rename_unknown_headers,
+)
 from everyvoice.wizard.validators import validate_path
 
 # WAVS & FILELIST
@@ -302,6 +303,28 @@ class HeaderStep(Step):
         self.state["filelist_headers"][self.response] = self.header_name
 
 
+class LanguageHeaderStep(HeaderStep):
+    def effect(self):
+        # Rename the filelist header with the standard header name
+        if "selected_headers" not in self.state:
+            self.state["selected_headers"] = []
+        self.state["selected_headers"].append(self.response)
+        self.state["filelist_headers"][self.response] = self.header_name
+        # Rename unselected headers to unknown:
+        self.state["filelist_headers"] = rename_unknown_headers(
+            self.state["filelist_headers"]
+        )
+        # re-parse data:
+        reload_filelist_data_as_dict(self.state)
+        # apply automatic conversions
+        self.state[
+            "model_target_training_text_representation"
+        ] = apply_automatic_text_conversions(
+            self.state["filelist_data"],
+            self.state[StepNames.filelist_text_representation_step.value],
+        )
+
+
 class HasHeaderLineStep(Step):
     DEFAULT_NAME = StepNames.data_has_header_line_step
     choices = ("no", "yes")
@@ -386,7 +409,7 @@ class HasLanguageStep(Step):
     def effect(self):
         if self.state[StepNames.data_has_language_value_step.value] == "yes":
             self.tour.add_step(
-                HeaderStep(
+                LanguageHeaderStep(
                     name=StepNames.language_header_step.value,
                     prompt_text="These are the remaining values from the first row in your data. Which column contains the [bold blue]language?",
                     header_name="language",
@@ -394,6 +417,7 @@ class HasLanguageStep(Step):
                 ),
                 self,
             )
+
         else:
             self.tour.add_step(
                 SelectLanguageStep(
@@ -432,61 +456,22 @@ class SelectLanguageStep(Step):
         return isinstance(response, str)
 
     def effect(self):
-        from everyvoice.text.arpabet import ARPABET_TO_IPA_TRANSDUCER
-        from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
-
         # Rename unselected headers to unknown:
-        for i, header in enumerate(self.state["filelist_headers"]):
-            if header not in ["basename", "raw_text", "speaker", "language"] + [
-                x.value for x in DatasetTextRepresentation
-            ]:
-                self.state["filelist_headers"][i] = f"unknown_{i}"
+        self.state["filelist_headers"] = rename_unknown_headers(
+            self.state["filelist_headers"]
+        )
         # re-parse data:
         reload_filelist_data_as_dict(self.state)
         # Apply the language code:
         isocode = get_iso_code(self.response)
-        g2p_engine = None
-        if (
-            isocode not in AVAILABLE_G2P_ENGINES
-            and self.state[StepNames.filelist_text_representation_step.value]
-            == DatasetTextRepresentation.characters.value
-        ):
-            print(
-                f"Your text data contains characters and the language id {isocode} is not supported by a grapheme-to-phoneme engine. If you want to train using a pronunciation form (which usually results in better quality) you will have to add a g2p engine for your language. Please see <TODO:Docs> for more information."
-            )
-            self.state["model_target_training_text_representation"] = (
-                TargetTrainingTextRepresentationLevel.characters.value
-            )
-        else:
-            self.state["model_target_training_text_representation"] = (
-                TargetTrainingTextRepresentationLevel.ipa_phones.value
-            )
-            g2p_engine = get_g2p_engine(isocode)
-        for item in self.state["filelist_data"]:
-            # add language code
-            item["language"] = isocode
-            # convert arpabet to phones
-            if (
-                DatasetTextRepresentation.arpabet.value in item
-                and DatasetTextRepresentation.ipa_phones.value not in item
-            ):
-                item[DatasetTextRepresentation.ipa_phones.value] = (
-                    ARPABET_TO_IPA_TRANSDUCER(
-                        item[DatasetTextRepresentation.arpabet.value]
-                    ).output_string
-                )
-            # if phones don't exist but g2p is available, calculate them
-            if (
-                DatasetTextRepresentation.characters.value in item
-                and DatasetTextRepresentation.ipa_phones.value not in item
-                and g2p_engine is not None
-            ):
-                phone_string_tokens = g2p_engine(
-                    item[DatasetTextRepresentation.characters.value]
-                )
-                item[DatasetTextRepresentation.ipa_phones.value] = "".join(
-                    phone_string_tokens
-                )
+        # Apply text conversions and get target training representation
+        self.state[
+            "model_target_training_text_representation"
+        ] = apply_automatic_text_conversions(
+            self.state["filelist_data"],
+            self.state[StepNames.filelist_text_representation_step.value],
+            global_isocode=isocode,
+        )
 
 
 def reload_filelist_data_as_dict(state):
@@ -538,7 +523,7 @@ class TextProcessingStep(Step):
 
     def prompt(self):
         return get_response_from_menu_prompt(
-            prompt_text="Which of the following text transformations would like to apply before determining the symbol set?",
+            prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step.value]}?",
             choices=(
                 "Lowercase",
                 "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
@@ -552,9 +537,6 @@ class TextProcessingStep(Step):
         return True
 
     def effect(self):
-        # re-parse data if necessary:
-        reload_filelist_data_as_dict(self.state)
-
         # Apply the selected text processing processes
         process_lookup = {
             0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
@@ -563,20 +545,17 @@ class TextProcessingStep(Step):
         if "symbols" not in self.state:
             self.state["symbols"] = {}
         if self.response:
+            text_index = self.state["filelist_headers"].index(
+                self.state[StepNames.filelist_text_representation_step.value]
+            )
             for process in self.response:
                 process_fn = process_lookup[process]["fn"]
                 for i in tqdm(
-                    range(len(self.state["filelist_data"])),
+                    range(len(self.state["filelist_data_list"])),
                     desc=f"Applying {process_lookup[process]['desc']} to data",
                 ):
-                    self.state["filelist_data"][i][
-                        self.state[StepNames.filelist_text_representation_step.value]
-                    ] = process_fn(
-                        self.state["filelist_data"][i][
-                            self.state[
-                                StepNames.filelist_text_representation_step.value
-                            ]
-                        ]
+                    self.state["filelist_data_list"][i][text_index] = process_fn(
+                        self.state["filelist_data_list"][i][text_index]
                     )
 
 
