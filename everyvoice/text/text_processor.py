@@ -1,7 +1,7 @@
 import re
 from collections import Counter
 from itertools import chain
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -9,7 +9,7 @@ from loguru import logger
 from nltk.tokenize import RegexpTokenizer
 
 from everyvoice.config.text_config import TextConfig
-from everyvoice.exceptions import ConfigError, OutOfVocabularySymbol
+from everyvoice.exceptions import ConfigError, OutOfVocabularySymbolError
 from everyvoice.text.features import PhonologicalFeatureCalculator
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
 
@@ -347,7 +347,7 @@ class TextProcessor:
 
         if normalize_text:
             text = self.normalize_text(text)
-        if apply_g2p:
+        if apply_g2p and lang_id is not None:
             tokens = self.apply_g2p_and_tokenization(
                 normalized_text=text,
                 lang_id=lang_id,
@@ -366,8 +366,19 @@ class TextProcessor:
             # TODO: catch errors
             return [self._symbol_to_id[symbol] for symbol in tokens]
 
-    def _token_sequence_to_text_sequence(self, sequence) -> List[str]:
-        """Converts a sequence of IDs to a sequence of text characters"""
+    def token_sequence_to_text_sequence(self, sequence: list[int]) -> list[str]:
+        """Converts a sequence of IDs to a sequence of text characters
+
+        Args:
+            sequence (list[int]): a sequence of IDs
+
+        Returns:
+            list[str]: a sequence of text characters
+
+        >>> tp = TextProcessor(TextConfig())
+        >>> tp.decode_tokens(['\x80', '<SIL>', '\x80', '\x80'])
+        [0, 1, 2, 0, 0]
+        """
         return [self._id_to_symbol[symbol_id] for symbol_id in sequence]
 
     def encode_string_tokens(self, sequence: list[str]) -> list[int]:
@@ -389,7 +400,7 @@ class TextProcessor:
             try:
                 encoded_tokens.append(self._symbol_to_id[string_token])
             except KeyError as e:
-                raise OutOfVocabularySymbol(
+                raise OutOfVocabularySymbolError(
                     f"Sequence {sequence} contains item {string_token}"
                 ) from e
         return encoded_tokens
@@ -402,7 +413,7 @@ class TextProcessor:
         ), "An escaped string sequence must have a character to split on (default is '/')"
         return self.encode_string_tokens(string_of_tokens.split(split_character))
 
-    def decode_tokens(self, sequence: List[int], join_character="/") -> str:
+    def decode_tokens(self, sequence: list[int], join_character="/") -> str:
         """Decode a sequence of encoded phone or character tokens into a sequence of strings
 
         Args:
@@ -416,4 +427,4 @@ class TextProcessor:
         '\x80 <SIL>\x80\x80'
 
         """
-        return join_character.join(self._token_sequence_to_text_sequence(sequence))
+        return join_character.join(self.token_sequence_to_text_sequence(sequence))

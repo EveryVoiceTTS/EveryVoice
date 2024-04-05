@@ -95,11 +95,11 @@ class PhonologicalFeatureCalculator:
                 punctuation_features.append([0, 0, 0, 1, 0, 0, 0, 0])
             elif char == self.punctuation_hash["quotemarks"]:
                 punctuation_features.append([0, 0, 0, 0, 1, 0, 0, 0])
-            elif char in self.config.symbols.silence:
+            elif char == self.punctuation_hash["ellipsis"]:
                 punctuation_features.append([0, 0, 0, 0, 0, 1, 0, 0])
-            elif char in self.punctuation_hash["ellipsis"]:
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 1, 0])
             elif char == self.punctuation_hash["exclamations"]:
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 1, 0])
+            elif char in self.config.symbols.silence:
                 punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 1])
             else:
                 punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0])
@@ -133,9 +133,10 @@ class PhonologicalFeatureCalculator:
                -1, -1, -1,  0, -1,  0,  0])
         """
         vec = self.feature_table.word_to_vector_list(token, numeric=True)
+        NUMBER_OF_PANPHON_FEATURES = 24
         # is not IPA
         if not vec:
-            return np.zeros(24).astype("int")
+            return np.zeros(NUMBER_OF_PANPHON_FEATURES).astype("int")
         # EV and PanPhon tokenization do not match, as with dipthongs
         if len(vec) > 1:
             # TODO: We should warn the user that we are averaging the features due to a mismatch in

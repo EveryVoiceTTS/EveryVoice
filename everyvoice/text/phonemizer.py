@@ -23,7 +23,8 @@ def get_g2p_engine(lang_id: str):
 
     if lang_id not in AVAILABLE_G2P_ENGINES:
         raise NotImplementedError(
-            f"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}. Please follow the docs to implement one yourself, or try training a character-based model instead."
+            f"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}."
+            " Please follow the docs to implement one yourself, or try training a character-based model instead."
         )
 
     if AVAILABLE_G2P_ENGINES[lang_id] == "DEFAULT_G2P":
@@ -32,18 +33,20 @@ def get_g2p_engine(lang_id: str):
         def g2p_engine(normalized_input_text: str) -> list[str]:
             # ipatok strips some important characters, so as a hack, we convert them to the private use area first
             PUA_CHARS = ["_", " ", ".", "ˈ", "ˌ"]
+            PUA_START_NUMBER = 983040
             text = phonemizer(normalized_input_text).output_string
             for i, char in enumerate(PUA_CHARS):
-                text = text.replace(char, chr(983040 + i))
+                text = text.replace(char, chr(PUA_START_NUMBER + i))
             tokens = tokenise(
                 text, replace=False, tones=True, strict=False, unknown=True
             )
             # convert the pua tokens back to their originals
             for i, token in enumerate(tokens):
+                # PUA tokens have length 1
                 if len(token) == 1:
                     token_ord = ord(token)
-                    if token_ord >= 983040:
-                        tokens[i] = PUA_CHARS[token_ord - 983040]
+                    if token_ord >= PUA_START_NUMBER:
+                        tokens[i] = PUA_CHARS[token_ord - PUA_START_NUMBER]
             return tokens
 
         # Register the engine so we don't have to build it next time
