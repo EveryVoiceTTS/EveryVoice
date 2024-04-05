@@ -327,6 +327,17 @@ class TestG2p(BasicTestCase):
     def test_many_available_langs(self):
         self.assertGreaterEqual(len(AVAILABLE_G2P_ENGINES), 20)
 
+    def test_pua_chars(self):
+        eng_g2p = get_g2p_engine("eng")
+        und_g2p = get_g2p_engine("und")
+        tokens = eng_g2p("h_e_l_l_o")
+        self.assertEqual(
+            tokens,
+            ["e", "ɪ", "t", "ʃ", "_", "i", "_", "ɛ", "l", "_", "ɛ", "l", "_", "o", "ʊ"],
+        )
+        tokens = und_g2p("___")
+        self.assertEqual(tokens, ["_", "_", "_"])
+
     def test_basic_g2p(self):
         eng_g2p = get_g2p_engine("eng")
         self.assertEqual(

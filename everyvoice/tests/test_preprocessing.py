@@ -400,7 +400,7 @@ class PreprocessingTest(BasicTestCase):
                 preprocessor = Preprocessor(fp_config)
                 with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
                     preprocessor.preprocess(
-                        output_path=output_filelist, cpus=1, to_process=["text"]
+                        output_path=str(output_filelist), cpus=1, to_process=["text"]
                     )
                 self.assertIn("You've finished preprocessing: text", output.getvalue())
                 processed_filelist = preprocessor.load_filelist(output_filelist)
