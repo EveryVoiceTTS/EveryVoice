@@ -171,7 +171,7 @@ class DirectoryPathMustExistTest(TestCase):
         try:
             root_dir = Path(__file__).parent / "data"
             root_dir = root_dir.resolve()
-            filename = Path("metadata.csv")
+            filename = Path("metadata.psv")
             self.assertTrue((root_dir / filename).exists())
             with init_context({"writing_config": root_dir.resolve()}):
                 DirectoryPathMustExist(path=filename)
