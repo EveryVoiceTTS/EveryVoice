@@ -46,7 +46,7 @@ class PreprocessingTest(BasicTestCase):
         ),
     )
     fp_config.preprocessing.source_data[0].data_dir = data_dir / "lj" / "wavs"
-    fp_config.preprocessing.source_data[0].filelist = data_dir / "metadata.csv"
+    fp_config.preprocessing.source_data[0].filelist = data_dir / "metadata.psv"
     fp_config.preprocessing.save_dir = lj_preprocessed
     preprocessor = Preprocessor(fp_config)
     _preprocess_ran = False
@@ -67,7 +67,7 @@ class PreprocessingTest(BasicTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.preprocess()
-        self.filelist = generic_psv_filelist_reader(self.data_dir / "metadata.csv")
+        self.filelist = generic_psv_filelist_reader(self.data_dir / "metadata.psv")
 
     # def test_compute_stats(self):
     #     feat_prediction_config = EveryVoiceConfig.load_config_from_path().feature_prediction
@@ -348,15 +348,15 @@ class PreprocessingTest(BasicTestCase):
 
     def test_text_processing(self):
         characters_eng_filelist = (
-            self.data_dir / "metadata_characters_supported_lang.csv"
+            self.data_dir / "metadata_characters_supported_lang.psv"
         )
         characters_default_filelist = (
-            self.data_dir / "metadata_characters_no_supported_lang.csv"
+            self.data_dir / "metadata_characters_no_supported_lang.psv"
         )
-        arpabet_filelist = self.data_dir / "metadata_arpabet.csv"
-        phones_filelist = self.data_dir / "metadata_phones.csv"
+        arpabet_filelist = self.data_dir / "metadata_arpabet.psv"
+        phones_filelist = self.data_dir / "metadata_phones.psv"
         mixed_representation_filelist = (
-            self.data_dir / "metadata_mixed_representation.csv"
+            self.data_dir / "metadata_mixed_representation.psv"
         )
         fp_config = FeaturePredictionConfig(**self.fp_config.model_dump())
         filelists_to_test = [
@@ -452,7 +452,7 @@ class PreprocessingTest(BasicTestCase):
             fp_config.preprocessing.source_data[0].data_dir = (
                 self.data_dir / "lj" / "wavs"
             )
-            full_filelist = self.data_dir / "metadata.csv"
+            full_filelist = self.data_dir / "metadata.psv"
             partial_filelist = tmpdir / "partial-metadata.psv"
             with open(partial_filelist, mode="w") as f_out:
                 with open(full_filelist) as f_in:
@@ -498,7 +498,7 @@ class PreprocessingTest(BasicTestCase):
             fp_config.preprocessing.source_data[0].data_dir = (
                 self.data_dir / "lj" / "wavs"
             )
-            full_filelist = self.data_dir / "metadata.csv"
+            full_filelist = self.data_dir / "metadata.psv"
             fp_config.preprocessing.source_data[0].filelist = full_filelist
             fp_config.preprocessing.save_dir = preprocessed
 
@@ -569,7 +569,7 @@ class PreprocessingHierarchyTest(BasicTestCase):
             fp_config = FeaturePredictionConfig(contact=self.contact)
             fp_config.preprocessing.source_data[0].data_dir = wavs_dir
             fp_config.preprocessing.source_data[0].filelist = (
-                data_dir / "hierarchy" / "metadata.csv"
+                data_dir / "hierarchy" / "metadata.psv"
             )
             fp_config.preprocessing.save_dir = preprocessed_dir
             preprocessor = Preprocessor(fp_config)

@@ -625,7 +625,7 @@ class WizardTest(TestCase):
                     StepAndAnswer(dataset.WavsDirStep(), Say(str(data_dir))),
                     StepAndAnswer(
                         dataset.FilelistStep(),
-                        Say(str(data_dir / "metadata.csv")),
+                        Say(str(data_dir / "metadata.psv")),
                     ),
                     StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
                     StepAndAnswer(
