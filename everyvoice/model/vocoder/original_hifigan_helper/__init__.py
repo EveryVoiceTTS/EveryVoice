@@ -1,4 +1,3 @@
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -212,23 +211,3 @@ UNIVERSAL_CONFIG = {
         "world_size": 1,
     },
 }
-
-
-def get_vocoder(path, device):
-    vocoder = Generator(AttrDict(UNIVERSAL_CONFIG))
-    ckpt = torch.load(path, map_location=device)
-    vocoder.load_state_dict(ckpt["generator"])
-    vocoder.eval()
-    vocoder.remove_weight_norm()
-    vocoder.to(device)
-
-    return vocoder
-
-
-def vocoder_infer(mels, vocoder) -> np.ndarray:
-    # mels (1, 80, 111) normal
-    # mels small (1, 80, 5)
-    with torch.no_grad():
-        wavs = vocoder(mels.transpose(1, 2)).squeeze(1)
-    wavs = wavs.cpu().numpy()  # B, T
-    return wavs
