@@ -61,6 +61,38 @@ class Symbols(BaseModel):
         Ensure that there aren't any characters that are defined in the
         punctuation set that exist in other character lists.
         """
+        """
+        Otherwise we could use the unicodedata categories as in filter out any
+        characters with a category that starts with "P".
+
+        * [UNICODE CHARACTER DATABASE](https://unicode.org/reports/tr44/)
+        * [General Category Values](https://unicode.org/reports/tr44/#General_Category_Values)
+        * [Punctuation and Symbols](https://www.unicode.org/faq/punctuation_symbols.html)
+        * [Unicode Properties](https://docs.python.org/3/howto/unicode.html#unicode-properties)
+
+        In [1]: import unicodedata
+        In [2]: { c: unicodedata.category(c) for c in {'"', '—', '.', '?', '¿', '“', "'", ';', '«', '…', '»', '¡', '”', '!', ':', '-', ',', "a", "2"}}
+        Out[2]:
+        {'¡': 'Po',
+        ',': 'Po',
+        '”': 'Pf',
+        '.': 'Po',
+        'a': 'Ll',
+        ';': 'Po',
+        '¿': 'Po',
+        "'": 'Po',
+        ':': 'Po',
+        '«': 'Pi',
+        '"': 'Po',
+        '-': 'Pd',
+        '“': 'Pi',
+        '!': 'Po',
+        '…': 'Po',
+        '2': 'Nd',
+        '?': 'Po',
+        '—': 'Pd',
+        '»': 'Pf'}
+        """
         dataset_names = filter(
             lambda dn: dn.endswith("_characters"),
             dict(self.model_dump()).keys(),
