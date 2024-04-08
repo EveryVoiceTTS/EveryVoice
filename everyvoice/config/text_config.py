@@ -1,6 +1,6 @@
 from typing import Dict
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from everyvoice.config.shared_types import ConfigModel
 from everyvoice.config.utils import PossiblySerializedCallable
@@ -33,6 +33,17 @@ class Punctuation(BaseModel):
         description="Punctuation symbols indicating an ellipsis used in your datasets. Replaces these symbols with <EPS> internally.",
     )
 
+    @property
+    def all(self):
+        return (
+            set(self.exclamations)
+            | set(self.question_symbols)
+            | set(self.quotemarks)
+            | set(self.big_breaks)
+            | set(self.small_breaks)
+            | set(self.ellipsis)
+        )
+
 
 class Symbols(BaseModel):
     silence: list[str] = Field(
@@ -43,6 +54,23 @@ class Symbols(BaseModel):
         description="EveryVoice will combine punctuation and normalize it into a set of five permissible types of punctuation to help tractable training.",
     )
     model_config = ConfigDict(extra="allow")
+
+    @model_validator(mode="after")
+    def no_punctuation(self) -> "Symbols":
+        """
+        Ensure that there aren't any characters that are defined in the
+        punctuation set that exist in other character lists.
+        """
+        dataset_names = filter(
+            lambda dn: dn.endswith("_characters"),
+            dict(self.model_dump()).keys(),
+        )
+        punctuation = self.punctuation.all | set(" ")
+        for dataset_name in dataset_names:
+            setattr(
+                self, dataset_name, list(set(getattr(self, dataset_name)) - punctuation)
+            )
+        return self
 
 
 class TextConfig(ConfigModel):
