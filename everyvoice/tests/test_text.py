@@ -6,8 +6,10 @@ from typing import Dict, List
 from unicodedata import normalize
 from unittest import TestCase
 
+from pydantic import ValidationError
+
 import everyvoice.text.utils
-from everyvoice.config.text_config import Symbols, TextConfig
+from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
@@ -215,7 +217,9 @@ class TextTest(BasicTestCase):
         self.assertIn("3", self.base_text_processor.missing_symbols)
         self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
 
-    def test_no_punctuation(self):
+
+class SymbolsTest(TestCase):
+    def test_punctuation_in_symbols(self):
         """
         Ensure that there aren't any characters that are defined in the
         punctuation set that exist in other character lists.
@@ -360,6 +364,152 @@ class TextTest(BasicTestCase):
             "ʔ",
         ]
 
+        # For this test to be valid, we need to make sure there are at least
+        # some punctuation in our datasets.
+        punctuation = Punctuation()
+        self.assertTrue(punctuation.all & set(delme1_characters))
+        self.assertTrue(punctuation.all & set(delme2_characters))
+
+        with self.assertRaises(ValidationError):
+            Symbols(
+                letters=string.ascii_letters,
+                digraph=["ee"],
+                delme1_characters=delme1_characters,
+                delme1_phones=delme1_phones,
+                delme2_characters=delme2_characters,
+                delme2_phones=delme2_phones,
+            )
+
+    def test_valid_symbols(self):
+        """
+        Ensure that there aren't any characters that are defined in the
+        punctuation set that exist in other character lists.
+        """
+        delme1_characters = list(string.ascii_letters + string.digits) + [
+            "''",
+            "(",
+            ")",
+        ]
+        delme1_phones = [
+            "F",
+            "G",
+            "R",
+            "V",
+            "a",
+            "b",
+            "c",
+            "d",
+            "d͡z",
+            "e",
+            "f",
+            "g",
+            "h",
+            "i",
+            "j",
+            "k",
+            "kʷʼ",
+            "k̟",
+            "l",
+            "m",
+            "n",
+            "o",
+            "p",
+            "pʼ",
+            "q",
+            "qʼ",
+            "r",
+            "s",
+            "t",
+            "tʼ",
+            "t͡ʃʼ",
+            "u",
+            "v",
+            "w",
+            "x",
+            "y",
+            "z",
+            "æ",
+            "ɑ",
+            "ʌ",
+            "ʔ",
+        ]
+        delme2_characters = list(string.ascii_letters + string.digits) + [
+            "''",
+            "(",
+            ")",
+        ]
+        delme2_phones = [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L",
+            "M",
+            "N",
+            "O",
+            "P",
+            "Q",
+            "R",
+            "S",
+            "T",
+            "U",
+            "V",
+            "W",
+            "Y",
+            "a",
+            "b",
+            "c",
+            "d",
+            "d͡ʒ",
+            "e",
+            "f",
+            "g",
+            "h",
+            "i",
+            "iː",
+            "j",
+            "k",
+            "kʷʼ",
+            "k̟",
+            "l",
+            "m",
+            "n",
+            "o",
+            "p",
+            "pʼ",
+            "q",
+            "qʼ",
+            "r",
+            "s",
+            "sʼ",
+            "t",
+            "tʼ",
+            "t͡s",
+            "t͡ʃʼ",
+            "u",
+            "v",
+            "w",
+            "x",
+            "y",
+            "z",
+            "æ",
+            "ɑ",
+            "ɔ",
+            "ɟ",
+            "ɪ",
+            "ɬ",
+            "ʌ",
+            "ʔ",
+        ]
+
+        # This test case validates that no exception is raised.
         symbols = Symbols(
             letters=string.ascii_letters,
             digraph=["ee"],
@@ -369,40 +519,14 @@ class TextTest(BasicTestCase):
             delme2_phones=delme2_phones,
         )
 
-        # Phones should be unaltered
-        self.assertEqual(symbols.delme1_phones, delme1_phones)
-        self.assertEqual(symbols.delme2_phones, delme2_phones)
-
-        self.assertEqual(symbols.letters, string.ascii_letters)
-        self.assertEqual(symbols.digraph, ["ee"])
-
-        # Only *_charaters should be altered
-        self.assertNotEqual(symbols.delme1_characters, delme1_characters)
-        self.assertNotEqual(symbols.delme2_characters, delme2_characters)
-        # Explicit check that there is no space
-        self.assertFalse(" " in symbols.delme1_characters)
-        self.assertFalse(" " in symbols.delme2_characters)
-        invalid_characters = {
-            '"',
-            "—",
-            ".",
-            "?",
-            "¿",
-            "“",
-            "'",
-            ";",
-            "«",
-            "…",
-            "»",
-            "¡",
-            "”",
-            "!",
-            ":",
-            "-",
-            ",",
-        }
-        self.assertNotIn(invalid_characters, symbols.delme1_characters)
-        self.assertNotIn(invalid_characters, symbols.delme2_characters)
+        # Make sure non of the symbols list have punctuation.
+        punctuation = symbols.punctuation.all | set(" ")
+        self.assertFalse(punctuation & set(symbols.letters))
+        self.assertFalse(punctuation & set(symbols.digraph))
+        self.assertFalse(punctuation & set(symbols.delme1_characters))
+        self.assertFalse(punctuation & set(symbols.delme1_phones))
+        self.assertFalse(punctuation & set(symbols.delme2_characters))
+        self.assertFalse(punctuation & set(symbols.delme2_phones))
 
 
 class LookupTableTest(TestCase):

@@ -61,47 +61,21 @@ class Symbols(BaseModel):
         Ensure that there aren't any characters that are defined in the
         punctuation set that exist in other character lists.
         """
-        """
-        Otherwise we could use the unicodedata categories as in filter out any
-        characters with a category that starts with "P".
-
-        * [UNICODE CHARACTER DATABASE](https://unicode.org/reports/tr44/)
-        * [General Category Values](https://unicode.org/reports/tr44/#General_Category_Values)
-        * [Punctuation and Symbols](https://www.unicode.org/faq/punctuation_symbols.html)
-        * [Unicode Properties](https://docs.python.org/3/howto/unicode.html#unicode-properties)
-
-        In [1]: import unicodedata
-        In [2]: { c: unicodedata.category(c) for c in {'"', '—', '.', '?', '¿', '“', "'", ';', '«', '…', '»', '¡', '”', '!', ':', '-', ',', "a", "2"}}
-        Out[2]:
-        {'¡': 'Po',
-        ',': 'Po',
-        '”': 'Pf',
-        '.': 'Po',
-        'a': 'Ll',
-        ';': 'Po',
-        '¿': 'Po',
-        "'": 'Po',
-        ':': 'Po',
-        '«': 'Pi',
-        '"': 'Po',
-        '-': 'Pd',
-        '“': 'Pi',
-        '!': 'Po',
-        '…': 'Po',
-        '2': 'Nd',
-        '?': 'Po',
-        '—': 'Pd',
-        '»': 'Pf'}
-        """
-        dataset_names = filter(
-            lambda dn: dn.endswith("_characters"),
-            dict(self.model_dump()).keys(),
-        )
         punctuation = self.punctuation.all | set(" ")
-        for dataset_name in dataset_names:
-            setattr(
-                self, dataset_name, list(set(getattr(self, dataset_name)) - punctuation)
+        needs_cleanup_from_user = []
+        for dataset_name, symbols in dict(self.model_dump()).items():
+            common_symbols = set(symbols) & punctuation
+            if common_symbols:
+                needs_cleanup_from_user.append(
+                    f"Dataset {dataset_name} needs attention for {common_symbols}"
+                )
+
+        if needs_cleanup_from_user:
+            raise ValueError(
+                "Your symbols for the following dataset(s) require(s) some user attention.\n",
+                "\n".join(needs_cleanup_from_user),
             )
+
         return self
 
 
