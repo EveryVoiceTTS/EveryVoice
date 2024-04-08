@@ -215,6 +215,195 @@ class TextTest(BasicTestCase):
         self.assertIn("3", self.base_text_processor.missing_symbols)
         self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
 
+    def test_no_punctuation(self):
+        """
+        Ensure that there aren't any characters that are defined in the
+        punctuation set that exist in other character lists.
+        """
+        delme1_characters = list(string.ascii_letters + string.digits) + [
+            " ",
+            "!",
+            '"',
+            "''",
+            "(",
+            ")",
+            ",",
+            "-",
+            ".",
+            ":",
+            ";",
+        ]
+        delme1_phones = [
+            "F",
+            "G",
+            "R",
+            "V",
+            "a",
+            "b",
+            "c",
+            "d",
+            "d͡z",
+            "e",
+            "f",
+            "g",
+            "h",
+            "i",
+            "j",
+            "k",
+            "kʷʼ",
+            "k̟",
+            "l",
+            "m",
+            "n",
+            "o",
+            "p",
+            "pʼ",
+            "q",
+            "qʼ",
+            "r",
+            "s",
+            "t",
+            "tʼ",
+            "t͡ʃʼ",
+            "u",
+            "v",
+            "w",
+            "x",
+            "y",
+            "z",
+            "æ",
+            "ɑ",
+            "ʌ",
+            "ʔ",
+        ]
+        delme2_characters = list(string.ascii_letters + string.digits) + [
+            " ",
+            "!",
+            '"',
+            "''",
+            "(",
+            ")",
+            ",",
+            "-",
+            ".",
+            ":",
+            ";",
+        ]
+        delme2_phones = [
+            "A",
+            "B",
+            "C",
+            "D",
+            "E",
+            "F",
+            "G",
+            "H",
+            "I",
+            "J",
+            "K",
+            "L",
+            "M",
+            "N",
+            "O",
+            "P",
+            "Q",
+            "R",
+            "S",
+            "T",
+            "U",
+            "V",
+            "W",
+            "Y",
+            "a",
+            "b",
+            "c",
+            "d",
+            "d͡ʒ",
+            "e",
+            "f",
+            "g",
+            "h",
+            "i",
+            "iː",
+            "j",
+            "k",
+            "kʷʼ",
+            "k̟",
+            "l",
+            "m",
+            "n",
+            "o",
+            "p",
+            "pʼ",
+            "q",
+            "qʼ",
+            "r",
+            "s",
+            "sʼ",
+            "t",
+            "tʼ",
+            "t͡s",
+            "t͡ʃʼ",
+            "u",
+            "v",
+            "w",
+            "x",
+            "y",
+            "z",
+            "æ",
+            "ɑ",
+            "ɔ",
+            "ɟ",
+            "ɪ",
+            "ɬ",
+            "ʌ",
+            "ʔ",
+        ]
+
+        symbols = Symbols(
+            letters=string.ascii_letters,
+            digraph=["ee"],
+            delme1_characters=delme1_characters,
+            delme1_phones=delme1_phones,
+            delme2_characters=delme2_characters,
+            delme2_phones=delme2_phones,
+        )
+
+        # Phones should be unaltered
+        self.assertEqual(symbols.delme1_phones, delme1_phones)
+        self.assertEqual(symbols.delme2_phones, delme2_phones)
+
+        self.assertEqual(symbols.letters, string.ascii_letters)
+        self.assertEqual(symbols.digraph, ["ee"])
+
+        # Only *_charaters should be altered
+        self.assertNotEqual(symbols.delme1_characters, delme1_characters)
+        self.assertNotEqual(symbols.delme2_characters, delme2_characters)
+        # Explicit check that there is no space
+        self.assertFalse(" " in symbols.delme1_characters)
+        self.assertFalse(" " in symbols.delme2_characters)
+        invalid_characters = {
+            '"',
+            "—",
+            ".",
+            "?",
+            "¿",
+            "“",
+            "'",
+            ";",
+            "«",
+            "…",
+            "»",
+            "¡",
+            "”",
+            "!",
+            ":",
+            "-",
+            ",",
+        }
+        self.assertNotIn(invalid_characters, symbols.delme1_characters)
+        self.assertNotIn(invalid_characters, symbols.delme2_characters)
+
 
 class LookupTableTest(TestCase):
     def test_build_lookup(self):
@@ -367,9 +556,7 @@ class TestG2p(BasicTestCase):
         )
         # another language
         str_g2p = get_g2p_engine("str")
-        self.assertEqual(
-            str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"]
-        )
+        self.assertEqual(str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"])
         # test lang_id missing
         with self.assertRaises(NotImplementedError):
             get_g2p_engine("boop")
