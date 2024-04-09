@@ -63,7 +63,11 @@ class Symbols(BaseModel):
         """
         punctuation = self.punctuation.all | set(" ")
         needs_cleanup_from_user = []
-        for dataset_name, symbols in dict(self.model_dump()).items():
+        for dataset_name, symbols in self:
+            if isinstance(symbols, Punctuation):
+                # "punctuation" is a dict thus it hashes but we don't want to
+                # process it.
+                continue
             common_symbols = set(symbols) & punctuation
             if common_symbols:
                 needs_cleanup_from_user.append(
