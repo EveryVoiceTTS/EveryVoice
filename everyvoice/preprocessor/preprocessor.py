@@ -174,15 +174,7 @@ class Preprocessor:
         if update_counters:
             self.counters.increment("processed_files")
             self.counters.increment("duration", seconds)
-        if save_wave:
-            torchaudio.save(
-                str(wav_path) + ".processed.wav",
-                audio,
-                sr,
-                encoding="PCM_S",
-                bits_per_sample=self.audio_config.target_bit_depth,
-            )
-        audio = audio.squeeze()  # get rid of channels dimension
+
         return audio, sr
 
     def extract_spectral_features(
@@ -462,10 +454,10 @@ class Preprocessor:
 
         item = self.get_speaker_and_language(item)
         input_audio_save_path = self.create_path(
-            item, "audio", f"audio-{self.input_sampling_rate}.pt"
+            item, "audio", f"audio-{self.input_sampling_rate}.wav"
         )
         output_audio_save_path = self.create_path(
-            item, "audio", f"audio-{self.output_sampling_rate}.pt"
+            item, "audio", f"audio-{self.output_sampling_rate}.wav"
         )
         if (
             input_audio_save_path.exists()
@@ -477,28 +469,39 @@ class Preprocessor:
             self.counters.increment("duration", seconds)
             return item
         if not input_audio_save_path.exists() or self.overwrite:
-            input_audio, _ = self.process_audio(
+            input_audio, save_sr = self.process_audio(
                 audio_path,
                 resample_rate=self.input_sampling_rate,
                 sox_effects=sox_effects,
             )
-            if input_audio is None:
-                return None
-            else:
-                save_tensor(input_audio, input_audio_save_path)
+            if input_audio is not None:
+                torchaudio.save(
+                    input_audio_save_path,
+                    input_audio,
+                    save_sr,
+                    encoding="PCM_S",
+                    bits_per_sample=self.audio_config.target_bit_depth,
+                )
+
         if (
             self.input_sampling_rate != self.output_sampling_rate
             and not output_audio_save_path.exists()
             or self.overwrite
         ):
-            output_audio, _ = self.process_audio(
+            output_audio, save_sr = self.process_audio(
                 audio_path,
                 resample_rate=self.output_sampling_rate,
                 sox_effects=sox_effects,
                 update_counters=False,
             )
             if output_audio is not None:
-                save_tensor(output_audio, output_audio_save_path)
+                torchaudio.save(
+                    output_audio_save_path,
+                    output_audio,
+                    save_sr,
+                    encoding="PCM_S",
+                    bits_per_sample=self.audio_config.target_bit_depth,
+                )
         return item
 
     def process_all_audio(self) -> list[dict]:
