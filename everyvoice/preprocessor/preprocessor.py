@@ -474,7 +474,9 @@ class Preprocessor:
                 resample_rate=self.input_sampling_rate,
                 sox_effects=sox_effects,
             )
-            if input_audio is not None:
+            if input_audio is None:
+                return None
+            else:
                 torchaudio.save(
                     input_audio_save_path,
                     input_audio,
