@@ -1,6 +1,5 @@
 import re
 from collections import Counter
-from itertools import chain
 from typing import Dict, Optional
 
 import numpy as np
@@ -12,6 +11,8 @@ from everyvoice.config.text_config import TextConfig
 from everyvoice.exceptions import ConfigError, OutOfVocabularySymbolError
 from everyvoice.text.features import PhonologicalFeatureCalculator
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
+
+PAD_SYMBOL = "\x80"
 
 
 class TextProcessor:
@@ -33,20 +34,8 @@ class TextProcessor:
         self.phonological_feature_calculator: Optional[
             PhonologicalFeatureCalculator
         ] = None
-        self._all_symbols = self.config.symbols.model_dump()
-        self._pad_symbol = "\x80"  # Use the Unicode PAD symbol
-        # Combine all the symbol fields into one list (except for punctuation)
-        self.symbols = list(
-            chain.from_iterable(
-                list(v) for k, v in self._all_symbols.items() if k != "punctuation"
-            )
-        )
-        # Keep a list of valid punctuation
-        self.punctuation = set(
-            item
-            for cat in self.config.symbols.punctuation.model_dump().values()
-            for item in cat
-        )
+        self._pad_symbol = PAD_SYMBOL  # Use the Unicode PAD symbol
+
         # Add punctuation
         # Add an internal hash to convert from the type of Punctuation to the internal representation
         self.punctuation_internal_hash = {
@@ -58,46 +47,43 @@ class TextProcessor:
             "ellipsis": "<EPS>",
         }
         # Create a hash table from punctuation to the internal ID
-        self.punctuation_to_internal_id = {}
-        self.punctuation_characters = []
-        for (
-            punctuation_type,
-            punctuation_type_values,
-        ) in self.config.symbols.punctuation.model_dump().items():
-            self.punctuation_characters += punctuation_type_values
-            self.punctuation_to_internal_id.update(
-                {
-                    v: self.punctuation_internal_hash[punctuation_type]
-                    for v in punctuation_type_values
-                }
+        self.punctuation_to_internal_id = {
+            v: self.punctuation_internal_hash[punctuation_type]
+            for punctuation_type, punctuation_type_values in iter(
+                self.config.symbols.punctuation
             )
+            for v in punctuation_type_values
+        }
+        self.punctuation_characters = list(self.punctuation_to_internal_id.keys())
+        assert set(self.punctuation_characters) == self.config.symbols.punctuation.all
 
         # Add the internal punctuation IDs to the symbols list
-        self.symbols += list(self.punctuation_internal_hash.values())
-        # TODO: do I need to clean the symbols? How to do this if datasets have their own cleaners
-        # Remove duplicates from symbol list, and apply longest characters first
-        # to apply multigraph symbols first
-        self._hardcoded_internal_symbols = [self._pad_symbol, " "]
-        self.symbols = self._hardcoded_internal_symbols + [
-            x
-            for x in sorted(
-                set(self.symbols),
+        # Combine all the symbol fields into one list (except for punctuation)
+        symbols = self.config.symbols.all_except_punctuation
+        symbols |= set(self.punctuation_internal_hash.values())
+        symbols |= self.config.symbols.punctuation.all
+        # TODO: do I need to clean the symbols? How to do this if datasets have
+        #       their own cleaners?
+        _hardcoded_internal_symbols = [self._pad_symbol, " "]
+        self.symbols = _hardcoded_internal_symbols + list(
+            sorted(
+                # Remove duplicates from symbol list, and apply longest
+                # characters first to apply multigraph symbols first
+                symbols - set(_hardcoded_internal_symbols),
                 key=lambda symbol: (
                     -len(symbol),
                     symbol,
                 ),  # reverse-length sort, then sort alphabetically
             )
-            if x not in self._hardcoded_internal_symbols
-        ]
+        )
         self.to_replace = config.to_replace
         self.missing_symbols: Counter[str] = Counter()
 
         # Mappings from symbol to numeric ID and vice versa
-        self._symbol_to_id: Dict[str, int] = {}
-        self._id_to_symbol: Dict[int, str] = {}
-        for i, s in enumerate(self.symbols):
-            self._symbol_to_id[s] = i
-            self._id_to_symbol[i] = s
+        self._id_to_symbol: list[str] = self.symbols
+        self._symbol_to_id: Dict[str, int] = {
+            s: i for i, s in enumerate(self._id_to_symbol)
+        }
 
         self._tokenizer = RegexpTokenizer(
             "|".join([re.escape(x) for x in self.symbols + self.punctuation_characters])
@@ -231,7 +217,8 @@ class TextProcessor:
         """
         if self.phonological_feature_calculator is None:
             self.phonological_feature_calculator = PhonologicalFeatureCalculator(
-                text_config=self.config, punctuation_hash=self.punctuation_internal_hash
+                text_config=self.config,
+                punctuation_hash=self.punctuation_internal_hash,
             )
         return self.phonological_feature_calculator.get_features(phone_tokens)
 
@@ -264,8 +251,9 @@ class TextProcessor:
             tokens, list
         ), f"The g2p engine for {lang_id} produced {type(tokens)} but must produce a list of tokenized phones."
         valid_tokens = []
+        punctuation_set = set(self.punctuation_characters)
         for token in tokens:
-            if token in self._symbol_to_id or token in self.punctuation:
+            if token in self._symbol_to_id or token in punctuation_set:
                 valid_tokens.append(token)
             else:
                 if find_missing:
@@ -317,7 +305,9 @@ class TextProcessor:
         Args:
             text: string to convert to a sequence
         Returns:
-            list[int]|list[list[int]]: Either a one-hot encoding of integers corresponding to the symbols in the text, or a multi-hot phonological feature vector
+            list[int]|list[list[int]]: Either a one-hot encoding of integers
+                corresponding to the symbols in the text, or a multi-hot
+                phonological feature vector
 
             >>> from everyvoice.config.text_config import Symbols
             >>> tp = TextProcessor(TextConfig(symbols=Symbols(ipa=['a', 'h', 'ʌ', 'l', 'o', 'ʊ'])))
@@ -338,11 +328,14 @@ class TextProcessor:
         # Error states
         if encode_as_phonological_features and not apply_g2p:
             raise ValueError(
-                "'encode_as_phonological_features' was set to True but 'apply_g2p' was set to False. In order to calculate phonological features, you must first apply g2p to the text. Please set 'apply_g2p' to True."
+                "'encode_as_phonological_features' was set to True but 'apply_g2p' was set to False."
+                " In order to calculate phonological features, you must first apply g2p to the text."
+                " Please set 'apply_g2p' to True."
             )
         if apply_g2p and (lang_id is None or lang_id not in AVAILABLE_G2P_ENGINES):
             raise ValueError(
-                f"You tried to apply g2p for language '{lang_id}', but no g2p engine exists for that language. Please see the <TODO: docs>."
+                f"You tried to apply g2p for language '{lang_id}', but no g2p engine exists for that language."
+                " Please see the <TODO: docs>."
             )
 
         if normalize_text:

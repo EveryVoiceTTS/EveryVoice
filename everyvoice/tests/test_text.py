@@ -24,7 +24,7 @@ class TextTest(BasicTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.base_text_processor = TextProcessor(
-            TextConfig(symbols=Symbols(letters=string.ascii_letters)),
+            TextConfig(symbols=Symbols(letters=list(string.ascii_letters))),
         )
 
     def test_run_doctest(self):
@@ -177,21 +177,25 @@ class TextTest(BasicTestCase):
 
     def test_duplicates_removed(self):
         duplicate_symbols_text_processor = TextProcessor(
-            TextConfig(symbols=Symbols(letters=string.ascii_letters, duplicate=["e"]))
+            TextConfig(
+                symbols=Symbols(letters=list(string.ascii_letters), duplicate=["e"])
+            )
         )
         self.assertEquals(
             len([x for x in duplicate_symbols_text_processor.symbols if x == "e"]), 1
         )
 
     def test_bad_symbol_configuration(self):
-        with self.assertRaises(TypeError):
+        with self.assertRaises(ValidationError):
             TextProcessor(
-                TextConfig(symbols=Symbols(letters=string.ascii_letters, bad=[1]))
+                TextConfig(symbols=Symbols(letters=list(string.ascii_letters), bad=[1]))
             )
 
     def test_dipgrahs(self):
         digraph_text_processor = TextProcessor(
-            TextConfig(symbols=Symbols(letters=string.ascii_letters, digraph=["ee"]))
+            TextConfig(
+                symbols=Symbols(letters=list(string.ascii_letters), digraph=["ee"])
+            )
         )
         text = "ee"  # should be treated as "ee" and not two instances of "e"
         sequence = digraph_text_processor.encode_text(text)
@@ -200,7 +204,9 @@ class TextTest(BasicTestCase):
     def test_normalization(self):
         # This test doesn't really test very much, but just here to highlight that base cleaning involves NFC
         accented_text_processor = TextProcessor(
-            TextConfig(symbols=Symbols(letters=string.ascii_letters, accented=["é"])),
+            TextConfig(
+                symbols=Symbols(letters=list(string.ascii_letters), accented=["é"])
+            ),
         )
         text = "he\u0301llo world"
         sequence = accented_text_processor.encode_text(text)
@@ -216,317 +222,6 @@ class TextTest(BasicTestCase):
         self.assertNotEqual(self.base_text_processor.decode_tokens(sequence), text)
         self.assertIn("3", self.base_text_processor.missing_symbols)
         self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
-
-
-class SymbolsTest(TestCase):
-    def test_punctuation_in_symbols(self):
-        """
-        Ensure that there aren't any characters that are defined in the
-        punctuation set that exist in other character lists.
-        """
-        delme1_characters = list(string.ascii_letters + string.digits) + [
-            " ",
-            "!",
-            '"',
-            "''",
-            "(",
-            ")",
-            ",",
-            "-",
-            ".",
-            ":",
-            ";",
-        ]
-        delme1_phones = [
-            "F",
-            "G",
-            "R",
-            "V",
-            "a",
-            "b",
-            "c",
-            "d",
-            "d͡z",
-            "e",
-            "f",
-            "g",
-            "h",
-            "i",
-            "j",
-            "k",
-            "kʷʼ",
-            "k̟",
-            "l",
-            "m",
-            "n",
-            "o",
-            "p",
-            "pʼ",
-            "q",
-            "qʼ",
-            "r",
-            "s",
-            "t",
-            "tʼ",
-            "t͡ʃʼ",
-            "u",
-            "v",
-            "w",
-            "x",
-            "y",
-            "z",
-            "æ",
-            "ɑ",
-            "ʌ",
-            "ʔ",
-        ]
-        delme2_characters = list(string.ascii_letters + string.digits) + [
-            " ",
-            "!",
-            '"',
-            "''",
-            "(",
-            ")",
-            ",",
-            "-",
-            ".",
-            ":",
-            ";",
-        ]
-        delme2_phones = [
-            "A",
-            "B",
-            "C",
-            "D",
-            "E",
-            "F",
-            "G",
-            "H",
-            "I",
-            "J",
-            "K",
-            "L",
-            "M",
-            "N",
-            "O",
-            "P",
-            "Q",
-            "R",
-            "S",
-            "T",
-            "U",
-            "V",
-            "W",
-            "Y",
-            "a",
-            "b",
-            "c",
-            "d",
-            "d͡ʒ",
-            "e",
-            "f",
-            "g",
-            "h",
-            "i",
-            "iː",
-            "j",
-            "k",
-            "kʷʼ",
-            "k̟",
-            "l",
-            "m",
-            "n",
-            "o",
-            "p",
-            "pʼ",
-            "q",
-            "qʼ",
-            "r",
-            "s",
-            "sʼ",
-            "t",
-            "tʼ",
-            "t͡s",
-            "t͡ʃʼ",
-            "u",
-            "v",
-            "w",
-            "x",
-            "y",
-            "z",
-            "æ",
-            "ɑ",
-            "ɔ",
-            "ɟ",
-            "ɪ",
-            "ɬ",
-            "ʌ",
-            "ʔ",
-        ]
-
-        # For this test to be valid, we need to make sure there are at least
-        # some punctuation in our datasets.
-        punctuation = Punctuation()
-        self.assertTrue(punctuation.all & set(delme1_characters))
-        self.assertTrue(punctuation.all & set(delme2_characters))
-
-        with self.assertRaises(ValidationError):
-            Symbols(
-                letters=string.ascii_letters,
-                digraph=["ee"],
-                delme1_characters=delme1_characters,
-                delme1_phones=delme1_phones,
-                delme2_characters=delme2_characters,
-                delme2_phones=delme2_phones,
-            )
-
-    def test_valid_symbols(self):
-        """
-        Ensure that there aren't any characters that are defined in the
-        punctuation set that exist in other character lists.
-        """
-        delme1_characters = list(string.ascii_letters + string.digits) + [
-            "''",
-            "(",
-            ")",
-        ]
-        delme1_phones = [
-            "F",
-            "G",
-            "R",
-            "V",
-            "a",
-            "b",
-            "c",
-            "d",
-            "d͡z",
-            "e",
-            "f",
-            "g",
-            "h",
-            "i",
-            "j",
-            "k",
-            "kʷʼ",
-            "k̟",
-            "l",
-            "m",
-            "n",
-            "o",
-            "p",
-            "pʼ",
-            "q",
-            "qʼ",
-            "r",
-            "s",
-            "t",
-            "tʼ",
-            "t͡ʃʼ",
-            "u",
-            "v",
-            "w",
-            "x",
-            "y",
-            "z",
-            "æ",
-            "ɑ",
-            "ʌ",
-            "ʔ",
-        ]
-        delme2_characters = list(string.ascii_letters + string.digits) + [
-            "''",
-            "(",
-            ")",
-        ]
-        delme2_phones = [
-            "A",
-            "B",
-            "C",
-            "D",
-            "E",
-            "F",
-            "G",
-            "H",
-            "I",
-            "J",
-            "K",
-            "L",
-            "M",
-            "N",
-            "O",
-            "P",
-            "Q",
-            "R",
-            "S",
-            "T",
-            "U",
-            "V",
-            "W",
-            "Y",
-            "a",
-            "b",
-            "c",
-            "d",
-            "d͡ʒ",
-            "e",
-            "f",
-            "g",
-            "h",
-            "i",
-            "iː",
-            "j",
-            "k",
-            "kʷʼ",
-            "k̟",
-            "l",
-            "m",
-            "n",
-            "o",
-            "p",
-            "pʼ",
-            "q",
-            "qʼ",
-            "r",
-            "s",
-            "sʼ",
-            "t",
-            "tʼ",
-            "t͡s",
-            "t͡ʃʼ",
-            "u",
-            "v",
-            "w",
-            "x",
-            "y",
-            "z",
-            "æ",
-            "ɑ",
-            "ɔ",
-            "ɟ",
-            "ɪ",
-            "ɬ",
-            "ʌ",
-            "ʔ",
-        ]
-
-        # This test case validates that no exception is raised.
-        symbols = Symbols(
-            letters=string.ascii_letters,
-            digraph=["ee"],
-            delme1_characters=delme1_characters,
-            delme1_phones=delme1_phones,
-            delme2_characters=delme2_characters,
-            delme2_phones=delme2_phones,
-        )
-
-        # Make sure non of the symbols list have punctuation.
-        punctuation = symbols.punctuation.all | set(" ")
-        self.assertFalse(punctuation & set(symbols.letters))
-        self.assertFalse(punctuation & set(symbols.digraph))
-        self.assertFalse(punctuation & set(symbols.delme1_characters))
-        self.assertFalse(punctuation & set(symbols.delme1_phones))
-        self.assertFalse(punctuation & set(symbols.delme2_characters))
-        self.assertFalse(punctuation & set(symbols.delme2_phones))
 
 
 class LookupTableTest(TestCase):
@@ -684,3 +379,46 @@ class TestG2p(BasicTestCase):
         # test lang_id missing
         with self.assertRaises(NotImplementedError):
             get_g2p_engine("boop")
+
+
+class PunctuationTest(TestCase):
+    def test_all(self):
+        """Make sure we get the union of all punctuation characters when calling `all`."""
+        punctuation = Punctuation()
+        self.assertSetEqual(
+            punctuation.all,
+            {
+                "?",
+                "¿",
+                "!",
+                "¡",
+                ",",
+                ";",
+                '"',
+                "'",
+                "«",
+                "”",
+                ":",
+                "»",
+                "-",
+                "—",
+                ".",
+                "“",
+                "…",
+            },
+        )
+
+
+class SymbolsTest(TestCase):
+    def test_all_except_punctuation(self):
+        """Not withstanding the random new member variables defined by the
+        user, we should get the union of them excluding what is in
+        `punctuation`.
+        """
+        symbols = Symbols(
+            dataset1=["a", "b"],
+            dataset2=["X", "Y", "Z"],
+        )
+        self.assertSetEqual(
+            symbols.all_except_punctuation, {"a", "b", "X", "Y", "Z", "<SIL>"}
+        )
