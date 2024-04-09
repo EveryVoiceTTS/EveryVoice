@@ -34,7 +34,8 @@ class Punctuation(BaseModel):
     )
 
     @property
-    def all(self):
+    def all(self) -> set[str]:
+        """Return a set of all punctuations."""
         return (
             set(self.exclamations)
             | set(self.question_symbols)
@@ -55,30 +56,23 @@ class Symbols(BaseModel):
     )
     model_config = ConfigDict(extra="allow")
 
-    @model_validator(mode="after")
-    def no_punctuation(self) -> "Symbols":
-        """
-        Ensure that there aren't any characters that are defined in the
-        punctuation set that exist in other character lists.
-        """
-        punctuation = self.punctuation.all | set(" ")
-        needs_cleanup_from_user = []
-        for dataset_name, symbols in self:
-            if isinstance(symbols, Punctuation):
-                # "punctuation" is a dict thus it hashes but we don't want to
-                # process it.
-                continue
-            common_symbols = set(symbols) & punctuation
-            if common_symbols:
-                needs_cleanup_from_user.append(
-                    f"Dataset {dataset_name} needs attention for {common_symbols}"
-                )
+    @property
+    def all_except_punctuation(self) -> set[str]:
+        """Returns the set containing all characters."""
+        return set(w for _, v in self if not isinstance(v, Punctuation) for w in v)
 
-        if needs_cleanup_from_user:
-            raise ValueError(
-                "Your symbols for the following dataset(s) require(s) some user attention.\n",
-                "\n".join(needs_cleanup_from_user),
-            )
+    @model_validator(mode="after")
+    def member_must_be_list_of_strings(self) -> "Symbols":
+        """Except for `punctuation` & `pad`, all user defined member variables
+        have to be a list of strings.
+        """
+        for k, v in self:
+            if isinstance(v, Punctuation):
+                continue
+            if k == "pad":
+                continue
+            if not isinstance(v, list) or not all(isinstance(e, str) for e in v):
+                raise ValueError(f"{k} must be a list")
 
         return self
 
