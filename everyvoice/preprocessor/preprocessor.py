@@ -576,9 +576,9 @@ class Preprocessor:
         # Always reprocess pitch even without self.overwrite, since its results
         # depend on the stats of the whole fileset.
         audio_path = self.create_path(
-            item, "audio", f"audio-{self.input_sampling_rate}.pt"
+            item, "audio", f"audio-{self.input_sampling_rate}.wav"
         )
-        audio = torch.load(audio_path)
+        audio, _, _ = self.load_audio(audio_path)
         pitch = self.extract_pitch(audio)
         if (
             isinstance(self.config, FeaturePredictionConfig)
@@ -644,14 +644,14 @@ class Preprocessor:
                 f"spec-{self.output_sampling_rate}-{self.audio_config.spec_type}.pt",
             )
             if not output_spec_path.exists() or self.overwrite:
-                output_audio = torchaudio.load(str(output_audio_path)).squeeze()
+                output_audio, _, _ = self.load_audio(output_audio_path)
                 output_spec = self.extract_spectral_features(
                     output_audio, self.output_spectral_transform
                 )
                 save_tensor(output_spec, output_spec_path)
 
         if not input_spec_path.exists() or self.overwrite:
-            input_audio = torchaudio.load(str(input_audio_path)).squeeze()
+            input_audio, _, _ = self.load_audio(input_audio_path)
             input_spec = self.extract_spectral_features(
                 input_audio, self.input_spectral_transform
             )
@@ -685,8 +685,8 @@ class Preprocessor:
             raw_text = item["text"]
             n_words = len(raw_text.split(word_seg_token))
             n_chars = len(self.text_processor.text_to_sequence(raw_text))
-            audio = torch.load(
-                self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.pt")
+            audio, _, _ = torchaudio.load(
+                self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.wav")
             )
             if heavy_clip_detction:
                 _, total_clipping = detect_clipping(audio)
