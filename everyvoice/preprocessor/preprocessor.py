@@ -478,7 +478,7 @@ class Preprocessor:
                 return None
             else:
                 torchaudio.save(
-                    input_audio_save_path,
+                    str(input_audio_save_path),
                     input_audio,
                     save_sr,
                     encoding="PCM_S",
@@ -498,7 +498,7 @@ class Preprocessor:
             )
             if output_audio is not None:
                 torchaudio.save(
-                    output_audio_save_path,
+                    str(output_audio_save_path),
                     output_audio,
                     save_sr,
                     encoding="PCM_S",
