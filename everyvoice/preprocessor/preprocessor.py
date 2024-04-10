@@ -644,14 +644,14 @@ class Preprocessor:
                 f"spec-{self.output_sampling_rate}-{self.audio_config.spec_type}.pt",
             )
             if not output_spec_path.exists() or self.overwrite:
-                output_audio = torchaudio.load(str(output_audio_path))
+                output_audio = torchaudio.load(str(output_audio_path)).squeeze()
                 output_spec = self.extract_spectral_features(
                     output_audio, self.output_spectral_transform
                 )
                 save_tensor(output_spec, output_spec_path)
 
         if not input_spec_path.exists() or self.overwrite:
-            input_audio = torchaudio.load(str(input_audio_path))
+            input_audio = torchaudio.load(str(input_audio_path)).squeeze()
             input_spec = self.extract_spectral_features(
                 input_audio, self.input_spectral_transform
             )
