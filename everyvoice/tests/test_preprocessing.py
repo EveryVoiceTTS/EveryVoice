@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import doctest
 import shutil
 import tempfile
 from pathlib import Path
@@ -10,6 +11,7 @@ import torchaudio
 from pydantic_core._pydantic_core import ValidationError
 from torch import float32
 
+import everyvoice.text.text_processor
 from everyvoice.config.preprocessing_config import (
     AudioConfig,
     AudioSpecTypeEnum,
@@ -68,6 +70,11 @@ class PreprocessingTest(BasicTestCase):
         super().setUp()
         self.preprocess()
         self.filelist = generic_psv_filelist_reader(self.data_dir / "metadata.psv")
+
+    def test_run_doctest(self):
+        """Run doctests in everyvoice.text.text_processing"""
+        results = doctest.testmod(everyvoice.text.text_processor)
+        self.assertFalse(results.failed, results)
 
     # def test_compute_stats(self):
     #     feat_prediction_config = EveryVoiceConfig.load_config_from_path().feature_prediction
@@ -420,7 +427,7 @@ class PreprocessingTest(BasicTestCase):
                     )
                     self.assertEqual(
                         characters[0],
-                        "t/h/e/ /e/s/s/e/n/t/i/a/l/ /t/e/r/m/s/ /o/f/ /s/u/c/h/ /m/e/m/o/r/a/n/d/a/ /m/i/g/h/t/ /w/e/l/l/ /b/e/ /e/m/b/o/d/i/e/d/ /i/n/ /a/n/ /e/x/e/c/u/t/i/v/e/ /o/r/d/e/r/<BB>",
+                        "t/h/e/ /e/s/s/e/n/t/i/a/l/ /t/e/r/m/s/ /o/f/ /s/u/c/h/ /m/e/m/o/r/a/n/d/a/ /m/i/g/h/t/ /w/e/l/l/ /b/e/ /e/m/b/o/d/i/e/d/ /i/n/ /a/n/ /e/x/e/c/u/t/i/v/e/ /o/r/d/e/r/.",
                         f'failed in {filelist_test_info["path"]}',
                     )
                 if filelist_test_info["contains_phones"]:
@@ -433,12 +440,12 @@ class PreprocessingTest(BasicTestCase):
                         # arpabet uses space for phone boundaries
                         self.assertEqual(
                             phones[0],
-                            "ð/ /ʌ/ /e/ /s/ /e/ /n/ /ʃ/ /ʌ/ /l/ /t/ /r/ /m/ /z/ /ʌ/ /v/ /s/ /ʌ/ /c/h/ /m/ /e/ /m/ /r/ /æ/ /n/ /d/ /ʌ/ /m/ /a/ɪ/ /t/ /w/ /e/ /l/ /b/ /i/ /ɪ/ /m/ /b/ /ɑ/ /d/ /i/ /d/ /ɪ/ /n/ /æ/ /n/ /ɪ/ /g/ /z/ /e/ /k/ /j/ /ʌ/ /t/ /ɪ/ /v/ /ɔ/ /r/ /d/ /r/ /<BB>",
+                            "ð/ /ʌ/ /e/ /s/ /e/ /n/ /ʃ/ /ʌ/ /l/ /t/ /r/ /m/ /z/ /ʌ/ /v/ /s/ /ʌ/ /c/h/ /m/ /e/ /m/ /r/ /æ/ /n/ /d/ /ʌ/ /m/ /a/ɪ/ /t/ /w/ /e/ /l/ /b/ /i/ /ɪ/ /m/ /b/ /ɑ/ /d/ /i/ /d/ /ɪ/ /n/ /æ/ /n/ /ɪ/ /g/ /z/ /e/ /k/ /j/ /ʌ/ /t/ /ɪ/ /v/ /ɔ/ /r/ /d/ /r/ /.",
                         )
                     else:
                         self.assertEqual(
                             phones[0],
-                            "ð/ʌ/ /ɛ/s/ɛ/n/ʃ/ʌ/l/ /t/ɜ˞/m/z/ /ʌ/v/ /s/ʌ/t/ʃ/ /m/ɛ/m/ɜ˞/æ/n/d/ʌ/ /m/a/ɪ/t/ /w/ɛ/l/ /b/i/ /ɪ/m/b/ɑ/d/i/d/ /ɪ/n/ /æ/n/ /ɪ/ɡ/z/ɛ/k/j/ʌ/t/ɪ/v/ /ɔ/ɹ/d/ɜ˞/<BB>",
+                            "ð/ʌ/ /ɛ/s/ɛ/n/ʃ/ʌ/l/ /t/ɜ˞/m/z/ /ʌ/v/ /s/ʌ/t/ʃ/ /m/ɛ/m/ɜ˞/æ/n/d/ʌ/ /m/a/ɪ/t/ /w/ɛ/l/ /b/i/ /ɪ/m/b/ɑ/d/i/d/ /ɪ/n/ /æ/n/ /ɪ/ɡ/z/ɛ/k/j/ʌ/t/ɪ/v/ /ɔ/ɹ/d/ɜ˞/.",
                             f'failed in {filelist_test_info["path"]}',
                         )
 

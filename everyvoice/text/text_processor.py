@@ -134,7 +134,6 @@ class TextProcessor:
         >>> tp = TextProcessor(TextConfig())
         >>> tp.apply_punctuation_rules(['h', 'e', 'l', 'l', 'o', '.'])
         ['h', 'e', 'l', 'l', 'o', '<BB>']
-
         """
         return [
             self.punctuation_to_internal_id.get(token, token)
@@ -152,7 +151,6 @@ class TextProcessor:
         >>> tp = TextProcessor(TextConfig(to_replace={'a': 'b'}))
         >>> tp.apply_replacement_rules('a')
         'b'
-
         """
         for k, v in self.to_replace.items():
             text = re.sub(k, v, text)
@@ -169,7 +167,6 @@ class TextProcessor:
         >>> tp = TextProcessor(TextConfig())
         >>> tp.apply_cleaners('HELLO\u0301')
         'helló'
-
         """
         for cleaner_fn in self.config.cleaners:
             try:
@@ -196,7 +193,6 @@ class TextProcessor:
         >>> tp = TextProcessor(TextConfig())
         >>> tp.normalize_text('HELLO\u0301!')
         'helló!'
-
         """
         if apply_replace_rules:
             text = self.apply_replacement_rules(text)
@@ -214,6 +210,10 @@ class TextProcessor:
             npt.NDArray[np.int_]: a list of multi-hot phonological feature vectors
 
         >>> tp = TextProcessor(TextConfig())
+        >>> tp.calculate_phonological_features(['aɪ'])
+        array([[ 1,  1, -1,  1, -1, -1, -1,  0,  1, -1, -1,  0, -1,  0, -1,  0,
+                 0, -1, -1, -1,  0, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
+                 0,  0,  0,  0,  0,  0,  0]])
         """
         if self.phonological_feature_calculator is None:
             self.phonological_feature_calculator = PhonologicalFeatureCalculator(
@@ -238,7 +238,6 @@ class TextProcessor:
         >>> tp = TextProcessor(TextConfig(symbols=Symbols(ipa=['a', 'h', 'ʌ', 'l', 'o', 'ʊ'])))
         >>> tp.apply_g2p_and_tokenization('hello', 'eng')
         ['h', 'ʌ', 'l', 'o', 'ʊ']
-
         """
         g2p_engine = get_g2p_engine(lang_id)
         try:
@@ -283,7 +282,6 @@ class TextProcessor:
         ['\x80', '\x80', ' ']
         >>> tp.missing_symbols['*']
         1
-
         """
         if find_missing:
             self.get_missing_symbols(normalized_text, quiet=quiet)
@@ -295,7 +293,7 @@ class TextProcessor:
         text: str,
         normalize_text: bool = True,
         apply_g2p: bool = False,
-        normalize_punctuation: bool = True,
+        normalize_punctuation: bool = False,
         encode_as_phonological_features: bool = False,
         lang_id: Optional[str] = None,
         quiet: bool = False,
@@ -309,21 +307,20 @@ class TextProcessor:
                 corresponding to the symbols in the text, or a multi-hot
                 phonological feature vector
 
-            >>> from everyvoice.config.text_config import Symbols
-            >>> tp = TextProcessor(TextConfig(symbols=Symbols(ipa=['a', 'h', 'ʌ', 'l', 'o', 'ʊ'])))
-            >>> tp.encode_text('hello \x80\x80', quiet=True) # e is not in the default symbols so it is ignored
-            [4, 6, 6, 7, 1, 0, 0]
-            >>> tp.encode_text('hello \x80\x80', apply_g2p=True, lang_id='boop', quiet=True)
-            Traceback (most recent call last):
-            ...
-            ValueError: You tried to apply g2p for language 'boop', but no g2p engine exists for that language. Please see the <TODO: docs>.
-            >>> tp.encode_text('hello \x80\x80', apply_g2p=False, lang_id='boop', encode_as_phonological_features=True, quiet=True)
-            Traceback (most recent call last):
-            ...
-            ValueError: 'encode_as_phonological_features' was set to True but 'apply_g2p' was set to False. In order to calculate phonological features, you must first apply g2p to the text. Please set 'apply_g2p' to True.
-            >>> tp.encode_text('hello \x80\x80', apply_g2p=True, lang_id='eng', quiet=True)
-            [4, 5, 6, 7, 8, 1, 0, 0]
-
+        >>> from everyvoice.config.text_config import Symbols
+        >>> tp = TextProcessor(TextConfig(symbols=Symbols(ipa=['a', 'h', 'ʌ', 'l', 'o', 'ʊ'])))
+        >>> tp.encode_text('hello \x80\x80', quiet=True) # e is not in the default symbols so it is ignored
+        [19, 20, 20, 21, 1, 0, 0]
+        >>> tp.encode_text('hello \x80\x80', apply_g2p=True, lang_id='boop', quiet=True)
+        Traceback (most recent call last):
+        ...
+        ValueError: You tried to apply g2p for language 'boop', but no g2p engine exists for that language. Please see the <TODO: docs>.
+        >>> tp.encode_text('hello \x80\x80', apply_g2p=False, lang_id='boop', encode_as_phonological_features=True, quiet=True)
+        Traceback (most recent call last):
+        ...
+        ValueError: 'encode_as_phonological_features' was set to True but 'apply_g2p' was set to False. In order to calculate phonological features, you must first apply g2p to the text. Please set 'apply_g2p' to True.
+        >>> tp.encode_text('hello \x80\x80', apply_g2p=True, lang_id='eng', quiet=True)
+        [19, 27, 20, 21, 26, 1, 0, 0]
         """
         # Error states
         if encode_as_phonological_features and not apply_g2p:
@@ -369,8 +366,8 @@ class TextProcessor:
             list[str]: a sequence of text characters
 
         >>> tp = TextProcessor(TextConfig())
-        >>> tp.decode_tokens(['\x80', '<SIL>', '\x80', '\x80'])
-        [0, 1, 2, 0, 0]
+        >>> tp.token_sequence_to_text_sequence([0, 6, 0, 0])
+        ['\x80', '<SIL>', '\x80', '\x80']
         """
         return [self._id_to_symbol[symbol_id] for symbol_id in sequence]
 
@@ -384,8 +381,8 @@ class TextProcessor:
             list[int]: a list of token indices
 
         >>> tp = TextProcessor(TextConfig())
-        >>> tp.decode_tokens(['\x80', '<SIL>', '\x80', '\x80'])
-        [0, 1, 2, 0, 0]
+        >>> tp.encode_string_tokens(['\x80', '<SIL>', '\x80', '\x80'])
+        [0, 6, 0, 0]
         """
         # TODO: catch errors
         encoded_tokens = []
@@ -417,7 +414,6 @@ class TextProcessor:
 
         >>> tp = TextProcessor(TextConfig())
         >>> tp.decode_tokens([0, 1, 2, 0, 0])
-        '\x80 <SIL>\x80\x80'
-
+        '\x80/ /<QUOTE>/\x80/\x80'
         """
         return join_character.join(self.token_sequence_to_text_sequence(sequence))
