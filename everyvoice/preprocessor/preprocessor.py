@@ -622,14 +622,14 @@ class Preprocessor:
 
     def process_spec(self, item):
         input_audio_path = self.create_path(
-            item, "audio", f"audio-{self.input_sampling_rate}.pt"
+            item, "audio", f"audio-{self.input_sampling_rate}.wav"
         )
         if not input_audio_path.exists():
             self.counters.increment("skipped_processes")
             logger.info(f"Audio at {input_audio_path} is missing. Skipping...")
             return
         output_audio_path = self.create_path(
-            item, "audio", f"audio-{self.output_sampling_rate}.pt"
+            item, "audio", f"audio-{self.output_sampling_rate}.wav"
         )
         input_spec_path = self.create_path(
             item,
@@ -644,14 +644,14 @@ class Preprocessor:
                 f"spec-{self.output_sampling_rate}-{self.audio_config.spec_type}.pt",
             )
             if not output_spec_path.exists() or self.overwrite:
-                output_audio = torch.load(output_audio_path)
+                output_audio = torchaudio.load(str(output_audio_path))
                 output_spec = self.extract_spectral_features(
                     output_audio, self.output_spectral_transform
                 )
                 save_tensor(output_spec, output_spec_path)
 
         if not input_spec_path.exists() or self.overwrite:
-            input_audio = torch.load(input_audio_path)
+            input_audio = torchaudio.load(str(input_audio_path))
             input_spec = self.extract_spectral_features(
                 input_audio, self.input_spectral_transform
             )
