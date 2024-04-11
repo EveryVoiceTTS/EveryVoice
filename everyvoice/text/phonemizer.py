@@ -33,7 +33,7 @@ def get_g2p_engine(lang_id: str):
         def g2p_engine(normalized_input_text: str) -> list[str]:
             # ipatok strips some important characters, so as a hack, we convert them to the private use area first
             PUA_CHARS = ["_", " ", ".", "ˈ", "ˌ"]
-            PUA_START_NUMBER = 983040
+            PUA_START_NUMBER = 983040  # U+F0000
             text = phonemizer(normalized_input_text).output_string
             for i, char in enumerate(PUA_CHARS):
                 text = text.replace(char, chr(PUA_START_NUMBER + i))

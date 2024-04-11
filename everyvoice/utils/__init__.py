@@ -393,6 +393,7 @@ def generic_dict_loader(
 
 
 generic_psv_filelist_reader = generic_dict_loader
+generic_xsv_filelist_reader = generic_dict_loader
 generic_csv_filelist_reader = partial(generic_dict_loader, delimiter=",")
 
 

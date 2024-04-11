@@ -1,8 +1,9 @@
 # /*
 # *  Arpabet-to-IPA - converting Arpabet to IPA.
 # *
-# * @author		Waldeilson Eder dos Santos
+# * @author		Waldeilson Eder dos Santos. Adapted by Aidan Pine.
 # * @copyright 	Copyright (c) 2015 Waldeilson Eder dos Santos
+# * @copyright 	Copyright (c) 2024 National Research Council Canada
 # * @link			https://github.com/wwesantos/arpabet-to-ipa
 # * @package     	arpabet-to-ipa
 # *
@@ -28,7 +29,7 @@
 # */
 
 """ A Simple Arpabet to IPA conversion
-    adapted from https://github.com/wwesantos/arpabet-to-ipa/blob/master/src/App.php
+    adapted by Aidan Pine from https://github.com/wwesantos/arpabet-to-ipa/blob/master/src/App.php
 
     Except changed so that 1 adds a pre-vocalic primary stress symbol and 2 adds a secondary stress symbol.
     These flout the IPA standard of placing stress symbols before syllables, but this is more computationally

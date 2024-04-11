@@ -29,7 +29,7 @@ class TextTest(BasicTestCase):
 
     def test_run_doctest(self):
         """Run doctests in everyvoice.utils"""
-        results = doctest.testmod(everyvoice.text.utils)
+        results = doctest.testmod(everyvoice.text)
         self.assertFalse(results.failed, results)
 
     def test_text_to_sequence(self):
@@ -375,7 +375,9 @@ class TestG2p(BasicTestCase):
         )
         # another language
         str_g2p = get_g2p_engine("str")
-        self.assertEqual(str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"])
+        self.assertEqual(
+            str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"]
+        )
         # test lang_id missing
         with self.assertRaises(NotImplementedError):
             get_g2p_engine("boop")

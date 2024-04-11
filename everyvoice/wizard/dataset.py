@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
-from everyvoice.utils import generic_psv_filelist_reader, read_festival, slugify
+from everyvoice.utils import generic_xsv_filelist_reader, read_festival, slugify
 from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, Step, StepNames, Tour
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
@@ -441,7 +441,7 @@ class SelectLanguageStep(Step):
             "Note: if your dataset has more than one language in it, you will have to provide a 'language' column to indicate the language of each sample, because the configuration wizard can't guess!"
         )
         # TODO: currently we only support the languages from g2p, but we should add more
-        supported_langs = list(AVAILABLE_G2P_ENGINES.keys())
+        supported_langs = list(AVAILABLE_G2P_ENGINES)
         supported_langs_choices = ["[und]: my language isn't here"] + [
             f"[{k}]: {g2p_langs_full.get(k, 'Unknown')}" for k in supported_langs
         ]
@@ -491,7 +491,7 @@ def reload_filelist_data_as_dict(state):
         "tsv",
         "csv",
     ]:
-        state["filelist_data"] = generic_psv_filelist_reader(
+        state["filelist_data"] = generic_xsv_filelist_reader(
             filelist_path,
             delimiter=state.get("filelist_delimiter"),
             fieldnames=state["filelist_headers"],
