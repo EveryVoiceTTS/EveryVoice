@@ -638,9 +638,9 @@ class Preprocessor:
         ] = None,
         encode_as_string=True,
     ) -> (
-        tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]]
+        tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.float32]]]
         | tuple[
-            Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.int_]]
+            Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.float32]]
         ]
     ):
         """Process text into characters, phones, and/or phonological features.
@@ -659,7 +659,7 @@ class Preprocessor:
             encode_as_string (bool, optional): whether to return characters and phones as /-joined strings (when True) or lists of ints (when False). Defaults to True.
 
         Returns:
-            tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]]|tuple[Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.int_]]]: if encode_as_string is true, returns an optional characters string, an optional phones string, and an optional multi-hot phonological feature vector. if encode_as_string is false, returns a list of ints for characters and phones
+            tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.float32]]]|tuple[Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.float32]]]: if encode_as_string is true, returns an optional characters string, an optional phones string, and an optional multi-hot phonological feature vector. if encode_as_string is false, returns a list of ints for characters and phones
         """
         if specific_text_representation is not None:
             raise NotImplementedError(
@@ -673,7 +673,7 @@ class Preprocessor:
         phones: Optional[str] = None
         phone_tokens: Optional[list[int]] = None
         character_tokens: Optional[list[int]] = None
-        pfs: Optional[npt.NDArray[np.int_]] = None
+        pfs: Optional[npt.NDArray[np.float32]] = None
         # if arpabet, turn to phones right away
         if (
             DatasetTextRepresentation.arpabet.value in item

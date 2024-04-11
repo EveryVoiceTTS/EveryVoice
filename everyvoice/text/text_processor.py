@@ -206,13 +206,13 @@ class TextProcessor:
 
     def calculate_phonological_features(
         self, phone_tokens: list[str], apply_punctuation_rules=True
-    ) -> npt.NDArray[np.int_]:
+    ) -> npt.NDArray[np.float32]:
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
         Args:
             text (list[str]): a list of IPA and normalized punctuation tokens
             apply_punctuation_rules (bool): whether to convert punctuation into discrete values like <BB> or <EXCL>. Defaults to True. If set to False, features.py will have to be amended to handle punctuation.
         Returns:
-            npt.NDArray[np.int_]: a list of multi-hot phonological feature vectors
+            npt.NDArray[np.float32]: a list of multi-hot phonological feature vectors
 
         >>> tp = TextProcessor(TextConfig())
         >>> tp.calculate_phonological_features(['aɪ'])
@@ -305,7 +305,7 @@ class TextProcessor:
         lang_id: Optional[str] = None,
         quiet: bool = False,
         find_missing: bool = True,
-    ) -> list[int] | npt.NDArray[np.int_]:
+    ) -> list[int] | npt.NDArray[np.float32]:
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
         Args:
             text: string to convert to a sequence
