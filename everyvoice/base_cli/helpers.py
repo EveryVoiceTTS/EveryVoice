@@ -20,6 +20,7 @@ from loguru import logger
 from pydantic import ValidationError
 from tqdm import tqdm
 
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import InvalidConfiguration
 from everyvoice.model.aligner.config import DFAlignerConfig
 from everyvoice.model.aligner.DeepForcedAligner.dfaligner.dataset import (
@@ -106,7 +107,11 @@ def preprocess_base_command(
 
     config = load_config_base_command(model_config, config_args, config_file)
     preprocessor = Preprocessor(config)
-    if isinstance(config, FastSpeech2Config) and config.model.use_phonological_feats:
+    if (
+        isinstance(config, FastSpeech2Config)
+        and config.model.target_text_representation_level
+        == TargetTrainingTextRepresentationLevel.phonological_features
+    ):
         steps.append("pfs")
     preprocessor.preprocess(
         cpus=cpus,

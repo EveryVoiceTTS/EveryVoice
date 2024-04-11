@@ -255,6 +255,14 @@
           ],
           "description": "Configuration for energy, duration, and pitch variance predictors."
         },
+        "target_text_representation_level": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/TargetTrainingTextRepresentationLevel"
+            }
+          ],
+          "default": "characters"
+        },
         "learn_alignment": {
           "default": true,
           "description": "Whether to jointly learn alignments using monotonic alignment search module (See Badlani et. al. 2021: https://arxiv.org/abs/2108.10447). If set to False, you will have to provide text/audio alignments separately before training a text-to-spec (feature prediction) model.",
@@ -275,18 +283,6 @@
           ],
           "default": "mse",
           "description": "The loss function to use when calculating Mel spectrogram loss."
-        },
-        "phonological_feats_size": {
-          "default": 38,
-          "description": "Advanced. The number of dimension used in the phonological feature vector representation. The default is 38, but this can be changed by modifying the everyvoice/text/features.py module.",
-          "title": "Phonological Feats Size",
-          "type": "integer"
-        },
-        "use_phonological_feats": {
-          "default": false,
-          "description": "Whether to train using phonological feature vectors as inputs instead of one-hot encoded text inputs.",
-          "title": "Use Phonological Feats",
-          "type": "boolean"
         },
         "use_postnet": {
           "default": true,
@@ -437,6 +433,17 @@
               "$ref": "#/$defs/NoamOptimizer"
             }
           ],
+          "default": {
+            "learning_rate": 0.001,
+            "eps": 1e-08,
+            "weight_decay": 1e-06,
+            "betas": [
+              0.9,
+              0.999
+            ],
+            "name": "noam",
+            "warmup_steps": 1000
+          },
           "description": "The optimizer to use during training."
         },
         "vocoder_path": {
@@ -465,31 +472,31 @@
           "type": "number"
         },
         "pitch_loss_weight": {
-          "default": 1.0,
+          "default": 0.1,
           "description": "Multiply the pitch loss by this weight",
           "title": "Pitch Loss Weight",
           "type": "number"
         },
         "energy_loss_weight": {
-          "default": 1.0,
+          "default": 0.1,
           "description": "Multiply the energy loss by this weight",
           "title": "Energy Loss Weight",
           "type": "number"
         },
         "duration_loss_weight": {
-          "default": 1.0,
+          "default": 0.1,
           "description": "Multiply the duration loss by this weight",
           "title": "Duration Loss Weight",
           "type": "number"
         },
         "attn_ctc_loss_weight": {
-          "default": 1.0,
+          "default": 0.1,
           "description": "Multiply the Attention CTC loss by this weight",
           "title": "Attn Ctc Loss Weight",
           "type": "number"
         },
         "attn_bin_loss_weight": {
-          "default": 1.0,
+          "default": 0.1,
           "description": "Multiply the Attention Binarization loss by this weight",
           "title": "Attn Bin Loss Weight",
           "type": "number"
@@ -519,7 +526,7 @@
         "save_dir": {
           "default": "logs_and_checkpoints",
           "description": "The directory to save your checkpoints and logs to.",
-          "format": "directory-path",
+          "format": "path",
           "title": "Save Dir",
           "type": "string"
         },
@@ -585,7 +592,7 @@
           "type": "string"
         },
         "warmup_steps": {
-          "default": 4000,
+          "default": 1000,
           "description": "The number of steps to increase the learning rate before starting to decrease it.",
           "title": "Warmup Steps",
           "type": "integer"
@@ -621,7 +628,7 @@
         "save_dir": {
           "default": "preprocessed/YourDataSet",
           "description": "The directory to save preprocessed files to.",
-          "format": "directory-path",
+          "format": "path",
           "title": "Save Dir",
           "type": "string"
         },
@@ -659,52 +666,123 @@
       "title": "PreprocessingConfig",
       "type": "object"
     },
+    "Punctuation": {
+      "properties": {
+        "exclamations": {
+          "default": [
+            "!",
+            "\u00a1"
+          ],
+          "description": "Exclamation punctuation symbols used in your datasets. Replaces these symbols with <EXCL> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclamations",
+          "type": "array"
+        },
+        "question_symbols": {
+          "default": [
+            "?",
+            "\u00bf"
+          ],
+          "description": "Question/interrogative punctuation symbols used in your datasets. Replaces these symbols with <QINT> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Question Symbols",
+          "type": "array"
+        },
+        "quotemarks": {
+          "default": [
+            "\"",
+            "'",
+            "\u201c",
+            "\u201d",
+            "\u00ab",
+            "\u00bb"
+          ],
+          "description": "Quotemark punctuation symbols used in your datasets. Replaces these symbols with <QUOTE> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Quotemarks",
+          "type": "array"
+        },
+        "big_breaks": {
+          "default": [
+            ".",
+            ":",
+            ";"
+          ],
+          "description": "Punctuation symbols indicating a 'big break' used in your datasets. Replaces these symbols with <BB> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Big Breaks",
+          "type": "array"
+        },
+        "small_breaks": {
+          "default": [
+            ",",
+            "-",
+            "\u2014"
+          ],
+          "description": "Punctuation symbols indicating a 'small break' used in your datasets. Replaces these symbols with <SB> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Small Breaks",
+          "type": "array"
+        },
+        "ellipsis": {
+          "default": [
+            "\u2026"
+          ],
+          "description": "Punctuation symbols indicating an ellipsis used in your datasets. Replaces these symbols with <EPS> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Ellipsis",
+          "type": "array"
+        }
+      },
+      "title": "Punctuation",
+      "type": "object"
+    },
     "Symbols": {
       "additionalProperties": true,
       "properties": {
         "silence": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            }
-          ],
           "default": [
             "<SIL>"
           ],
           "description": "The symbol(s) used to indicate silence.",
-          "title": "Silence"
-        },
-        "pad": {
-          "default": "_",
-          "description": "The symbol used to indicate padding. Batches are length-normalized by adding this padding character so that each utterance in the batch is the same length.",
-          "title": "Pad",
-          "type": "string"
+          "items": {
+            "type": "string"
+          },
+          "title": "Silence",
+          "type": "array"
         },
         "punctuation": {
-          "anyOf": [
+          "allOf": [
             {
-              "type": "string"
-            },
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
+              "$ref": "#/$defs/Punctuation"
             }
           ],
-          "default": "-';:,.!?\u00a1\u00bf\u2014\u2026\"\u00ab\u00bb\u201c\u201d ",
-          "description": "A list of punctuation symbols.",
-          "title": "Punctuation"
+          "description": "EveryVoice will combine punctuation and normalize it into a set of five permissible types of punctuation to help tractable training."
         }
       },
       "title": "Symbols",
       "type": "object"
+    },
+    "TargetTrainingTextRepresentationLevel": {
+      "enum": [
+        "characters",
+        "phones",
+        "phonological_features"
+      ],
+      "title": "TargetTrainingTextRepresentationLevel",
+      "type": "string"
     },
     "TextConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
