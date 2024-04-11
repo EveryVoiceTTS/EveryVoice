@@ -45,7 +45,7 @@ Pre-commit hooks enabled:
   using Flake8 in pre-commit hooks at:
   [Lj Miranda flake8 blog post](https://ljvmiranda921.github.io/notebook/2018/06/21/precommits-using-black-and-flake8/)
 - [isort](https://pycqa.github.io/isort/) orders python imports in a standard way
-- [Black](https://github.com/psf/black), the Uncompromising Code Formatter, refortmats all
+- [Black](https://github.com/psf/black), the Uncompromising Code Formatter, reformats all
   Python code according to very strict rules we've agreed to follow; more info about Black
   formatting rules in
   [The Black code style](https://black.readthedocs.io/en/stable/the_black_code_style.html)
