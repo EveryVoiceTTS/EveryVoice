@@ -407,7 +407,9 @@ class PreprocessingTest(BasicTestCase):
                 preprocessor = Preprocessor(fp_config)
                 with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
                     preprocessor.preprocess(
-                        output_path=str(output_filelist), cpus=1, to_process=["text"]
+                        output_path=str(output_filelist),
+                        cpus=1,
+                        to_process=["text", "pfs"],
                     )
                 self.assertIn("You've finished preprocessing: text", output.getvalue())
                 processed_filelist = preprocessor.load_filelist(output_filelist)
@@ -419,6 +421,18 @@ class PreprocessingTest(BasicTestCase):
                 phones = [
                     x["phone_tokens"] for x in processed_filelist if "phone_tokens" in x
                 ]
+                phonological_features = [
+                    torch.load(f)
+                    for f in sorted(list((output_filelist.parent / "pfs").glob("*.pt")))
+                ]
+                for i, utt_phones in enumerate(phones):
+                    # Phonlogical features are derived from phones so they should be of equal length
+                    self.assertEqual(
+                        len(utt_phones.split("/")),
+                        phonological_features[i].size(0),
+                        utt_phones.split("/"),
+                    )
+
                 if filelist_test_info["contains_characters"]:
                     self.assertEqual(
                         len(characters),
