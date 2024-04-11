@@ -13,3 +13,7 @@ class ConfigError(Exception):
 
 class OutOfVocabularySymbolError(Exception):
     pass
+
+
+class BadDataError(Exception):
+    pass
