@@ -1,6 +1,6 @@
 import re
 from collections import Counter
-from typing import Dict, Optional
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -80,10 +80,14 @@ class TextProcessor:
         self.missing_symbols: Counter[str] = Counter()
 
         # Mappings from symbol to numeric ID and vice versa
-        self._id_to_symbol: list[str] = self.symbols
-        self._symbol_to_id: Dict[str, int] = {
-            s: i for i, s in enumerate(self._id_to_symbol)
-        }
+        # dicts are preferred here to lists although list[index]
+        # and list.index(symbol) could provide the same result
+        # dicts are redundant protection against duplicate symbols
+        self._symbol_to_id: dict[str, int] = {}
+        self._id_to_symbol: dict[int, str] = {}
+        for i, s in enumerate(self.symbols):
+            self._symbol_to_id[s] = i
+            self._id_to_symbol[i] = s
 
         self._tokenizer = RegexpTokenizer(
             "|".join([re.escape(x) for x in self.symbols + self.punctuation_characters])
