@@ -61,7 +61,7 @@ class PhonologicalFeatureCalculator:
                 tone_features.append([-1, -1, -1, -1, -1, -1, -1])
             else:
                 tone_features.append([0, 0, 0, 0, 0, 0, 0])
-        return np.array(tone_features).astype("int")
+        return np.array(tone_features).astype(np.float32)
 
     def get_punctuation_features(self, tokens: list[str]) -> npt.NDArray[np.float32]:
         """Get Punctuation features.
@@ -73,15 +73,15 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a seven-dimensional one-hot encoding of punctuation, white space and silence
 
-        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>",}
+        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>", "ellipsis": "<EPS>"}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
         >>> pf.get_punctuation_features(['h', 'ʌ', 'l', 'o', 'ʊ', '<EXCL>'])
-        array([[0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0, 0, 0],
-               [0, 0, 0, 0, 0, 0, 0],
-               [1, 0, 0, 0, 0, 0, 0]])
+        array([[0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 1., 0.]], dtype=float32)
         """
         punctuation_features = []
         for char in tokens:
@@ -103,7 +103,7 @@ class PhonologicalFeatureCalculator:
                 punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 1])
             else:
                 punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0])
-        return np.array(punctuation_features).astype("int")
+        return np.array(punctuation_features).astype(np.float32)
 
     def token_to_segmental_features(self, token: str) -> npt.NDArray[np.float32]:
         """Turn a token to a feature vector with panphon
@@ -117,20 +117,23 @@ class PhonologicalFeatureCalculator:
         >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>",}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
         >>> pf.token_to_segmental_features('\x80') # pad symbol is all zeros
-        array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-               0, 0])
+        array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+               0., 0., 0., 0., 0., 0., 0.], dtype=float32)
         >>> pf.token_to_segmental_features('*') # punctuation is all zeros
-        array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-               0, 0])
+        array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+               0., 0., 0., 0., 0., 0., 0.], dtype=float32)
         >>> pf.token_to_segmental_features('ʌ')
-        array([ 1,  1, -1,  1, -1, -1, -1,  0,  1, -1, -1,  0, -1,  0, -1, -1, -1,
-                1, -1, -1,  1, -1,  0,  0])
+        array([ 1.,  1., -1.,  1., -1., -1., -1.,  0.,  1., -1., -1.,  0., -1.,
+                0., -1., -1., -1.,  1., -1., -1.,  1., -1.,  0.,  0.],
+              dtype=float32)
         >>> pf.token_to_segmental_features('a͡ɪ')
-        array([ 1,  1, -1,  1, -1, -1, -1,  0,  1, -1, -1,  0, -1,  0, -1,  0,  0,
-               -1, -1, -1,  0, -1,  0,  0])
+        array([ 1.,  1., -1.,  1., -1., -1., -1.,  0.,  1., -1., -1.,  0., -1.,
+                0., -1.,  0.,  0., -1., -1., -1.,  0., -1.,  0.,  0.],
+              dtype=float32)
         >>> pf.token_to_segmental_features('aɪ')
-        array([ 1,  1, -1,  1, -1, -1, -1,  0,  1, -1, -1,  0, -1,  0, -1,  0,  0,
-               -1, -1, -1,  0, -1,  0,  0])
+        array([ 1.,  1., -1.,  1., -1., -1., -1.,  0.,  1., -1., -1.,  0., -1.,
+                0., -1.,  0.,  0., -1., -1., -1.,  0., -1.,  0.,  0.],
+              dtype=float32)
         """
         vec = self.feature_table.word_to_vector_list(token, numeric=True)
         NUMBER_OF_PANPHON_FEATURES = 24
