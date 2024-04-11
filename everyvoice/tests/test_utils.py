@@ -11,10 +11,12 @@ from typing_extensions import Annotated
 import everyvoice.utils
 from everyvoice._version import VERSION
 from everyvoice.config.shared_types import init_context
+from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.utils import (
     directory_path_must_exist,
     path_is_a_directory,
     relative_to_absolute_path,
+    write_filelist,
 )
 
 
@@ -23,11 +25,33 @@ class VersionTest(TestCase):
         self.assertTrue(is_canonical(VERSION))
 
 
-class UtilsTest(TestCase):
+class UtilsTest(BasicTestCase):
     def test_run_doctest(self):
         """Run doctests in everyvoice.utils"""
         results = doctest.testmod(everyvoice.utils)
         self.assertFalse(results.failed, results)
+
+    def test_write_filelist(self):
+        """Filelist should write files with headers in order"""
+        basic_files = [
+            {
+                "basename": "test",
+                "phones": "foo",
+                "characters": "bar",
+                "language": "test",
+                "extra": "test",
+            }
+        ]
+        basic_path = self.tempdir / "test.psv"
+        write_filelist(basic_files, basic_path)
+        with open(basic_path) as f:
+            headers = f.readline().strip().split("|")
+        self.assertEqual(len(headers), 5)
+        self.assertEqual(headers[0], "basename")
+        self.assertEqual(headers[1], "language")
+        self.assertEqual(headers[2], "characters")
+        self.assertEqual(headers[3], "phones")
+        self.assertEqual(headers[4], "extra")
 
 
 class PathIsADirectory(BaseModel):
@@ -147,7 +171,7 @@ class DirectoryPathMustExistTest(TestCase):
         try:
             root_dir = Path(__file__).parent / "data"
             root_dir = root_dir.resolve()
-            filename = Path("metadata.csv")
+            filename = Path("metadata.psv")
             self.assertTrue((root_dir / filename).exists())
             with init_context({"writing_config": root_dir.resolve()}):
                 DirectoryPathMustExist(path=filename)

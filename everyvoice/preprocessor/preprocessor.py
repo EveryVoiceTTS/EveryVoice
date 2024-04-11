@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+import numpy.typing as npt
 import torch
 import torchaudio
 from clipdetect import detect_clipping
@@ -29,15 +30,21 @@ from torchaudio.functional import resample
 from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
+from everyvoice.config.type_definitions import (
+    DatasetTextRepresentation,
+    TargetTrainingTextRepresentationLevel,
+)
 from everyvoice.exceptions import ConfigError
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor.attention_prior import BetaBinomialInterpolator
 from everyvoice.preprocessor.helpers import Counters, Scaler, save_tensor
-from everyvoice.text import TextProcessor
+from everyvoice.text.arpabet import ARPABET_TO_IPA_TRANSDUCER
+from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
+from everyvoice.text.text_processor import TextProcessor
 from everyvoice.utils import (
-    generic_dict_loader,
+    generic_psv_filelist_reader,
     n_times,
     tqdm_joblib_context,
     write_filelist,
@@ -60,7 +67,7 @@ class Preprocessor:
         self.audio_config = config.preprocessing.audio
         self.sep = "--"
         self.text_processor = (
-            None if isinstance(config, VocoderConfig) else TextProcessor(config)
+            None if isinstance(config, VocoderConfig) else TextProcessor(config.text)
         )
         self.overwrite = False
         self.input_sampling_rate = self.audio_config.input_sampling_rate
@@ -276,29 +283,6 @@ class Preprocessor:
         """
         return torch.linalg.norm(spectral_feature_tensor, dim=0)
 
-    # This method is static because we want to use it in Datasets without setting the Preprocessor as an attribute
-    @staticmethod
-    def extract_text_inputs(
-        text, text_processor: TextProcessor, use_pfs=False, quiet=False
-    ) -> torch.Tensor:
-        """
-        Given some text and a text_processor, normalize it, g2p it, and save as one-hot or multi-hot phonological feature vectors
-
-        Args:
-            text (str): text
-            text_processor (TextProcessor): a text processor
-            use_pfs:
-            quiet: suppress warnings
-        """
-        if text_processor is None:
-            raise ValueError("Text processor not initialized")
-        if use_pfs:
-            return torch.Tensor(
-                text_processor.text_to_phonological_features(text, quiet)
-            ).long()
-        else:
-            return torch.Tensor(text_processor.text_to_sequence(text, quiet)).long()
-
     def print_duration(self):
         """Convert seconds to a human readable format"""
         seconds = int(self.counters.value("duration"))
@@ -321,14 +305,6 @@ class Preprocessor:
             [
                 "missing symbols",
                 len(self.text_processor.missing_symbols) if self.text_processor else 0,
-            ],
-            [
-                "duplicate symbols",
-                (
-                    len(self.text_processor.duplicate_symbols)
-                    if self.text_processor
-                    else 0
-                ),
             ],
             ["skipped processes", self.counters.value("skipped_processes")],
             ["nans", self.counters.value("nans")],
@@ -586,34 +562,177 @@ class Preprocessor:
         save_tensor(pitch, pitch_path)
 
     def process_attn_prior(self, item):
-        attn_prior_path = self.create_path(item, "attn", "attn-prior.pt")
-        if attn_prior_path.exists() and not self.overwrite:
+        if self.text_processor is None:
+            raise NotImplementedError(
+                "You must have a valid TextProcessor in order to calculate the attention prior."
+            )
+        # Create an attention prior for characters and one for phones if available
+        process_characters = False
+        process_phones = False
+        character_tokens = (
+            self.text_processor.encode_string_tokens(
+                item["character_tokens"].split("/")
+            )
+            if "character_tokens" in item
+            and item[
+                "character_tokens"
+            ]  # character_tokens will be None in phone-based datasets. It will be the empty string in multi-source datasets which contain characters for other datasets.
+            else None
+        )
+        phone_tokens = (
+            self.text_processor.encode_string_tokens(item["phone_tokens"].split("/"))
+            if "phone_tokens" in item and item["phone_tokens"]
+            else None
+        )
+        if character_tokens:
+            character_attn_prior_path = self.create_path(
+                item,
+                "attn",
+                f"{DatasetTextRepresentation.characters.value}-attn-prior.pt",
+            )
+            process_characters = True
+        if phone_tokens:
+            phone_attn_prior_path = self.create_path(
+                item,
+                "attn",
+                f"{DatasetTextRepresentation.ipa_phones.value}-attn-prior.pt",
+            )
+            process_phones = True
+        if (
+            process_characters
+            and character_attn_prior_path.exists()
+            and not self.overwrite
+        ):
+            process_characters = False
+        if process_phones and phone_attn_prior_path.exists() and not self.overwrite:
+            process_phones = False
+        if not process_phones and not process_characters:
             return
         binomial_interpolator = BetaBinomialInterpolator()
-        text = self.extract_text_inputs(
-            item["text"], self.text_processor, use_pfs=False, quiet=True
-        )
+
         input_spec_path = self.create_path(
             item,
             "spec",
             f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.pt",
         )
         input_spec = torch.load(input_spec_path)
-        attn_prior = torch.from_numpy(
-            binomial_interpolator(input_spec.size(1), text.size(0))
-        )
-        assert input_spec.size(1) == attn_prior.size(0)
-        save_tensor(attn_prior, attn_prior_path)
+        if process_phones:
+            phone_attn_prior = torch.from_numpy(
+                binomial_interpolator(input_spec.size(1), len(phone_tokens))
+            )
+            assert input_spec.size(1) == phone_attn_prior.size(0)
+            save_tensor(phone_attn_prior, phone_attn_prior_path)
+        if process_characters:
+            character_attn_prior = torch.from_numpy(
+                binomial_interpolator(input_spec.size(1), len(character_tokens))
+            )
+            assert input_spec.size(1) == character_attn_prior.size(0)
+            save_tensor(character_attn_prior, character_attn_prior_path)
 
-    def process_text(self, item, use_pfs=False):
-        basename = "pfs.pt" if use_pfs else "text.pt"
-        text_path = self.create_path(item, "text", basename)
-        if text_path.exists() and not self.overwrite:
-            return
-        text = self.extract_text_inputs(
-            item["text"], self.text_processor, use_pfs=use_pfs, quiet=True
-        )
-        save_tensor(text, text_path)
+    def process_text(
+        self,
+        item,
+        use_pfs=False,
+        specific_text_representation: Optional[
+            TargetTrainingTextRepresentationLevel
+        ] = None,
+        encode_as_string=True,
+    ) -> (
+        tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]]
+        | tuple[
+            Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.int_]]
+        ]
+    ):
+        """Process text into characters, phones, and/or phonological features.
+            If specific_text_representation is supplied, then only that representation is processed.
+            Otherwise:
+                - if "characters" are defined on the dataset item, they are tokenized and one hot encoded
+                    - if a g2p method is available for the defined item's language, then they are also g2p'ed and phones are processed
+                - if "phones" are defined on the dataset item, they are tokenized and one-hot encoded
+                - if "arpabet" is defined on the dataset item, it is converted to phones and one-hot encoded
+                - if "use_pfs" is True and phones are available, a phonological feature representation is also generated
+
+        Args:
+            item (_type_): an item from the filelist
+            use_pfs (bool, optional): whether to generate phonological features. Defaults to False.
+            specific_text_representation (Optional[DatasetTextRepresentation], optional): a specific representation to process if you don't want the method to create all available representations, useful for synthesis. Defaults to None.
+            encode_as_string (bool, optional): whether to return characters and phones as /-joined strings (when True) or lists of ints (when False). Defaults to True.
+
+        Returns:
+            tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.int_]]]|tuple[Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.int_]]]: if encode_as_string is true, returns an optional characters string, an optional phones string, and an optional multi-hot phonological feature vector. if encode_as_string is false, returns a list of ints for characters and phones
+        """
+        if specific_text_representation is not None:
+            raise NotImplementedError(
+                "Sorry 'specific_text_representation' isn't implemented yet, please set it to None."
+            )  # TODO: refactor so that you don't *need* to generate all possible representations, to make synthesis faster.
+        if self.text_processor is None:
+            raise NotImplementedError(
+                "You must have a valid TextProcessor in order to calculate text."
+            )
+        characters: Optional[str] = None
+        phones: Optional[str] = None
+        phone_tokens: Optional[list[int]] = None
+        character_tokens: Optional[list[int]] = None
+        pfs: Optional[npt.NDArray[np.int_]] = None
+        # if arpabet, turn to phones right away
+        if (
+            DatasetTextRepresentation.arpabet.value in item
+            and DatasetTextRepresentation.ipa_phones.value not in item
+        ):
+            phone_tokens = self.text_processor.encode_text(
+                text=ARPABET_TO_IPA_TRANSDUCER(
+                    item[DatasetTextRepresentation.arpabet.value]
+                ).output_string,
+                quiet=True,
+                apply_g2p=False,
+            )
+        # if dataset is chars, tokenize them for saving to filelist
+        if DatasetTextRepresentation.characters.value in item:
+            character_tokens = self.text_processor.encode_text(
+                text=item[DatasetTextRepresentation.characters.value],
+                apply_g2p=False,
+                encode_as_phonological_features=False,
+                quiet=True,
+            )
+            # if g2p available, and phones don't already exist, process and tokenize them for saving to filelist
+            if (
+                item["language"] in AVAILABLE_G2P_ENGINES
+                and DatasetTextRepresentation.ipa_phones.value not in item
+            ):
+                phone_tokens = self.text_processor.encode_text(
+                    text=item[DatasetTextRepresentation.characters.value],
+                    apply_g2p=True,
+                    lang_id=item["language"],
+                    encode_as_phonological_features=False,
+                    quiet=True,
+                )
+        # if dataset is phones
+        if DatasetTextRepresentation.ipa_phones.value in item:
+            phone_tokens = self.text_processor.encode_text(
+                text=item[DatasetTextRepresentation.ipa_phones.value],
+                apply_g2p=False,
+                encode_as_phonological_features=False,
+                quiet=True,
+            )
+        # calculate pfs
+        if phone_tokens and use_pfs:
+            pfs = self.text_processor.calculate_phonological_features(
+                self.text_processor.token_sequence_to_text_sequence(phone_tokens),
+                apply_punctuation_rules=True,
+            )
+        # encode to string
+        if encode_as_string:
+            if phone_tokens is not None:
+                phones = self.text_processor.decode_tokens(
+                    phone_tokens, join_character="/"
+                )
+            if character_tokens is not None:
+                characters = self.text_processor.decode_tokens(
+                    character_tokens, join_character="/"
+                )
+            return (characters, phones, pfs)
+        else:
+            return (character_tokens, phone_tokens, pfs)
 
     def process_spec(self, item):
         input_audio_path = self.create_path(
@@ -679,7 +798,7 @@ class Preprocessor:
             data_point = {k: v for k, v in item.items()}
             raw_text = item["text"]
             n_words = len(raw_text.split(word_seg_token))
-            n_chars = len(self.text_processor.text_to_sequence(raw_text))
+            n_chars = len(self.text_processor.encode_text(raw_text))
             audio = torch.load(
                 self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.pt")
             )
@@ -726,7 +845,7 @@ class Preprocessor:
 
     def load_filelist(self, path: Path):
         try:
-            filelist = generic_dict_loader(path)
+            filelist = generic_psv_filelist_reader(path)
             if self.debug:
                 logger.info(
                     "Debug flag was set to true, only processing first 10 files"
@@ -759,23 +878,13 @@ class Preprocessor:
         for process in processing_order:
             if process not in to_process:
                 continue
-            (self.save_dir / process).mkdir(parents=True, exist_ok=True)
+            if (
+                process != "text"
+            ):  # text gets stored in the filelist directly and not to disk
+                (self.save_dir / process).mkdir(parents=True, exist_ok=True)
             if process == "audio":
                 if filelist := self.process_all_audio():
                     write_filelist(filelist, processed_filelist)
-                    # sample the validation set and subtract it from the whole dataset to determine the training set
-                    random.shuffle(filelist)
-                    train_split = int(
-                        len(filelist) * self.config.preprocessing.train_split
-                    )
-                    write_filelist(
-                        filelist[:train_split],
-                        self.save_dir / f"training_{output_path.name}",
-                    )
-                    write_filelist(
-                        filelist[train_split:],
-                        self.save_dir / f"validation_{output_path.name}",
-                    )
                     report = self.report()
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
                         f.write(report)
@@ -791,8 +900,20 @@ class Preprocessor:
                 filelist = self.load_filelist(processed_filelist)
                 process_fn = self.get_process_fn(process)
                 missing_symbols_before = Counter(self.text_processor.missing_symbols)
-                for f in tqdm(filelist, desc=f"Processing {process} on 1 CPU"):
-                    process_fn(f)
+                for i, f in tqdm(
+                    enumerate(filelist), desc=f"Processing {process} on 1 CPU"
+                ):
+                    characters, phones, pfs = process_fn(f)
+                    if characters is not None:
+                        filelist[i]["character_tokens"] = characters
+                    if phones is not None:
+                        filelist[i]["phone_tokens"] = phones
+                    if pfs is not None:
+                        pfs_path = self.create_path(f, "pfs", "pfs.pt")
+                        pfs_tensor = torch.from_numpy(pfs)
+                        torch.save(pfs_tensor, pfs_path)
+                # Write filelist after with character and phone tokens
+                write_filelist(filelist, processed_filelist)
                 # if only one of "pfs" or "text" is specified, missing_symbols_before
                 # will always be empty, but if both are specified this makes sure
                 # each process gets only its own missing symbols logged.
@@ -825,6 +946,18 @@ class Preprocessor:
                 else:
                     for f in tqdm(filelist, desc=f"Processing {process} on 1 CPU"):
                         process_fn(f)
+        # re-load the filelist, sample the validation set and subtract it from the whole dataset to determine the training set
+        filelist = self.load_filelist(processed_filelist)
+        random.shuffle(filelist)
+        train_split = int(len(filelist) * self.config.preprocessing.train_split)
+        write_filelist(
+            filelist[:train_split],
+            self.save_dir / f"training_{output_path.name}",
+        )
+        write_filelist(
+            filelist[train_split:],
+            self.save_dir / f"validation_{output_path.name}",
+        )
         if "audio" in to_process:
             report = f"Here is a report:\n {self.report()}"
             if not self.counters.value("duration"):

@@ -1,4 +1,4 @@
 columnA|non-standard-basename|non-standard-text|extra
-blah|somefile|text|irrelevant extra
+blah|somefile|characters|irrelevant extra
 boom|file2|CaSeD 	 NFD: éàê NFC: éàê|blah
 bam|banned_file|ZZZ|has banned symbol (Z)

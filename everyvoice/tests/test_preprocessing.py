@@ -1,26 +1,31 @@
 #!/usr/bin/env python
 
+import doctest
+import shutil
 import tempfile
 from pathlib import Path
+from string import ascii_lowercase
 
 import torch
 import torchaudio
 from pydantic_core._pydantic_core import ValidationError
 from torch import float32
 
+import everyvoice.text.text_processor
 from everyvoice.config.preprocessing_config import (
     AudioConfig,
     AudioSpecTypeEnum,
     PreprocessingConfig,
 )
 from everyvoice.config.shared_types import ContactInformation
+from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.stubs import capture_stdout, mute_logger
-from everyvoice.utils import read_filelist
+from everyvoice.utils import generic_psv_filelist_reader
 
 
 class PreprocessingTest(BasicTestCase):
@@ -32,12 +37,18 @@ class PreprocessingTest(BasicTestCase):
     lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
 
     fp_config = FeaturePredictionConfig(
+        text=TextConfig(
+            symbols=Symbols(
+                ascii_symbols=list(ascii_lowercase),
+                ipa=["ɔ", "æ", "ɡ", "ɛ", "ð", "ɜ˞", "ʌ", "ɑ", "ɹ", "ʃ", "ɪ", "ʊ", "ʒ"],
+            )
+        ),
         contact=ContactInformation(
             contact_name="Test Runner", contact_email="info@everyvoice.ca"
-        )
+        ),
     )
     fp_config.preprocessing.source_data[0].data_dir = data_dir / "lj" / "wavs"
-    fp_config.preprocessing.source_data[0].filelist = data_dir / "metadata.csv"
+    fp_config.preprocessing.source_data[0].filelist = data_dir / "metadata.psv"
     fp_config.preprocessing.save_dir = lj_preprocessed
     preprocessor = Preprocessor(fp_config)
     _preprocess_ran = False
@@ -58,7 +69,12 @@ class PreprocessingTest(BasicTestCase):
     def setUp(self) -> None:
         super().setUp()
         self.preprocess()
-        self.filelist = read_filelist(self.data_dir / "metadata.csv")
+        self.filelist = generic_psv_filelist_reader(self.data_dir / "metadata.psv")
+
+    def test_run_doctest(self):
+        """Run doctests in everyvoice.text.text_processing"""
+        results = doctest.testmod(everyvoice.text.text_processor)
+        self.assertFalse(results.failed, results)
 
     # def test_compute_stats(self):
     #     feat_prediction_config = EveryVoiceConfig.load_config_from_path().feature_prediction
@@ -76,15 +92,14 @@ class PreprocessingTest(BasicTestCase):
     # )
 
     def test_read_filelist(self):
-        self.assertEqual(self.filelist[1]["filename"], "LJ050-0269")
-        self.assertNotIn("speaker", self.filelist[0].keys())
+        self.assertEqual(self.filelist[0]["basename"], "LJ050-0269")
 
     def test_process_audio_for_alignment(self):
         config = AlignerConfig(contact=self.contact)
         for entry in self.filelist[1:]:
             # This just applies the SOX effects
             audio, sr = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav"),
+                self.wavs_dir / (entry["basename"] + ".wav"),
                 use_effects=True,
                 sox_effects=config.preprocessing.source_data[0].sox_effects,
             )
@@ -150,7 +165,7 @@ class PreprocessingTest(BasicTestCase):
     def test_process_audio(self):
         for entry in self.filelist[1:]:
             audio, sr = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             self.assertEqual(sr, 22050)
             self.assertEqual(audio.dtype, float32)
@@ -173,12 +188,12 @@ class PreprocessingTest(BasicTestCase):
 
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             # ming024_feats = np.load(
             #     self.data_dir
             #     / "ming024"
-            #     / ("eng-LJSpeech-mel-" + entry["filename"] + ".npy")
+            #     / ("eng-LJSpeech-mel-" + entry["basename"] + ".npy")
             # )
             feats = self.preprocessor.extract_spectral_features(
                 audio, self.preprocessor.input_spectral_transform
@@ -227,14 +242,14 @@ class PreprocessingTest(BasicTestCase):
 
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             dur_path = (
                 self.lj_preprocessed
                 / "duration"
                 / self.preprocessor.sep.join(
                     [
-                        entry["filename"],
+                        entry["basename"],
                         entry.get("speaker", "default"),
                         entry.get("language", "default"),
                         "duration.pt",
@@ -248,7 +263,7 @@ class PreprocessingTest(BasicTestCase):
             # ming024_pitch = np.load(
             #     self.data_dir
             #     / "ming024"
-            #     / ("eng-LJSpeech-pitch-" + entry["filename"] + ".npy")
+            #     / ("eng-LJSpeech-pitch-" + entry["basename"] + ".npy")
             # )
             # Ensure avg pitch for each phone
             frame_pitch_pyworld = preprocessor_pyworld.extract_pitch(audio)
@@ -265,14 +280,14 @@ class PreprocessingTest(BasicTestCase):
     def test_duration(self):
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             dur_path = (
                 self.lj_preprocessed
                 / "duration"
                 / self.preprocessor.sep.join(
                     [
-                        entry["filename"],
+                        entry["basename"],
                         entry.get("speaker", "default"),
                         entry.get("language", "default"),
                         "duration.pt",
@@ -286,7 +301,7 @@ class PreprocessingTest(BasicTestCase):
             # ming024_durs = np.load(
             #     self.data_dir
             #     / "ming024"
-            #     / ("eng-LJSpeech-duration-" + entry["filename"] + ".npy")
+            #     / ("eng-LJSpeech-duration-" + entry["basename"] + ".npy")
             # )
             # Ensure durations same number of frames as spectral features
             # note: this is off by a few frames due to mismatches in hop size between the aligner the test data
@@ -301,14 +316,14 @@ class PreprocessingTest(BasicTestCase):
         preprocessor = Preprocessor(frame_energy_config)
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["filename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav")
             )
             dur_path = (
                 self.lj_preprocessed
                 / "duration"
                 / self.preprocessor.sep.join(
                     [
-                        entry["filename"],
+                        entry["basename"],
                         entry.get("speaker", "default"),
                         entry.get("language", "default"),
                         "duration.pt",
@@ -319,7 +334,7 @@ class PreprocessingTest(BasicTestCase):
             # ming024_energy = np.load(
             #     self.data_dir
             #     / "ming024"
-            #     / ("eng-LJSpeech-energy-" + entry["filename"] + ".npy")
+            #     / ("eng-LJSpeech-energy-" + entry["basename"] + ".npy")
             # )
             feats = self.preprocessor.extract_spectral_features(
                 audio, self.preprocessor.input_spectral_transform
@@ -338,6 +353,116 @@ class PreprocessingTest(BasicTestCase):
         """TODO: make sanity checking code for each type of data, maybe also data analysis tooling"""
         pass
 
+    def test_text_processing(self):
+        characters_eng_filelist = (
+            self.data_dir / "metadata_characters_supported_lang.psv"
+        )
+        characters_default_filelist = (
+            self.data_dir / "metadata_characters_no_supported_lang.psv"
+        )
+        arpabet_filelist = self.data_dir / "metadata_arpabet.psv"
+        phones_filelist = self.data_dir / "metadata_phones.psv"
+        mixed_representation_filelist = (
+            self.data_dir / "metadata_mixed_representation.psv"
+        )
+        fp_config = FeaturePredictionConfig(**self.fp_config.model_dump())
+        filelists_to_test = [
+            {
+                "path": characters_eng_filelist,
+                "contains_characters": True,
+                "contains_phones": True,
+            },  # will take characters and apply eng g2p
+            {
+                "path": characters_default_filelist,
+                "contains_characters": True,
+                "contains_phones": False,
+            },  # will just tokenize characters
+            {
+                "path": arpabet_filelist,
+                "contains_characters": False,
+                "contains_phones": True,
+            },  # will convert arpabet to phones
+            {
+                "path": phones_filelist,
+                "contains_characters": False,
+                "contains_phones": True,
+            },  # will just tokenize phones
+            {
+                "path": mixed_representation_filelist,
+                "contains_characters": True,
+                "contains_phones": True,
+            },  # will tokenize characters and tokenize phones
+        ]
+        for filelist_test_info in filelists_to_test:
+            with tempfile.TemporaryDirectory(prefix="inputs", dir=".") as tmpdir:
+                tmpdir = Path(tmpdir)
+                preprocessed_dir = tmpdir / "preprocessed"
+                preprocessed_dir.mkdir(parents=True, exist_ok=True)
+                output_filelist = preprocessed_dir / "preprocessed_filelist.psv"
+                shutil.copyfile(filelist_test_info["path"], output_filelist)
+                fp_config.preprocessing.source_data[0].filelist = filelist_test_info[
+                    "path"
+                ]
+                fp_config.preprocessing.save_dir = preprocessed_dir
+                preprocessor = Preprocessor(fp_config)
+                with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
+                    preprocessor.preprocess(
+                        output_path=str(output_filelist),
+                        cpus=1,
+                        to_process=["text", "pfs"],
+                    )
+                self.assertIn("You've finished preprocessing: text", output.getvalue())
+                processed_filelist = preprocessor.load_filelist(output_filelist)
+                characters = [
+                    x["character_tokens"]
+                    for x in processed_filelist
+                    if "character_tokens" in x
+                ]
+                phones = [
+                    x["phone_tokens"] for x in processed_filelist if "phone_tokens" in x
+                ]
+                phonological_features = [
+                    torch.load(f)
+                    for f in sorted(list((output_filelist.parent / "pfs").glob("*.pt")))
+                ]
+                for i, utt_phones in enumerate(phones):
+                    # Phonlogical features are derived from phones so they should be of equal length
+                    self.assertEqual(
+                        len(utt_phones.split("/")),
+                        phonological_features[i].size(0),
+                        utt_phones.split("/"),
+                    )
+
+                if filelist_test_info["contains_characters"]:
+                    self.assertEqual(
+                        len(characters),
+                        5,
+                        f'failed finding characters in {filelist_test_info["path"]}',
+                    )
+                    self.assertEqual(
+                        characters[0],
+                        "t/h/e/ /e/s/s/e/n/t/i/a/l/ /t/e/r/m/s/ /o/f/ /s/u/c/h/ /m/e/m/o/r/a/n/d/a/ /m/i/g/h/t/ /w/e/l/l/ /b/e/ /e/m/b/o/d/i/e/d/ /i/n/ /a/n/ /e/x/e/c/u/t/i/v/e/ /o/r/d/e/r/.",
+                        f'failed in {filelist_test_info["path"]}',
+                    )
+                if filelist_test_info["contains_phones"]:
+                    self.assertEqual(
+                        len(phones),
+                        5,
+                        f'failed finding phones in {filelist_test_info["path"]}',
+                    )
+                    if "arpabet" in filelist_test_info["path"].stem:
+                        # arpabet uses space for phone boundaries
+                        self.assertEqual(
+                            phones[0],
+                            "ð/ /ʌ/ /e/ /s/ /e/ /n/ /ʃ/ /ʌ/ /l/ /t/ /r/ /m/ /z/ /ʌ/ /v/ /s/ /ʌ/ /c/h/ /m/ /e/ /m/ /r/ /æ/ /n/ /d/ /ʌ/ /m/ /a/ɪ/ /t/ /w/ /e/ /l/ /b/ /i/ /ɪ/ /m/ /b/ /ɑ/ /d/ /i/ /d/ /ɪ/ /n/ /æ/ /n/ /ɪ/ /g/ /z/ /e/ /k/ /j/ /ʌ/ /t/ /ɪ/ /v/ /ɔ/ /r/ /d/ /r/ /.",
+                        )
+                    else:
+                        self.assertEqual(
+                            phones[0],
+                            "ð/ʌ/ /ɛ/s/ɛ/n/ʃ/ʌ/l/ /t/ɜ˞/m/z/ /ʌ/v/ /s/ʌ/t/ʃ/ /m/ɛ/m/ɜ˞/æ/n/d/ʌ/ /m/a/ɪ/t/ /w/ɛ/l/ /b/i/ /ɪ/m/b/ɑ/d/i/d/ /ɪ/n/ /æ/n/ /ɪ/ɡ/z/ɛ/k/j/ʌ/t/ɪ/v/ /ɔ/ɹ/d/ɜ˞/.",
+                            f'failed in {filelist_test_info["path"]}',
+                        )
+
     def test_incremental_preprocess(self):
         with tempfile.TemporaryDirectory(prefix="incremental", dir=".") as tmpdir:
             tmpdir = Path(tmpdir)
@@ -348,7 +473,7 @@ class PreprocessingTest(BasicTestCase):
             fp_config.preprocessing.source_data[0].data_dir = (
                 self.data_dir / "lj" / "wavs"
             )
-            full_filelist = self.data_dir / "metadata.csv"
+            full_filelist = self.data_dir / "metadata.psv"
             partial_filelist = tmpdir / "partial-metadata.psv"
             with open(partial_filelist, mode="w") as f_out:
                 with open(full_filelist) as f_in:
@@ -394,7 +519,7 @@ class PreprocessingTest(BasicTestCase):
             fp_config.preprocessing.source_data[0].data_dir = (
                 self.data_dir / "lj" / "wavs"
             )
-            full_filelist = self.data_dir / "metadata.csv"
+            full_filelist = self.data_dir / "metadata.psv"
             fp_config.preprocessing.source_data[0].filelist = full_filelist
             fp_config.preprocessing.save_dir = preprocessed
 
@@ -419,7 +544,7 @@ class PreprocessingTest(BasicTestCase):
             fp_config.preprocessing.source_data[0].data_dir = self.data_dir
             input_filelist = tmpdir / "empty-metadata.psv"
             with open(input_filelist, mode="w") as f:
-                print("basename|raw_text|text|speaker|language", file=f)
+                print("basename|raw_text|characters|speaker|language", file=f)
                 print("empty|foo bar baz|foo bar baz|noone|und", file=f)
             fp_config.preprocessing.source_data[0].filelist = input_filelist
             fp_config.preprocessing.save_dir = preprocessed
@@ -465,7 +590,7 @@ class PreprocessingHierarchyTest(BasicTestCase):
             fp_config = FeaturePredictionConfig(contact=self.contact)
             fp_config.preprocessing.source_data[0].data_dir = wavs_dir
             fp_config.preprocessing.source_data[0].filelist = (
-                data_dir / "hierarchy" / "metadata.csv"
+                data_dir / "hierarchy" / "metadata.psv"
             )
             fp_config.preprocessing.save_dir = preprocessed_dir
             preprocessor = Preprocessor(fp_config)
@@ -480,10 +605,12 @@ class PreprocessingHierarchyTest(BasicTestCase):
                     to_process=("audio", "text", "spec", "attn", "energy", "pitch"),
                 )
 
-            for t in ("audio", "text", "spec", "attn", "energy", "pitch"):
+            for t in ("audio", "spec", "attn", "energy", "pitch"):
                 # There are two speakers
                 sources = [d.name for d in tmpdir.glob(f"**/{t}/*")]
-                self.assertSetEqual(set(sources), set(("LJ010", "LJ050")))
+                self.assertSetEqual(
+                    set(sources), set(("LJ010", "LJ050")), f"failed for {t}"
+                )
                 # First speaker has one recording
                 files = list(tmpdir.glob(f"**/{t}/LJ010/*.pt"))
                 self.assertEqual(len(files), 1)

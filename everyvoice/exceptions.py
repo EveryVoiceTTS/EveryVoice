@@ -8,5 +8,8 @@ class InvalidConfiguration(Exception):
 
 
 class ConfigError(Exception):
-    def __init__(self, msg):
-        super().__init__(msg)
+    pass
+
+
+class OutOfVocabularySymbolError(Exception):
+    pass

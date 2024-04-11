@@ -5,10 +5,10 @@ import re
 import sys
 from contextlib import contextmanager
 from datetime import datetime
+from functools import partial
 from itertools import islice
-from os.path import splitext
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Union
+from typing import Any, Dict, Iterable, List, Optional
 from unicodedata import normalize
 
 import yaml
@@ -16,6 +16,7 @@ from loguru import logger
 from pydantic import ValidationInfo
 
 from everyvoice import exceptions
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
@@ -59,6 +60,55 @@ def slugify(
         return slugified_text
     else:
         return slugified_text[:limit_to_n_characters]
+
+
+def filter_dataset_based_on_target_text_representation_level(
+    target_text_representation_level: TargetTrainingTextRepresentationLevel,
+    train_dataset: list[dict],
+    val_dataset: list[dict],
+    batch_size: int,
+) -> tuple[list[dict], list[dict]]:
+    # remove dataset samples that don't exist for the target training representation
+    match target_text_representation_level:
+        case TargetTrainingTextRepresentationLevel.characters:
+            target_training_text_key = "character_tokens"
+        case TargetTrainingTextRepresentationLevel.ipa_phones | TargetTrainingTextRepresentationLevel.phonological_features:
+            target_training_text_key = "phone_tokens"
+        case _:
+            raise NotImplementedError(
+                f"{target_text_representation_level} have not yet been implemented."
+            )
+
+    filtered_train_dataset = [
+        item
+        for item in train_dataset
+        if target_training_text_key in item and item[target_training_text_key]
+    ]
+    filtered_val_dataset = [
+        item
+        for item in val_dataset
+        if target_training_text_key in item and item[target_training_text_key]
+    ]
+    n_filtered_train_items = len(train_dataset) - len(filtered_train_dataset)
+    n_filtered_val_items = len(val_dataset) - len(filtered_val_dataset)
+    if n_filtered_train_items:
+        logger.warning(
+            f"Removing {n_filtered_train_items} from your training set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
+        )
+        train_dataset = filtered_train_dataset
+    if n_filtered_val_items:
+        logger.warning(
+            f"Removing {n_filtered_val_items} from your validation set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
+        )
+        val_dataset = filtered_val_dataset
+    if batch_size > len(filtered_val_dataset) or batch_size > len(
+        filtered_train_dataset
+    ):
+        logger.error(
+            f"Sorry you do not have enough {target_text_representation_level} data in your current training/validation filelists to train/validate with a batch size of {batch_size}."
+        )
+        sys.exit(1)
+    return train_dataset, val_dataset
 
 
 def check_dataset_size(batch_size: int, number_of_samples: int, name: str):
@@ -236,14 +286,31 @@ def plot_spectrogram(spectrogram):
 
 
 def write_filelist(files, path):
+
     with open(path, "w", encoding="utf8") as f:
         if not files:
             logger.warning(f"Writing empty filelist file {path}")
             print("", file=f)  # header line, empty because we don't know the fields
             return
+        # The base set of expected fieldnames
+        fieldnames = [
+            "basename",
+            "language",
+            "speaker",
+            "characters",
+            "character_tokens",
+            "phones",
+            "phone_tokens",
+        ]
+        # The fieldnames we actually found
+        found_fieldnames = sorted(files[0].keys())
+        # Use fieldnames in the order we expect, and append unexpected ones to the end
+        fieldnames = [x for x in fieldnames if x in found_fieldnames] + [
+            x for x in found_fieldnames if x not in fieldnames
+        ]
         writer = csv.DictWriter(
             f,
-            fieldnames=files[0].keys(),
+            fieldnames=fieldnames,
             delimiter="|",
             quoting=csv.QUOTE_NONE,
             escapechar="\\",
@@ -269,27 +336,16 @@ def nfc_normalize(text):
     return normalize("NFC", text)
 
 
-def load_lj_metadata_hifigan(path):
-    with open(path, "r", newline="", encoding="utf8") as f:
-        reader = csv.DictReader(
-            f,
-            fieldnames=["basename", "raw_text", "text"],
-            delimiter="|",
-            quoting=csv.QUOTE_NONE,
-            escapechar="\\",
-        )
-        files = list(reader)
-    return files
-
-
 def read_festival(
     path,
     record_limit: int = 0,  # if non-zero, read only this many records
+    text_field_name: str = "text",
 ):
     """Read Festival format into filelist
     Args:
         path (Path): Path to festival format filelist
         record_limit: if non-zero, read only that many records
+        text_field_name (str): the keyname for the returned text. Default is 'text'.
     Raises:
         ValueError: the file is not valid festival input
     """
@@ -312,7 +368,7 @@ def read_festival(
             if match := re.search(festival_pattern, line.strip()):
                 basename = match["basename"].strip()
                 text = match["text"].strip()
-                data.append({"basename": basename, "text": text})
+                data.append({"basename": basename, text_field_name: text})
             else:
                 raise ValueError(f'File {path} is not in the "festival" format.')
     return data
@@ -339,15 +395,34 @@ def sniff_and_return_filelist_data(path):
 
 
 def generic_dict_loader(
-    path,
+    path: str | os.PathLike,
     delimiter="|",
     quoting=csv.QUOTE_NONE,
     escapechar="\\",
     fieldnames=None,
     file_has_header_line=True,
-):
+    record_limit: int = 0,
+) -> list[dict]:
+    """This is the base function that should be used to parse *sv style tabular filelists.
+        The psv variant can also be imported with generic_psv_filelist_reader
+        The csv variant can be imported with generic_csv_filelist_reader
+
+    Args:
+        path (_type_): path to *sv tabular filelist
+        delimiter (str, optional): column delimiter. Defaults to "|".
+        quoting (_type_, optional): quoting strategy. Defaults to csv.QUOTE_NONE.
+        escapechar (str, optional): escape character. Defaults to "\".
+        fieldnames (_type_, optional): fieldnames to parse. Defaults to None.
+        file_has_header_line (bool, optional): whether file has header line. Defaults to True.
+        record_limit (int): if non-zero, read only this many records. Defaults to 0.
+
+    Returns:
+        list[dict]: a list of dicts representing the rows in the filelist
+    """
     assert fieldnames is not None or file_has_header_line
     with open(path, "r", newline="", encoding="utf8") as f:
+        if record_limit:
+            f = islice(f, record_limit)
         reader = csv.DictReader(
             f,
             fieldnames=fieldnames,
@@ -359,32 +434,17 @@ def generic_dict_loader(
         # line.  Skip it if the file has a header line.
         if fieldnames and file_has_header_line:
             next(reader)
-        files = list(reader)
+        files = []
+        for file in list(reader):
+            if "basename" in file:
+                file["basename"] = os.path.splitext(file["basename"])[0]
+            files.append(file)
     return files
 
 
-generic_psv_dict_reader = generic_dict_loader
-
-
-def generic_csv_reader(
-    path,
-    delimiter=",",
-    quoting=csv.QUOTE_NONE,
-    escapechar="\\",
-    record_limit: int = 0,  # if non-zero, read only this many records
-):
-    f: Iterable[str]
-    with open(path, "r", newline="", encoding="utf8") as f:
-        if record_limit:
-            f = islice(f, record_limit)
-        reader = csv.reader(
-            f,
-            delimiter=delimiter,
-            quoting=quoting,
-            escapechar=escapechar,
-        )
-        files = list(reader)
-    return files
+generic_psv_filelist_reader = generic_dict_loader
+generic_xsv_filelist_reader = generic_dict_loader
+generic_csv_filelist_reader = partial(generic_dict_loader, delimiter=",")
 
 
 def collapse_whitespace(text):
@@ -393,29 +453,6 @@ def collapse_whitespace(text):
     ' asdf qwer '
     """
     return re.sub(_whitespace_re, " ", text)
-
-
-def read_filelist(
-    filelist_path: Union[str, os.PathLike],
-    filename_col: int = 0,
-    filename_suffix: str = "",
-    text_col: int = 1,
-    delimiter: str = "|",
-    speaker_col=None,
-    language_col=None,
-):
-    data = []
-    with open(filelist_path, encoding="utf8") as f:
-        reader = csv.reader(f, delimiter=delimiter)
-        for line in reader:
-            fn, _ = splitext(line[filename_col])
-            entry = {"text": line[text_col], "filename": fn + filename_suffix}
-            if speaker_col:
-                entry["speaker"] = line[speaker_col]
-            if language_col:
-                entry["language"] = line[language_col]
-            data.append(entry)
-    return data
 
 
 @contextmanager

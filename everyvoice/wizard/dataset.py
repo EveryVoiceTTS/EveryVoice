@@ -7,17 +7,18 @@ from unicodedata import normalize
 import questionary
 from tqdm import tqdm
 
-from everyvoice.config.text_config import Symbols
-from everyvoice.utils import (
-    generic_csv_reader,
-    generic_dict_loader,
-    read_festival,
-    slugify,
-)
-from everyvoice.wizard import Step, StepNames, Tour
+from everyvoice.config.type_definitions import DatasetTextRepresentation
+from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
+from everyvoice.utils import generic_xsv_filelist_reader, read_festival, slugify
+from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, Step, StepNames, Tour
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
+)
+from everyvoice.wizard.utils import (
+    apply_automatic_text_conversions,
+    read_unknown_tabular_filelist,
+    rename_unknown_headers,
 )
 from everyvoice.wizard.validators import validate_path
 
@@ -136,7 +137,7 @@ class FilelistFormatStep(Step):
     def looks_like_sv(self, file_type, separator) -> bool:
         assert self.state
         filelist_path = self.state.get(StepNames.filelist_step.value)
-        initial_records = generic_csv_reader(
+        initial_records = read_unknown_tabular_filelist(
             filelist_path, delimiter=separator, record_limit=10
         )
 
@@ -196,14 +197,16 @@ class FilelistFormatStep(Step):
             self.state["filelist_headers"] = list(filelist_data_dict[0].keys())
             self.state["filelist_data"] = filelist_data_dict
         else:
-            self.state["filelist_data"] = generic_csv_reader(
+            self.state["filelist_data_list"] = read_unknown_tabular_filelist(
                 filelist_path, delimiter=self.state.get("filelist_delimiter")
             )
-            self.state["filelist_headers"] = list(self.state["filelist_data"][0])
+            self.state["filelist_headers"] = list(self.state["filelist_data_list"][0])
             standard_header_found = False
             self.state["selected_headers"] = []
             try:
-                text_index = self.state["filelist_headers"].index("text")
+                text_index = self.state["filelist_headers"].index(
+                    "text"
+                )  # call it text until FilelistTextRepresentationStep
                 self.state["selected_headers"].append(text_index)
                 standard_header_found = True
             except ValueError:
@@ -236,6 +239,29 @@ class FilelistFormatStep(Step):
                 )
 
 
+class FilelistTextRepresentationStep(Step):
+    DEFAULT_NAME = StepNames.filelist_text_representation_step
+    text_representation_options = tuple(x.value for x in DatasetTextRepresentation)
+
+    def prompt(self):
+        return get_response_from_menu_prompt(
+            prompt_text=f"Which representation is your text in? Choose '{DatasetTextRepresentation.ipa_phones.value}' if your text data only uses International Phonetic Alphabet characters (punctuation is also OK). Choose '{DatasetTextRepresentation.arpabet}' if your text data uses all ARPABET (punctuation is OK). Choose '{DatasetTextRepresentation.characters}' otherwise.",
+            choices=self.text_representation_options,
+            multi=False,
+            search=False,
+            return_indices=False,
+        )
+
+    def validate(self, response):
+        return response in self.text_representation_options
+
+    def effect(self):
+        # Apply the text representation level as the new alias for text:
+        for i, header in enumerate(self.state["filelist_headers"]):
+            if header == "text":
+                self.state["filelist_headers"][i] = self.response
+
+
 # HEADER SELECTION
 
 
@@ -254,7 +280,9 @@ class HeaderStep(Step):
             for x in range(len(self.state["filelist_headers"]))
             if x not in selected_headers
         ]
-        choices = [f"{x}: {self.state['filelist_data'][0][x]}" for x in choice_indices]
+        choices = [
+            f"{x}: {self.state['filelist_data_list'][0][x]}" for x in choice_indices
+        ]
         response = get_response_from_menu_prompt(
             prompt_text=self.prompt_text,
             choices=choices,
@@ -275,6 +303,28 @@ class HeaderStep(Step):
         self.state["filelist_headers"][self.response] = self.header_name
 
 
+class LanguageHeaderStep(HeaderStep):
+    def effect(self):
+        # Rename the filelist header with the standard header name
+        if "selected_headers" not in self.state:
+            self.state["selected_headers"] = []
+        self.state["selected_headers"].append(self.response)
+        self.state["filelist_headers"][self.response] = self.header_name
+        # Rename unselected headers to unknown:
+        self.state["filelist_headers"] = rename_unknown_headers(
+            self.state["filelist_headers"]
+        )
+        # re-parse data:
+        reload_filelist_data_as_dict(self.state)
+        # apply automatic conversions
+        self.state[
+            "model_target_training_text_representation"
+        ] = apply_automatic_text_conversions(
+            self.state["filelist_data"],
+            self.state[StepNames.filelist_text_representation_step.value],
+        )
+
+
 class HasHeaderLineStep(Step):
     DEFAULT_NAME = StepNames.data_has_header_line_step
     choices = ("no", "yes")
@@ -282,7 +332,7 @@ class HasHeaderLineStep(Step):
     def prompt(self):
         prompt_text = (
             "Your filelist does not have the standard headers. The first row is:\n"
-            + self.state["filelist_delimiter"].join(self.state["filelist_data"][0])
+            + self.state["filelist_delimiter"].join(self.state["filelist_data_list"][0])
             + "\nIs this line a header row?"
         )
         return get_response_from_menu_prompt(
@@ -296,7 +346,9 @@ class HasHeaderLineStep(Step):
     def effect(self):
         if self.state[StepNames.data_has_header_line_step.value] == "no":
             print("Reinterpreting your first row as a record, not headers.")
-            self.state["filelist_data"].insert(0, self.state["filelist_data"][0])
+            self.state["filelist_data_list"].insert(
+                0, self.state["filelist_data_list"][0]
+            )
 
 
 class HasSpeakerStep(Step):
@@ -307,7 +359,7 @@ class HasSpeakerStep(Step):
         if self.state[StepNames.filelist_format_step.value] == "festival":
             return "no"
         elif len(self.state.get("selected_headers", [])) >= len(
-            self.state["filelist_data"][0]
+            self.state["filelist_data_list"][0]
         ):
             print("No columns left, we will assume you have no speaker column.")
             return "no"
@@ -341,7 +393,7 @@ class HasLanguageStep(Step):
         if self.state[StepNames.filelist_format_step.value] == "festival":
             return "no"
         elif len(self.state.get("selected_headers", [])) >= len(
-            self.state["filelist_data"][0]
+            self.state["filelist_data_list"][0]
         ):
             print("No columns left, we will assume you have no language column.")
             return "no"
@@ -357,7 +409,7 @@ class HasLanguageStep(Step):
     def effect(self):
         if self.state[StepNames.data_has_language_value_step.value] == "yes":
             self.tour.add_step(
-                HeaderStep(
+                LanguageHeaderStep(
                     name=StepNames.language_header_step.value,
                     prompt_text="These are the remaining values from the first row in your data. Which column contains the [bold blue]language?",
                     header_name="language",
@@ -365,6 +417,7 @@ class HasLanguageStep(Step):
                 ),
                 self,
             )
+
         else:
             self.tour.add_step(
                 SelectLanguageStep(
@@ -381,17 +434,20 @@ class SelectLanguageStep(Step):
     def prompt(self):
         from g2p import get_arpabet_langs
 
+        from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
+
+        g2p_langs_full = get_arpabet_langs()[1]
         print(
-            "Note: if your dataset has more than one language in it, you will have to add this information to your filelist, because the configuration wizard can't guess!"
+            "Note: if your dataset has more than one language in it, you will have to provide a 'language' column to indicate the language of each sample, because the configuration wizard can't guess!"
         )
         # TODO: currently we only support the languages from g2p, but we should add more
-        supported_langs = get_arpabet_langs()[1]
+        supported_langs = list(AVAILABLE_G2P_ENGINES)
         supported_langs_choices = ["[und]: my language isn't here"] + [
-            f"[{k}]: {v}" for k, v in supported_langs.items()
+            f"[{k}]: {g2p_langs_full.get(k, 'Unknown')}" for k in supported_langs
         ]
         return get_response_from_menu_prompt(
             choices=supported_langs_choices,
-            title="Which of the following supported languages are in your dataset?",
+            title="Which of the following supported languages is the language of your dataset?",
             multi=False,
             search=True,
         )
@@ -401,15 +457,21 @@ class SelectLanguageStep(Step):
 
     def effect(self):
         # Rename unselected headers to unknown:
-        for i, header in enumerate(self.state["filelist_headers"]):
-            if header not in ["basename", "text", "speaker", "language"]:
-                self.state["filelist_headers"][i] = f"unknown_{i}"
+        self.state["filelist_headers"] = rename_unknown_headers(
+            self.state["filelist_headers"]
+        )
         # re-parse data:
         reload_filelist_data_as_dict(self.state)
         # Apply the language code:
         isocode = get_iso_code(self.response)
-        for item in self.state["filelist_data"]:
-            item["language"] = isocode
+        # Apply text conversions and get target training representation
+        self.state[
+            "model_target_training_text_representation"
+        ] = apply_automatic_text_conversions(
+            self.state["filelist_data"],
+            self.state[StepNames.filelist_text_representation_step.value],
+            global_isocode=isocode,
+        )
 
 
 def reload_filelist_data_as_dict(state):
@@ -429,7 +491,7 @@ def reload_filelist_data_as_dict(state):
         "tsv",
         "csv",
     ]:
-        state["filelist_data"] = generic_dict_loader(
+        state["filelist_data"] = generic_xsv_filelist_reader(
             filelist_path,
             delimiter=state.get("filelist_delimiter"),
             fieldnames=state["filelist_headers"],
@@ -438,7 +500,12 @@ def reload_filelist_data_as_dict(state):
             ),
         )
     else:
-        state["filelist_data"] = read_festival(filelist_path)
+        state["filelist_data"] = read_festival(
+            filelist_path,
+            text_field_name=state.get(
+                StepNames.filelist_text_representation_step.value, "text"
+            ),
+        )
 
 
 def get_iso_code(language):
@@ -451,22 +518,12 @@ def get_iso_code(language):
         return result.group()[1:-1]
 
 
-def return_symbols(language):
-    # TODO: make actually return symbols from g2p
-    if language is not None and language != "und":
-        import string
-
-        return set(string.ascii_letters)
-    else:
-        return None
-
-
 class TextProcessingStep(Step):
     DEFAULT_NAME = StepNames.text_processing_step
 
     def prompt(self):
         return get_response_from_menu_prompt(
-            prompt_text="Which of the following text transformations would like to apply before determining the symbol set?",
+            prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step.value]}?",
             choices=(
                 "Lowercase",
                 "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
@@ -480,23 +537,25 @@ class TextProcessingStep(Step):
         return True
 
     def effect(self):
-        # re-parse data if necessary:
-        reload_filelist_data_as_dict(self.state)
-
         # Apply the selected text processing processes
         process_lookup = {
             0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
             1: {"fn": lambda x: normalize("NFC", x), "desc": "NFC Normalization"},
         }
+        if "symbols" not in self.state:
+            self.state["symbols"] = {}
         if self.response:
+            text_index = self.state["filelist_headers"].index(
+                self.state[StepNames.filelist_text_representation_step.value]
+            )
             for process in self.response:
                 process_fn = process_lookup[process]["fn"]
                 for i in tqdm(
-                    range(len(self.state["filelist_data"])),
+                    range(len(self.state["filelist_data_list"])),
                     desc=f"Applying {process_lookup[process]['desc']} to data",
                 ):
-                    self.state["filelist_data"][i]["text"] = process_fn(
-                        self.state["filelist_data"][i]["text"]
+                    self.state["filelist_data_list"][i][text_index] = process_fn(
+                        self.state["filelist_data_list"][i][text_index]
                     )
 
 
@@ -554,75 +613,35 @@ class SymbolSetStep(Step):
     DEFAULT_NAME = StepNames.symbol_set_step
 
     def prompt(self):
-        selected_language = get_iso_code(
-            self.state.get(StepNames.select_language_step.value, None)
+        # TODO: This is a bit of a weird step, since it doesn't really prompt anything, it just applies the effect of trying to find
+        #       character graphemes/phones. I'd still like to keep it here, since we might add more to this step in the future, and
+        #       I don't want to lump the grapheme clustering logic into the effect of another step.
+        print(
+            f"We will now read your entire dataset and try to determine the characters and/or phones in your dataset according to Unicode Grapheme clustering rules. Please carefully check your {TEXT_CONFIG_FILENAME_PREFIX}.yaml file (which is created at the end of the wizard) and adjust the symbol set as appropriate. If your language uses standard punctuation symbols to represent sounds, it is extra important that you go remove any of these symbols from the punctuation categories."
         )
-        symbols_from_language = return_symbols(selected_language)
-        all_tokens = None
-        found_symbols = set(" ".join([x["text"] for x in self.state["filelist_data"]]))
-        if all_tokens is None:
-            print(
-                "We will now present all the symbols found in your data. You will have to answer which ones are punctuation, orthographic characters, and which ones can be ignored."
-            )
-            symbols = found_symbols
-        else:
-            symbols = found_symbols - symbols_from_language
-            if symbols > 0:
-                print(
-                    f"We found some characters that are not part of the standard symbol set for {selected_language}. You will have to answer which ones are punctuation, orthographic characters, and which ones can be ignored."
-                )
-        symbols = sorted(list(symbols))
-        if not symbols:
-            return
-        punctuation = get_response_from_menu_prompt(
-            choices=symbols,
-            title="Which of the following symbols are punctuation?",
-            multi=True,
-            search=True,
-        )
-        if punctuation is None:
-            punctuation = []
-        symbols = tuple(x for x in symbols if x not in punctuation)
-        banned_symbols = get_response_from_menu_prompt(
-            title="Ignore utterances that contain any of the following characters:",
-            choices=symbols,
-            multi=True,
-            search=True,
-        )
-        if banned_symbols is None:
-            banned_symbols = []
-        self.state["banned_symbols"] = banned_symbols
-        symbols = tuple(x for x in symbols if x not in banned_symbols)
-        ignored_symbols = get_response_from_menu_prompt(
-            title="Which of the following symbols can be ignored?",
-            choices=symbols,
-            multi=True,
-            search=True,
-        )
-        if ignored_symbols is None:
-            ignored_symbols = []
-        return Symbols(
-            punctuation=punctuation,
-            symbol_set=[x for x in symbols if x not in ignored_symbols],
-        )
+        return True
 
     def validate(self, response):
-        return isinstance(response, Symbols)
+        return bool(response)
 
     def effect(self):
-        if self.state["banned_symbols"]:
-            banned_regexp = "|".join(self.state["banned_symbols"])
-            removed = 0
-            for i, item in tqdm(
-                enumerate(self.state["filelist_data"]),
-                desc="Removing items from your filelist with banned symbols",
-            ):
-                if re.match(banned_regexp, item["text"]):
-                    del self.state["filelist_data"][i]
-                    removed += 1
-            print(
-                f"Removed {removed} samples from your data because they contained one of the following symbols: {self.state['banned_symbols']}"
-            )
+        character_graphemes = set()
+        phone_graphemes = set()
+        for item in tqdm(
+            self.state["filelist_data"], desc="Finding all symbols in your dataset"
+        ):
+            if "characters" in item:
+                character_graphemes.update(guess_graphemes_in_text(item["characters"]))
+            if "phones" in item:
+                phone_graphemes.update(guess_ipa_phones_in_text(item["phones"]))
+        if not phone_graphemes and not character_graphemes:
+            return
+        symbols = {}
+        if character_graphemes:
+            symbols["characters"] = sorted(list(character_graphemes))
+        if phone_graphemes:
+            symbols["phones"] = sorted(list(phone_graphemes))
+        self.state[StepNames.symbol_set_step.value] = symbols
 
 
 def return_dataset_steps(dataset_index=0):
@@ -630,9 +649,10 @@ def return_dataset_steps(dataset_index=0):
         WavsDirStep(state_subset=f"dataset_{dataset_index}"),
         FilelistStep(state_subset=f"dataset_{dataset_index}"),
         FilelistFormatStep(state_subset=f"dataset_{dataset_index}"),
+        FilelistTextRepresentationStep(state_subset=f"dataset_{dataset_index}"),
+        TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
         HasSpeakerStep(state_subset=f"dataset_{dataset_index}"),
         HasLanguageStep(state_subset=f"dataset_{dataset_index}"),
-        TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
         SymbolSetStep(state_subset=f"dataset_{dataset_index}"),
         SoxEffectsStep(state_subset=f"dataset_{dataset_index}"),
         DatasetNameStep(state_subset=f"dataset_{dataset_index}"),

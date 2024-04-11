@@ -9,7 +9,7 @@ training:
   binned_sampler: true
   ckpt_epochs: 1
   extraction_method: dijkstra
-  filelist_loader: everyvoice.utils.generic_dict_loader
+  filelist_loader: everyvoice.utils.generic_psv_filelist_reader
   logger: {name: AlignerExperiment, save_dir: ../logs_and_checkpoints, sub_dir_callable: everyvoice.utils.get_current_time,
     version: base}
   max_epochs: 1000
