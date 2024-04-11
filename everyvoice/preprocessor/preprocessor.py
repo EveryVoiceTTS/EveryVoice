@@ -717,7 +717,8 @@ class Preprocessor:
         # calculate pfs
         if phone_tokens and use_pfs:
             pfs = self.text_processor.calculate_phonological_features(
-                self.text_processor.token_sequence_to_text_sequence(phone_tokens)
+                self.text_processor.token_sequence_to_text_sequence(phone_tokens),
+                apply_punctuation_rules=True,
             )
         # encode to string
         if encode_as_string:
