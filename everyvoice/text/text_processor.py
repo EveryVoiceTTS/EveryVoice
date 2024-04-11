@@ -216,9 +216,10 @@ class TextProcessor:
 
         >>> tp = TextProcessor(TextConfig())
         >>> tp.calculate_phonological_features(['aɪ'])
-        array([[ 1,  1, -1,  1, -1, -1, -1,  0,  1, -1, -1,  0, -1,  0, -1,  0,
-                 0, -1, -1, -1,  0, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
-                 0,  0,  0,  0,  0,  0,  0]])
+        array([[ 1.,  1., -1.,  1., -1., -1., -1.,  0.,  1., -1., -1.,  0., -1.,
+                 0., -1.,  0.,  0., -1., -1., -1.,  0., -1.,  0.,  0.,  0.,  0.,
+                 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.]],
+              dtype=float32)
         """
         if self.phonological_feature_calculator is None:
             self.phonological_feature_calculator = PhonologicalFeatureCalculator(
