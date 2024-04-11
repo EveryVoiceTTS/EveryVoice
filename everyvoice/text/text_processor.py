@@ -201,11 +201,12 @@ class TextProcessor:
         return text
 
     def calculate_phonological_features(
-        self, phone_tokens: list[str]
+        self, phone_tokens: list[str], apply_punctuation_rules=True
     ) -> npt.NDArray[np.int_]:
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
         Args:
             text (list[str]): a list of IPA and normalized punctuation tokens
+            apply_punctuation_rules (bool): whether to convert punctuation into discrete values like <BB> or <EXCL>. Defaults to True. If set to False, features.py will have to be amended to handle punctuation.
         Returns:
             npt.NDArray[np.int_]: a list of multi-hot phonological feature vectors
 
@@ -220,6 +221,8 @@ class TextProcessor:
                 text_config=self.config,
                 punctuation_hash=self.punctuation_internal_hash,
             )
+        if apply_punctuation_rules:
+            phone_tokens = self.apply_punctuation_rules(phone_tokens)
         return self.phonological_feature_calculator.get_features(phone_tokens)
 
     def apply_g2p_and_tokenization(

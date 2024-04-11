@@ -905,9 +905,9 @@ class Preprocessor:
                     if phones is not None:
                         filelist[i]["phone_tokens"] = phones
                     if pfs is not None:
-                        pfs_path = self.create_path(f, "text", "pfs.pt")
-                        assert isinstance(pfs, torch.Tensor)
-                        torch.save(pfs, pfs_path)
+                        pfs_path = self.create_path(f, "pfs", "pfs.pt")
+                        pfs_tensor = torch.from_numpy(pfs)
+                        torch.save(pfs_tensor, pfs_path)
                 # Write filelist after with character and phone tokens
                 write_filelist(filelist, processed_filelist)
                 # if only one of "pfs" or "text" is specified, missing_symbols_before
