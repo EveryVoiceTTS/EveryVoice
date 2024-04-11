@@ -411,7 +411,9 @@ class TextProcessor:
         assert (
             len(split_character) >= 1
         ), "An escaped string sequence must have a character to split on (default is '/')"
-        return self.encode_string_tokens(string_of_tokens.split(split_character))
+        return self.encode_string_tokens(
+            [token for token in string_of_tokens.split(split_character) if token]
+        )
 
     def decode_tokens(self, sequence: list[int], join_character="/") -> str:
         """Decode a sequence of encoded phone or character tokens into a sequence of strings

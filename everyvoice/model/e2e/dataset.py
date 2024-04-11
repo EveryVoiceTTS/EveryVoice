@@ -9,7 +9,11 @@ from everyvoice.dataloader import BaseDataModule
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.text.lookups import LookupTables
 from everyvoice.text.text_processor import TextProcessor
-from everyvoice.utils import _flatten, check_dataset_size
+from everyvoice.utils import (
+    _flatten,
+    check_dataset_size,
+    filter_dataset_based_on_target_text_representation_level,
+)
 from everyvoice.utils.heavy import get_segments
 
 
@@ -192,6 +196,15 @@ class E2EDataModule(BaseDataModule):
         )
 
     def prepare_data(self):
+        (
+            self.train_dataset,
+            self.val_dataset,
+        ) = filter_dataset_based_on_target_text_representation_level(
+            self.config.model.target_text_representation_level,
+            self.train_dataset,
+            self.val_dataset,
+            self.batch_size,
+        )
         train_samples = len(self.train_dataset)
         val_samples = len(self.val_dataset)
         check_dataset_size(self.batch_size, train_samples, "training")

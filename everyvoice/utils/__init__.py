@@ -16,6 +16,7 @@ from loguru import logger
 from pydantic import ValidationInfo
 
 from everyvoice import exceptions
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r"\s+")
@@ -59,6 +60,55 @@ def slugify(
         return slugified_text
     else:
         return slugified_text[:limit_to_n_characters]
+
+
+def filter_dataset_based_on_target_text_representation_level(
+    target_text_representation_level: TargetTrainingTextRepresentationLevel,
+    train_dataset: list[dict],
+    val_dataset: list[dict],
+    batch_size: int,
+) -> tuple[list[dict], list[dict]]:
+    # remove dataset samples that don't exist for the target training representation
+    match target_text_representation_level:
+        case TargetTrainingTextRepresentationLevel.characters:
+            target_training_text_key = "character_tokens"
+        case TargetTrainingTextRepresentationLevel.ipa_phones | TargetTrainingTextRepresentationLevel.phonological_features:
+            target_training_text_key = "phone_tokens"
+        case _:
+            raise NotImplementedError(
+                f"{target_text_representation_level} have not yet been implemented."
+            )
+
+    filtered_train_dataset = [
+        item
+        for item in train_dataset
+        if target_training_text_key in item and item[target_training_text_key]
+    ]
+    filtered_val_dataset = [
+        item
+        for item in val_dataset
+        if target_training_text_key in item and item[target_training_text_key]
+    ]
+    n_filtered_train_items = len(train_dataset) - len(filtered_train_dataset)
+    n_filtered_val_items = len(val_dataset) - len(filtered_val_dataset)
+    if n_filtered_train_items:
+        logger.warning(
+            f"Removing {n_filtered_train_items} from your training set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
+        )
+        train_dataset = filtered_train_dataset
+    if n_filtered_val_items:
+        logger.warning(
+            f"Removing {n_filtered_val_items} from your validation set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
+        )
+        val_dataset = filtered_val_dataset
+    if batch_size > len(filtered_val_dataset) or batch_size > len(
+        filtered_train_dataset
+    ):
+        logger.error(
+            f"Sorry you do not have enough {target_text_representation_level} data in your current training/validation filelists to train/validate with a batch size of {batch_size}."
+        )
+        sys.exit(1)
+    return train_dataset, val_dataset
 
 
 def check_dataset_size(batch_size: int, number_of_samples: int, name: str):

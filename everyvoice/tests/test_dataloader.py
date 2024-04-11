@@ -2,6 +2,7 @@
 
 from tqdm import tqdm
 
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
 from everyvoice.model.aligner.config import AlignerConfig
@@ -17,6 +18,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
 )
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.test_preprocessing import PreprocessingTest
+from everyvoice.utils import filter_dataset_based_on_target_text_representation_level
 
 
 class DataLoaderTest(BasicTestCase):
@@ -82,6 +84,33 @@ class DataLoaderTest(BasicTestCase):
         hfgdm = HiFiGANDataModule(self.config.vocoder)
         hfgdm.load_dataset()
         self.assertEqual(len(hfgdm.train_dataset), 5)
+
+    def test_filter_dataset(self):
+        train_dataset = [{"character_tokens": "b", "phone_tokens": ""}] * 4
+        with self.assertRaises(SystemExit) as cm:
+            filter_dataset_based_on_target_text_representation_level(
+                TargetTrainingTextRepresentationLevel.characters,
+                train_dataset,
+                train_dataset,
+                6,
+            )
+        self.assertEqual(cm.exception.code, 1)
+        with self.assertRaises(SystemExit) as cm:
+            filter_dataset_based_on_target_text_representation_level(
+                TargetTrainingTextRepresentationLevel.ipa_phones,
+                train_dataset,
+                train_dataset,
+                4,
+            )
+        self.assertEqual(cm.exception.code, 1)
+        train_ds, val_ds = filter_dataset_based_on_target_text_representation_level(
+            TargetTrainingTextRepresentationLevel.characters,
+            train_dataset,
+            train_dataset,
+            4,
+        )
+        self.assertEqual(len(train_ds), 4)
+        self.assertEqual(len(val_ds), 4)
 
     def test_hifi_ft_data_loader(self):
         """TODO: can't make this test until I generate some synthesized samples"""
