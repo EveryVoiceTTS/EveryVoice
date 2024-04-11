@@ -877,7 +877,10 @@ class Preprocessor:
         for process in processing_order:
             if process not in to_process:
                 continue
-            (self.save_dir / process).mkdir(parents=True, exist_ok=True)
+            if (
+                process != "text"
+            ):  # text gets stored in the filelist directly and not to disk
+                (self.save_dir / process).mkdir(parents=True, exist_ok=True)
             if process == "audio":
                 if filelist := self.process_all_audio():
                     write_filelist(filelist, processed_filelist)
