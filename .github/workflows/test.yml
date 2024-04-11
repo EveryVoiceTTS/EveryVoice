@@ -43,6 +43,10 @@ jobs:
         run: |
           cd everyvoice && coverage run run_tests.py dev
           coverage xml
+      - name: Check for logs_and_checkpoints/ and preprocessed/
+        id: no-extra-directories
+        run: |
+          cd everyvoice && [[ $(find -type d -name logs_and_checkpoints -or -name preprocessed | grep --count --invert-match 'tests/data') -eq 0 ]]
       - uses: codecov/codecov-action@v4
         with:
           fail_ci_if_error: false # optional (default = false)
