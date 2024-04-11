@@ -12,6 +12,7 @@ import everyvoice.text.utils
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.tests.basic_test_case import BasicTestCase
+from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
 from everyvoice.text.text_processor import TextProcessor
@@ -173,7 +174,7 @@ class TextTest(BasicTestCase):
         self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens, ""), "séːɡũ")
         self.assertEqual(len(g2p_tokens), len(feats))
         self.assertNotEqual(len(g2p_tokens), len(one_hot_tokens))
-        self.assertEqual(len(feats[0]), moh_config.model.phonological_feats_size)
+        self.assertEqual(len(feats[0]), N_PHONOLOGICAL_FEATURES)
 
     def test_duplicates_removed(self):
         duplicate_symbols_text_processor = TextProcessor(

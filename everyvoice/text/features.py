@@ -7,6 +7,8 @@ from panphon import FeatureTable
 
 from everyvoice.config.text_config import TextConfig
 
+N_PHONOLOGICAL_FEATURES = 39
+
 
 # TODO: support primary and secondary stress
 class PhonologicalFeatureCalculator:
