@@ -600,7 +600,7 @@
         "save_dir": {
           "default": "logs_and_checkpoints",
           "description": "The directory to save your checkpoints and logs to.",
-          "format": "directory-path",
+          "format": "path",
           "title": "Save Dir",
           "type": "string"
         },
@@ -646,7 +646,7 @@
         "save_dir": {
           "default": "preprocessed/YourDataSet",
           "description": "The directory to save preprocessed files to.",
-          "format": "directory-path",
+          "format": "path",
           "title": "Save Dir",
           "type": "string"
         },

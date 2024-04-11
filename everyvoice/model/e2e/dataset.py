@@ -5,6 +5,7 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.text.lookups import LookupTables
@@ -94,7 +95,10 @@ class E2EDataset(Dataset):
         text = self._load_file(basename, speaker, language, "text", "text.pt")
         raw_text = item["raw_text"]
         pfs = None
-        if self.config.feature_prediction.model.use_phonological_feats:
+        if (
+            self.config.feature_prediction.model.target_text_representation_level
+            == TargetTrainingTextRepresentationLevel.phonological_features
+        ):
             pfs = self._load_file(basename, speaker, language, "pfs", "pfs.pt")
 
         energy = self._load_file(basename, speaker, language, "energy", "energy.pt")

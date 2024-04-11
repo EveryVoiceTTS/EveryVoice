@@ -11,8 +11,6 @@ model:
   mel_loss: mse
   multilingual: false
   multispeaker: false
-  phonological_feats_size: 38
-  use_phonological_feats: false
   use_postnet: true
   variance_predictors:
     duration: {depthwise: true, dropout: 0.5, input_dim: 256, kernel_size: 3, loss: mse, n_bins: 256, n_layers: 5}
