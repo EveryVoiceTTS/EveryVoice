@@ -15,7 +15,7 @@ class PhonologicalFeatureCalculator:
         self.punctuation_hash = punctuation_hash
         self.feature_table = FeatureTable()
 
-    def get_tone_features(self, text: List[str]) -> npt.NDArray[np.int_]:
+    def get_tone_features(self, text: List[str]) -> npt.NDArray[np.float32]:
         # TODO: sort out how to define encoding of tone features
         """Return Wang (1967) style tone features.
             - Contour
@@ -63,7 +63,7 @@ class PhonologicalFeatureCalculator:
                 tone_features.append([0, 0, 0, 0, 0, 0, 0])
         return np.array(tone_features).astype("int")
 
-    def get_punctuation_features(self, tokens: list[str]) -> npt.NDArray[np.int_]:
+    def get_punctuation_features(self, tokens: list[str]) -> npt.NDArray[np.float32]:
         """Get Punctuation features.
            One-hot encodes the allowable types of punctuation and returns zeros elsewhere
 
@@ -71,7 +71,7 @@ class PhonologicalFeatureCalculator:
             tokens (list[str]): a list of IPA and normalized punctuation tokens
 
         Returns:
-            npt.NDArray[np.int_]: a seven-dimensional one-hot encoding of punctuation, white space and silence
+            npt.NDArray[np.float32]: a seven-dimensional one-hot encoding of punctuation, white space and silence
 
         >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>",}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
@@ -105,14 +105,14 @@ class PhonologicalFeatureCalculator:
                 punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0])
         return np.array(punctuation_features).astype("int")
 
-    def token_to_segmental_features(self, token: str) -> npt.NDArray[np.int_]:
+    def token_to_segmental_features(self, token: str) -> npt.NDArray[np.float32]:
         """Turn a token to a feature vector with panphon
 
         Args:
             token (str): a token to convert to segmental features
 
         Returns:
-            npt.NDArray[np.int_]: a list of place and manner of articulation feature values
+            npt.NDArray[np.float32]: a list of place and manner of articulation feature values
 
         >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>",}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
@@ -136,24 +136,24 @@ class PhonologicalFeatureCalculator:
         NUMBER_OF_PANPHON_FEATURES = 24
         # is not IPA
         if not vec:
-            return np.zeros(NUMBER_OF_PANPHON_FEATURES).astype("int")
+            return np.zeros(NUMBER_OF_PANPHON_FEATURES, dtype=np.float32)
         # EV and PanPhon tokenization do not match, as with dipthongs
         if len(vec) > 1:
             # TODO: We should warn the user that we are averaging the features due to a mismatch in
             # EV and Panphon tokenization.
-            return np.average(vec, axis=0).astype("int")
+            return np.average(vec, axis=0).astype(np.float32)
         # EV and PanPhon tokenization matches here
         else:
-            return np.array(vec[0])
+            return np.array(vec[0], dtype=np.float32)
 
-    def get_features(self, tokens: list[str]) -> npt.NDArray[np.int_]:
+    def get_features(self, tokens: list[str]) -> npt.NDArray[np.float32]:
         """Get Phonological Feature Vectors by stacking segmental features, tone features, and punctuation features
 
         Args:
             tokens (list[str]): a list of IPA and normalized punctuation tokens
 
         Returns:
-            npt.NDArray[np.int_]: a thirty-nine-dimensional encoding of segmental (22), tone(7), and punctuation (7) features
+            npt.NDArray[np.float32]: a thirty-nine-dimensional encoding of segmental (22), tone(7), and punctuation (7) features
         """
         if not tokens:
             return np.array([])
@@ -164,5 +164,7 @@ class PhonologicalFeatureCalculator:
             len(punctuation_features) == len(tone_features) == len(seg_features)
         ), "There should be the same number of segments among segmental, tone, and punctuation features"
         return np.concatenate(
-            [seg_features, tone_features, punctuation_features], axis=1
+            [seg_features, tone_features, punctuation_features],
+            axis=1,
+            dtype=np.float32,
         )

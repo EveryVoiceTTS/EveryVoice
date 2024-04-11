@@ -33,7 +33,7 @@ def collate_fn(data):
         if torch.is_tensor(data[key][0]):
             data[key] = pad_sequence(data[key], batch_first=True, padding_value=0)
         if isinstance(data[key][0], int):
-            data[key] = torch.tensor(data[key]).long()
+            data[key] = torch.IntTensor(data[key])
     return data
 
 
