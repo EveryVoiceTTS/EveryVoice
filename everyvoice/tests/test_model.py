@@ -34,7 +34,7 @@ class ModelTest(BasicTestCase):
         self.config = EveryVoiceConfig(
             contact=self.contact,
         )
-        self.config_dir = Path(__file__).parent / "data" / "relative" / "config"
+        self.config_dir = self.data_dir / "relative" / "config"
 
     def test_hparams(self):
         self.hifi_gan = HiFiGAN(self.config.vocoder)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 import doctest
+import tempfile
 from pathlib import Path
 from unittest import TestCase
 
@@ -11,7 +12,6 @@ from typing_extensions import Annotated
 import everyvoice.utils
 from everyvoice._version import VERSION
 from everyvoice.config.shared_types import init_context
-from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.utils import (
     directory_path_must_exist,
     path_is_a_directory,
@@ -25,7 +25,7 @@ class VersionTest(TestCase):
         self.assertTrue(is_canonical(VERSION))
 
 
-class UtilsTest(BasicTestCase):
+class UtilsTest(TestCase):
     def test_run_doctest(self):
         """Run doctests in everyvoice.utils"""
         results = doctest.testmod(everyvoice.utils)
@@ -42,16 +42,18 @@ class UtilsTest(BasicTestCase):
                 "extra": "test",
             }
         ]
-        basic_path = self.tempdir / "test.psv"
-        write_filelist(basic_files, basic_path)
-        with open(basic_path) as f:
-            headers = f.readline().strip().split("|")
-        self.assertEqual(len(headers), 5)
-        self.assertEqual(headers[0], "basename")
-        self.assertEqual(headers[1], "language")
-        self.assertEqual(headers[2], "characters")
-        self.assertEqual(headers[3], "phones")
-        self.assertEqual(headers[4], "extra")
+        with tempfile.TemporaryDirectory() as tempdir:
+            tempdir = Path(tempdir)
+            basic_path = tempdir / "test.psv"
+            write_filelist(basic_files, basic_path)
+            with open(basic_path) as f:
+                headers = f.readline().strip().split("|")
+            self.assertEqual(len(headers), 5)
+            self.assertEqual(headers[0], "basename")
+            self.assertEqual(headers[1], "language")
+            self.assertEqual(headers[2], "characters")
+            self.assertEqual(headers[3], "phones")
+            self.assertEqual(headers[4], "extra")
 
 
 class PathIsADirectory(BaseModel):
