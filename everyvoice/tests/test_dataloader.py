@@ -17,35 +17,33 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     SpecDataset,
 )
 from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.test_preprocessing import PreprocessingTest
+from everyvoice.tests.preprocessed_input_fixture import PreprocessedInputFixture
 from everyvoice.utils import filter_dataset_based_on_target_text_representation_level
 
 
-class DataLoaderTest(BasicTestCase):
+class DataLoaderTest(PreprocessedInputFixture, BasicTestCase):
     """Basic test for dataloaders"""
 
-    lj_preprocessed = PreprocessingTest.lj_preprocessed
-
-    def setUp(self) -> None:
-        super().setUp()
-        PreprocessingTest.preprocess()  # Generate some preprocessed test data
-        self.config = EveryVoiceConfig(
-            contact=self.contact,
-            aligner=AlignerConfig(contact=self.contact),
-            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.config = EveryVoiceConfig(
+            contact=cls.contact,
+            aligner=AlignerConfig(contact=cls.contact),
+            feature_prediction=FeaturePredictionConfig(contact=cls.contact),
             vocoder=VocoderConfig(
-                contact=self.contact,
+                contact=cls.contact,
                 training=HiFiGANTrainingConfig(
-                    training_filelist=self.lj_preprocessed
+                    training_filelist=cls.lj_preprocessed
                     / "training_preprocessed_filelist.psv",
-                    validation_filelist=self.lj_preprocessed
+                    validation_filelist=cls.lj_preprocessed
                     / "validation_preprocessed_filelist.psv",
                 ),
             ),
         )
-        self.config.vocoder.preprocessing.save_dir = self.lj_preprocessed
-        self.config.vocoder.training.training_filelist = (
-            self.lj_preprocessed / "preprocessed_filelist.psv"
+        cls.config.vocoder.preprocessing.save_dir = cls.lj_preprocessed
+        cls.config.vocoder.training.training_filelist = (
+            cls.lj_preprocessed / "preprocessed_filelist.psv"
         )
 
     def test_base_data_loader(self):
