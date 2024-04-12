@@ -24,26 +24,25 @@ from everyvoice.utils import filter_dataset_based_on_target_text_representation_
 class DataLoaderTest(PreprocessedInputFixture, BasicTestCase):
     """Basic test for dataloaders"""
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        super().setUpClass()
-        cls.config = EveryVoiceConfig(
-            contact=cls.contact,
-            aligner=AlignerConfig(contact=cls.contact),
-            feature_prediction=FeaturePredictionConfig(contact=cls.contact),
+    def setUp(self) -> None:
+        super().setUp()
+        self.config = EveryVoiceConfig(
+            contact=self.contact,
+            aligner=AlignerConfig(contact=self.contact),
+            feature_prediction=FeaturePredictionConfig(contact=self.contact),
             vocoder=VocoderConfig(
-                contact=cls.contact,
+                contact=self.contact,
                 training=HiFiGANTrainingConfig(
-                    training_filelist=cls.lj_preprocessed
+                    training_filelist=self.lj_preprocessed
                     / "training_preprocessed_filelist.psv",
-                    validation_filelist=cls.lj_preprocessed
+                    validation_filelist=self.lj_preprocessed
                     / "validation_preprocessed_filelist.psv",
                 ),
             ),
         )
-        cls.config.vocoder.preprocessing.save_dir = cls.lj_preprocessed
-        cls.config.vocoder.training.training_filelist = (
-            cls.lj_preprocessed / "preprocessed_filelist.psv"
+        self.config.vocoder.preprocessing.save_dir = self.lj_preprocessed
+        self.config.vocoder.training.training_filelist = (
+            self.lj_preprocessed / "preprocessed_filelist.psv"
         )
 
     def test_base_data_loader(self):
