@@ -24,6 +24,7 @@ from everyvoice.utils import filter_dataset_based_on_target_text_representation_
 class DataLoaderTest(PreprocessedInputFixture, BasicTestCase):
     """Basic test for dataloaders"""
 
+    # FIXME: Shouldn't this be done only one for this class and not for every test?
     def setUp(self) -> None:
         super().setUp()
         self.config = EveryVoiceConfig(
