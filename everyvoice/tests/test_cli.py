@@ -196,6 +196,17 @@ class CLITest(TestCase):
                     )
                 )
 
+            for filename in SCHEMAS_TO_OUTPUT:
+                with open(Path(tmpdir) / filename, encoding="utf8") as f:
+                    new_schema = f.read()
+                with open(EV_DIR / ".schema" / filename, encoding="utf8") as f:
+                    saved_schema = f.read()
+                self.assertEqual(
+                    saved_schema,
+                    new_schema,
+                    'Schemas are out of date, please run "everyvoice update-schemas".',
+                )
+
     def test_inspect_checkpoint_help(self):
         result = self.runner.invoke(app, ["inspect-checkpoint", "--help"])
         self.assertIn("inspect-checkpoint [OPTIONS] MODEL_PATH", result.stdout)
