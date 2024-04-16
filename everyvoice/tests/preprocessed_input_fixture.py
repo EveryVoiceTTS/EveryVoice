@@ -3,10 +3,10 @@ from pathlib import Path
 from string import ascii_lowercase
 
 from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
-from everyvoice.config.shared_types import ContactInformation
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.preprocessor import Preprocessor
+from everyvoice.tests.basic_test_case import BasicTestCase
 
 
 class PreprocessedInputFixture:
@@ -15,12 +15,12 @@ class PreprocessedInputFixture:
     """
 
     _tempdir = tempfile.TemporaryDirectory(prefix="tmpdir_PreprocessedInputFixture_")
-    _preprocess_ran = False
     lj_preprocessed = Path(_tempdir.name)
+    _preprocess_ran = False
 
     @classmethod
     def _prepare_preprocessor(cls):
-        PreprocessedInputFixture.data_dir = Path(__file__).parent / "data"
+        PreprocessedInputFixture.data_dir = BasicTestCase.data_dir
         PreprocessedInputFixture.wavs_dir = (
             PreprocessedInputFixture.data_dir / "lj" / "wavs"
         )
@@ -58,9 +58,7 @@ class PreprocessedInputFixture:
                     ],
                 )
             ),
-            contact=ContactInformation(
-                contact_name="Test Runner", contact_email="info@everyvoice.ca"
-            ),
+            contact=BasicTestCase.contact,
         )
 
         PreprocessedInputFixture.preprocessor = Preprocessor(
