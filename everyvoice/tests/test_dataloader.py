@@ -34,16 +34,18 @@ class DataLoaderTest(PreprocessedInputFixture, BasicTestCase):
             vocoder=VocoderConfig(
                 contact=self.contact,
                 training=HiFiGANTrainingConfig(
-                    training_filelist=self.lj_preprocessed
+                    training_filelist=PreprocessedInputFixture.lj_preprocessed
                     / "training_preprocessed_filelist.psv",
-                    validation_filelist=self.lj_preprocessed
+                    validation_filelist=PreprocessedInputFixture.lj_preprocessed
                     / "validation_preprocessed_filelist.psv",
                 ),
             ),
         )
-        self.config.vocoder.preprocessing.save_dir = self.lj_preprocessed
+        self.config.vocoder.preprocessing.save_dir = (
+            PreprocessedInputFixture.lj_preprocessed
+        )
         self.config.vocoder.training.training_filelist = (
-            self.lj_preprocessed / "preprocessed_filelist.psv"
+            PreprocessedInputFixture.lj_preprocessed / "preprocessed_filelist.psv"
         )
 
     def test_base_data_loader(self):

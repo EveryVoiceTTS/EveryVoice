@@ -2,6 +2,7 @@ import tempfile
 from pathlib import Path
 from string import ascii_lowercase
 
+from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
 from everyvoice.config.shared_types import ContactInformation
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
@@ -13,23 +14,9 @@ class PreprocessedInputFixture:
     Preprocess the audio files.
     """
 
-    keep_preprocessed_temp_dir = False
+    _tempdir = tempfile.TemporaryDirectory(prefix="tmpdir_PreprocessedInputFixture_")
     _preprocess_ran = False
-
-    @classmethod
-    def _make_preprocessed_tempdir(cls):
-        tempdir_prefix = "tmpdir_PreprocessedInputFixture_"
-        if not PreprocessedInputFixture.keep_preprocessed_temp_dir:
-            PreprocessedInputFixture.lj_preprocessed_obj = tempfile.TemporaryDirectory(
-                prefix=tempdir_prefix, dir="."
-            )
-            tempdir = PreprocessedInputFixture.lj_preprocessed_obj.name
-        else:
-            # Alternative tempdir code keeps it after running, for manual inspection:
-            tempdir = tempfile.mkdtemp(prefix=tempdir_prefix, dir=".")
-            print("tmpdir={}".format(tempdir))
-        tempdir = Path(tempdir)
-        PreprocessedInputFixture.lj_preprocessed = tempdir / "lj" / "preprocessed"
+    lj_preprocessed = Path(_tempdir.name)
 
     @classmethod
     def _prepare_preprocessor(cls):
@@ -42,6 +29,15 @@ class PreprocessedInputFixture:
         )
 
         PreprocessedInputFixture.fp_config = FeaturePredictionConfig(
+            preprocessing=PreprocessingConfig(
+                save_dir=PreprocessedInputFixture.lj_preprocessed,
+                source_data=[
+                    Dataset(
+                        data_dir=PreprocessedInputFixture.wavs_dir,
+                        filelist=PreprocessedInputFixture.data_dir / "metadata.psv",
+                    )
+                ],
+            ),
             text=TextConfig(
                 symbols=Symbols(
                     ascii_symbols=list(ascii_lowercase),
@@ -66,50 +62,30 @@ class PreprocessedInputFixture:
                 contact_name="Test Runner", contact_email="info@everyvoice.ca"
             ),
         )
-        PreprocessedInputFixture.fp_config.preprocessing.source_data[0].data_dir = (
-            PreprocessedInputFixture.data_dir / "lj" / "wavs"
-        )
-        PreprocessedInputFixture.fp_config.preprocessing.source_data[0].filelist = (
-            PreprocessedInputFixture.data_dir / "metadata.psv"
-        )
-        PreprocessedInputFixture.fp_config.preprocessing.save_dir = (
-            PreprocessedInputFixture.lj_preprocessed
-        )
 
         PreprocessedInputFixture.preprocessor = Preprocessor(
             PreprocessedInputFixture.fp_config
-        )
-
-        PreprocessedInputFixture.lj_preprocessed.mkdir(parents=True, exist_ok=True)
-        (PreprocessedInputFixture.lj_preprocessed / "duration").symlink_to(
-            PreprocessedInputFixture.data_dir / "lj" / "preprocessed" / "duration",
         )
 
     @classmethod
     def _preprocess(cls):
         """Generate a preprocessed test set that can be used in various test cases."""
         # We only need to actually run this once
-        print(
-            "================================== GENERATING AUDIO FILES ===================================="
-        )
-        print(f"====== {PreprocessedInputFixture.lj_filelist = }")
-
-        PreprocessedInputFixture.preprocessor.preprocess(
-            output_path=str(PreprocessedInputFixture.lj_filelist),
-            cpus=1,
-            overwrite=False,
-            to_process=("audio", "energy", "pitch", "text", "spec"),
-        )
-
-    @classmethod
-    def setUpClass(cls):
         if not PreprocessedInputFixture._preprocess_ran:
-            PreprocessedInputFixture._make_preprocessed_tempdir()
-            PreprocessedInputFixture._prepare_preprocessor()
-            PreprocessedInputFixture._preprocess()
+            PreprocessedInputFixture.preprocessor.preprocess(
+                output_path=str(PreprocessedInputFixture.lj_filelist),
+                cpus=1,
+                overwrite=False,
+                to_process=("audio", "energy", "pitch", "text", "spec"),
+            )
+            PreprocessedInputFixture.lj_preprocessed.mkdir(parents=True, exist_ok=True)
+            (PreprocessedInputFixture.lj_preprocessed / "duration").symlink_to(
+                PreprocessedInputFixture.data_dir / "lj" / "preprocessed" / "duration",
+            )
+
             PreprocessedInputFixture._preprocess_ran = True
 
     @classmethod
-    def tearDownClass(cls):
-        if not PreprocessedInputFixture.keep_preprocessed_temp_dir:
-            PreprocessedInputFixture.lj_preprocessed_obj.cleanup()
+    def setUpClass(cls):
+        PreprocessedInputFixture._prepare_preprocessor()
+        PreprocessedInputFixture._preprocess()
