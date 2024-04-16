@@ -22,12 +22,12 @@ from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.preprocessed_input_fixture import PreprocessedInputFixture
+from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
 from everyvoice.tests.stubs import capture_stdout, mute_logger
 from everyvoice.utils import generic_psv_filelist_reader
 
 
-class PreprocessingTest(PreprocessedInputFixture, BasicTestCase):
+class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     """Unit tests for preprocessing steps"""
 
     def setUp(self) -> None:

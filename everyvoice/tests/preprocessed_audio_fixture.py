@@ -9,9 +9,9 @@ from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.basic_test_case import BasicTestCase
 
 
-class PreprocessedInputFixture:
+class PreprocessedAudioFixture:
     """
-    Preprocess the audio files.
+    A unittest fixture to preprocess the audio files.
     """
 
     _tempdir = tempfile.TemporaryDirectory(prefix="tmpdir_PreprocessedInputFixture_")
@@ -61,16 +61,16 @@ class PreprocessedInputFixture:
     def setUpClass(cls):
         """Generate a preprocessed test set that can be used in various test cases."""
         # We only need to actually run this once
-        if not PreprocessedInputFixture._preprocess_ran:
-            PreprocessedInputFixture.preprocessor.preprocess(
-                output_path=str(PreprocessedInputFixture.lj_filelist),
+        if not PreprocessedAudioFixture._preprocess_ran:
+            PreprocessedAudioFixture.preprocessor.preprocess(
+                output_path=str(PreprocessedAudioFixture.lj_filelist),
                 cpus=1,
                 overwrite=False,
                 to_process=("audio", "energy", "pitch", "text", "spec"),
             )
-            PreprocessedInputFixture.lj_preprocessed.mkdir(parents=True, exist_ok=True)
-            (PreprocessedInputFixture.lj_preprocessed / "duration").symlink_to(
-                PreprocessedInputFixture.data_dir / "lj" / "preprocessed" / "duration",
+            PreprocessedAudioFixture.lj_preprocessed.mkdir(parents=True, exist_ok=True)
+            (PreprocessedAudioFixture.lj_preprocessed / "duration").symlink_to(
+                PreprocessedAudioFixture.data_dir / "lj" / "preprocessed" / "duration",
             )
 
-            PreprocessedInputFixture._preprocess_ran = True
+            PreprocessedAudioFixture._preprocess_ran = True

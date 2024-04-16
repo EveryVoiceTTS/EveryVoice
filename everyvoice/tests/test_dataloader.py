@@ -17,11 +17,11 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     SpecDataset,
 )
 from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.preprocessed_input_fixture import PreprocessedInputFixture
+from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
 from everyvoice.utils import filter_dataset_based_on_target_text_representation_level
 
 
-class DataLoaderTest(PreprocessedInputFixture, BasicTestCase):
+class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
     """Basic test for dataloaders"""
 
     # FIXME: Shouldn't this be done only one for this class and not for every test?
@@ -34,18 +34,18 @@ class DataLoaderTest(PreprocessedInputFixture, BasicTestCase):
             vocoder=VocoderConfig(
                 contact=self.contact,
                 training=HiFiGANTrainingConfig(
-                    training_filelist=PreprocessedInputFixture.lj_preprocessed
+                    training_filelist=PreprocessedAudioFixture.lj_preprocessed
                     / "training_preprocessed_filelist.psv",
-                    validation_filelist=PreprocessedInputFixture.lj_preprocessed
+                    validation_filelist=PreprocessedAudioFixture.lj_preprocessed
                     / "validation_preprocessed_filelist.psv",
                 ),
             ),
         )
         self.config.vocoder.preprocessing.save_dir = (
-            PreprocessedInputFixture.lj_preprocessed
+            PreprocessedAudioFixture.lj_preprocessed
         )
         self.config.vocoder.training.training_filelist = (
-            PreprocessedInputFixture.lj_preprocessed / "preprocessed_filelist.psv"
+            PreprocessedAudioFixture.lj_preprocessed / "preprocessed_filelist.psv"
         )
 
     def test_base_data_loader(self):
