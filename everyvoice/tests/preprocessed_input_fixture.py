@@ -18,55 +18,47 @@ class PreprocessedInputFixture:
     lj_preprocessed = Path(_tempdir.name)
     _preprocess_ran = False
 
-    @classmethod
-    def _prepare_preprocessor(cls):
-        PreprocessedInputFixture.data_dir = BasicTestCase.data_dir
-        PreprocessedInputFixture.wavs_dir = (
-            PreprocessedInputFixture.data_dir / "lj" / "wavs"
-        )
-        PreprocessedInputFixture.lj_filelist = (
-            PreprocessedInputFixture.lj_preprocessed / "preprocessed_filelist.psv"
-        )
+    data_dir = BasicTestCase.data_dir
+    wavs_dir = data_dir / "lj" / "wavs"
+    lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
 
-        PreprocessedInputFixture.fp_config = FeaturePredictionConfig(
-            preprocessing=PreprocessingConfig(
-                save_dir=PreprocessedInputFixture.lj_preprocessed,
-                source_data=[
-                    Dataset(
-                        data_dir=PreprocessedInputFixture.wavs_dir,
-                        filelist=PreprocessedInputFixture.data_dir / "metadata.psv",
-                    )
-                ],
-            ),
-            text=TextConfig(
-                symbols=Symbols(
-                    ascii_symbols=list(ascii_lowercase),
-                    ipa=[
-                        "ɔ",
-                        "æ",
-                        "ɡ",
-                        "ɛ",
-                        "ð",
-                        "ɜ˞",
-                        "ʌ",
-                        "ɑ",
-                        "ɹ",
-                        "ʃ",
-                        "ɪ",
-                        "ʊ",
-                        "ʒ",
-                    ],
+    fp_config = FeaturePredictionConfig(
+        preprocessing=PreprocessingConfig(
+            save_dir=lj_preprocessed,
+            source_data=[
+                Dataset(
+                    data_dir=wavs_dir,
+                    filelist=data_dir / "metadata.psv",
                 )
-            ),
-            contact=BasicTestCase.contact,
-        )
+            ],
+        ),
+        text=TextConfig(
+            symbols=Symbols(
+                ascii_symbols=list(ascii_lowercase),
+                ipa=[
+                    "ɔ",
+                    "æ",
+                    "ɡ",
+                    "ɛ",
+                    "ð",
+                    "ɜ˞",
+                    "ʌ",
+                    "ɑ",
+                    "ɹ",
+                    "ʃ",
+                    "ɪ",
+                    "ʊ",
+                    "ʒ",
+                ],
+            )
+        ),
+        contact=BasicTestCase.contact,
+    )
 
-        PreprocessedInputFixture.preprocessor = Preprocessor(
-            PreprocessedInputFixture.fp_config
-        )
+    preprocessor = Preprocessor(fp_config)
 
     @classmethod
-    def _preprocess(cls):
+    def setUpClass(cls):
         """Generate a preprocessed test set that can be used in various test cases."""
         # We only need to actually run this once
         if not PreprocessedInputFixture._preprocess_ran:
@@ -82,8 +74,3 @@ class PreprocessedInputFixture:
             )
 
             PreprocessedInputFixture._preprocess_ran = True
-
-    @classmethod
-    def setUpClass(cls):
-        PreprocessedInputFixture._prepare_preprocessor()
-        PreprocessedInputFixture._preprocess()
