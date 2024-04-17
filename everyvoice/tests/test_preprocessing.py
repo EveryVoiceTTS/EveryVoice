@@ -4,7 +4,6 @@ import doctest
 import shutil
 import tempfile
 from pathlib import Path
-from string import ascii_lowercase
 
 import torch
 import torchaudio
@@ -17,59 +16,21 @@ from everyvoice.config.preprocessing_config import (
     AudioSpecTypeEnum,
     PreprocessingConfig,
 )
-from everyvoice.config.shared_types import ContactInformation, init_context
-from everyvoice.config.text_config import Symbols, TextConfig
+from everyvoice.config.shared_types import init_context
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.basic_test_case import BasicTestCase
+from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
 from everyvoice.tests.stubs import capture_stdout, mute_logger
 from everyvoice.utils import generic_psv_filelist_reader
 
 
-class PreprocessingTest(BasicTestCase):
+class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     """Unit tests for preprocessing steps"""
 
-    data_dir = Path(__file__).parent / "data"
-    wavs_dir = data_dir / "lj" / "wavs"
-    lj_preprocessed = data_dir / "lj" / "preprocessed"
-    lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
-
-    fp_config = FeaturePredictionConfig(
-        text=TextConfig(
-            symbols=Symbols(
-                ascii_symbols=list(ascii_lowercase),
-                ipa=["ɔ", "æ", "ɡ", "ɛ", "ð", "ɜ˞", "ʌ", "ɑ", "ɹ", "ʃ", "ɪ", "ʊ", "ʒ"],
-            )
-        ),
-        contact=ContactInformation(
-            contact_name="Test Runner", contact_email="info@everyvoice.ca"
-        ),
-    )
-    fp_config.preprocessing.source_data[0].data_dir = data_dir / "lj" / "wavs"
-    fp_config.preprocessing.source_data[0].filelist = data_dir / "metadata.psv"
-    fp_config.preprocessing.save_dir = lj_preprocessed
-    preprocessor = Preprocessor(fp_config)
-    _preprocess_ran = False
-
-    @classmethod
-    def preprocess(cls):
-        """Generate a preprocessed test set that can be used in various test cases."""
-        # We only need to actually run this once
-        if not cls._preprocess_ran:
-            cls.preprocessor.preprocess(
-                output_path=cls.lj_filelist,
-                cpus=1,
-                overwrite=False,
-                to_process=("audio", "energy", "pitch", "text", "spec"),
-            )
-            cls._preprocess_ran = True
-
-    def setUp(self) -> None:
-        super().setUp()
-        self.preprocess()
-        self.filelist = generic_psv_filelist_reader(self.data_dir / "metadata.psv")
+    filelist = generic_psv_filelist_reader(BasicTestCase.data_dir / "metadata.psv")
 
     def test_run_doctest(self):
         """Run doctests in everyvoice.text.text_processing"""
