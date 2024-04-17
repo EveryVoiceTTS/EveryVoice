@@ -65,7 +65,7 @@ class PreprocessedAudioFixture:
             PreprocessedAudioFixture.preprocessor.preprocess(
                 output_path=str(PreprocessedAudioFixture.lj_filelist),
                 cpus=1,
-                overwrite=False,
+                overwrite=True,
                 to_process=("audio", "energy", "pitch", "text", "spec"),
             )
             PreprocessedAudioFixture.lj_preprocessed.mkdir(parents=True, exist_ok=True)

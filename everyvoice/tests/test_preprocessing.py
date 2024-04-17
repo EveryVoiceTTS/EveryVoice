@@ -30,10 +30,7 @@ from everyvoice.utils import generic_psv_filelist_reader
 class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     """Unit tests for preprocessing steps"""
 
-    def setUp(self) -> None:
-        super().setUp()
-        # FIXME: if this metadata.psv doesn't change, shouldn't this be done in setUpClass() instead?
-        self.filelist = generic_psv_filelist_reader(self.data_dir / "metadata.psv")
+    filelist = generic_psv_filelist_reader(BasicTestCase.data_dir / "metadata.psv")
 
     def test_run_doctest(self):
         """Run doctests in everyvoice.text.text_processing"""

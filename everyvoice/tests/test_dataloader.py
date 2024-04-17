@@ -11,6 +11,7 @@ from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
     HiFiGANTrainingConfig,
+    PreprocessingConfig,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     HiFiGANDataModule,
@@ -24,28 +25,25 @@ from everyvoice.utils import filter_dataset_based_on_target_text_representation_
 class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
     """Basic test for dataloaders"""
 
-    # FIXME: Shouldn't this be done only one for this class and not for every test?
     def setUp(self) -> None:
         super().setUp()
+
         self.config = EveryVoiceConfig(
-            contact=self.contact,
-            aligner=AlignerConfig(contact=self.contact),
-            feature_prediction=FeaturePredictionConfig(contact=self.contact),
+            contact=BasicTestCase.contact,
+            aligner=AlignerConfig(contact=BasicTestCase.contact),
+            feature_prediction=FeaturePredictionConfig(contact=BasicTestCase.contact),
             vocoder=VocoderConfig(
-                contact=self.contact,
+                contact=BasicTestCase.contact,
                 training=HiFiGANTrainingConfig(
                     training_filelist=PreprocessedAudioFixture.lj_preprocessed
-                    / "training_preprocessed_filelist.psv",
+                    / "preprocessed_filelist.psv",
                     validation_filelist=PreprocessedAudioFixture.lj_preprocessed
                     / "validation_preprocessed_filelist.psv",
                 ),
+                preprocessing=PreprocessingConfig(
+                    save_dir=PreprocessedAudioFixture.lj_preprocessed,
+                ),
             ),
-        )
-        self.config.vocoder.preprocessing.save_dir = (
-            PreprocessedAudioFixture.lj_preprocessed
-        )
-        self.config.vocoder.training.training_filelist = (
-            PreprocessedAudioFixture.lj_preprocessed / "preprocessed_filelist.psv"
         )
 
     def test_base_data_loader(self):
