@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from tqdm import tqdm
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
