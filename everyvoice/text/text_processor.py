@@ -362,7 +362,7 @@ class TextProcessor:
             # applying punctuation rules will have already happened here, so set to False
             return self.calculate_phonological_features(
                 tokens, apply_punctuation_rules=False
-            ).tolist()
+            )
         else:
             # TODO: catch errors
             return [self._symbol_to_id[symbol] for symbol in tokens]
