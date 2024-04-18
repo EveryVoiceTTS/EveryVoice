@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import doctest
 import shutil
 import tempfile

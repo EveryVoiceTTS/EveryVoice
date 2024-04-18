@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import builtins
 import os
 import string

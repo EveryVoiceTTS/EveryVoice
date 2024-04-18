@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import doctest
 import string
 from pathlib import Path

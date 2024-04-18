@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 import doctest
 import tempfile
 from pathlib import Path
