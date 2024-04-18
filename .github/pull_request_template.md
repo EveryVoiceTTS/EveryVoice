@@ -3,7 +3,7 @@ PR template: please provide enough information to guide your reviewers.
 Please read Contributing.md before submitting a PR.
  -->
 
-| Q                       | A
+| Question           | Answer
 | ----------------- | ---
 | Goal?                 | <!-- Explain the main objective of this PR. -->
 | Fixes?                 | `Fixes #1, Fixes #2` <!-- Remove the (`) quotes and write "Fixes" before the number to link the issues. -->
