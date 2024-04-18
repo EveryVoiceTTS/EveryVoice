@@ -61,7 +61,7 @@ class PhonologicalFeatureCalculator:
                 tone_features.append([-1, -1, -1, -1, -1, -1, -1])
             else:
                 tone_features.append([0, 0, 0, 0, 0, 0, 0])
-        return np.array(tone_features).astype(np.float32)
+        return np.array(tone_features, dtype=np.float32)
 
     def get_punctuation_features(self, tokens: list[str]) -> npt.NDArray[np.float32]:
         """Get Punctuation features.
@@ -103,7 +103,7 @@ class PhonologicalFeatureCalculator:
                 punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 1])
             else:
                 punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0])
-        return np.array(punctuation_features).astype(np.float32)
+        return np.array(punctuation_features, dtype=np.float32)
 
     def token_to_segmental_features(self, token: str) -> npt.NDArray[np.float32]:
         """Turn a token to a feature vector with panphon
@@ -144,7 +144,7 @@ class PhonologicalFeatureCalculator:
         if len(vec) > 1:
             # TODO: We should warn the user that we are averaging the features due to a mismatch in
             # EV and Panphon tokenization.
-            return np.average(vec, axis=0).astype(np.float32)
+            return np.mean(vec, axis=0, dtype=np.float32)
         # EV and PanPhon tokenization matches here
         else:
             return np.array(vec[0], dtype=np.float32)
