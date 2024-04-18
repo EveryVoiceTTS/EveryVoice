@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Conv1d, ConvTranspose1d
 from torch.nn.utils import remove_weight_norm, weight_norm
+from torch.serialization import FILE_LIKE
 
 LRELU_SLOPE = 0.1
 
@@ -214,7 +215,7 @@ UNIVERSAL_CONFIG = {
 }
 
 
-def get_vocoder(path, device):
+def get_vocoder(path: FILE_LIKE, device: torch.device) -> Generator:
     vocoder = Generator(AttrDict(UNIVERSAL_CONFIG))
     ckpt = torch.load(path, map_location=device)
     vocoder.load_state_dict(ckpt["generator"])
@@ -225,7 +226,7 @@ def get_vocoder(path, device):
     return vocoder
 
 
-def vocoder_infer(mels, vocoder) -> np.ndarray:
+def vocoder_infer(mels: torch.Tensor, vocoder: Generator) -> np.ndarray:
     # mels (1, 80, 111) normal
     # mels small (1, 80, 5)
     with torch.no_grad():
