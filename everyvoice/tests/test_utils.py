@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase
 
+import torch
 from pep440 import is_canonical
 from pydantic import BaseModel
 from pydantic.functional_validators import BeforeValidator
@@ -17,6 +18,7 @@ from everyvoice.utils import (
     relative_to_absolute_path,
     write_filelist,
 )
+from everyvoice.utils.heavy import get_device_from_accelerator
 
 
 class VersionTest(TestCase):
@@ -178,3 +180,23 @@ class DirectoryPathMustExistTest(TestCase):
                 DirectoryPathMustExist(path=filename)
         except ValueError:
             self.fail("Failed to detect that the path exists")
+
+
+class GetDeviceFromAcceleratorTest(TestCase):
+    def test_auto(self):
+        self.assertEqual(
+            get_device_from_accelerator("auto"),
+            torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+        )
+
+    def test_cpu(self):
+        self.assertEqual(get_device_from_accelerator("cpu"), torch.device("cpu"))
+
+    def test_gpu(self):
+        self.assertEqual(get_device_from_accelerator("gpu"), torch.device("cuda:0"))
+
+    def test_mps(self):
+        self.assertEqual(get_device_from_accelerator("mps"), torch.device("mps"))
+
+    def test_unknown_accelerator(self):
+        self.assertEqual(get_device_from_accelerator("unknown"), torch.device("cpu"))
