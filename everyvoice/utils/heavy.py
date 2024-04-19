@@ -147,3 +147,18 @@ def get_segments(
         start = 0
         t = torch.nn.functional.pad(t, (0, segment_size - t_len), "constant")
     return t, start
+
+
+def get_device_from_accelerator(accelerator: str) -> torch.device:
+    """Given an accelerator name ("auto", "cpu", "gpu", "mps"), return it's torch.device equivalent."""
+    match accelerator:
+        case "auto":
+            device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        case "gpu":
+            device = torch.device("cuda:0")
+        case "cpu" | "mps":
+            device = torch.device(accelerator)
+        case _:
+            device = torch.device("cpu")
+
+    return device
