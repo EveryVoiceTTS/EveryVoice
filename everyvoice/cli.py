@@ -287,10 +287,13 @@ def update_schemas(
     for filename, schema in SCHEMAS_TO_OUTPUT.items():
         if (schema_dir_path / filename).exists():
             raise FileExistsError(
-                f"Sorry a schema already exists for version {filename}. Please bump the minor version number and generate the schema again."
+                f"Sorry a schema already exists for version {filename}.\n"
+                "If it's already been published to the schema store, please bump the EveryVoice minor version number and generate the schemas again.\n"
+                "If the current minor version is still in development, just delete the schema files and try again."
             )
         with open(schema_dir_path / filename, "w") as f:
             json.dump(schema.model_json_schema(), f, indent=2)
+            f.write("\n")
 
 
 CLICK_APP = typer.main.get_group(app)
