@@ -168,17 +168,11 @@ class CLITest(TestCase):
             self.assertEqual(result.exit_code, 0)
 
     def test_update_schema(self):
-        result = self.runner.invoke(app, ["update-schemas"])
-        # The following two assertions will fail when we change the major or  minor
-        # version of everyvoice. It's up to us to run `everyvoice update-schemas` in
-        # that case and commit the results, and these assertions here will remind us we
-        # forgot to do so.
-        self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("FileExistsError", str(result))
         dummy_contact = ContactInformation(
             contact_name="Test Runner", contact_email="info@everyvoice.ca"
         )
         with tempfile.TemporaryDirectory() as tmpdir:
+            # Validate that schema generation works correctly.
             _ = self.runner.invoke(app, ["update-schemas", "-o", tmpdir])
             for filename, obj in SCHEMAS_TO_OUTPUT.items():
                 with open(Path(tmpdir) / filename, encoding="utf8") as f:
@@ -196,16 +190,29 @@ class CLITest(TestCase):
                     )
                 )
 
+            # Make sure the generated schemas are identical to those saved in the repo,
+            # i.e., that we didn't change the models but forget to update the schemas.
             for filename in SCHEMAS_TO_OUTPUT:
                 with open(Path(tmpdir) / filename, encoding="utf8") as f:
                     new_schema = f.read()
-                with open(EV_DIR / ".schema" / filename, encoding="utf8") as f:
-                    saved_schema = f.read()
+                try:
+                    with open(EV_DIR / ".schema" / filename, encoding="utf8") as f:
+                        saved_schema = f.read()
+                except FileNotFoundError:
+                    raise AssertionError(
+                        f'Schema file {filename} is missing, please run "everyvoice update-schemas".'
+                    )
                 self.assertEqual(
                     saved_schema,
                     new_schema,
                     'Schemas are out of date, please run "everyvoice update-schemas".',
                 )
+
+        # Next, but only if everything above passed, we make sure we can't overwrite
+        # existing schemas by accident.
+        result = self.runner.invoke(app, ["update-schemas"])
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("FileExistsError", str(result))
 
     def test_inspect_checkpoint_help(self):
         result = self.runner.invoke(app, ["inspect-checkpoint", "--help"])
