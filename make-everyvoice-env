@@ -112,11 +112,9 @@ else
         if nvidia-smi | grep -q "CUDA Version: $CUDA_VERSION "; then
             : # CUDA version OK
         else
-            echo "Mismatched CUDA version. Please specify --cuda CUDA_VERSION to what is installed on your system."
-            echo -n "Found: "
+            echo "Warning: Mismatched CUDA version found. Specified: CUDA_VERSION=$CUDA_VERSION. Found:"
             nvidia-smi | grep CUDA
-            echo "Specified: CUDA_VERSION=$CUDA_VERSION"
-            exit 1
+            echo "Please make sure the CUDA version available at runtime will match $CUDA_VERSION."
         fi
     else
         echo "Please make sure the CUDA version installed on your system matches CUDA_VERSION=$CUDA_VERSION."
