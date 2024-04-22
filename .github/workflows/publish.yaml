@@ -100,31 +100,38 @@ jobs:
         tag: ${{ github.ref_name }}
         body: ${{ steps.changelog.outputs.changes }}
         token: ${{ github.token }}
-  build-docs:
-    needs:
-      - github-release
-    uses: ./.github/workflows/docs.yml
-    secrets: inherit
 
   doc-deploy:
     runs-on: ubuntu-latest
     needs:
-      - build-docs
+      - github-release
     steps:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.SGILE_PAT }}
           submodules: recursive
           fetch-depth: 0 # fetch all commits/branches
-      - name: Download the latest docs
-        uses: actions/download-artifact@v4
+      - name: Set up Conda
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          name: latest-docs
-          path: site/
+          python-version: "3.10"
+      - name: Install libsndfile
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libsndfile1
+      - name: Install dependencies and package
+        run: |
+          pip install --upgrade pip
+          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+          pip install cython
+          pip install -e .
+      - name: Install documentation dependencies
+        run: |
+          pip install -r docs/requirements.txt
       - name: Setup doc deploy
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email 'github-actions[bot]@users.noreply.github.com'
       - name: Deploy docs with mike 🚀
         run: |
-          mike deploy --push --update-aliases latest ${{ github.ref_name }} stable
+          mike deploy --push --update-aliases ${{ github.ref_name }} stable latest
