@@ -2,6 +2,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
+import torchaudio
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 
@@ -54,6 +55,12 @@ class E2EDataset(Dataset):
             self.preprocessed_dir / dir / self.sep.join([bn, spk, lang, fn])
         )
 
+    def _load_audio(self, bn, spk, lang, dir, fn):
+        audio, _ = torchaudio.load(
+            str(self.preprocessed_dir / dir / self.sep.join([bn, spk, lang, fn]))
+        )
+        return audio
+
     def __getitem__(self, index):
         """
         Returns dict with keys: {
@@ -103,12 +110,12 @@ class E2EDataset(Dataset):
 
         energy = self._load_file(basename, speaker, language, "energy", "energy.pt")
         pitch = self._load_file(basename, speaker, language, "pitch", "pitch.pt")
-        audio = self._load_file(
+        audio = self._load_audio(
             basename,
             speaker,
             language,
             "audio",
-            f"audio-{self.output_sampling_rate}.pt",
+            f"audio-{self.output_sampling_rate}.wav",
         )
         if audio.dim() == 1:
             audio = audio.unsqueeze(
