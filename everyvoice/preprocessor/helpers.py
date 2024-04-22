@@ -2,6 +2,7 @@ from multiprocessing import managers
 from pathlib import Path
 
 import torch
+import torchaudio
 
 
 def save_tensor(tensor: torch.Tensor, path: str | Path):
@@ -10,6 +11,22 @@ def save_tensor(tensor: torch.Tensor, path: str | Path):
     if not path.parent.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(tensor, path)
+
+
+def save_wav(
+    audio: torch.Tensor, path: str | Path, sr: int | None, bits_per_sample: int
+):
+    """Create hierarchy before saving a wav."""
+    path = Path(path)
+    if not path.parent.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+    torchaudio.save(
+        str(path),
+        audio,
+        sr,
+        encoding="PCM_S",
+        bits_per_sample=bits_per_sample,
+    )
 
 
 class Scaler:

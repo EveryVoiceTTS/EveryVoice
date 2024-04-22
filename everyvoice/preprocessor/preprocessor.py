@@ -39,7 +39,7 @@ from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor.attention_prior import BetaBinomialInterpolator
-from everyvoice.preprocessor.helpers import Counters, Scaler, save_tensor
+from everyvoice.preprocessor.helpers import Counters, Scaler, save_tensor, save_wav
 from everyvoice.text.arpabet import ARPABET_TO_IPA_TRANSDUCER
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.text.text_processor import TextProcessor
@@ -126,7 +126,6 @@ class Preprocessor:
         use_effects=True,
         resample_rate=None,
         sox_effects=None,
-        save_wave=False,
         update_counters=True,  # unset this when processing the same file a second time
     ) -> tuple[torch.Tensor, int] | tuple[None, None]:
         """Process audio
@@ -181,15 +180,9 @@ class Preprocessor:
         if update_counters:
             self.counters.increment("processed_files")
             self.counters.increment("duration", seconds)
-        if save_wave:
-            torchaudio.save(
-                str(wav_path) + ".processed.wav",
-                audio,
-                sr,
-                encoding="PCM_S",
-                bits_per_sample=self.audio_config.target_bit_depth,
-            )
+
         audio = audio.squeeze()  # get rid of channels dimension
+
         return audio, sr
 
     def extract_spectral_features(
@@ -438,10 +431,10 @@ class Preprocessor:
 
         item = self.get_speaker_and_language(item)
         input_audio_save_path = self.create_path(
-            item, "audio", f"audio-{self.input_sampling_rate}.pt"
+            item, "audio", f"audio-{self.input_sampling_rate}.wav"
         )
         output_audio_save_path = self.create_path(
-            item, "audio", f"audio-{self.output_sampling_rate}.pt"
+            item, "audio", f"audio-{self.output_sampling_rate}.wav"
         )
         if (
             input_audio_save_path.exists()
@@ -453,7 +446,7 @@ class Preprocessor:
             self.counters.increment("duration", seconds)
             return item
         if not input_audio_save_path.exists() or self.overwrite:
-            input_audio, _ = self.process_audio(
+            input_audio, save_sr = self.process_audio(
                 audio_path,
                 resample_rate=self.input_sampling_rate,
                 sox_effects=sox_effects,
@@ -461,20 +454,33 @@ class Preprocessor:
             if input_audio is None:
                 return None
             else:
-                save_tensor(input_audio, input_audio_save_path)
+                input_audio = input_audio.unsqueeze(0)
+                save_wav(
+                    input_audio,
+                    input_audio_save_path,
+                    save_sr,
+                    self.audio_config.target_bit_depth,
+                )
+
         if (
             self.input_sampling_rate != self.output_sampling_rate
             and not output_audio_save_path.exists()
             or self.overwrite
         ):
-            output_audio, _ = self.process_audio(
+            output_audio, save_sr = self.process_audio(
                 audio_path,
                 resample_rate=self.output_sampling_rate,
                 sox_effects=sox_effects,
                 update_counters=False,
             )
             if output_audio is not None:
-                save_tensor(output_audio, output_audio_save_path)
+                output_audio = output_audio.unsqueeze(0)
+                save_wav(
+                    output_audio,
+                    input_audio_save_path,
+                    save_sr,
+                    self.audio_config.target_bit_depth,
+                )
         return item
 
     def process_all_audio(self) -> list[dict]:
@@ -547,9 +553,9 @@ class Preprocessor:
         # Always reprocess pitch even without self.overwrite, since its results
         # depend on the stats of the whole fileset.
         audio_path = self.create_path(
-            item, "audio", f"audio-{self.input_sampling_rate}.pt"
+            item, "audio", f"audio-{self.input_sampling_rate}.wav"
         )
-        audio = torch.load(audio_path)
+        audio, _, _ = self.load_audio(audio_path)
         pitch = self.extract_pitch(audio)
         if (
             isinstance(self.config, FeaturePredictionConfig)
@@ -736,14 +742,14 @@ class Preprocessor:
 
     def process_spec(self, item):
         input_audio_path = self.create_path(
-            item, "audio", f"audio-{self.input_sampling_rate}.pt"
+            item, "audio", f"audio-{self.input_sampling_rate}.wav"
         )
         if not input_audio_path.exists():
             self.counters.increment("skipped_processes")
             logger.info(f"Audio at {input_audio_path} is missing. Skipping...")
             return
         output_audio_path = self.create_path(
-            item, "audio", f"audio-{self.output_sampling_rate}.pt"
+            item, "audio", f"audio-{self.output_sampling_rate}.wav"
         )
         input_spec_path = self.create_path(
             item,
@@ -758,14 +764,16 @@ class Preprocessor:
                 f"spec-{self.output_sampling_rate}-{self.audio_config.spec_type}.pt",
             )
             if not output_spec_path.exists() or self.overwrite:
-                output_audio = torch.load(output_audio_path)
+                output_audio, _, _ = self.load_audio(output_audio_path)
+                output_audio = output_audio.squeeze()
                 output_spec = self.extract_spectral_features(
                     output_audio, self.output_spectral_transform
                 )
                 save_tensor(output_spec, output_spec_path)
 
         if not input_spec_path.exists() or self.overwrite:
-            input_audio = torch.load(input_audio_path)
+            input_audio, _, _ = self.load_audio(input_audio_path)
+            input_audio = input_audio.squeeze()
             input_spec = self.extract_spectral_features(
                 input_audio, self.input_spectral_transform
             )
@@ -799,8 +807,8 @@ class Preprocessor:
             raw_text = item["text"]
             n_words = len(raw_text.split(word_seg_token))
             n_chars = len(self.text_processor.encode_text(raw_text))
-            audio = torch.load(
-                self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.pt")
+            audio, _, _ = torchaudio.load(
+                self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.wav")
             )
             if heavy_clip_detction:
                 _, total_clipping = detect_clipping(audio)

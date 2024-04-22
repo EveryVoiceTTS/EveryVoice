@@ -87,6 +87,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             use_effects=True,
             sox_effects=sox_effects,
         )
+
         self.assertEqual(
             raw_sr, processed_sr, "Sampling Rate should not be changed by default"
         )
@@ -149,6 +150,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             audio, _ = self.preprocessor.process_audio(
                 self.wavs_dir / (entry["basename"] + ".wav")
             )
+
             # ming024_feats = np.load(
             #     self.data_dir
             #     / "ming024"
@@ -588,8 +590,16 @@ class PreprocessingHierarchyTest(BasicTestCase):
                     set(sources), set(("LJ010", "LJ050")), f"failed for {t}"
                 )
                 # First speaker has one recording
-                files = list(tmpdir.glob(f"**/{t}/LJ010/*.pt"))
+                files = (
+                    list(tmpdir.glob(f"**/{t}/LJ010/*.wav"))
+                    if t == "audio"
+                    else list(tmpdir.glob(f"**/{t}/LJ010/*.pt"))
+                )
                 self.assertEqual(len(files), 1)
                 # Second speaker has 5 recordings
-                files = list(tmpdir.glob(f"**/{t}/LJ050/*.pt"))
+                files = (
+                    list(tmpdir.glob(f"**/{t}/LJ050/*.wav"))
+                    if t == "audio"
+                    else list(tmpdir.glob(f"**/{t}/LJ050/*.pt"))
+                )
                 self.assertEqual(len(files), 5)
