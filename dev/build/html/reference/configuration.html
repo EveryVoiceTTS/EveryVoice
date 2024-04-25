@@ -1,0 +1,508 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Configuration &#8212; EveryVoice 0.0.0 documentation</title>
+    
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/autodoc_pydantic.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Aligner" href="aligner.html" />
+    <link rel="prev" title="Reference" href="index.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="60">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+<a class="navbar-brand" href="../index.html">
+<p class="title">EveryVoice</p>
+</a>
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../start.html">
+  Getting Started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../install.html">
+  Installation
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../guides/index.html">
+  Guides
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="index.html">
+  Reference
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items">
+  <div>
+    <h4>Previous topic</h4>
+    <p class="topless"><a href="index.html"
+                          title="previous chapter">Reference</a></p>
+  </div>
+  <div>
+    <h4>Next topic</h4>
+    <p class="topless"><a href="aligner.html"
+                          title="next chapter">Aligner</a></p>
+  </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage mt-5 pt-1 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#configuration-wizard">
+   Configuration Wizard 🧙‍♀️
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#everyvoice">
+     everyvoice
+    </a>
+    <ul class="nav section-nav flex-column">
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#everyvoice-config-wizard">
+       config-wizard
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#sharing-configurations">
+   Sharing Configurations
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#serialization">
+   Serialization
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#text-configuration">
+   Text Configuration
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#textconfig">
+     TextConfig
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#symbols">
+     Symbols
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#preprocessing-configuration">
+   Preprocessing Configuration
+  </a>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <section id="configuration">
+<span id="id1"></span><h1>Configuration<a class="headerlink" href="#configuration" title="Permalink to this headline">#</a></h1>
+<p>Each model has a statically typed configuration model. Each configuration has default settings that will be instantiated when the model is instantiated. To create a default preprocessing configuration for example you would:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">everyvoice.config.preprocessing_config</span> <span class="kn">import</span> <span class="n">PreprocessingConfig</span>
+
+<span class="n">preprocessing_config</span> <span class="o">=</span> <span class="n">PreprocessingConfig</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>Static typing means that if someone accidentally enters an integer that the configuration expects should be a float or some other trivial typing difference, it is
+corrected when the configuration is instantiated, and doesn’t produce downstream runtime errors. It also means that intellisense is available in your code editor
+when working with a configuration class.</p>
+<section id="configuration-wizard">
+<span id="config-wizard"></span><h2>Configuration Wizard 🧙‍♀️<a class="headerlink" href="#configuration-wizard" title="Permalink to this headline">#</a></h2>
+<p>This section of the documentation is meant for technical explanations and reference documentation - if you’re just looking to get started, have a look at the <a class="reference internal" href="../guides/index.html#guides"><span class="std std-ref">Guides</span></a> section instead to learn about how the Configuration Wizard 🧙‍♀️ can help you configure everything for your dataset.</p>
+<p>Here is the reference documentation for the Configuration Wizard 🧙‍♀️</p>
+<section id="everyvoice">
+<h3>everyvoice<a class="headerlink" href="#everyvoice" title="Permalink to this headline">#</a></h3>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>everyvoice <span class="o">[</span>OPTIONS<span class="o">]</span> COMMAND <span class="o">[</span>ARGS<span class="o">]</span>...
+</pre></div>
+</div>
+<section id="everyvoice-config-wizard">
+<h4>config-wizard<a class="headerlink" href="#everyvoice-config-wizard" title="Permalink to this headline">#</a></h4>
+<p>This command will help you create all the configuration necessary for using your dataset.</p>
+<dl class="simple">
+<dt>In order to get started, please:</dt><dd><ul class="simple">
+<li><p>have your audio data (in .wav format) together in a folder</p></li>
+<li><p>have a ‘metadata’ file that minimally has two columns, one for the text of the audio and one for the basename of the file</p></li>
+</ul>
+</dd>
+</dl>
+<p>Inside /path/to/wavs/ you should have wav audio files like test0001.wav, test0002.wav etc - they can be called anything you want but the part of the file (minus the .wav portion) must be in your metadata file.</p>
+<p>Example wavs directory: “/path/to/wavs/”</p>
+<p>Example metadata: <a class="reference external" href="https://github.com/roedoejet/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv">https://github.com/roedoejet/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv</a></p>
+<div class="highlight-shell notranslate"><div class="highlight"><pre><span></span>everyvoice config-wizard <span class="o">[</span>OPTIONS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="sharing-configurations">
+<h2>Sharing Configurations<a class="headerlink" href="#sharing-configurations" title="Permalink to this headline">#</a></h2>
+<p>The Text and Preprocessing configurations should only be defined once per dataset and shared between your models to ensure each model makes the same assumptions about your data.
+To achieve that, each model configuration can also be defined as a path to a configuration file. So, a configuration for an <a class="reference internal" href="aligner.html#aligner"><span class="std std-ref">Aligner</span></a> model that uses separately defined text and audio preprocessing configurations might look like this:</p>
+<div class="literal-block-wrapper docutils container" id="id3">
+<div class="code-block-caption"><span class="caption-text">See highlighted lines with links to text and preprocessing configurations</span><a class="headerlink" href="#id3" title="Permalink to this code">#</a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">model</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">lstm_dim</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span><span class="w"></span>
+<span class="w">    </span><span class="nt">conv_dim</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span><span class="w"></span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="nt">training</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span><span class="w"></span>
+<span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span><span class="w"></span>
+<span class="hll"><span class="nt">preprocessing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/preprocessing.yaml&quot;</span><span class="w"></span>
+</span><span class="hll"><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/text_eng.yaml&quot;</span><span class="w"></span>
+</span></pre></div>
+</div>
+</div>
+</section>
+<section id="serialization">
+<h2>Serialization<a class="headerlink" href="#serialization" title="Permalink to this headline">#</a></h2>
+<p>By default configuration objects are serialized as dictionaries, which works as expected with integers, floats, lists, booleans, dicts etc. But there are some cases where you need to specify a Callable in your configuration. For example the <a class="reference internal" href="#textconfig"><span class="std std-ref">TextConfig</span></a> has a <cite>cleaners</cite> field that takes a list of Callables to apply in order to raw text.
+By default, these functions turn raw text to lowercase, collapse whitespace, and normalize using Unicode NFC normalization. In Python, we could instantiate this by passing the callables directly like so:</p>
+<div class="literal-block-wrapper docutils container" id="id4">
+<div class="code-block-caption"><span class="caption-text">You can instantiate configuration objects with callables in Python</span><a class="headerlink" href="#id4" title="Permalink to this code">#</a></div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">everyvoice.config.text_config</span> <span class="kn">import</span> <span class="n">TextConfig</span>
+<span class="kn">from</span> <span class="nn">everyvoice.utils</span> <span class="kn">import</span> <span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">lower</span><span class="p">,</span> <span class="n">nfc_normalize</span>
+
+<span class="n">text_config</span> <span class="o">=</span> <span class="n">TextConfig</span><span class="p">(</span><span class="n">cleaners</span><span class="o">=</span><span class="p">[</span><span class="n">lower</span><span class="p">,</span> <span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">nfc_normalize</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<p>But, for yaml or json configuration, we need to serialize these functions. To do so, EveryVoice will turn each callable into module dot-notation. That is,
+your configuration will look like this in yaml:</p>
+<div class="literal-block-wrapper docutils container" id="id5">
+<div class="code-block-caption"><span class="caption-text">Callables will be serialized using module dot-notation in yaml and json</span><a class="headerlink" href="#id5" title="Permalink to this code">#</a></div>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">cleaners</span><span class="p">:</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">everyvoice.utils.lower</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">everyvoice.utils.collapse_whitespace</span><span class="w"></span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">everyvoice.utils.nfc_normalize</span><span class="w"></span>
+</pre></div>
+</div>
+</div>
+<p>This will then be de-serialized upon instantiation of your configuration.</p>
+</section>
+<section id="text-configuration">
+<h2>Text Configuration<a class="headerlink" href="#text-configuration" title="Permalink to this headline">#</a></h2>
+<p>The TextConfig is where you define the symbol set for your data and any cleaners used to clean your raw text into the text needed
+for your data. You can share the TextConfig with any models that need it and only need one text configuration per dataset (and possibly only per language).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only the <a class="reference internal" href="aligner.html#aligner"><span class="std std-ref">Aligner</span></a>, <a class="reference internal" href="feature_prediction.html#feature-prediction"><span class="std std-ref">Feature Prediction</span></a>, and <a class="reference internal" href="e2e.html#e2e"><span class="std std-ref">E2E</span></a> models need text configuration. The <a class="reference internal" href="vocoder.html#vocoder"><span class="std std-ref">Vocoder</span></a> is trained without text and does not need a TextConfig. For more information on this, see the <a class="reference internal" href="../guides/background.html#background"><span class="std std-ref">Background to Text-to-Speech</span></a> section.</p>
+</div>
+<section id="textconfig">
+<span id="id2"></span><h3>TextConfig<a class="headerlink" href="#textconfig" title="Permalink to this headline">#</a></h3>
+<dl class="py class pydantic_settings">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.TextConfig">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">settings</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">everyvoice.config.text_config.</span></span><span class="sig-name descname"><span class="pre">TextConfig</span></span><a class="reference internal" href="../_modules/everyvoice/config/text_config.html#TextConfig"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#everyvoice.config.text_config.TextConfig" title="Permalink to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Fields</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.cleaners" title="everyvoice.config.text_config.TextConfig.cleaners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cleaners</span> <span class="pre">(List[Callable])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.symbols" title="everyvoice.config.text_config.TextConfig.symbols"><code class="xref py py-obj docutils literal notranslate"><span class="pre">symbols</span> <span class="pre">(everyvoice.config.text_config.Symbols)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.to_replace" title="everyvoice.config.text_config.TextConfig.to_replace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_replace</span> <span class="pre">(Dict[str,</span> <span class="pre">str])</span></code></a></p></li>
+</ul>
+</dd>
+<dt class="field-even">Validators</dt>
+<dd class="field-even"><ul class="simple">
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.convert_callable_cleaners" title="everyvoice.config.text_config.TextConfig.convert_callable_cleaners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_callable_cleaners</span></code></a> » <a class="reference internal" href="#everyvoice.config.text_config.TextConfig.cleaners" title="everyvoice.config.text_config.TextConfig.cleaners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cleaners</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.TextConfig.cleaners">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cleaners</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;function</span> <span class="pre">lower&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">collapse_whitespace&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">nfc_normalize&gt;]</span></em><a class="headerlink" href="#everyvoice.config.text_config.TextConfig.cleaners" title="Permalink to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Validated by</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.convert_callable_cleaners" title="everyvoice.config.text_config.TextConfig.convert_callable_cleaners"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convert_callable_cleaners</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.TextConfig.symbols">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">symbols</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#everyvoice.config.text_config.Symbols" title="everyvoice.config.text_config.Symbols"><span class="pre">everyvoice.config.text_config.Symbols</span></a></em><em class="property"> <span class="pre">[Optional]</span></em><a class="headerlink" href="#everyvoice.config.text_config.TextConfig.symbols" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.TextConfig.to_replace">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">to_replace</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{}</span></em><a class="headerlink" href="#everyvoice.config.text_config.TextConfig.to_replace" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py method pydantic_validator">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.TextConfig.convert_callable_cleaners">
+<em class="property"><span class="pre">validator</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">convert_callable_cleaners</span></span><em class="autodoc_pydantic_validator_arrow property">&#160; <span class="pre">»</span>&#160; </em><a class="reference internal" href="#everyvoice.config.text_config.TextConfig.cleaners" title="everyvoice.config.text_config.TextConfig.cleaners"><em class="xref py py-obj"><span class="pre">cleaners</span></em></a><a class="reference internal" href="../_modules/everyvoice/config/text_config.html#TextConfig.convert_callable_cleaners"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#everyvoice.config.text_config.TextConfig.convert_callable_cleaners" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="symbols">
+<h3>Symbols<a class="headerlink" href="#symbols" title="Permalink to this headline">#</a></h3>
+<dl class="py class pydantic_settings">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.Symbols">
+<em class="property"><span class="pre">pydantic</span> <span class="pre">settings</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">everyvoice.config.text_config.</span></span><span class="sig-name descname"><span class="pre">Symbols</span></span><a class="reference internal" href="../_modules/everyvoice/config/text_config.html#Symbols"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#everyvoice.config.text_config.Symbols" title="Permalink to this definition">#</a></dt>
+<dd><p><details  class="autodoc_pydantic_collapsable_json">
+<summary>Show JSON schema</summary><div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="w"></span>
+<span class="w">   </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Symbols&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">   </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;object&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">   </span><span class="nt">&quot;properties&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="nt">&quot;silence&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Silence&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"></span>
+<span class="w">            </span><span class="s2">&quot;&lt;SIL&gt;&quot;</span><span class="w"></span>
+<span class="w">         </span><span class="p">],</span><span class="w"></span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"></span>
+<span class="w">            </span><span class="p">{</span><span class="w"></span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="w"></span>
+<span class="w">            </span><span class="p">},</span><span class="w"></span>
+<span class="w">            </span><span class="p">{</span><span class="w"></span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">               </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="w"></span>
+<span class="w">               </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">         </span><span class="p">]</span><span class="w"></span>
+<span class="w">      </span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="nt">&quot;pad&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pad&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;_&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">         </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="w"></span>
+<span class="w">      </span><span class="p">},</span><span class="w"></span>
+<span class="w">      </span><span class="nt">&quot;punctuation&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">         </span><span class="nt">&quot;title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Punctuation&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">         </span><span class="nt">&quot;default&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;-&#39;;:,.!?\u00a1\u00bf\u2014\u2026\&quot;\u00ab\u00bb\u201c\u201d &quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">         </span><span class="nt">&quot;anyOf&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="w"></span>
+<span class="w">            </span><span class="p">{</span><span class="w"></span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="w"></span>
+<span class="w">            </span><span class="p">},</span><span class="w"></span>
+<span class="w">            </span><span class="p">{</span><span class="w"></span>
+<span class="w">               </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;array&quot;</span><span class="p">,</span><span class="w"></span>
+<span class="w">               </span><span class="nt">&quot;items&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">                  </span><span class="nt">&quot;type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;string&quot;</span><span class="w"></span>
+<span class="w">               </span><span class="p">}</span><span class="w"></span>
+<span class="w">            </span><span class="p">}</span><span class="w"></span>
+<span class="w">         </span><span class="p">]</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">   </span><span class="p">}</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+</pre></div>
+</div>
+</details></p><dl class="field-list simple">
+<dt class="field-odd">Fields</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.Symbols.pad" title="everyvoice.config.text_config.Symbols.pad"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pad</span> <span class="pre">(str)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.Symbols.punctuation" title="everyvoice.config.text_config.Symbols.punctuation"><code class="xref py py-obj docutils literal notranslate"><span class="pre">punctuation</span> <span class="pre">(Union[str,</span> <span class="pre">List[str]])</span></code></a></p></li>
+<li><p><a class="reference internal" href="#everyvoice.config.text_config.Symbols.silence" title="everyvoice.config.text_config.Symbols.silence"><code class="xref py py-obj docutils literal notranslate"><span class="pre">silence</span> <span class="pre">(Union[str,</span> <span class="pre">List[str]])</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.Symbols.pad">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pad</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'_'</span></em><a class="headerlink" href="#everyvoice.config.text_config.Symbols.pad" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.Symbols.punctuation">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">punctuation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'-\';:,.!?¡¿—…&quot;«»“”</span> <span class="pre">'</span></em><a class="headerlink" href="#everyvoice.config.text_config.Symbols.punctuation" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute pydantic_field">
+<dt class="sig sig-object py" id="everyvoice.config.text_config.Symbols.silence">
+<em class="property"><span class="pre">field</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">silence</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['&lt;SIL&gt;']</span></em><a class="headerlink" href="#everyvoice.config.text_config.Symbols.silence" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+<section id="preprocessing-configuration">
+<h2>Preprocessing Configuration<a class="headerlink" href="#preprocessing-configuration" title="Permalink to this headline">#</a></h2>
+</section>
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="index.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Reference</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="aligner.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Aligner</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2023, National Research Council Canada.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.5.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>
