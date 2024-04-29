@@ -8,9 +8,14 @@ from loguru import logger
 from nltk.tokenize import RegexpTokenizer
 
 from everyvoice.config.text_config import TextConfig
-from everyvoice.exceptions import ConfigError, OutOfVocabularySymbolError
+from everyvoice.exceptions import OutOfVocabularySymbolError
 from everyvoice.text.features import PhonologicalFeatureCalculator
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
+from everyvoice.text.utils import (
+    apply_cleaners_helper,
+    apply_to_replace_helper,
+    normalize_text_helper,
+)
 
 PAD_SYMBOL = "\x80"
 
@@ -156,9 +161,7 @@ class TextProcessor:
         >>> tp.apply_replacement_rules('a')
         'b'
         """
-        for k, v in self.to_replace.items():
-            text = re.sub(k, v, text)
-        return text
+        return apply_to_replace_helper(text, self.to_replace)
 
     def apply_cleaners(self, text: str) -> str:
         """Converts some text to cleaned text
@@ -172,14 +175,7 @@ class TextProcessor:
         >>> tp.apply_cleaners('HELLO\u0301')
         'helló'
         """
-        for cleaner_fn in self.config.cleaners:
-            try:
-                text = cleaner_fn(text)
-            except Exception as e:
-                raise ConfigError(
-                    f"Cleaner did not work and threw exception {e}"
-                ) from e
-        return text
+        return apply_cleaners_helper(text, self.config.cleaners)
 
     def normalize_text(
         self, text: str, apply_replace_rules=True, apply_cleaners=True
@@ -198,11 +194,13 @@ class TextProcessor:
         >>> tp.normalize_text('HELLO\u0301!')
         'helló!'
         """
-        if apply_replace_rules:
-            text = self.apply_replacement_rules(text)
-        if apply_cleaners:
-            text = self.apply_cleaners(text)
-        return text
+        return normalize_text_helper(
+            text,
+            self.to_replace,
+            self.config.cleaners,
+            apply_cleaners=apply_cleaners,
+            apply_replace_rules=apply_replace_rules,
+        )
 
     def calculate_phonological_features(
         self, phone_tokens: list[str], apply_punctuation_rules=True

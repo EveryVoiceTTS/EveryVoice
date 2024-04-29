@@ -38,7 +38,7 @@ class TextTest(BasicTestCase):
         self.assertEqual(self.base_text_processor.decode_tokens(sequence, ""), text)
 
     def test_token_sequence_to_text(self):
-        sequence = [51, 48, 55, 55, 58, 1, 66, 58, 61, 55, 47]
+        sequence = [25, 22, 29, 29, 32, 1, 40, 32, 35, 29, 21]
         self.assertEqual(self.base_text_processor.encode_text("hello world"), sequence)
 
     def test_hardcoded_symbols(self):
@@ -170,7 +170,7 @@ class TextTest(BasicTestCase):
             apply_g2p=True,
             encode_as_phonological_features=True,
         )
-        self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens, ""), "séːɡũ")
+        self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens, ""), "séːɡũ")
         self.assertEqual(len(g2p_tokens), len(feats))
         self.assertNotEqual(len(g2p_tokens), len(one_hot_tokens))
         self.assertEqual(len(feats[0]), N_PHONOLOGICAL_FEATURES)
@@ -375,10 +375,16 @@ class TestG2p(TestCase):
         )
         # another language
         str_g2p = get_g2p_engine("str")
-        self.assertEqual(str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"])
+        self.assertEqual(
+            str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"]
+        )
         # test lang_id missing
         with self.assertRaises(NotImplementedError):
             get_g2p_engine("boop")
+
+    def test_phonemizer_normalization(self):
+        moh_g2p = get_g2p_engine("moh")
+        self.assertEqual(moh_g2p("\u00E9"), ["\u00E9"])
 
 
 class PunctuationTest(TestCase):

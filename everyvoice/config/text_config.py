@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from everyvoice.config.shared_types import ConfigModel
 from everyvoice.config.utils import PossiblySerializedCallable
+from everyvoice.text.utils import normalize_text_helper
 from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 
 
@@ -85,3 +86,22 @@ class TextConfig(ConfigModel):
         collapse_whitespace,
         nfc_normalize,
     ]
+
+    @model_validator(mode="after")
+    def clean_symbols(self) -> "TextConfig":
+        """We should apply all cleaners to the symbols
+
+        Returns:
+            TextConfig: a text config with cleaned symbols
+        """
+        for k, v in self.symbols:
+            if k not in ["punctuation", "silence"]:
+                setattr(
+                    self.symbols,
+                    k,
+                    [
+                        normalize_text_helper(x, self.to_replace, self.cleaners)
+                        for x in v
+                    ],
+                )
+        return self
