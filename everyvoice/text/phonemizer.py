@@ -2,6 +2,7 @@
     All g2p engines must return tokenized characters.
 """
 from typing import Callable
+from unicodedata import normalize
 
 from g2p import get_arpabet_langs, make_g2p
 from ipatok import tokenise
@@ -40,6 +41,12 @@ def get_g2p_engine(lang_id: str):
             tokens = tokenise(
                 text, replace=False, tones=True, strict=False, unknown=True
             )
+            # normalize the output since ipatok applies NFD
+            unicode_normalization_form = phonemizer.transducers[-1].norm_form.value
+            if unicode_normalization_form != "none":
+                tokens = [
+                    normalize(unicode_normalization_form, token) for token in tokens
+                ]
             # convert the pua tokens back to their originals
             for i, token in enumerate(tokens):
                 # PUA tokens have length 1
