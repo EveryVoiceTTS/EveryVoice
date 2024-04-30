@@ -154,6 +154,14 @@ git submodule foreach 'gitlint install-hook'
 
 ## Pull request recommendations
 
+### TL;DR
+ - Always separate submodule update commits from other top-level commits.
+ - Expect to have to rebase submodules and re-create submodule update commits.
+ - For approved submodule PRs, doing fast-forward merges, from the CLI only, saves work.
+ - Pay extra attention to where each submodule's HEAD is before creating submodule update commits.
+
+### Intro
+
 This repo has four submodules, which will get checked out under subdirectories of `everyvoice/model/` when you run the recommended `git submodule update --init` initialization command. This means that a specific state of the EveryVoice code is not just represented by a commit sha1 in the top-level repo, but also the four submodule sha1's it points to.
 
 Every time you check out a new branch/commit/tag/PR, you should also checkout the submodules at the right commit by running `git submodule update` again.  (Running `git status` after a checkout will tell you if and which submodules need updating.)
