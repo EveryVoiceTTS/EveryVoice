@@ -63,8 +63,8 @@ git submodule foreach 'gitlint install-hook'
 ```
 
 Have a look at [Contributing.md](Contributing.md) for the full details on the
-Conventional Commit messages we prefer, our code formatting conventions, and
-our Git hooks.
+Conventional Commit messages we prefer, our code formatting conventions, our Git
+hooks, and recommendations on how to make effective pull requests.
 
 ## Acknowledgements
 
