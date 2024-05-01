@@ -178,7 +178,7 @@ If changes between submodules and the top-level repo are tightly tied, you can u
 
 Hints for maintainers and contributors with merge privileges.
 
-Once your PR touching submodules has been apporved in all the repos, you have to merge it in the submodules first and then in the top-level repo. But you can make your life easier by performing fast-forward merges on all the submodule PRs.
+Once your PR touching submodules has been approved in all the repos, you have to merge it in the submodules first and then in the top-level repo. But you can make your life easier by performing fast-forward merges on all the submodule PRs.
 
 **Note: Doing a fast-forward merge is not possible from the GitHub UI**: "Rebase and merge" will replay the history or a PR, creating a new sha1 for each commit in the PR. "Squash and merge" will replace all the PR commits by one new commit. "Create a merge commit" is self-explanatory, but will result in a new commit.
 
