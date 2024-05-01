@@ -19,7 +19,10 @@ commits.
  - [gitlint](#gitlint) is used as a commit message hook to validate that
    commit messages follow the convention.
 
-## TL;DR
+Submitting PRs in a repo with four submodules can be complicated.
+See [Pull Request Recommendations](#pull-request-recommendations) for hints on making this easier.
+
+## The TL;DR for pre-commit and gitlint hooks
 
 Run these commands in each of your sandboxes to enable our pre-commit hooks and gitlint:
 
@@ -148,3 +151,60 @@ shortcut:
 git submodule foreach 'pre-commit install'
 git submodule foreach 'gitlint install-hook'
 ```
+
+## Pull request recommendations
+
+### TL;DR
+ - Always separate submodule update commits from other top-level commits.
+ - Expect to have to rebase submodules and re-create submodule update commits.
+ - For approved submodule PRs, doing fast-forward merges, from the CLI only, saves work.
+ - Pay extra attention to where each submodule's HEAD is before creating submodule update commits.
+
+### Intro
+
+This repo has four submodules, which will get checked out under subdirectories of `everyvoice/model/` when you run the recommended `git submodule update --init` initialization command. This means that a specific state of the EveryVoice code is not just represented by a commit sha1 in the top-level repo, but also the four submodule sha1's it points to.
+
+Every time you check out a new branch/commit/tag/PR, you should also checkout the submodules at the right commit by running `git submodule update` again.  (Running `git status` after a checkout will tell you if and which submodules need updating.)
+
+### Creating a multi-repo PR
+
+To create a PR for changes that affect one or more submodules, create a PR in each affected submodule, and one PR in the top-level repo to update the submodule pointers and apply any relevant code changes in the top-level repo.
+
+Important: in the top-level repo, separate commits that update the submodules from other commits. We typically give submodule update commits a message like `chore: update submodules`.  Never combine these with other changes in the top-level repo because you will inevitably have to redo the submodule update commits when the submodule PRs are rebased, merged, improved following reviewer comments, etc.
+
+If changes between submodules and the top-level repo are tightly tied, you can use a commit history like "refactor: rename foo->bar" for the top-level changes, and "chore: udpate submodule to rename foo->bar" for the submodule updates, but don't be tempted to merge these in one commit: the former will be easy to rebase or merge as needed, but the latter will cause conflicts and will likely need to be recreated before you're done.
+
+### Merging a multi-repo PR
+
+Hints for maintainers and contributors with merge privileges.
+
+Once your PR touching submodules has been approved in all the repos, you have to merge it in the submodules first and then in the top-level repo. But you can make your life easier by performing fast-forward merges on all the submodule PRs.
+
+**Note: Doing a fast-forward merge is not possible from the GitHub UI**: "Rebase and merge" will replay the history or a PR, creating a new sha1 for each commit in the PR. "Squash and merge" will replace all the PR commits by one new commit. "Create a merge commit" is self-explanatory, but will result in a new commit.
+
+In all cases, like each time the submodule sha1's are changed, you have to go back to the top-level PR and recreate the submodule udpate commits to point to the newly created commits.
+
+But you can fast-forward merge your PRs from the CLI:
+```
+git checkout main
+git merge --ff-only dev.my-approved-pr-branch
+git push origin main
+```
+
+Hint: these three steps can be replaced by a single command:
+```
+git push origin dev.my-approved-pr-branch:main
+```
+this syntax means push the local reference/commit/sha1 on the left-hand-side of the colon to the remote branch named on the right-hand-side of the colon.
+
+### Take care not to revert submodule updates
+
+Because an EveryVoice state is really represented by five separate sha1's (one in the top-level repo and one in each submodule), it's very easy to get confused about the right place the submodules should point.
+
+Before commit submodule updates, inspect the history in each submodules to make sure you're only commiting the changes you expect, and did not, e.g., forget to update one submodule after rebasing your top-level PR.
+
+This command can be quite helpful in doing this inspection:
+```
+git submodule foreach "git log --oneline --graph --decorate HEAD origin/main | head"
+```
+carefully look at the output for each submodule, making sure you agree with where HEAD points.
