@@ -61,6 +61,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                 self.wavs_dir / (entry["basename"] + ".wav"),
                 use_effects=True,
                 sox_effects=config.preprocessing.source_data[0].sox_effects,
+                hop_size=config.preprocessing.audio.fft_hop_size,
             )
             self.assertEqual(sr, 22050)
             self.assertEqual(audio.dtype, float32)
@@ -86,6 +87,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             audio_path_with_silence,
             use_effects=True,
             sox_effects=sox_effects,
+            hop_size=config.preprocessing.audio.fft_hop_size,
         )
 
         self.assertEqual(
@@ -96,10 +98,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             3.5,
             "Should be exactly 3.5 seconds of audio at 44100 Hz sampling rate",
         )
-        self.assertAlmostEqual(
-            processed_audio.size()[0] / processed_sr,
+        self.assertEqual(
+            round(processed_audio.size()[0] / processed_sr, 2),
             2.5,
-            4,
             msg="Should be about half a second of silence removed from the beginning and end",
         )
         # should work with resampling too
@@ -108,11 +109,11 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             use_effects=True,
             resample_rate=22050,
             sox_effects=sox_effects,
+            hop_size=config.preprocessing.audio.fft_hop_size,
         )
-        self.assertAlmostEqual(
-            rs_processed_audio.size()[0] / rs_processed_sr,
+        self.assertEqual(
+            round(rs_processed_audio.size()[0] / rs_processed_sr, 2),
             2.5,
-            4,
             msg="Should be about half a second of silence removed from the beginning and end when resampled too",
         )
 
@@ -123,12 +124,33 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             self.assertEqual(sr, None)
 
     def test_process_audio(self):
+        import torchaudio
+
         for entry in self.filelist[1:]:
             audio, sr = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["basename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav"), hop_size=256
             )
             self.assertEqual(sr, 22050)
             self.assertEqual(audio.dtype, float32)
+        # test that truncating according to hop size actually happened
+        raw_audio, raw_sr = torchaudio.load(
+            str(self.wavs_dir / (entry["basename"] + ".wav"))
+        )
+        # remove channel info
+        raw_audio = raw_audio.squeeze()
+        self.assertNotEqual(raw_audio.size(0), audio.size(0))
+        self.assertLess(raw_audio.size(0) - audio.size(0), 256)
+        # changing the hop size changes how much is removed
+        diff_hop_audio, _ = self.preprocessor.process_audio(
+            self.wavs_dir / (entry["basename"] + ".wav"), hop_size=35
+        )
+        self.assertNotEqual(audio.size(0), diff_hop_audio.size(0))
+        # we should never truncate more than a portion of a single frame
+        self.assertLess(raw_audio.size(0) - diff_hop_audio.size(0), 35)
+        with self.assertRaises(ValueError):  # missing hop_size
+            self.preprocessor.process_audio(
+                self.wavs_dir / (entry["basename"] + ".wav")
+            )
 
     def test_spectral_feats(self):
         linear_vocoder_config = VocoderConfig(
@@ -148,7 +170,8 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["basename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav"),
+                hop_size=linear_vocoder_config.preprocessing.audio.fft_hop_size,
             )
 
             # ming024_feats = np.load(
@@ -203,7 +226,8 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["basename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav"),
+                hop_size=pyworld_config.preprocessing.audio.fft_hop_size,
             )
             dur_path = (
                 self.lj_preprocessed
@@ -241,7 +265,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     def test_duration(self):
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["basename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav"), hop_size=256
             )
             dur_path = (
                 self.lj_preprocessed
@@ -277,7 +301,8 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         preprocessor = Preprocessor(frame_energy_config)
         for entry in self.filelist[1:]:
             audio, _ = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["basename"] + ".wav")
+                self.wavs_dir / (entry["basename"] + ".wav"),
+                hop_size=frame_energy_config.preprocessing.audio.fft_hop_size,
             )
             dur_path = (
                 self.lj_preprocessed
@@ -364,9 +389,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     preprocessed_dir.mkdir(parents=True, exist_ok=True)
                     output_filelist = preprocessed_dir / "preprocessed_filelist.psv"
                     shutil.copyfile(filelist_test_info["path"], output_filelist)
-                    fp_config.preprocessing.source_data[0].filelist = (
-                        filelist_test_info["path"]
-                    )
+                    fp_config.preprocessing.source_data[
+                        0
+                    ].filelist = filelist_test_info["path"]
                     fp_config.preprocessing.save_dir = preprocessed_dir
                     preprocessor = Preprocessor(fp_config)
                     with capture_stdout() as output, mute_logger(
@@ -582,7 +607,6 @@ class PreprocessingHierarchyTest(BasicTestCase):
                     # to_process=("audio", "text", "pfs", "spec", "attn", "energy", "pitch"),
                     to_process=("audio", "text", "spec", "attn", "energy", "pitch"),
                 )
-
             for t in ("audio", "spec", "attn", "energy", "pitch"):
                 # There are two speakers
                 sources = [d.name for d in tmpdir.glob(f"**/{t}/*")]
