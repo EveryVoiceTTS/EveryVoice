@@ -75,6 +75,9 @@ class Preprocessor:
         self.sampling_rate_change = (
             self.output_sampling_rate // self.input_sampling_rate
         )
+        self.output_hop_size = (
+            self.audio_config.fft_hop_size * self.sampling_rate_change
+        )
         # Define Spectral Transform
         # Gah, so many ways to do this: https://github.com/CookiePPP/VocoderComparisons/issues/3
         self.input_spectral_transform = get_spectral_transform(
@@ -91,7 +94,7 @@ class Preprocessor:
             self.audio_config.spec_type,
             self.audio_config.n_fft * self.sampling_rate_change,
             self.audio_config.fft_window_size * self.sampling_rate_change,
-            self.audio_config.fft_hop_size * self.sampling_rate_change,
+            self.output_hop_size,
             sample_rate=self.input_sampling_rate,
             n_mels=self.audio_config.n_mels,
             f_min=self.audio_config.f_min,
@@ -126,6 +129,7 @@ class Preprocessor:
         use_effects=True,
         resample_rate=None,
         sox_effects=None,
+        hop_size=None,
         update_counters=True,  # unset this when processing the same file a second time
     ) -> tuple[torch.Tensor, int] | tuple[None, None]:
         """Process audio
@@ -182,8 +186,17 @@ class Preprocessor:
             self.counters.increment("duration", seconds)
 
         audio = audio.squeeze()  # get rid of channels dimension
-
-        return audio, sr
+        # limit the number of samples to a number that is evenly divisible by the hop size
+        # most reasonable hop sizes for training should be in the vicinity of ~10ms
+        # so we're talking about losing slightly less than that amount of audio from the
+        # signal at a maximum, and it makes downstream things like vocoder matching more straightforward.
+        if hop_size is None:
+            raise ValueError(
+                "We must know the hop size for processing audio because EveryVoice enforces that the number of samples is evenly divisible by the hop size"
+            )
+        max_frames = audio.size(0) // hop_size
+        max_samples = max_frames * hop_size
+        return audio[:max_samples], sr
 
     def extract_spectral_features(
         self, audio_tensor: torch.Tensor, transform, normalize=True
@@ -407,11 +420,12 @@ class Preprocessor:
                 sys.exit(1)
 
     def create_path(self, item: dict, folder: str, fn: str) -> Path:
-        return (
+        path = (
             self.save_dir
             / folder
             / self.sep.join([item["basename"], item["speaker"], item["language"], fn])
         )
+        return path
 
     def process_one_audio(
         self, item: dict, data_dir, sox_effects: list[list]
@@ -450,6 +464,7 @@ class Preprocessor:
                 audio_path,
                 resample_rate=self.input_sampling_rate,
                 sox_effects=sox_effects,
+                hop_size=self.audio_config.fft_hop_size,
             )
             if input_audio is None:
                 return None
@@ -472,6 +487,7 @@ class Preprocessor:
                 resample_rate=self.output_sampling_rate,
                 sox_effects=sox_effects,
                 update_counters=False,
+                hop_size=self.output_hop_size,
             )
             if output_audio is not None:
                 output_audio = output_audio.unsqueeze(0)
@@ -627,12 +643,14 @@ class Preprocessor:
                 binomial_interpolator(input_spec.size(1), len(phone_tokens))
             )
             assert input_spec.size(1) == phone_attn_prior.size(0)
+            assert len(phone_tokens) == phone_attn_prior.size(1)
             save_tensor(phone_attn_prior, phone_attn_prior_path)
         if process_characters:
             character_attn_prior = torch.from_numpy(
                 binomial_interpolator(input_spec.size(1), len(character_tokens))
             )
             assert input_spec.size(1) == character_attn_prior.size(0)
+            assert len(character_tokens) == character_attn_prior.size(1)
             save_tensor(character_attn_prior, character_attn_prior_path)
 
     def process_text(
@@ -741,6 +759,14 @@ class Preprocessor:
             return (character_tokens, phone_tokens, pfs)
 
     def process_spec(self, item):
+        """Processes spectral features based on the defined transform (linear, Mel, complex etc)
+        Processes an 'input' spectrogram based on the sampling rate of the audio input to the vocoder.
+        Processes an 'output' spectrogram based on the output sampling rate of the vocoder.
+
+        We also limit the length of the audio to a number that is evenly divisible by the hop size
+        """
+        input_spec = None
+        output_spec = None
         input_audio_path = self.create_path(
             item, "audio", f"audio-{self.input_sampling_rate}.wav"
         )
@@ -766,18 +792,29 @@ class Preprocessor:
             if not output_spec_path.exists() or self.overwrite:
                 output_audio, _, _ = self.load_audio(output_audio_path)
                 output_audio = output_audio.squeeze()
+                # limit the number of frames to be equal to the number of
+                # available full frames from the audio (equal to fft_hop_size * sampling rate change, if we are upsampling)
+                # i.e. we round down
+                max_output_frames = output_audio.size(0) // self.output_hop_size
                 output_spec = self.extract_spectral_features(
                     output_audio, self.output_spectral_transform
-                )
+                )[:, :max_output_frames]
+                assert max_output_frames == output_spec.size(1)
                 save_tensor(output_spec, output_spec_path)
 
         if not input_spec_path.exists() or self.overwrite:
             input_audio, _, _ = self.load_audio(input_audio_path)
             input_audio = input_audio.squeeze()
+            # limit the number of frames to be equal to the number of
+            # available full frames from the audio
+            # i.e. we round down
+            max_input_frames = input_audio.size(0) // self.audio_config.fft_hop_size
             input_spec = self.extract_spectral_features(
                 input_audio, self.input_spectral_transform
-            )
+            )[:, :max_input_frames]
+            assert max_input_frames == input_spec.size(1)
             save_tensor(input_spec, input_spec_path)
+        return input_spec, output_spec
 
     def get_process_fn(self, process):
         if process == "text":
