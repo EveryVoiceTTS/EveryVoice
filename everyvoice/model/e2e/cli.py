@@ -3,6 +3,13 @@ from merge_args import merge_args
 
 from everyvoice.base_cli.interfaces import train_base_command_interface
 
+
+def complete_path() -> list[str]:
+    # https://github.com/tiangolo/typer/discussions/625
+    # Work-around for path completion bug in CLI autocompletion
+    return []
+
+
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
     help="End-to-end training: jointly train the FastSpeech2 and HiFiGAN networks",
@@ -22,5 +29,6 @@ def train(**kwargs):
         model=EveryVoice,
         data_module=E2EDataModule,
         monitor="validation/mel_spec_error",
+        gradient_clip_val=None,
         **kwargs
     )

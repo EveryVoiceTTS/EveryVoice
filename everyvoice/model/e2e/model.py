@@ -3,6 +3,8 @@ import json
 import numpy as np
 import pytorch_lightning as pl
 import torch
+import torch.nn.functional as F
+import torchaudio
 from loguru import logger
 
 from everyvoice.model.e2e.config import EveryVoiceConfig
@@ -14,12 +16,14 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.utils import plot_mel
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
+from everyvoice.text.lookups import lookuptables_from_config
 from everyvoice.utils.heavy import dynamic_range_compression_torch, expand
 
 
 class EveryVoice(pl.LightningModule):
     def __init__(self, config: EveryVoiceConfig):
         super().__init__()
+        self.automatic_optimization = False
         self.config = config
         self.batch_size = config.training.batch_size
         if self.config.training.feature_prediction_checkpoint is not None:
@@ -31,7 +35,18 @@ class EveryVoice(pl.LightningModule):
             )
             self.feature_prediction.config = self.config.feature_prediction
         else:
-            self.feature_prediction = FastSpeech2(config.feature_prediction)
+            lang2id, speaker2id = lookuptables_from_config(config.feature_prediction)
+            # TODO: What about when we are fine-tuning? Do the bins in the Variance Adaptor not change? https://github.com/roedoejet/FastSpeech2_lightning/issues/28
+            with open(
+                config.feature_prediction.preprocessing.save_dir / "stats.json"
+            ) as f:
+                stats: Stats = Stats(**json.load(f))
+            self.feature_prediction = FastSpeech2(
+                config.feature_prediction,
+                stats=stats,
+                lang2id=lang2id,
+                speaker2id=speaker2id,
+            )
         if self.config.training.vocoder_checkpoint is not None:
             logger.info(
                 f"Loading HiFiGAN model from checkpoint {self.config.training.vocoder_checkpoint}"
@@ -42,14 +57,12 @@ class EveryVoice(pl.LightningModule):
             self.vocoder.config = self.config.vocoder
         else:
             self.vocoder = HiFiGAN(config.vocoder)
+        self.vocoder.automatic_optimization = False
+        self.feature_prediction.automatic_optimization = False
         self.sampling_rate_change = (
             self.config.vocoder.preprocessing.audio.output_sampling_rate
             // self.config.vocoder.preprocessing.audio.input_sampling_rate
         )
-        with open(
-            self.config.feature_prediction.preprocessing.save_dir / "stats.json"
-        ) as f:
-            self.stats: Stats = Stats(**json.load(f))
         self.input_frame_segment_size = (
             self.config.vocoder.preprocessing.audio.vocoder_segment_size
             // self.config.vocoder.preprocessing.audio.fft_hop_size
@@ -86,12 +99,8 @@ class EveryVoice(pl.LightningModule):
         _, y_ds_hat_g, fmap_s_r, fmap_s_g = self.vocoder.msd(y, y_hat)
         loss_fm_f = self.vocoder.feature_loss(fmap_f_r, fmap_f_g)
         loss_fm_s = self.vocoder.feature_loss(fmap_s_r, fmap_s_g)
-        loss_gen_f, _ = self.vocoder.generator_loss(
-            y_df_hat_g, gp=self.vocoder.use_gradient_penalty
-        )
-        loss_gen_s, _ = self.vocoder.generator_loss(
-            y_ds_hat_g, gp=self.vocoder.use_gradient_penalty
-        )
+        loss_gen_f, _ = self.vocoder.generator_loss(y_df_hat_g)
+        loss_gen_s, _ = self.vocoder.generator_loss(y_ds_hat_g)
         loss_mel = torch.nn.functional.l1_loss(y_mel, y_hat_mel) * 45
         gen_loss_total = 0
         # Log Losses
@@ -104,83 +113,108 @@ class EveryVoice(pl.LightningModule):
         self.log(f"{mode}/vocoder/gen/gen_loss_total", gen_loss_total, prog_bar=False)
         return gen_loss_total
 
-    def training_step(self, batch, batch_idx, optimizer_idx):
+    def training_step(self, batch, batch_idx):
+        y = batch["audio"]
+        y_mel = batch["audio_mel"]
         # Train Feature Prediction & Vocoder Generator
-        if optimizer_idx == 0:
-            # Generate Predictions
-            fp_output, vocoder_y_hat = self(batch)
-            # Calculate Feature Prediction Loss
-            fp_losses = self.feature_prediction.loss(fp_output, batch)
-            self.log_dict(
-                {
-                    f"training/feature_prediction/{k}_loss": v.item()
-                    for k, v in fp_losses.items()
-                }
-            )
-            # Create Mel of generated wav
-            generated_mel_spec = dynamic_range_compression_torch(
-                self.vocoder.spectral_transform(vocoder_y_hat).squeeze(1)[:, :, 1:]
-            )
-            # Calculate Generator Loss
-            vocoder_gen_loss_total = self.vocoder_loss(
-                batch["audio"], batch["audio_mel"], vocoder_y_hat, generated_mel_spec
-            )
-            return fp_losses["total"] + vocoder_gen_loss_total
+        optim_fp, optim_g, optim_d = self.optimizers()
+        scheduler_fp, scheduler_g, scheduler_d = self.lr_schedulers()
+        # Generate Predictions
+        fp_output, generated_wav = self(batch)
+        # Create Mel of generated wav
+        generated_mel_spec = dynamic_range_compression_torch(
+            self.vocoder.spectral_transform(generated_wav).squeeze(1)[:, :, 1:]
+        )
 
         # Train Vocoder Discriminator
-        if (
-            self.global_step >= self.vocoder.config.training.generator_warmup_steps
-            and optimizer_idx == 1
-        ):
-            with torch.no_grad():
-                fp_output, y_g_hat = self(batch)
+        if self.global_step >= self.vocoder.config.training.generator_warmup_steps:
+            optim_d.zero_grad()
             # MPD
-            y_df_hat_r, y_df_hat_g, _, _ = self.vocoder.mpd(batch["audio"], y_g_hat)
-            if self.vocoder.use_gradient_penalty:
-                gp_f = self.vocoder.compute_gradient_penalty(
-                    batch["audio"].data, y_g_hat.data, self.vocoder.mpd
-                )
-            else:
-                gp_f = None
-            loss_disc_f, _, _ = self.vocoder.discriminator_loss(
-                y_df_hat_r, y_df_hat_g, gp=gp_f
-            )
+            y_df_hat_r, y_df_hat_g, _, _ = self.vocoder.mpd(y, generated_wav.detach())
+            loss_disc_f, _, _ = self.vocoder.discriminator_loss(y_df_hat_r, y_df_hat_g)
             self.log("training/disc/mpd_loss", loss_disc_f, prog_bar=False)
             # MSD
-            y_ds_hat_r, y_ds_hat_g, _, _ = self.vocoder.msd(batch["audio"], y_g_hat)
-            # gp_s = self.compute_gradient_penalty(y_ds_hat_r, y_ds_hat_g)
-            # loss_disc_s = -torch.mean(y_ds_hat_r) + torch.mean(y_ds_hat_g) + 10 * gp_s
-            if self.vocoder.use_gradient_penalty:
-                gp_s = self.vocoder.compute_gradient_penalty(
-                    batch["audio"].data, y_g_hat.data, self.vocoder.msd
-                )
-            else:
-                gp_s = None
-            loss_disc_s, _, _ = self.vocoder.discriminator_loss(
-                y_ds_hat_r, y_ds_hat_g, gp=gp_s
-            )
+            y_ds_hat_r, y_ds_hat_g, _, _ = self.vocoder.msd(y, generated_wav.detach())
+            loss_disc_s, _, _ = self.vocoder.discriminator_loss(y_ds_hat_r, y_ds_hat_g)
             self.log("training/disc/msd_loss", loss_disc_s, prog_bar=False)
             # WGAN
             if self.vocoder.use_wgan:
                 for p in self.vocoder.msd.parameters():
                     p.data.clamp_(
-                        -self.config.vocoder.training.wgan_clip_value,
-                        self.config.vocoder.training.wgan_clip_value,
+                        -self.config.training.wgan_clip_value,
+                        self.config.training.wgan_clip_value,
                     )
                 for p in self.vocoder.mpd.parameters():
                     p.data.clamp_(
-                        -self.config.vocoder.training.wgan_clip_value,
-                        self.config.vocoder.training.wgan_clip_value,
+                        -self.config.training.wgan_clip_value,
+                        self.config.training.wgan_clip_value,
                     )
             # calculate loss
             disc_loss_total = loss_disc_s + loss_disc_f
+            # manual optimization because Pytorch Lightning 2.0+ doesn't handle automatic optimization for multiple optimizers
+            # use .backward for now, but maybe switch to self.manual_backward() in the future: https://github.com/Lightning-AI/lightning/issues/18740
+            disc_loss_total.backward(retain_graph=True)
+            # clip gradients
+            self.clip_gradients(
+                optim_d, gradient_clip_val=1.0, gradient_clip_algorithm="norm"
+            )
+            optim_d.step()
+            # step in the scheduler every epoch
+            if self.trainer.is_last_batch:
+                scheduler_d.step()
             # log discriminator loss
             self.log("training/disc/d_loss_total", disc_loss_total, prog_bar=False)
-            return disc_loss_total
+        # train generator
+        optim_fp.zero_grad()
+        optim_g.zero_grad()
+        # Calculate Feature Prediction Loss
+        fp_losses: torch.Tensor = self.feature_prediction.loss(
+            fp_output, batch, self.current_epoch
+        )
+        self.log_dict(
+            {
+                f"training/feature_prediction/{k}_loss": v.item()
+                for k, v in fp_losses.items()
+            }
+        )
+
+        # Calculate Generator Loss
+        _, y_df_hat_g, fmap_f_r, fmap_f_g = self.vocoder.mpd(y, generated_wav)
+        _, y_ds_hat_g, fmap_s_r, fmap_s_g = self.vocoder.msd(y, generated_wav)
+        loss_fm_f = self.vocoder.feature_loss(fmap_f_r, fmap_f_g)
+        loss_fm_s = self.vocoder.feature_loss(fmap_s_r, fmap_s_g)
+        # loss_gen_f = -torch.mean(y_df_hat_g)
+        # loss_gen_s = -torch.mean(y_ds_hat_g)
+        loss_gen_f, _ = self.vocoder.generator_loss(y_df_hat_g)
+        loss_gen_s, _ = self.vocoder.generator_loss(y_ds_hat_g)
+        self.log("training/gen/loss_fmap_f", loss_fm_f, prog_bar=False)
+        self.log("training/gen/loss_fmap_s", loss_fm_s, prog_bar=False)
+        self.log("training/gen/loss_gen_f", loss_gen_f, prog_bar=False)
+        self.log("training/gen/loss_gen_s", loss_gen_s, prog_bar=False)
+        loss_mel = F.l1_loss(y_mel, generated_mel_spec) * 45
+        gen_loss_total = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_mel
+        # manual optimization because Pytorch Lightning 2.0+ doesn't handle automatic optimization for multiple optimizers
+        # use .backward for now, but maybe switch to self.manual_backward() in the future: https://github.com/Lightning-AI/lightning/issues/18740
+        # self.manual_backward(gen_loss_total)
+        gen_loss_total.backward(retain_graph=True)
+        # clip gradients
+        self.clip_gradients(
+            optim_d, gradient_clip_val=1.0, gradient_clip_algorithm="norm"
+        )
+        # fp_losses["total"].backward()
+        optim_g.step()
+        optim_fp.step()
+        # step in the scheduler every epoch
+        if self.trainer.is_last_batch:
+            scheduler_g.step()
+            scheduler_fp.step()
+            # log generator loss
+        self.log("training/gen/gen_loss_total", gen_loss_total, prog_bar=False)
+        self.log("training/gen/mel_spec_error", loss_mel / 45, prog_bar=False)
 
     def validation_step(self, batch, batch_idx):
         fp_output, vocoder_y_hat = self(batch)
-        fp_losses = self.feature_prediction.loss(fp_output, batch)
+        fp_losses = self.feature_prediction.loss(fp_output, batch, self.current_epoch)
         generated_mel_spec = dynamic_range_compression_torch(
             self.vocoder.spectral_transform(vocoder_y_hat).squeeze(1)[:, :, 1:]
         )
@@ -195,7 +229,7 @@ class EveryVoice(pl.LightningModule):
         ).item()
         self.log("validation/mel_spec_error", val_err_tot, prog_bar=False)
         if self.global_step == 0:
-            audio = torch.load(
+            audio, _ = torchaudio.load(
                 self.config.feature_prediction.preprocessing.save_dir
                 / "audio"
                 / "--".join(
@@ -203,7 +237,7 @@ class EveryVoice(pl.LightningModule):
                         batch["basename"][0],
                         batch["speaker"][0],
                         batch["language"][0],
-                        f"audio-{self.config.feature_prediction.preprocessing.audio.input_sampling_rate}.pt",
+                        f"audio-{self.config.feature_prediction.preprocessing.audio.input_sampling_rate}.wav",
                     ]
                 )
             )
@@ -216,7 +250,7 @@ class EveryVoice(pl.LightningModule):
             )
         if batch_idx == 0:
             fp_output, synthesis_wav_output = self(batch, inference=True)
-            duration_np = batch["duration"][0].cpu().numpy()
+            duration_np = fp_output["duration_target"][0].cpu().numpy()
             self.logger.experiment.add_figure(
                 f"pred/spec_{batch['basename'][0]}",
                 plot_mel(
@@ -248,7 +282,7 @@ class EveryVoice(pl.LightningModule):
                             ),
                         },
                     ],
-                    self.stats,
+                    self.feature_prediction.stats,
                     ["Ground-Truth Spectrogram", "Synthesized Spectrogram"],
                 ),
                 self.global_step,
@@ -275,4 +309,6 @@ class EveryVoice(pl.LightningModule):
         return fp_losses["total"] + val_err_tot
 
     def configure_optimizers(self):
-        return self.vocoder.configure_optimizers()
+        fp_optims, fp_schedulers = self.feature_prediction.configure_optimizers()
+        vocoder_optims, vocoder_schedulers = self.vocoder.configure_optimizers()
+        return fp_optims + vocoder_optims, fp_schedulers + vocoder_schedulers
