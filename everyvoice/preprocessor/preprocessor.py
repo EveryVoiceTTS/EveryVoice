@@ -758,7 +758,9 @@ class Preprocessor:
         else:
             return (character_tokens, phone_tokens, pfs)
 
-    def process_spec(self, item):
+    def process_spec(
+        self, item
+    ) -> tuple[Optional[torch.Tensor], Optional[torch.Tensor]]:
         """Processes spectral features based on the defined transform (linear, Mel, complex etc)
         Processes an 'input' spectrogram based on the sampling rate of the audio input to the vocoder.
         Processes an 'output' spectrogram based on the output sampling rate of the vocoder.
@@ -773,7 +775,7 @@ class Preprocessor:
         if not input_audio_path.exists():
             self.counters.increment("skipped_processes")
             logger.info(f"Audio at {input_audio_path} is missing. Skipping...")
-            return
+            return input_spec, output_spec
         output_audio_path = self.create_path(
             item, "audio", f"audio-{self.output_sampling_rate}.wav"
         )
