@@ -76,7 +76,7 @@ def describe_suite(suite: TestSuite):
 
 def run_tests(suite: str, describe: bool = False):
     """Decide which Test Suite to run"""
-    logger.info(f"Loading test suite '{suite}'.")
+    logger.info(f"Loading test suite '{suite}'. This may take a while...")
     if suite == "all":
         test_suite = all_test_suites()
     else:

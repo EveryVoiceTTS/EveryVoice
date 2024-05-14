@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Any, Dict
 
 import typer
-from pydantic import BaseModel
 from typing_extensions import Annotated
 
 from everyvoice.base_cli.interfaces import complete_path
@@ -31,6 +30,7 @@ class CheckpointEncoder(JSONEncoder):
         Extends json to handle `torch.Tensor` and `pydantic.BaseModel`.
         """
         import torch
+        from pydantic import BaseModel
 
         if isinstance(obj, torch.Tensor):
             return list(obj.shape)
