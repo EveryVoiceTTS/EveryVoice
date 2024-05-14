@@ -14,7 +14,9 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import 
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions_heavy import (
     Stats,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.utils import plot_mel
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.utils.heavy import (
+    plot_mel,
+)
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 from everyvoice.text.lookups import lookuptables_from_config
 from everyvoice.utils.heavy import dynamic_range_compression_torch, expand
