@@ -278,7 +278,7 @@ def train_base_command(
 
                     Please fix your configuration or use a different model.
 
-                    Values Changed: {pformat(optimizer_config_diff)}
+                    Values Changed: {pformat(model_config_diff)}
                     """
                 )
             )
@@ -289,6 +289,8 @@ def train_base_command(
         # the text configuration, since certain changes would cause an input space mismatch.
         # FIXME: Cannot assign member "config" for type "HiFiGAN"
         model_obj.config = config
+        if hasattr(model_obj, "update_config_settings"):
+            model_obj.update_config_settings()
         tensorboard_logger.log_hyperparams(config.model_dump())
         if optimizer_config_diff:
             # Finetune from Checkpoint
