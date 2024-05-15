@@ -653,9 +653,10 @@ class Preprocessor:
             assert len(character_tokens) == character_attn_prior.size(1)
             save_tensor(character_attn_prior, character_attn_prior_path)
 
+    @staticmethod
     def process_text(
-        self,
         item,
+        text_processor: TextProcessor,
         use_pfs=False,
         specific_text_representation: Optional[
             TargetTrainingTextRepresentationLevel
@@ -689,7 +690,7 @@ class Preprocessor:
             raise NotImplementedError(
                 "Sorry 'specific_text_representation' isn't implemented yet, please set it to None."
             )  # TODO: refactor so that you don't *need* to generate all possible representations, to make synthesis faster.
-        if self.text_processor is None:
+        if text_processor is None:
             raise NotImplementedError(
                 "You must have a valid TextProcessor in order to calculate text."
             )
@@ -703,7 +704,7 @@ class Preprocessor:
             DatasetTextRepresentation.arpabet.value in item
             and DatasetTextRepresentation.ipa_phones.value not in item
         ):
-            phone_tokens = self.text_processor.encode_text(
+            phone_tokens = text_processor.encode_text(
                 text=ARPABET_TO_IPA_TRANSDUCER(
                     item[DatasetTextRepresentation.arpabet.value]
                 ).output_string,
@@ -712,7 +713,7 @@ class Preprocessor:
             )
         # if dataset is chars, tokenize them for saving to filelist
         if DatasetTextRepresentation.characters.value in item:
-            character_tokens = self.text_processor.encode_text(
+            character_tokens = text_processor.encode_text(
                 text=item[DatasetTextRepresentation.characters.value],
                 apply_g2p=False,
                 encode_as_phonological_features=False,
@@ -723,7 +724,7 @@ class Preprocessor:
                 item["language"] in AVAILABLE_G2P_ENGINES
                 and DatasetTextRepresentation.ipa_phones.value not in item
             ):
-                phone_tokens = self.text_processor.encode_text(
+                phone_tokens = text_processor.encode_text(
                     text=item[DatasetTextRepresentation.characters.value],
                     apply_g2p=True,
                     lang_id=item["language"],
@@ -732,7 +733,7 @@ class Preprocessor:
                 )
         # if dataset is phones
         if DatasetTextRepresentation.ipa_phones.value in item:
-            phone_tokens = self.text_processor.encode_text(
+            phone_tokens = text_processor.encode_text(
                 text=item[DatasetTextRepresentation.ipa_phones.value],
                 apply_g2p=False,
                 encode_as_phonological_features=False,
@@ -740,18 +741,16 @@ class Preprocessor:
             )
         # calculate pfs
         if phone_tokens and use_pfs:
-            pfs = self.text_processor.calculate_phonological_features(
-                self.text_processor.token_sequence_to_text_sequence(phone_tokens),
+            pfs = text_processor.calculate_phonological_features(
+                text_processor.token_sequence_to_text_sequence(phone_tokens),
                 apply_punctuation_rules=True,
             )
         # encode to string
         if encode_as_string:
             if phone_tokens is not None:
-                phones = self.text_processor.decode_tokens(
-                    phone_tokens, join_character="/"
-                )
+                phones = text_processor.decode_tokens(phone_tokens, join_character="/")
             if character_tokens is not None:
-                characters = self.text_processor.decode_tokens(
+                characters = text_processor.decode_tokens(
                     character_tokens, join_character="/"
                 )
             return (characters, phones, pfs)
@@ -820,9 +819,13 @@ class Preprocessor:
 
     def get_process_fn(self, process):
         if process == "text":
-            return functools.partial(self.process_text, use_pfs=False)
+            return functools.partial(
+                self.process_text, text_processor=self.text_processor, use_pfs=False
+            )
         if process == "pfs":
-            return functools.partial(self.process_text, use_pfs=True)
+            return functools.partial(
+                self.process_text, text_processor=self.text_processor, use_pfs=True
+            )
         if process == "energy":
             return self.process_energy
         if process == "pitch":

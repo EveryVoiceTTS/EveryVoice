@@ -64,10 +64,10 @@ def slugify(
 
 def filter_dataset_based_on_target_text_representation_level(
     target_text_representation_level: TargetTrainingTextRepresentationLevel,
-    train_dataset: list[dict],
-    val_dataset: list[dict],
+    dataset: list[dict],
+    name: str,
     batch_size: int,
-) -> tuple[list[dict], list[dict]]:
+) -> list[dict]:
     # remove dataset samples that don't exist for the target training representation
     match target_text_representation_level:
         case TargetTrainingTextRepresentationLevel.characters:
@@ -79,36 +79,23 @@ def filter_dataset_based_on_target_text_representation_level(
                 f"{target_text_representation_level} have not yet been implemented."
             )
 
-    filtered_train_dataset = [
+    filtered_dataset = [
         item
-        for item in train_dataset
+        for item in dataset
         if target_training_text_key in item and item[target_training_text_key]
     ]
-    filtered_val_dataset = [
-        item
-        for item in val_dataset
-        if target_training_text_key in item and item[target_training_text_key]
-    ]
-    n_filtered_train_items = len(train_dataset) - len(filtered_train_dataset)
-    n_filtered_val_items = len(val_dataset) - len(filtered_val_dataset)
-    if n_filtered_train_items:
+    n_filtered_items = len(dataset) - len(filtered_dataset)
+    if n_filtered_items:
         logger.warning(
-            f"Removing {n_filtered_train_items} from your training set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
+            f"Removing {n_filtered_items} from your {name} set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
         )
-        train_dataset = filtered_train_dataset
-    if n_filtered_val_items:
-        logger.warning(
-            f"Removing {n_filtered_val_items} from your validation set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
-        )
-        val_dataset = filtered_val_dataset
-    if batch_size > len(filtered_val_dataset) or batch_size > len(
-        filtered_train_dataset
-    ):
+        dataset = filtered_dataset
+    if batch_size > len(filtered_dataset):
         logger.error(
-            f"Sorry you do not have enough {target_text_representation_level} data in your current training/validation filelists to train/validate with a batch size of {batch_size}."
+            f"Sorry you do not have enough {target_text_representation_level} data in your current {name} filelist to run the model with a batch size of {batch_size}."
         )
         sys.exit(1)
-    return train_dataset, val_dataset
+    return dataset
 
 
 def check_dataset_size(batch_size: int, number_of_samples: int, name: str):
