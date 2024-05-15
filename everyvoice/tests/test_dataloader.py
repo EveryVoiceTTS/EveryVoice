@@ -99,10 +99,16 @@ class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
                 4,
             )
         self.assertEqual(cm.exception.code, 1)
-        train_ds, val_ds = filter_dataset_based_on_target_text_representation_level(
+        train_ds = filter_dataset_based_on_target_text_representation_level(
             TargetTrainingTextRepresentationLevel.characters,
             train_dataset,
             "training",
+            4,
+        )
+        val_ds = filter_dataset_based_on_target_text_representation_level(
+            TargetTrainingTextRepresentationLevel.characters,
+            train_dataset,
+            "validation",
             4,
         )
         self.assertEqual(len(train_ds), 4)
