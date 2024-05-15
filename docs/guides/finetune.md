@@ -18,8 +18,12 @@ Then you:
 1. Generate a folder full of Mel spectrograms from your text-to-spec model:
 
 ```bash
-everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-training-filelist.psv>
+everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-training-filelist.psv> --teacher-forcing-folder <path-to-your-preprocessed-folder>
 ```
+
+!!! note
+    For vocoder matching to work, the size of the generated Mel spectrogram has to be the same as the ground truth Mel spectrogram calculated from the audio, so you have to use 'teacher-forcing' to force the text-to-spec model to output spectrograms of a specific size. To do this, we add the --teacher-forcing-folder and point it to the project `preprocessed` folder with the processed files from our filelist.
+
 
 2. Move the `synthesized_spec` folder from the generated `synthesis_output` folder to your project `preprocessed` folder.
 
