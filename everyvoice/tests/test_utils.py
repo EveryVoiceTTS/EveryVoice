@@ -12,12 +12,12 @@ from typing_extensions import Annotated
 import everyvoice.utils
 from everyvoice._version import VERSION
 from everyvoice.config.shared_types import init_context
-from everyvoice.utils import (
+from everyvoice.config.validation_helpers import (
     directory_path_must_exist,
     path_is_a_directory,
     relative_to_absolute_path,
-    write_filelist,
 )
+from everyvoice.utils import write_filelist
 from everyvoice.utils.heavy import get_device_from_accelerator
 
 
