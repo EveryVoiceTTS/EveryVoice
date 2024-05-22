@@ -50,7 +50,6 @@ def init_context(value: Dict[str, Any]) -> Iterator[None]:
 class ConfigModel(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
-        use_enum_values=True,
         json_schema_extra={"$schema": "http://json-schema.org/draft-07/schema#"},
     )
 
@@ -70,7 +69,9 @@ class ConfigModel(BaseModel):
         Returns:
             dict: A JSON-serializable dict containing no paths
         """
-        ckpt = self.model_dump()
+        ckpt = (
+            self.model_dump()
+        )  # can't use mode='json' because we need to filter Paths first
 
         def delete_paths(ckpt: dict | list | tuple):
             if isinstance(ckpt, dict):

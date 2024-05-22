@@ -23,14 +23,13 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
+from everyvoice.tests.basic_test_case import BasicTestCase
+from everyvoice.tests.stubs import monkeypatch
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
 )
-
-from .basic_test_case import BasicTestCase
-from .stubs import monkeypatch
 
 monkey_saved_config = None
 
