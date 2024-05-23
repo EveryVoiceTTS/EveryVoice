@@ -15,25 +15,30 @@ To finetune your spec-to-wav model with Mel spectrograms from your text-to-spec 
 
 Then you:
 
-1. Generate a folder full of Mel spectrograms from your text-to-spec model:
+1. Generate a folder full of Mel spectrograms from your text-to-spec model (repeat this process for both your training and validation filelists):
+
+Training filelist:
 
 ```bash
-everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-training-filelist.psv> --teacher-forcing-folder <path-to-your-preprocessed-folder>
+everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-training-filelist.psv> --teacher-forcing-folder <path-to-your-preprocessed-folder> --output-dir <path-to-your-preprocessed-folder>
+```
+
+Validation filelist:
+
+```bash
+everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-validation-filelist.psv> --teacher-forcing-folder <path-to-your-preprocessed-folder> --output-dir <path-to-your-preprocessed-folder>
 ```
 
 !!! note
-    For vocoder matching to work, the size of the generated Mel spectrogram has to be the same as the ground truth Mel spectrogram calculated from the audio, so you have to use 'teacher-forcing' to force the text-to-spec model to output spectrograms of a specific size. To do this, we add the --teacher-forcing-folder and point it to the project `preprocessed` folder with the processed files from our filelist.
+    For vocoder matching to work, the size of the generated Mel spectrogram has to be the same as the ground truth Mel spectrogram calculated from the audio, so you have to use 'teacher-forcing' to force the text-to-spec model to output spectrograms of a specific size. To do this, we add the --teacher-forcing-folder and point it to the project `preprocessed` folder with the processed files from our filelist. This will write a `synthesized_spec` folder within your `preprocessed` folder, that you can use instead of the groundtruth `spec` data by setting `finetune` to True as described in the next step.
 
+2. Change the `training.finetune` configuration in your {{ config_filename('spec-to-wav') }} file to True.
 
-2. Move the `synthesized_spec` folder from the generated `synthesis_output` folder to your project `preprocessed` folder.
+3. Set the finetune_ckpt value point to the vocoder that you want to fine-tune.
 
-3. Change the `training.finetune` configuration in your {{ config_filename('spec-to-wav') }} file to True.
+4. Lower the learning rate (we suggest 0.00001)
 
-4. Set the finetune_ckpt value point to the vocoder that you want to fine-tune.
-
-5. Lower the learning rate (we suggest ****)
-
-6. Train the vocoder again:
+5. Train the vocoder again (train for at least 25000 steps):
 
 ```bash
 everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml
