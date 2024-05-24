@@ -43,6 +43,7 @@ jobs:
         run: |
           cd everyvoice && coverage run run_tests.py dev
           coverage xml
+      - run: cd everyvoice && coverage report
       - name: Check for logs_and_checkpoints/ and preprocessed/
         id: no-extra-directories
         run: |

@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -247,6 +248,19 @@ class CLITest(TestCase):
                 "We are expecting a FastSpeech2Config but it looks like you provided a DFAlignerConfig",
                 output[0],
             )
+
+    def test_expensive_imports_are_tucked_away(self):
+        """Make sure expensive imports are tucked away form the CLI help"""
+        result = subprocess.run(
+            ["everyvoice", "-h"],
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            env=dict(os.environ, PYTHONPROFILEIMPORTTIME="1"),
+        )
+
+        msg = '\n\nPlease avoid causing {} being imported from "everyvoice -h".\nIt is a relatively expensive import and slows down shell completion.\nRun "PYTHONPROFILEIMPORTTIME=1 everyvoice -h" and inspect the logs to see why it\'s being imported.'
+        self.assertNotIn(b"shared_types", result.stderr, msg.format("shared_types.py"))
+        self.assertNotIn(b"pydantic", result.stderr, msg.format("pydantic"))
 
 
 class TestBaseCLIHelper(TestCase):

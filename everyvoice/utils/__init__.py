@@ -13,7 +13,6 @@ from unicodedata import normalize
 
 import yaml
 from loguru import logger
-from pydantic import ValidationInfo
 
 from everyvoice import exceptions
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
@@ -64,51 +63,41 @@ def slugify(
 
 def filter_dataset_based_on_target_text_representation_level(
     target_text_representation_level: TargetTrainingTextRepresentationLevel,
-    train_dataset: list[dict],
-    val_dataset: list[dict],
+    dataset: list[dict],
+    name: str,
     batch_size: int,
-) -> tuple[list[dict], list[dict]]:
+) -> list[dict]:
     # remove dataset samples that don't exist for the target training representation
     match target_text_representation_level:
         case TargetTrainingTextRepresentationLevel.characters:
             target_training_text_key = "character_tokens"
-        case TargetTrainingTextRepresentationLevel.ipa_phones | TargetTrainingTextRepresentationLevel.phonological_features:
+        case (  # noqa: E211
+            TargetTrainingTextRepresentationLevel.ipa_phones
+            | TargetTrainingTextRepresentationLevel.phonological_features
+        ):
             target_training_text_key = "phone_tokens"
         case _:
             raise NotImplementedError(
                 f"{target_text_representation_level} have not yet been implemented."
             )
 
-    filtered_train_dataset = [
+    filtered_dataset = [
         item
-        for item in train_dataset
+        for item in dataset
         if target_training_text_key in item and item[target_training_text_key]
     ]
-    filtered_val_dataset = [
-        item
-        for item in val_dataset
-        if target_training_text_key in item and item[target_training_text_key]
-    ]
-    n_filtered_train_items = len(train_dataset) - len(filtered_train_dataset)
-    n_filtered_val_items = len(val_dataset) - len(filtered_val_dataset)
-    if n_filtered_train_items:
+    n_filtered_items = len(dataset) - len(filtered_dataset)
+    if n_filtered_items:
         logger.warning(
-            f"Removing {n_filtered_train_items} from your training set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
+            f"Removing {n_filtered_items} from your {name} set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
         )
-        train_dataset = filtered_train_dataset
-    if n_filtered_val_items:
-        logger.warning(
-            f"Removing {n_filtered_val_items} from your validation set because they do not have text values for the target training representation level {target_text_representation_level}. Either change the target training representation level or update the information in your data and re-run preprocessing if you want to use this data."
-        )
-        val_dataset = filtered_val_dataset
-    if batch_size > len(filtered_val_dataset) or batch_size > len(
-        filtered_train_dataset
-    ):
+        dataset = filtered_dataset
+    if batch_size > len(filtered_dataset):
         logger.error(
-            f"Sorry you do not have enough {target_text_representation_level} data in your current training/validation filelists to train/validate with a batch size of {batch_size}."
+            f"Sorry you do not have enough {target_text_representation_level} data in your current {name} filelist to run the model with a batch size of {batch_size}."
         )
         sys.exit(1)
-    return train_dataset, val_dataset
+    return dataset
 
 
 def check_dataset_size(batch_size: int, number_of_samples: int, name: str):
@@ -183,87 +172,6 @@ def update_config_from_cli_args(arg_list: List[str], original_config):
             expand_config_string_syntax(arg)
         )
     return original_config
-
-
-def relative_to_absolute_path(
-    value: Any, info: Optional[ValidationInfo] = None
-) -> Path | None:
-    """
-    Helper function to annotate a type.
-    This function processes relative paths and either resolve them to absolute
-    paths or resolve them with respect to the configuration file they came
-    from.
-    """
-    if value is None:
-        return value
-
-    try:
-        # Make sure value is a path because it can be a string when we load a
-        # model that is not partial.
-        path = Path(value)
-        if (
-            not path.is_absolute()
-            and info
-            and info.context
-            and (config_path := info.context.get("config_path", None))
-        ):
-            path = (config_path.parent / path).resolve()
-        return path
-    except TypeError as e:
-        # Pydantic needs ValueErrors to raise its ValidationErrors
-        raise ValueError from e
-
-
-def directory_path_must_exist(
-    value: Any, info: Optional[ValidationInfo] = None
-) -> Path | None:
-    """
-    Helper function to annotate a type.
-    Creates a directory if it doesn't exist.
-    """
-    assert isinstance(value, Path)
-    if (
-        info
-        and info.context
-        and (writing_config := info.context.get("writing_config", None))
-    ):
-        # We are writing the original config and must temporarily resolve the path.
-        (writing_config.resolve() / value).mkdir(parents=True, exist_ok=True)
-    else:
-        if not value.exists():
-            logger.info(f"Directory at {value} does not exist. Creating...")
-            value.mkdir(parents=True, exist_ok=True)
-
-    return value
-
-
-def path_is_a_directory(
-    value: Any, info: Optional[ValidationInfo] = None
-) -> Path | None:
-    """
-    Helper function to annotate a type.
-    Verifies ala `PathType("dir")` that `value` is a directory.
-    """
-    if (
-        info
-        and info.context
-        and (writing_config := info.context.get("writing_config", None))
-    ):
-        # We are writing the original config and must temporarily resolve the path.
-        tmp_path = writing_config.resolve() / value
-        if not tmp_path.is_dir():
-            raise ValueError(f"{tmp_path} is not a directory")
-    else:
-        try:
-            # Make sure value is a path because it can be a string when we load a model that is not partial.
-            path = Path(value)
-            if not path.is_dir():
-                raise ValueError(f"{path} is not a directory")
-        except TypeError as e:
-            # Pydantic needs ValueErrors to raise its ValidationErrors
-            raise ValueError from e
-
-    return value
 
 
 def original_hifigan_leaky_relu(x):
@@ -420,6 +328,7 @@ def generic_dict_loader(
         list[dict]: a list of dicts representing the rows in the filelist
     """
     assert fieldnames is not None or file_has_header_line
+    f: Iterable[str]
     with open(path, "r", newline="", encoding="utf8") as f:
         if record_limit:
             f = islice(f, record_limit)

@@ -33,11 +33,19 @@ class BaseDataModule(pl.LightningDataModule):
             self.config.training.logger.name,
             "val_data.pth",
         )
+        self.predict_path = os.path.join(
+            self.config.training.logger.save_dir,
+            self.config.training.logger.name,
+            "latest_predict_data.pth",
+        )
 
     def setup(self, stage: Optional[str] = None):
         # load it back here
-        self.train_dataset = torch.load(self.train_path)
-        self.val_dataset = torch.load(self.val_path)
+        if stage == "fit":
+            self.train_dataset = torch.load(self.train_path)
+            self.val_dataset = torch.load(self.val_path)
+        if stage == "predict":
+            self.predict_dataset = torch.load(self.predict_path)
 
     def train_dataloader(self):
         sampler = (
@@ -57,7 +65,7 @@ class BaseDataModule(pl.LightningDataModule):
 
     def predict_dataloader(self):
         return DataLoader(
-            self.train_dataset + self.val_dataset,
+            self.predict_dataset,
             batch_size=self.batch_size,
             num_workers=self.config.training.train_data_workers,
             pin_memory=False,

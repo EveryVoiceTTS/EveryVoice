@@ -1,22 +1,24 @@
-from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, Sequence, Union
+from typing import Any, Callable, Optional, Sequence
 
 from loguru import logger
 from pydantic import PlainSerializer, WithJsonSchema
 from pydantic.functional_validators import BeforeValidator
 from typing_extensions import Annotated
 
-from everyvoice.utils import (
+from everyvoice.utils import load_config_from_json_or_yaml_path
+
+from .validation_helpers import (
+    callable_to_string,
     directory_path_must_exist,
-    load_config_from_json_or_yaml_path,
     path_is_a_directory,
     relative_to_absolute_path,
+    string_to_callable,
 )
 
 
 def load_partials(
-    pre_validated_model_dict: Dict[Any, Any],
+    pre_validated_model_dict: dict[Any, Any],
     partial_keys: Sequence[str],
     config_path: Optional[Path] = None,
 ):
@@ -67,40 +69,6 @@ def load_partials(
     return pre_validated_model_dict
 
 
-def callable_to_string(function: Callable) -> str:
-    """Serialize a Callable to a string-formatted Callable"""
-    return ".".join([function.__module__, function.__name__])
-
-
-def string_to_callable(string: Union[str, Callable]) -> Callable:
-    """De-serialize a string-formatted Callable to a Callable"""
-    if callable(string):
-        return string
-    elif not isinstance(string, str):
-        raise ValueError(f"Expected a string or callable, got {type(string)}")
-    if "." not in string:
-        # Just return a function that returns the string if
-        # it's not in the <module>.<function> format
-        def curried(*argv, **kwargs):
-            return string
-
-        return curried
-    module_name, function_name = string.rsplit(".", 1)
-    try:
-        module = import_module(module_name)
-    except ImportError as e:
-        raise ImportError(
-            f"Cannot import module {module_name} - this must be a valid module"
-        ) from e
-    try:
-        function = getattr(module, function_name)
-    except AttributeError as exc:
-        raise AttributeError(
-            f"Cannot find method {function_name} in module {module}"
-        ) from exc
-    return function
-
-
 PossiblySerializedCallable = Annotated[
     Callable,
     BeforeValidator(string_to_callable),
@@ -108,7 +76,9 @@ PossiblySerializedCallable = Annotated[
     WithJsonSchema({"type": "string"}, mode="serialization"),  # noqa: F821
     WithJsonSchema({"type": "string"}, mode="validation"),  # noqa: F821
 ]
+
 PossiblyRelativePath = Annotated[Path, BeforeValidator(relative_to_absolute_path)]
+
 # [Ordering of validators within Annotated](https://docs.pydantic.dev/latest/concepts/validators/#ordering-of-validators-within-annotated)
 # Order of validation metadata within Annotated matters. Validation goes from
 # right to left and back. That is, it goes from right to left running all

@@ -87,7 +87,7 @@ class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
             filter_dataset_based_on_target_text_representation_level(
                 TargetTrainingTextRepresentationLevel.characters,
                 train_dataset,
-                train_dataset,
+                "training",
                 6,
             )
         self.assertEqual(cm.exception.code, 1)
@@ -95,14 +95,20 @@ class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
             filter_dataset_based_on_target_text_representation_level(
                 TargetTrainingTextRepresentationLevel.ipa_phones,
                 train_dataset,
-                train_dataset,
+                "training",
                 4,
             )
         self.assertEqual(cm.exception.code, 1)
-        train_ds, val_ds = filter_dataset_based_on_target_text_representation_level(
+        train_ds = filter_dataset_based_on_target_text_representation_level(
             TargetTrainingTextRepresentationLevel.characters,
             train_dataset,
+            "training",
+            4,
+        )
+        val_ds = filter_dataset_based_on_target_text_representation_level(
+            TargetTrainingTextRepresentationLevel.characters,
             train_dataset,
+            "validation",
             4,
         )
         self.assertEqual(len(train_ds), 4)

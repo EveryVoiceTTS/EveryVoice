@@ -1,14 +1,19 @@
+from functools import partial
 from pathlib import Path
 
-import numpy as np
 import torch
 import torchaudio
-from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import Dataset
 
-from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
+from everyvoice.config.type_definitions import (
+    DatasetTextRepresentation,
+    TargetTrainingTextRepresentationLevel,
+)
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.dataset import (
+    FastSpeech2DataModule,
+)
 from everyvoice.text.lookups import LookupTables
 from everyvoice.text.text_processor import TextProcessor
 from everyvoice.utils import (
@@ -96,11 +101,55 @@ class E2EDataset(Dataset):
         ).transpose(
             0, 1
         )  # [mel_bins, frames] -> [frames, mel_bins]
-        duration = self._load_file(
-            basename, speaker, language, "duration", "duration.pt"
-        )
-        text = self._load_file(basename, speaker, language, "text", "text.pt")
-        raw_text = item["raw_text"]
+        if self.config.feature_prediction.model.learn_alignment:
+            match self.config.feature_prediction.model.target_text_representation_level:
+                case TargetTrainingTextRepresentationLevel.characters:
+                    duration = self._load_file(
+                        basename,
+                        speaker,
+                        language,
+                        "attn",
+                        f"{DatasetTextRepresentation.characters.value}-attn-prior.pt",
+                    )
+                case TargetTrainingTextRepresentationLevel.ipa_phones | TargetTrainingTextRepresentationLevel.phonological_features:
+                    duration = self._load_file(
+                        basename,
+                        speaker,
+                        language,
+                        "attn",
+                        f"{DatasetTextRepresentation.ipa_phones.value}-attn-prior.pt",
+                    )
+                case _:
+                    raise NotImplementedError(
+                        f"{self.config.feature_prediction.model.target_text_representation_level} have not yet been implemented."
+                    )
+        else:
+            duration = self._load_file(
+                basename, speaker, language, "duration", "duration.pt"
+            )
+        match self.config.feature_prediction.model.target_text_representation_level:
+            case TargetTrainingTextRepresentationLevel.characters:
+                text = torch.IntTensor(
+                    self.text_processor.encode_escaped_string_sequence(
+                        item["character_tokens"]
+                    )
+                )
+            case TargetTrainingTextRepresentationLevel.ipa_phones | TargetTrainingTextRepresentationLevel.phonological_features:
+                text = torch.IntTensor(
+                    self.text_processor.encode_escaped_string_sequence(
+                        item["phone_tokens"]
+                    )
+                )
+            case _:
+                raise NotImplementedError(
+                    f"{self.config.feature_prediction.model.target_text_representation_level} have not yet been implemented."
+                )
+        if TargetTrainingTextRepresentationLevel.characters.value in item:
+            raw_text = item[TargetTrainingTextRepresentationLevel.characters.value]
+        else:
+            raw_text = item.get(
+                TargetTrainingTextRepresentationLevel.ipa_phones.value, "text"
+            )
         pfs = None
         if (
             self.config.feature_prediction.model.target_text_representation_level
@@ -149,7 +198,7 @@ class E2EDataset(Dataset):
             "speaker_id": speaker_id,
             "language": language,
             "language_id": language_id,
-            "label": item["label"],
+            # "label": item["label"],
             "energy": energy,
             "pitch": pitch,
             "audio": audio,
@@ -167,7 +216,10 @@ class E2EDataset(Dataset):
 class E2EDataModule(BaseDataModule):
     def __init__(self, config: EveryVoiceConfig):
         super().__init__(config=config)
-        self.collate_fn = self.collate_method
+        self.collate_fn = partial(
+            FastSpeech2DataModule.collate_method,
+            learn_alignment=config.feature_prediction.model.learn_alignment,
+        )
         self.use_weighted_sampler = (
             config.feature_prediction.training.use_weighted_sampler
         )
@@ -176,27 +228,6 @@ class E2EDataModule(BaseDataModule):
         )  # TODO: should this be set somewhere else?
         self.load_dataset()
         self.dataset_length = len(self.train_dataset) + len(self.val_dataset)
-
-    @staticmethod
-    def collate_method(data):
-        data = [_flatten(x) for x in data]
-        data = {k: [dic[k] for dic in data] for k in data[0]}
-        text_lens = torch.IntTensor([text.size(0) for text in data["text"]])
-        mel_lens = torch.IntTensor([mel.size(0) for mel in data["mel"]])
-        max_mel = max(mel_lens)
-        max_text = max(text_lens)
-        for key in data:
-            if isinstance(data[key][0], np.ndarray):
-                data[key] = [torch.tensor(x) for x in data[key]]
-            if torch.is_tensor(data[key][0]):
-                data[key] = pad_sequence(data[key], batch_first=True, padding_value=0)
-            if isinstance(data[key][0], int):
-                data[key] = torch.IntTensor(data[key])
-        data["src_lens"] = text_lens
-        data["mel_lens"] = mel_lens
-        data["max_src_len"] = max_text
-        data["max_mel_len"] = max_mel
-        return data
 
     def load_dataset(self):
         self.train_dataset = self.config.training.filelist_loader(
@@ -211,7 +242,7 @@ class E2EDataModule(BaseDataModule):
             self.train_dataset,
             self.val_dataset,
         ) = filter_dataset_based_on_target_text_representation_level(
-            self.config.model.target_text_representation_level,
+            self.config.feature_prediction.model.target_text_representation_level,
             self.train_dataset,
             self.val_dataset,
             self.batch_size,
