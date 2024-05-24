@@ -25,6 +25,7 @@ from everyvoice.utils.heavy import dynamic_range_compression_torch, expand
 class EveryVoice(pl.LightningModule):
     def __init__(self, config: EveryVoiceConfig):
         super().__init__()
+        # Required by PyTorch Lightning for our manual optimization
         self.automatic_optimization = False
         self.config = config
         self.batch_size = config.training.batch_size
@@ -59,6 +60,7 @@ class EveryVoice(pl.LightningModule):
             self.vocoder.config = self.config.vocoder
         else:
             self.vocoder = HiFiGAN(config.vocoder)
+        # Required by PyTorch Lightning for our manual optimization
         self.vocoder.automatic_optimization = False
         self.feature_prediction.automatic_optimization = False
         self.sampling_rate_change = (
@@ -181,20 +183,23 @@ class EveryVoice(pl.LightningModule):
         )
 
         # Calculate Generator Loss
-        _, y_df_hat_g, fmap_f_r, fmap_f_g = self.vocoder.mpd(y, generated_wav)
-        _, y_ds_hat_g, fmap_s_r, fmap_s_g = self.vocoder.msd(y, generated_wav)
-        loss_fm_f = self.vocoder.feature_loss(fmap_f_r, fmap_f_g)
-        loss_fm_s = self.vocoder.feature_loss(fmap_s_r, fmap_s_g)
-        # loss_gen_f = -torch.mean(y_df_hat_g)
-        # loss_gen_s = -torch.mean(y_ds_hat_g)
-        loss_gen_f, _ = self.vocoder.generator_loss(y_df_hat_g)
-        loss_gen_s, _ = self.vocoder.generator_loss(y_ds_hat_g)
-        self.log("training/gen/loss_fmap_f", loss_fm_f, prog_bar=False)
-        self.log("training/gen/loss_fmap_s", loss_fm_s, prog_bar=False)
-        self.log("training/gen/loss_gen_f", loss_gen_f, prog_bar=False)
-        self.log("training/gen/loss_gen_s", loss_gen_s, prog_bar=False)
         loss_mel = F.l1_loss(y_mel, generated_mel_spec) * 45
-        gen_loss_total = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_mel
+        if self.global_step >= self.vocoder.config.training.generator_warmup_steps:
+            _, y_df_hat_g, fmap_f_r, fmap_f_g = self.vocoder.mpd(y, generated_wav)
+            _, y_ds_hat_g, fmap_s_r, fmap_s_g = self.vocoder.msd(y, generated_wav)
+            loss_fm_f = self.vocoder.feature_loss(fmap_f_r, fmap_f_g)
+            loss_fm_s = self.vocoder.feature_loss(fmap_s_r, fmap_s_g)
+            # loss_gen_f = -torch.mean(y_df_hat_g)
+            # loss_gen_s = -torch.mean(y_ds_hat_g)
+            loss_gen_f, _ = self.vocoder.generator_loss(y_df_hat_g)
+            loss_gen_s, _ = self.vocoder.generator_loss(y_ds_hat_g)
+            self.log("training/gen/loss_fmap_f", loss_fm_f, prog_bar=False)
+            self.log("training/gen/loss_fmap_s", loss_fm_s, prog_bar=False)
+            self.log("training/gen/loss_gen_f", loss_gen_f, prog_bar=False)
+            self.log("training/gen/loss_gen_s", loss_gen_s, prog_bar=False)
+            gen_loss_total = loss_gen_s + loss_gen_f + loss_fm_s + loss_fm_f + loss_mel
+        else:
+            gen_loss_total = loss_mel
         # manual optimization because Pytorch Lightning 2.0+ doesn't handle automatic optimization for multiple optimizers
         # use .backward for now, but maybe switch to self.manual_backward() in the future: https://github.com/Lightning-AI/lightning/issues/18740
         # self.manual_backward(gen_loss_total)
