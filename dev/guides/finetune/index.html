@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../favicon-32x32.png">
-      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.23">
+      <meta name="generator" content="mkdocs-1.6.0, mkdocs-material-9.5.24">
     
     
       
@@ -428,6 +428,17 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    How to fine-tune
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -437,6 +448,34 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#vocoder-matching" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vocoder matching
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -701,6 +740,23 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#vocoder-matching" class="md-nav__link">
+    <span class="md-ellipsis">
+      Vocoder matching
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -718,7 +774,42 @@
 
 
 <h1 id="how-to-fine-tune-the-existing-checkpoints">How to fine-tune the existing checkpoints<a class="headerlink" href="#how-to-fine-tune-the-existing-checkpoints" title="Permanent link">&para;</a></h1>
-<p>... Coming Soon ...</p>
+<p>...more guides coming soon...</p>
+<h3 id="vocoder-matching">Vocoder matching<a class="headerlink" href="#vocoder-matching" title="Permanent link">&para;</a></h3>
+<p>Vocoder (i.e. your spec-to-wav model) matching is an important part of the TTS pipeline. Because your spec-to-wav model is trained with the ground-truth Mel spectrograms from your audio, there is a mismatch between the Mel spectrograms created by your text-to-spec model and the ones that the pre-trained vocoders have seen during training. For that reason, it can be helpful to fine-tune your spec-to-wav model with the <em>generated</em> Mel spectrograms from your text-to-spec model.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Vocoder matching will only help with the metallic artefacts that sometimes occur when synthesizing speech. If your model is not intelligible, has other types of errors like mispronunciations - vocoder matching will not solve it. In these cases, the problem is likely with your text-to-spec model, and probably due to either noisy data (noisy recordings, mistranscriptions etc), too little data, or data that is too varied (many different speakers). Please refer to <em>TODO: troubleshooting</em> for more information.</p>
+</div>
+<p><TODO: insert graphic showing text-to-spec and spec-to-wav models></p>
+<p>To finetune your spec-to-wav model with Mel spectrograms from your text-to-spec model (also called 'vocoder matching'), you need to have a pre-trained text-to-spec and spec-to-wav model ready. You also need to have access to some parallel text/audio data (the same or similar data that you used to train your text-to-spec model).</p>
+<p>Then you:</p>
+<ol>
+<li>Generate a folder full of Mel spectrograms from your text-to-spec model (repeat this process for both your training and validation filelists):</li>
+</ol>
+<p>Training filelist:</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>from-text<span class="w"> </span>&lt;path-to-your-text-to-spec.ckpt&gt;<span class="w"> </span>-O<span class="w"> </span>spec<span class="w"> </span>--filelist<span class="w"> </span>&lt;path-to-your-training-filelist.psv&gt;<span class="w"> </span>--teacher-forcing-directory<span class="w"> </span>&lt;path-to-your-preprocessed-directory&gt;<span class="w"> </span>--output-dir<span class="w"> </span>&lt;path-to-your-preprocessed-directory&gt;
+</code></pre></div>
+<p>Validation filelist:</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>from-text<span class="w"> </span>&lt;path-to-your-text-to-spec.ckpt&gt;<span class="w"> </span>-O<span class="w"> </span>spec<span class="w"> </span>--filelist<span class="w"> </span>&lt;path-to-your-validation-filelist.psv&gt;<span class="w"> </span>--teacher-forcing-directory<span class="w"> </span>&lt;path-to-your-preprocessed-directory&gt;<span class="w"> </span>--output-dir<span class="w"> </span>&lt;path-to-your-preprocessed-directory&gt;
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For vocoder matching to work, the size of the generated Mel spectrogram has to be the same as the ground truth Mel spectrogram calculated from the audio, so you have to use 'teacher-forcing' to force the text-to-spec model to output spectrograms of a specific size. To do this, we add the --teacher-forcing-directory and point it to the project <code>preprocessed</code> directory with the processed files from our filelist. This will write a <code>synthesized_spec</code> folder within your <code>preprocessed</code> directory, that you can use instead of the groundtruth <code>spec</code> data by setting <code>finetune</code> to True as described in the next step.</p>
+</div>
+<ol>
+<li>
+<p>Set the finetune_ckpt value point to the vocoder that you want to fine-tune.</p>
+</li>
+<li>
+<p>Lower the learning rate (we suggest starting at 0.00001)</p>
+</li>
+<li>
+<p>Train the vocoder again with finetuning set to True (train for at least 25000 steps):</p>
+</li>
+</ol>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>spec-to-wav<span class="w"> </span>config/everyvoice-spec-to-wav.yaml<span class="w"> </span>-c<span class="w"> </span>training.finetune<span class="o">=</span>True
+</code></pre></div>
 
 
 
@@ -768,7 +859,7 @@
     <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.select", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.ebd0bdb7.min.js"></script>
+      <script src="../../assets/javascripts/bundle.081f42fc.min.js"></script>
       
     
   </body>
