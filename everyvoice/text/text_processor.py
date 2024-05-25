@@ -414,7 +414,7 @@ class TextProcessor:
             [token for token in string_of_tokens.split(split_character) if token]
         )
 
-    def decode_tokens(self, sequence: list[int], join_character="/") -> str:
+    def decode_tokens(self, sequence: list[int], join_character="/") -> str | list[str]:
         """Decode a sequence of encoded phone or character tokens into a sequence of strings
 
         Args:
@@ -427,4 +427,7 @@ class TextProcessor:
         >>> tp.decode_tokens([0, 1, 2, 0, 0])
         '\x80/ /<QUOTE>/\x80/\x80'
         """
-        return join_character.join(self.token_sequence_to_text_sequence(sequence))
+        if join_character is None:
+            return self.token_sequence_to_text_sequence(sequence)
+        else:
+            return join_character.join(self.token_sequence_to_text_sequence(sequence))
