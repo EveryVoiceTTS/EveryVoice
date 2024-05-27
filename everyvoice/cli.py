@@ -241,6 +241,53 @@ def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
 SCHEMAS_TO_OUTPUT: dict[str, Any] = {}  # dict[str, type[BaseModel]]
 
 
+@app.command()
+def demo(
+    text_to_spec_model: Path = typer.Argument(
+        ...,
+        file_okay=True,
+        exists=True,
+        dir_okay=False,
+        help="The path to a trained text-to-spec EveryVoice model.",
+        autocompletion=complete_path,
+    ),
+    spec_to_wav_model: Path = typer.Argument(
+        ...,
+        help="The path to a trained vocoder.",
+        dir_okay=False,
+        file_okay=True,
+        autocompletion=complete_path,
+    ),
+    language: str = typer.Argument(
+        ...,
+        help="Specify which language to use in a multilingual system. TODO: let this be selectable in app",
+    ),
+    speaker: str = typer.Argument(
+        ...,
+        help="Specify which speaker to use in a multispeaker system. TODO: let this be selectable in app",
+    ),
+    output_dir: Path = typer.Option(
+        "synthesis_output",
+        "--output-dir",
+        "-o",
+        file_okay=False,
+        dir_okay=True,
+        help="The directory where your synthesized audio should be written",
+        autocompletion=complete_path,
+    ),
+):
+    from everyvoice.demo.app import create_demo_app
+
+    demo = create_demo_app(
+        text_to_spec_model=text_to_spec_model,
+        spec_to_wav_model=spec_to_wav_model,
+        language=language,
+        speaker=speaker,
+        output_dir=output_dir,
+    )
+    demo.launch()
+
+
 @app.command(hidden=True)
 def update_schemas(
     out_dir: Path = typer.Option(
