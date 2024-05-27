@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Callable, Optional, Union
 
 import pytorch_lightning as pl
@@ -18,11 +19,16 @@ class BaseDataModule(pl.LightningDataModule):
         config: Union[
             AlignerConfig, VocoderConfig, FeaturePredictionConfig, EveryVoiceConfig
         ],
+        inference_output_dir: Optional[Path] = None,
     ):
         super().__init__()
         self.collate_fn: Union[Callable, None] = None
         self.config = config
         self.use_weighted_sampler = False
+        self.inference_output_dir = inference_output_dir
+        if self.inference_output_dir is not None:
+            self.inference_output_dir.mkdir(exist_ok=True, parents=True)
+            self.predict_path = self.inference_output_dir / "latest_predict_data.pth"
         self.train_path = os.path.join(
             self.config.training.logger.save_dir,
             self.config.training.logger.name,
@@ -32,11 +38,6 @@ class BaseDataModule(pl.LightningDataModule):
             self.config.training.logger.save_dir,
             self.config.training.logger.name,
             "val_data.pth",
-        )
-        self.predict_path = os.path.join(
-            self.config.training.logger.save_dir,
-            self.config.training.logger.name,
-            "latest_predict_data.pth",
         )
 
     def setup(self, stage: Optional[str] = None):
