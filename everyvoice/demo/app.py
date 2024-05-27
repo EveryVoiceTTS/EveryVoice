@@ -36,7 +36,7 @@ def synthesize_audio(
         text_representation=TargetTrainingTextRepresentationLevel.characters,
         output_dir=output_dir,
         speaker=speaker,
-        duration_control=1.0,
+        duration_control=duration_control,
         filelist=None,
         teacher_forcing_directory=None,
         batch_size=1,
