@@ -68,7 +68,7 @@ def create_demo_app(
         ),
         [
             "textbox",
-            gr.Slider(0.75, 1.5, 1.0, step=0.25),
+            gr.Slider(0.75, 1.75, 1.0, step=0.25),
         ],
         gr.Audio(format="mp3"),
         title="EveryVoice Demo",
