@@ -47,7 +47,7 @@ def synthesize_audio(
         devices="1",
         device=device,
         global_step=1,
-        output_type=SynthesizeOutputFormats.wav,
+        output_type=[],
         text_representation=TargetTrainingTextRepresentationLevel.characters,
         output_dir=output_dir,
         speaker=speaker,
@@ -57,17 +57,18 @@ def synthesize_audio(
         batch_size=1,
         num_workers=1,
     )
+    output_key = "postnet_output" if text_to_spec_model.config.model.use_postnet else "output"
     wav_writer = PredictionWritingWavCallback(
         output_dir=output_dir,
         config=config,
-        output_key="postnet_output"
-        if text_to_spec_model.config.model.use_postnet
-        else "output",
+        output_key=output_key,
         device=device,
         global_step=1,
         vocoder_model=vocoder_model,
         vocoder_config=vocoder_config,
     )
+    # move to device because lightning accumulates predictions on cpu
+    predictions[0][output_key] = predictions[0][output_key].to(device)
     wav, sr = wav_writer.synthesize_audio(predictions[0])
     return sr, wav[0]
 
