@@ -275,15 +275,17 @@ def demo(
         help="The directory where your synthesized audio should be written",
         autocompletion=complete_path,
     ),
+    accelerator: str = typer.Option("auto", "--accelerator", "-a"),
 ):
     from everyvoice.demo.app import create_demo_app
 
     demo = create_demo_app(
-        text_to_spec_model=text_to_spec_model,
-        spec_to_wav_model=spec_to_wav_model,
+        text_to_spec_model_path=text_to_spec_model,
+        spec_to_wav_model_path=spec_to_wav_model,
         language=language,
         speaker=speaker,
         output_dir=output_dir,
+        accelerator=accelerator,
     )
     demo.launch()
 
