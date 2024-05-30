@@ -389,9 +389,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     preprocessed_dir.mkdir(parents=True, exist_ok=True)
                     output_filelist = preprocessed_dir / "preprocessed_filelist.psv"
                     shutil.copyfile(filelist_test_info["path"], output_filelist)
-                    fp_config.preprocessing.source_data[
-                        0
-                    ].filelist = filelist_test_info["path"]
+                    fp_config.preprocessing.source_data[0].filelist = (
+                        filelist_test_info["path"]
+                    )
                     fp_config.preprocessing.save_dir = preprocessed_dir
                     preprocessor = Preprocessor(fp_config)
                     with capture_stdout() as output, mute_logger(
@@ -460,29 +460,37 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                                 f'failed in {filelist_test_info["path"]}',
                             )
 
+    def get_simple_config(self, tmpdir: str | Path):
+        """Create a simple config for testing"""
+        tmpdir = Path(tmpdir)
+        lj_preprocessed = tmpdir / "preprocessed"
+        lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
+
+        fp_config = FeaturePredictionConfig(contact=self.contact)
+        fp_config.preprocessing.source_data[0].data_dir = self.data_dir / "lj" / "wavs"
+
+        full_filelist = self.data_dir / "metadata.psv"
+        partial_filelist = tmpdir / "partial-metadata.psv"
+        with open(partial_filelist, mode="w") as f_out:
+            with open(full_filelist) as f_in:
+                lines = list(f_in)
+                for line in lines[:4]:
+                    f_out.write(line)
+        fp_config.preprocessing.source_data[0].filelist = full_filelist
+        fp_config.preprocessing.save_dir = lj_preprocessed
+
+        to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
+        return (fp_config, lj_filelist, full_filelist, partial_filelist, to_process)
+
     def test_incremental_preprocess(self):
         with tempfile.TemporaryDirectory(
             prefix="test_incremental_preprocess", dir="."
         ) as tmpdir:
-            tmpdir = Path(tmpdir)
-            lj_preprocessed = tmpdir / "preprocessed"
-            lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
-
-            fp_config = FeaturePredictionConfig(contact=self.contact)
-            fp_config.preprocessing.source_data[0].data_dir = (
-                self.data_dir / "lj" / "wavs"
+            fp_config, lj_filelist, full_filelist, partial_filelist, to_process = (
+                self.get_simple_config(tmpdir)
             )
-            full_filelist = self.data_dir / "metadata.psv"
-            partial_filelist = tmpdir / "partial-metadata.psv"
-            with open(partial_filelist, mode="w") as f_out:
-                with open(full_filelist) as f_in:
-                    lines = list(f_in)
-                    for line in lines[:4]:
-                        f_out.write(line)
-            fp_config.preprocessing.source_data[0].filelist = partial_filelist
-            fp_config.preprocessing.save_dir = lj_preprocessed
 
-            to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
+            fp_config.preprocessing.source_data[0].filelist = partial_filelist
             with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
@@ -512,22 +520,12 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         with tempfile.TemporaryDirectory(
             prefix="test_gotta_do_audio_first", dir="."
         ) as tmpdir:
-            tmpdir = Path(tmpdir)
-            preprocessed = tmpdir / "preprocessed"
-            filelist = preprocessed / "preprocessed_filelist.psv"
-
-            fp_config = FeaturePredictionConfig(contact=self.contact)
-            fp_config.preprocessing.source_data[0].data_dir = (
-                self.data_dir / "lj" / "wavs"
-            )
-            full_filelist = self.data_dir / "metadata.psv"
-            fp_config.preprocessing.source_data[0].filelist = full_filelist
-            fp_config.preprocessing.save_dir = preprocessed
+            fp_config, lj_filelist, _, _, _ = self.get_simple_config(tmpdir)
 
             to_process_no_audio = ("energy", "pitch", "attn", "text", "spec")
             with self.assertRaises(SystemExit), capture_stdout():
                 Preprocessor(fp_config).preprocess(
-                    output_path=filelist, cpus=1, to_process=to_process_no_audio
+                    output_path=lj_filelist, cpus=1, to_process=to_process_no_audio
                 )
 
     def test_empty_preprocess(self):
@@ -540,22 +538,17 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             prefix="test_empty_preprocess", dir="."
         ) as tmpdir:
             tmpdir = Path(tmpdir)
-            preprocessed = tmpdir / "preprocessed"
-            filelist = preprocessed / "preprocessed_filelist.psv"
-
-            fp_config = FeaturePredictionConfig(contact=self.contact)
+            fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
             fp_config.preprocessing.source_data[0].data_dir = self.data_dir
             input_filelist = tmpdir / "empty-metadata.psv"
             with open(input_filelist, mode="w") as f:
                 print("basename|raw_text|characters|speaker|language", file=f)
                 print("empty|foo bar baz|foo bar baz|noone|und", file=f)
             fp_config.preprocessing.source_data[0].filelist = input_filelist
-            fp_config.preprocessing.save_dir = preprocessed
 
-            to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
             with self.assertRaises(SystemExit), capture_stdout():
                 Preprocessor(fp_config).preprocess(
-                    output_path=filelist, cpus=1, to_process=to_process
+                    output_path=lj_filelist, cpus=1, to_process=to_process
                 )
 
     def test_train_split(self):
