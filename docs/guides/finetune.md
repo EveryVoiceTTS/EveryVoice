@@ -17,27 +17,27 @@ Then you:
 
 1. Generate a folder full of Mel spectrograms from your text-to-spec model (repeat this process for both your training and validation filelists):
 
-Training filelist:
+    Training filelist:
 
-```bash
-everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-training-filelist.psv> --teacher-forcing-directory <path-to-your-preprocessed-directory> --output-dir <path-to-your-preprocessed-directory>
-```
+    ```bash
+    everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-training-filelist.psv> --teacher-forcing-directory <path-to-your-preprocessed-directory> --output-dir <path-to-your-preprocessed-directory>
+    ```
 
-Validation filelist:
+    Validation filelist:
 
-```bash
-everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-validation-filelist.psv> --teacher-forcing-directory <path-to-your-preprocessed-directory> --output-dir <path-to-your-preprocessed-directory>
-```
+    ```bash
+    everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-validation-filelist.psv> --teacher-forcing-directory <path-to-your-preprocessed-directory> --output-dir <path-to-your-preprocessed-directory>
+    ```
 
-!!! note
-    For vocoder matching to work, the size of the generated Mel spectrogram has to be the same as the ground truth Mel spectrogram calculated from the audio, so you have to use 'teacher-forcing' to force the text-to-spec model to output spectrograms of a specific size. To do this, we add the --teacher-forcing-directory and point it to the project `preprocessed` directory with the processed files from our filelist. This will write a `synthesized_spec` folder within your `preprocessed` directory, that you can use instead of the groundtruth `spec` data by setting `finetune` to True as described in the next step.
+    !!! note
+        For vocoder matching to work, the size of the generated Mel spectrogram has to be the same as the ground truth Mel spectrogram calculated from the audio, so you have to use 'teacher-forcing' to force the text-to-spec model to output spectrograms of a specific size. To do this, we add the --teacher-forcing-directory and point it to the project `preprocessed` directory with the processed files from our filelist. This will write a `synthesized_spec` folder within your `preprocessed` directory, that you can use instead of the groundtruth `spec` data by setting `finetune` to True as described in the next step.
 
-2. Set the finetune_ckpt value point to the vocoder that you want to fine-tune.
+2. Set the finetune_ckpt value point to the vocoder checkpoint that you want to fine-tune.
 
 3. Lower the learning rate (we suggest starting at 0.00001)
 
 4. Train the vocoder again with finetuning set to True (train for at least 25000 steps):
 
-```bash
-everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml -c training.finetune=True
-```
+    ```bash
+    everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml -c training.finetune=True
+    ```

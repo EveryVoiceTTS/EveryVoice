@@ -66,13 +66,13 @@ everyvoice preprocess config/{{ config_filename('text-to-spec') }}
 
 So you don't need to train your own vocoder, EveryVoice has a variety of publicly released vocoders available [here](TODO). Follow the instructions there for downloading the checkpoints.
 
-EveryVoice is also compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint, which is very good quality. You can find it [here](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model).
+EveryVoice is also compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint from [the official implementation](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model), which is very good quality. You can find the EveryVoice-compatible version of this checkpoint [here](https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing).
 
-Using a pre-trained vocoder is recommended, and the above checkpoints should work well even for new languages.
+Using a pre-trained vocoder is recommended, and the above checkpoint should work well even for new languages after [finetuning](./finetune.md).
 
 ### Train your own Vocoder
 
-You might want to train your own vocoder, but this takes a long time (up to 2 weeks on a single GPU), uses a lot of electricity, and unless you know what you are doing, you are unlikely to improve upon the publicly available models discussed above, even for a new language.
+You might want to train your own vocoder, but this takes a long time (up to 2 weeks on a single GPU), uses a lot of electricity, and unless you know what you are doing, you are unlikely to improve upon the publicly available models discussed above, even for a new language. So we do not recommend it. You are almost always better off just using the pre-trained vocoder and then [finetuning](./finetune.md) on the predictions from your feature prediction network. If you really do want to train your own vocoder though, you can run the following command:
 
 ```bash
 everyvoice train spec-to-wav config/{{ config_filename('spec-to-wav') }}
@@ -90,21 +90,36 @@ Which would use the GPU accelerator and specify 1 device/chip.
 
 To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the `config/{{ config_filename('text-to-spec') }}`
 
-At the bottom of that file you'll find a key called `vocoder_path`. Add the absolute path to your trained vocder (here it would be `/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.)
+At the bottom of that file you'll find a key called `vocoder_path`. Add the absolute path to your trained vocoder (here it would be `/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.)
 
-Once you've replaced the vocoder_path key, you can train your feature prediction network:
+Once you've replaced the `vocoder_path` key, you can train your feature prediction network:
 
 ```bash
 everyvoice train text-to-spec config/{{ config_filename('text-to-spec') }}
 ```
 
+!!! tip
+    While your model is training, you can use TensorBoard to view the logs which will show information about the progress of training and display spectrogram images. If you have provided a `vocoder_path` key, then you will also be able to hear audio in the logs. To use TensorBoard, make sure that your conda environment is activated and run `tensorboard --logdir path/to/logs_and_checkpoints`. Then your logs will be viewable at [http://localhost:6006](http://localhost:6006).
+
 ## Step 8: Synthesize Speech in Your Language!
+
+#### Command Line
 
 You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export the wav or spectrogram (pt) files.
 
 ```bash
 everyvoice synthesize from-text logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1 --output-type wav
 ```
+
+#### Demo App
+
+You can also synthesize audio by starting up the EveryVoice Demo using your Feature Prediction and Vocoder checkpoints:
+
+```bash
+everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
+```
+
+And an interactive demo will be available at [http://localhost:7260](http://localhost:7260)
 
 <!-- % Step 10 (optional): Finetune your vocoder
 
