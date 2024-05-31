@@ -1462,7 +1462,9 @@
         "upsample_rates": {
           "default": [
             8,
-            8
+            8,
+            2,
+            2
           ],
           "description": "The stride of each convolutional layer in the upsampling module.",
           "items": {
@@ -1474,7 +1476,9 @@
         "upsample_kernel_sizes": {
           "default": [
             16,
-            16
+            16,
+            4,
+            4
           ],
           "description": "The kernel size of each convolutional layer in the upsampling module.",
           "items": {
@@ -1536,7 +1540,7 @@
           "type": "string"
         },
         "istft_layer": {
-          "default": true,
+          "default": false,
           "description": "Whether to predict phase and magnitude values and use an inverse Short-Time Fourier Transform instead of predicting a waveform directly. See Kaneko et. al. 2022: https://arxiv.org/abs/2203.02395",
           "title": "Istft Layer",
           "type": "boolean"
