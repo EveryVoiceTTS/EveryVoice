@@ -528,6 +528,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step 8: Synthesize Speech in Your Language!">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command Line
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      Demo App
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -909,6 +933,30 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step 8: Synthesize Speech in Your Language!">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      Command Line
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      Demo App
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -967,10 +1015,10 @@ then you should have a psv file that looks like this:</p>
 </code></pre></div>
 <h2 id="step-6-select-a-vocoder">Step 6: Select a Vocoder<a class="headerlink" href="#step-6-select-a-vocoder" title="Permanent link">&para;</a></h2>
 <p>So you don't need to train your own vocoder, EveryVoice has a variety of publicly released vocoders available <a href="TODO">here</a>. Follow the instructions there for downloading the checkpoints.</p>
-<p>EveryVoice is also compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint, which is very good quality. You can find it <a href="https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model">here</a>.</p>
-<p>Using a pre-trained vocoder is recommended, and the above checkpoints should work well even for new languages.</p>
+<p>EveryVoice is also compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint from <a href="https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model">the official implementation</a>, which is very good quality. You can find the EveryVoice-compatible version of this checkpoint <a href="https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing">here</a>.</p>
+<p>Using a pre-trained vocoder is recommended, and the above checkpoint should work well even for new languages after <a href="../finetune/">finetuning</a>.</p>
 <h3 id="train-your-own-vocoder">Train your own Vocoder<a class="headerlink" href="#train-your-own-vocoder" title="Permanent link">&para;</a></h3>
-<p>You might want to train your own vocoder, but this takes a long time (up to 2 weeks on a single GPU), uses a lot of electricity, and unless you know what you are doing, you are unlikely to improve upon the publicly available models discussed above, even for a new language.</p>
+<p>You might want to train your own vocoder, but this takes a long time (up to 2 weeks on a single GPU), uses a lot of electricity, and unless you know what you are doing, you are unlikely to improve upon the publicly available models discussed above, even for a new language. So we do not recommend it. You are almost always better off just using the pre-trained vocoder and then <a href="../finetune/">finetuning</a> on the predictions from your feature prediction network. If you really do want to train your own vocoder though, you can run the following command:</p>
 <div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>spec-to-wav<span class="w"> </span>config/everyvoice-spec-to-wav.yaml
 </code></pre></div>
 <p>By default, we run our training with PyTorch Lightning's "auto" strategy. But, if you are on a machine where you know the hardware, you can specify it like:</p>
@@ -979,14 +1027,24 @@ then you should have a psv file that looks like this:</p>
 <p>Which would use the GPU accelerator and specify 1 device/chip.</p>
 <h2 id="step-7-train-your-feature-prediction-network">Step 7: Train your Feature Prediction Network<a class="headerlink" href="#step-7-train-your-feature-prediction-network" title="Permanent link">&para;</a></h2>
 <p>To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the <code>config/everyvoice-text-to-spec.yaml</code></p>
-<p>At the bottom of that file you'll find a key called <code>vocoder_path</code>. Add the absolute path to your trained vocder (here it would be <code>/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt</code> where <code>/path/to</code> would be the actual path to it on your computer.)</p>
-<p>Once you've replaced the vocoder_path key, you can train your feature prediction network:</p>
+<p>At the bottom of that file you'll find a key called <code>vocoder_path</code>. Add the absolute path to your trained vocoder (here it would be <code>/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt</code> where <code>/path/to</code> would be the actual path to it on your computer.)</p>
+<p>Once you've replaced the <code>vocoder_path</code> key, you can train your feature prediction network:</p>
 <div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>text-to-spec<span class="w"> </span>config/everyvoice-text-to-spec.yaml
 </code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>While your model is training, you can use TensorBoard to view the logs which will show information about the progress of training and display spectrogram images. If you have provided a <code>vocoder_path</code> key, then you will also be able to hear audio in the logs. To use TensorBoard, make sure that your conda environment is activated and run <code>tensorboard --logdir path/to/logs_and_checkpoints</code>. Then your logs will be viewable at <a href="http://localhost:6006">http://localhost:6006</a>.</p>
+</div>
 <h2 id="step-8-synthesize-speech-in-your-language">Step 8: Synthesize Speech in Your Language!<a class="headerlink" href="#step-8-synthesize-speech-in-your-language" title="Permanent link">&para;</a></h2>
+<h4 id="command-line">Command Line<a class="headerlink" href="#command-line" title="Permanent link">&para;</a></h4>
 <p>You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export the wav or spectrogram (pt) files.</p>
 <div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>from-text<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ&quot;</span><span class="w"> </span>-a<span class="w"> </span>gpu<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span><span class="w"> </span>--output-type<span class="w"> </span>wav
 </code></pre></div>
+<h4 id="demo-app">Demo App<a class="headerlink" href="#demo-app" title="Permanent link">&para;</a></h4>
+<p>You can also synthesize audio by starting up the EveryVoice Demo using your Feature Prediction and Vocoder checkpoints:</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>demo<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
+</code></pre></div>
+<p>And an interactive demo will be available at <a href="http://localhost:7260">http://localhost:7260</a></p>
 <!-- % Step 10 (optional): Finetune your vocoder
 
 % ----------------------------------------

@@ -785,8 +785,8 @@
 <p>To finetune your spec-to-wav model with Mel spectrograms from your text-to-spec model (also called 'vocoder matching'), you need to have a pre-trained text-to-spec and spec-to-wav model ready. You also need to have access to some parallel text/audio data (the same or similar data that you used to train your text-to-spec model).</p>
 <p>Then you:</p>
 <ol>
-<li>Generate a folder full of Mel spectrograms from your text-to-spec model (repeat this process for both your training and validation filelists):</li>
-</ol>
+<li>
+<p>Generate a folder full of Mel spectrograms from your text-to-spec model (repeat this process for both your training and validation filelists):</p>
 <p>Training filelist:</p>
 <div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>from-text<span class="w"> </span>&lt;path-to-your-text-to-spec.ckpt&gt;<span class="w"> </span>-O<span class="w"> </span>spec<span class="w"> </span>--filelist<span class="w"> </span>&lt;path-to-your-training-filelist.psv&gt;<span class="w"> </span>--teacher-forcing-directory<span class="w"> </span>&lt;path-to-your-preprocessed-directory&gt;<span class="w"> </span>--output-dir<span class="w"> </span>&lt;path-to-your-preprocessed-directory&gt;
 </code></pre></div>
@@ -797,19 +797,19 @@
 <p class="admonition-title">Note</p>
 <p>For vocoder matching to work, the size of the generated Mel spectrogram has to be the same as the ground truth Mel spectrogram calculated from the audio, so you have to use 'teacher-forcing' to force the text-to-spec model to output spectrograms of a specific size. To do this, we add the --teacher-forcing-directory and point it to the project <code>preprocessed</code> directory with the processed files from our filelist. This will write a <code>synthesized_spec</code> folder within your <code>preprocessed</code> directory, that you can use instead of the groundtruth <code>spec</code> data by setting <code>finetune</code> to True as described in the next step.</p>
 </div>
-<ol>
+</li>
 <li>
-<p>Set the finetune_ckpt value point to the vocoder that you want to fine-tune.</p>
+<p>Set the finetune_ckpt value point to the vocoder checkpoint that you want to fine-tune.</p>
 </li>
 <li>
 <p>Lower the learning rate (we suggest starting at 0.00001)</p>
 </li>
 <li>
 <p>Train the vocoder again with finetuning set to True (train for at least 25000 steps):</p>
-</li>
-</ol>
 <div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>spec-to-wav<span class="w"> </span>config/everyvoice-spec-to-wav.yaml<span class="w"> </span>-c<span class="w"> </span>training.finetune<span class="o">=</span>True
 </code></pre></div>
+</li>
+</ol>
 
 
 
