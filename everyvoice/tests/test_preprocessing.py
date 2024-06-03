@@ -8,6 +8,7 @@ import torchaudio
 from pydantic_core._pydantic_core import ValidationError
 from torch import float32
 
+import everyvoice.preprocessor
 import everyvoice.text.text_processor
 from everyvoice.config.preprocessing_config import (
     AudioConfig,
@@ -21,7 +22,12 @@ from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
-from everyvoice.tests.stubs import capture_stdout, mute_logger
+from everyvoice.tests.stubs import (
+    capture_stdout,
+    monkeypatch,
+    mute_logger,
+    patch_logger,
+)
 from everyvoice.utils import generic_psv_filelist_reader
 
 
@@ -550,6 +556,70 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
+
+    def test_config_lock(self):
+        with tempfile.TemporaryDirectory(prefix="test_config_lock", dir=".") as tmpdir:
+            tmpdir = Path(tmpdir)
+            fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
+
+            Preprocessor(fp_config).preprocess(
+                output_path=lj_filelist, cpus=1, to_process=to_process
+            )
+
+            def fail_config_lock(config_object, element, value, message):
+                import everyvoice.preprocessor.preprocessor
+
+                with monkeypatch(config_object, element, value):
+                    with self.assertRaises(SystemExit):
+                        with patch_logger(
+                            everyvoice.preprocessor.preprocessor
+                        ) as logger:
+                            with self.assertLogs(logger) as logs:
+                                Preprocessor(fp_config).preprocess(
+                                    output_path=lj_filelist,
+                                    cpus=1,
+                                    to_process=to_process,
+                                )
+                log_output = "\n".join(logs.output)
+                self.assertIn("Config lock mismatch:", log_output)
+                self.assertIn(message, log_output)
+
+            fail_config_lock(
+                fp_config.preprocessing.audio,
+                "alignment_sampling_rate",
+                42,
+                "differs from locked preprocessing.audio config",
+            )
+
+            fail_config_lock(
+                fp_config.text, "cleaners", [], "differs from locked text config"
+            )
+
+            fail_config_lock(
+                fp_config.preprocessing.source_data[0],
+                "sox_effects",
+                [],
+                "differs from locked preprocessing.source_data",
+            )
+
+            Preprocessor(fp_config).save_config_lock(in_progress=True)
+            fail_config_lock(
+                fp_config.preprocessing,
+                "_na",
+                "_na",
+                "the previous preprocessing run was interrupted",
+            )
+
+            lock_file = tmpdir / "preprocessed" / ".config-lock"
+            lock_file.chmod(0o666)
+            with open(tmpdir / "preprocessed" / ".config-lock", "w") as f:
+                f.write("This is not valid JSON")
+            fail_config_lock(
+                fp_config.preprocessing,
+                "_na",
+                "_na",
+                "Error loading existing config lock",
+            )
 
     def test_train_split(self):
         """
