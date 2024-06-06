@@ -1,6 +1,6 @@
+import glob
 import os
 import re
-from glob import glob
 from pathlib import Path
 from unicodedata import normalize
 
@@ -70,9 +70,8 @@ class WavsDirStep(Step):
         if not valid_path:
             return False
         path_expanded = Path(response).expanduser()
-        contains_wavs = (
-            len(glob(os.path.join(path_expanded, "**/*.wav"), recursive=True)) > 0
-        )
+        glob_iter = glob.iglob(os.path.join(path_expanded, "**/*.wav"), recursive=True)
+        contains_wavs = next(glob_iter, None) is not None
         if not contains_wavs:
             print(
                 f"Sorry, no .wav files were found in '{path_expanded}'. Please choose a directory with audio files."
@@ -317,11 +316,11 @@ class LanguageHeaderStep(HeaderStep):
         # re-parse data:
         reload_filelist_data_as_dict(self.state)
         # apply automatic conversions
-        self.state[
-            "model_target_training_text_representation"
-        ] = apply_automatic_text_conversions(
-            self.state["filelist_data"],
-            self.state[StepNames.filelist_text_representation_step.value],
+        self.state["model_target_training_text_representation"] = (
+            apply_automatic_text_conversions(
+                self.state["filelist_data"],
+                self.state[StepNames.filelist_text_representation_step.value],
+            )
         )
 
 
@@ -465,12 +464,12 @@ class SelectLanguageStep(Step):
         # Apply the language code:
         isocode = get_iso_code(self.response)
         # Apply text conversions and get target training representation
-        self.state[
-            "model_target_training_text_representation"
-        ] = apply_automatic_text_conversions(
-            self.state["filelist_data"],
-            self.state[StepNames.filelist_text_representation_step.value],
-            global_isocode=isocode,
+        self.state["model_target_training_text_representation"] = (
+            apply_automatic_text_conversions(
+                self.state["filelist_data"],
+                self.state[StepNames.filelist_text_representation_step.value],
+                global_isocode=isocode,
+            )
         )
 
 
