@@ -705,41 +705,50 @@ class Preprocessor:
             DatasetTextRepresentation.arpabet.value in item
             and DatasetTextRepresentation.ipa_phones.value not in item
         ):
-            phone_tokens = text_processor.encode_text(
+            tokens = text_processor.encode_text(
                 text=ARPABET_TO_IPA_TRANSDUCER(
                     item[DatasetTextRepresentation.arpabet.value]
                 ).output_string,
                 quiet=True,
                 apply_g2p=False,
             )
+            assert isinstance(tokens, list)
+            phone_tokens = tokens
         # if dataset is chars, tokenize them for saving to filelist
         if DatasetTextRepresentation.characters.value in item:
-            character_tokens = text_processor.encode_text(
+            tokens = text_processor.encode_text(
                 text=item[DatasetTextRepresentation.characters.value],
                 apply_g2p=False,
                 encode_as_phonological_features=False,
                 quiet=True,
             )
+            assert isinstance(tokens, list)
+            character_tokens = tokens
+
             # if g2p available, and phones don't already exist, process and tokenize them for saving to filelist
             if (
                 item["language"] in AVAILABLE_G2P_ENGINES
                 and DatasetTextRepresentation.ipa_phones.value not in item
             ):
-                phone_tokens = text_processor.encode_text(
+                tokens = text_processor.encode_text(
                     text=item[DatasetTextRepresentation.characters.value],
                     apply_g2p=True,
                     lang_id=item["language"],
                     encode_as_phonological_features=False,
                     quiet=True,
                 )
+                assert isinstance(tokens, list)
+                phone_tokens = tokens
         # if dataset is phones
         if DatasetTextRepresentation.ipa_phones.value in item:
-            phone_tokens = text_processor.encode_text(
+            tokens = text_processor.encode_text(
                 text=item[DatasetTextRepresentation.ipa_phones.value],
                 apply_g2p=False,
                 encode_as_phonological_features=False,
                 quiet=True,
             )
+            assert isinstance(tokens, list)
+            phone_tokens = tokens
         # calculate pfs
         if phone_tokens and use_pfs:
             pfs = text_processor.calculate_phonological_features(
