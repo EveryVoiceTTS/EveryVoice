@@ -95,6 +95,7 @@ def run_tests(suite: str, describe: bool = False):
         ]
         test_suite = TestSuite()
         for test in tests:
+            logger.info(f"Loading {test=}")
             if test.startswith("/"):
                 sub_suite = loader.discover(
                     os.path.dirname(__file__) + test,

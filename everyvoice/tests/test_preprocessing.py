@@ -8,6 +8,7 @@ import torchaudio
 from pydantic_core._pydantic_core import ValidationError
 from torch import float32
 
+import everyvoice.preprocessor
 import everyvoice.text.text_processor
 from everyvoice.config.preprocessing_config import (
     AudioConfig,
@@ -21,7 +22,12 @@ from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
-from everyvoice.tests.stubs import capture_stdout, mute_logger
+from everyvoice.tests.stubs import (
+    capture_stdout,
+    monkeypatch,
+    mute_logger,
+    patch_logger,
+)
 from everyvoice.utils import generic_psv_filelist_reader
 
 
@@ -389,9 +395,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     preprocessed_dir.mkdir(parents=True, exist_ok=True)
                     output_filelist = preprocessed_dir / "preprocessed_filelist.psv"
                     shutil.copyfile(filelist_test_info["path"], output_filelist)
-                    fp_config.preprocessing.source_data[
-                        0
-                    ].filelist = filelist_test_info["path"]
+                    fp_config.preprocessing.source_data[0].filelist = (
+                        filelist_test_info["path"]
+                    )
                     fp_config.preprocessing.save_dir = preprocessed_dir
                     preprocessor = Preprocessor(fp_config)
                     with capture_stdout() as output, mute_logger(
@@ -460,29 +466,37 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                                 f'failed in {filelist_test_info["path"]}',
                             )
 
+    def get_simple_config(self, tmpdir: str | Path):
+        """Create a simple config for testing"""
+        tmpdir = Path(tmpdir)
+        lj_preprocessed = tmpdir / "preprocessed"
+        lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
+
+        fp_config = FeaturePredictionConfig(contact=self.contact)
+        fp_config.preprocessing.source_data[0].data_dir = self.data_dir / "lj" / "wavs"
+
+        full_filelist = self.data_dir / "metadata.psv"
+        partial_filelist = tmpdir / "partial-metadata.psv"
+        with open(partial_filelist, mode="w") as f_out:
+            with open(full_filelist) as f_in:
+                lines = list(f_in)
+                for line in lines[:4]:
+                    f_out.write(line)
+        fp_config.preprocessing.source_data[0].filelist = full_filelist
+        fp_config.preprocessing.save_dir = lj_preprocessed
+
+        to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
+        return (fp_config, lj_filelist, full_filelist, partial_filelist, to_process)
+
     def test_incremental_preprocess(self):
         with tempfile.TemporaryDirectory(
             prefix="test_incremental_preprocess", dir="."
         ) as tmpdir:
-            tmpdir = Path(tmpdir)
-            lj_preprocessed = tmpdir / "preprocessed"
-            lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
-
-            fp_config = FeaturePredictionConfig(contact=self.contact)
-            fp_config.preprocessing.source_data[0].data_dir = (
-                self.data_dir / "lj" / "wavs"
+            fp_config, lj_filelist, full_filelist, partial_filelist, to_process = (
+                self.get_simple_config(tmpdir)
             )
-            full_filelist = self.data_dir / "metadata.psv"
-            partial_filelist = tmpdir / "partial-metadata.psv"
-            with open(partial_filelist, mode="w") as f_out:
-                with open(full_filelist) as f_in:
-                    lines = list(f_in)
-                    for line in lines[:4]:
-                        f_out.write(line)
-            fp_config.preprocessing.source_data[0].filelist = partial_filelist
-            fp_config.preprocessing.save_dir = lj_preprocessed
 
-            to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
+            fp_config.preprocessing.source_data[0].filelist = partial_filelist
             with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
@@ -512,22 +526,12 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         with tempfile.TemporaryDirectory(
             prefix="test_gotta_do_audio_first", dir="."
         ) as tmpdir:
-            tmpdir = Path(tmpdir)
-            preprocessed = tmpdir / "preprocessed"
-            filelist = preprocessed / "preprocessed_filelist.psv"
-
-            fp_config = FeaturePredictionConfig(contact=self.contact)
-            fp_config.preprocessing.source_data[0].data_dir = (
-                self.data_dir / "lj" / "wavs"
-            )
-            full_filelist = self.data_dir / "metadata.psv"
-            fp_config.preprocessing.source_data[0].filelist = full_filelist
-            fp_config.preprocessing.save_dir = preprocessed
+            fp_config, lj_filelist, _, _, _ = self.get_simple_config(tmpdir)
 
             to_process_no_audio = ("energy", "pitch", "attn", "text", "spec")
             with self.assertRaises(SystemExit), capture_stdout():
                 Preprocessor(fp_config).preprocess(
-                    output_path=filelist, cpus=1, to_process=to_process_no_audio
+                    output_path=lj_filelist, cpus=1, to_process=to_process_no_audio
                 )
 
     def test_empty_preprocess(self):
@@ -540,23 +544,82 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             prefix="test_empty_preprocess", dir="."
         ) as tmpdir:
             tmpdir = Path(tmpdir)
-            preprocessed = tmpdir / "preprocessed"
-            filelist = preprocessed / "preprocessed_filelist.psv"
-
-            fp_config = FeaturePredictionConfig(contact=self.contact)
+            fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
             fp_config.preprocessing.source_data[0].data_dir = self.data_dir
             input_filelist = tmpdir / "empty-metadata.psv"
             with open(input_filelist, mode="w") as f:
                 print("basename|raw_text|characters|speaker|language", file=f)
                 print("empty|foo bar baz|foo bar baz|noone|und", file=f)
             fp_config.preprocessing.source_data[0].filelist = input_filelist
-            fp_config.preprocessing.save_dir = preprocessed
 
-            to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
             with self.assertRaises(SystemExit), capture_stdout():
                 Preprocessor(fp_config).preprocess(
-                    output_path=filelist, cpus=1, to_process=to_process
+                    output_path=lj_filelist, cpus=1, to_process=to_process
                 )
+
+    def test_config_lock(self):
+        with tempfile.TemporaryDirectory(prefix="test_config_lock", dir=".") as tmpdir:
+            tmpdir = Path(tmpdir)
+            fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
+
+            Preprocessor(fp_config).preprocess(
+                output_path=lj_filelist, cpus=1, to_process=to_process
+            )
+
+            def fail_config_lock(config_object, element, value, message):
+                import everyvoice.preprocessor.preprocessor
+
+                with monkeypatch(config_object, element, value):
+                    with self.assertRaises(SystemExit):
+                        with patch_logger(
+                            everyvoice.preprocessor.preprocessor
+                        ) as logger:
+                            with self.assertLogs(logger) as logs:
+                                Preprocessor(fp_config).preprocess(
+                                    output_path=lj_filelist,
+                                    cpus=1,
+                                    to_process=to_process,
+                                )
+                log_output = "\n".join(logs.output)
+                self.assertIn("Config lock mismatch:", log_output)
+                self.assertIn(message, log_output)
+
+            fail_config_lock(
+                fp_config.preprocessing.audio,
+                "alignment_sampling_rate",
+                42,
+                "differs from locked preprocessing.audio config",
+            )
+
+            fail_config_lock(
+                fp_config.text, "cleaners", [], "differs from locked text config"
+            )
+
+            fail_config_lock(
+                fp_config.preprocessing.source_data[0],
+                "sox_effects",
+                [],
+                "differs from locked preprocessing.source_data",
+            )
+
+            Preprocessor(fp_config).save_config_lock(in_progress=True)
+            fail_config_lock(
+                fp_config.preprocessing,
+                "_na",
+                "_na",
+                "the previous preprocessing run was interrupted",
+            )
+
+            lock_file = tmpdir / "preprocessed" / ".config-lock"
+            lock_file.chmod(0o666)
+            with open(tmpdir / "preprocessed" / ".config-lock", "w") as f:
+                f.write("This is not valid JSON")
+            fail_config_lock(
+                fp_config.preprocessing,
+                "_na",
+                "_na",
+                "Error loading existing config lock",
+            )
 
     def test_train_split(self):
         """

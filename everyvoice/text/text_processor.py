@@ -1,6 +1,6 @@
 import re
 from collections import Counter
-from typing import Optional
+from typing import Optional, Type, overload
 
 import numpy as np
 import numpy.typing as npt
@@ -413,6 +413,16 @@ class TextProcessor:
         return self.encode_string_tokens(
             [token for token in string_of_tokens.split(split_character) if token]
         )
+
+    @overload
+    def decode_tokens(  # noqa E704
+        self, sequence: list[int], join_character: Type[None]
+    ) -> list[str]: ...
+
+    @overload
+    def decode_tokens(  # noqa E704
+        self, sequence: list[int], join_character: str
+    ) -> str: ...
 
     def decode_tokens(self, sequence: list[int], join_character="/") -> str | list[str]:
         """Decode a sequence of encoded phone or character tokens into a sequence of strings

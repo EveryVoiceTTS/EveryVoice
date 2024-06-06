@@ -1,11 +1,12 @@
-""" Preprocessor Module that given a filelist containing text, wav, textgrid:
-    - extracts log Mel spectral features
-    - extracts pitch (phone-level or frame-level)
-    - extracts energy
-    - extracts inputs (ex. phonological feats)
+"""Preprocessor Module that given a filelist containing text, wav, textgrid:
+- extracts log Mel spectral features
+- extracts pitch (phone-level or frame-level)
+- extracts energy
+- extracts inputs (ex. phonological feats)
 """
 
 import functools
+import json
 import multiprocessing as mp
 import random
 import sys
@@ -704,41 +705,50 @@ class Preprocessor:
             DatasetTextRepresentation.arpabet.value in item
             and DatasetTextRepresentation.ipa_phones.value not in item
         ):
-            phone_tokens = text_processor.encode_text(
+            tokens = text_processor.encode_text(
                 text=ARPABET_TO_IPA_TRANSDUCER(
                     item[DatasetTextRepresentation.arpabet.value]
                 ).output_string,
                 quiet=True,
                 apply_g2p=False,
             )
+            assert isinstance(tokens, list)
+            phone_tokens = tokens
         # if dataset is chars, tokenize them for saving to filelist
         if DatasetTextRepresentation.characters.value in item:
-            character_tokens = text_processor.encode_text(
+            tokens = text_processor.encode_text(
                 text=item[DatasetTextRepresentation.characters.value],
                 apply_g2p=False,
                 encode_as_phonological_features=False,
                 quiet=True,
             )
+            assert isinstance(tokens, list)
+            character_tokens = tokens
+
             # if g2p available, and phones don't already exist, process and tokenize them for saving to filelist
             if (
                 item["language"] in AVAILABLE_G2P_ENGINES
                 and DatasetTextRepresentation.ipa_phones.value not in item
             ):
-                phone_tokens = text_processor.encode_text(
+                tokens = text_processor.encode_text(
                     text=item[DatasetTextRepresentation.characters.value],
                     apply_g2p=True,
                     lang_id=item["language"],
                     encode_as_phonological_features=False,
                     quiet=True,
                 )
+                assert isinstance(tokens, list)
+                phone_tokens = tokens
         # if dataset is phones
         if DatasetTextRepresentation.ipa_phones.value in item:
-            phone_tokens = text_processor.encode_text(
+            tokens = text_processor.encode_text(
                 text=item[DatasetTextRepresentation.ipa_phones.value],
                 apply_g2p=False,
                 encode_as_phonological_features=False,
                 quiet=True,
             )
+            assert isinstance(tokens, list)
+            phone_tokens = tokens
         # calculate pfs
         if phone_tokens and use_pfs:
             pfs = text_processor.calculate_phonological_features(
@@ -909,7 +919,117 @@ class Preprocessor:
             sys.exit(1)
         return filelist
 
-    def preprocess(
+    def get_config_lock(self, in_progress: bool = True) -> dict[str, dict | str]:
+        """Get the part of the configuration in use that affects preprocessing output"""
+
+        # Every config class has .preprocessing.audio as a dict
+        # Must be identical between processing runs
+        config_audio = self.config.preprocessing.audio.model_dump(mode="json")
+
+        # Every config class has .preprocessing.source_data as a list of dicts
+        # We use each source's label as key
+        # For each entry in common between the new and old config, the entry
+        # details must be the same
+        source_data_dict = {
+            entry.label: entry.model_dump(mode="json", exclude={"data_dir", "filelist"})
+            for entry in self.config.preprocessing.source_data
+        }
+
+        # Not every config class has .text (e.g., VocoderConfig doesn't)
+        # When found, this must be identical between preprocessing runs
+        if hasattr(self.config, "text"):
+            config_text = self.config.text.model_dump(mode="json")
+        else:
+            config_text = {}
+
+        return {
+            "info": "This file has the configuration that was used to preprocess files. Do not edit.",
+            "status": "in progress" if in_progress else "completed",
+            "preprocessing.audio": config_audio,
+            "preprocessing.source_data": source_data_dict,
+            "text": config_text,
+        }
+
+    def save_config_lock(self, in_progress: bool):
+        """Write the part of the configuration in use that affects preprocessing output
+
+        Args:
+            in_progress: indicates if preprocessing is in progress or has completed
+        """
+        self.save_dir.mkdir(parents=True, exist_ok=True)
+        lock_file = self.save_dir / ".config-lock"
+        if lock_file.exists():
+            lock_file.chmod(0o666)  # make it writable to overwrite it
+        with open(lock_file, "w", encoding="utf8") as f:
+            json.dump(
+                self.get_config_lock(in_progress), f, indent=2, ensure_ascii=False
+            )
+            f.write("\n")
+        lock_file.chmod(0o444)  # leave it read-only so users to discourage change
+
+    def load_config_lock(self):
+        """Load the existing config lock, returning it parsed, or None if not found"""
+        lock_file = self.save_dir / ".config-lock"
+        try:
+            with open(lock_file, "r", encoding="utf8") as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return None
+        except json.JSONDecodeError as e:
+            logger.warning(
+                f"Error loading existing config lock {lock_file}: {e}. Assuming a configuration mismatch."
+            )
+            return {
+                "preprocessing.audio": "ERROR: Unable to load",
+                "text": "ERROR: Unable to load",
+            }
+
+    def config_lock_has_conflicts(self) -> bool:
+        current_config_lock = self.get_config_lock()
+        saved_config_lock = self.load_config_lock()
+        if saved_config_lock is None:
+            return False  # No existing config lock found means no conflicts
+
+        found_conflict = False
+
+        # preprocessing that was interrupted in progress cannot be trusted
+        if saved_config_lock.get("status") != "completed":
+            logger.warning(
+                "The Config lock indicates that the previous preprocessing run was interrupted in progress. We won't trust these partial results."
+            )
+            found_conflict = True
+
+        # preprocessing.audio config has to be identical
+        cur_audio = current_config_lock["preprocessing.audio"]
+        locked_audio = saved_config_lock.get("preprocessing.audio")
+        if cur_audio != locked_audio:
+            logger.warning(
+                f"Config lock mismatch: current preprocessing.audio config:\n{cur_audio}\ndiffers from locked preprocessing.audio config:\n{locked_audio}"
+            )
+            found_conflict = True
+
+        # text config has to be identical
+        cur_text = current_config_lock["text"]
+        locked_text = saved_config_lock.get("text")
+        if cur_text != locked_text:
+            logger.warning(
+                f"Config lock mismatch: current text config:\n{cur_text}\ndiffers from locked text config:\n{locked_text}"
+            )
+            found_conflict = True
+
+        # preprocessing.source_data entries in common before and after must be equal
+        cur_source_data = current_config_lock["preprocessing.source_data"]
+        locked_source_data = saved_config_lock.get("preprocessing.source_data", {})
+        for label in cur_source_data.keys() & locked_source_data.keys():  # type: ignore[union-attr]
+            if cur_source_data[label] != locked_source_data[label]:
+                logger.warning(
+                    f"Config lock mismatch: current preprocessing.source_data[{label}] config:\n{cur_source_data[label]}\ndiffers from locked preprocessing.source_data[{label}] config:\n{locked_source_data[label]}"
+                )
+                found_conflict = True
+
+        return found_conflict
+
+    def preprocess(  # noqa: C901
         self,
         output_path="filelist.psv",
         cpus=min(5, mp.cpu_count()),
@@ -918,6 +1038,15 @@ class Preprocessor:
         debug=False,
     ):
         self.overwrite = overwrite
+
+        if not overwrite:
+            if self.config_lock_has_conflicts():
+                logger.error(
+                    "Config lock mismatch: you have previously preprocessed some of the files here, but with a different and potentially incompatible configuration. Please use --overwrite to reprocess all files."
+                )
+                sys.exit(1)
+        self.save_config_lock(in_progress=True)
+
         self.cpus = cpus
         self.debug = debug
         if not isinstance(output_path, Path):
@@ -1022,3 +1151,5 @@ class Preprocessor:
                 border_style=Style(color="#0B4F19"),
             )
         )
+
+        self.save_config_lock(in_progress=False)
