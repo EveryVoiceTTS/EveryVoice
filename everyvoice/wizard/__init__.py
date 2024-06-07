@@ -165,6 +165,7 @@ class StepNames(Enum):
     wavs_dir_step = "Wavs Dir Step"
     filelist_step = "Filelist Step"
     filelist_format_step = "Filelist Format Step"
+    validate_wavs_step = "Validate Wavs Step"
     filelist_text_representation_step = "Filelist Text Representation Step"
     target_training_representation_step = (
         "Target Training Representation Step"  # TODO: maybe don't need

@@ -238,6 +238,51 @@ class FilelistFormatStep(Step):
                 )
 
 
+class ValidateWavsStep(Step):
+    DEFAULT_NAME = StepNames.validate_wavs_step
+
+    def wav_file_early_validation(self) -> int:
+        """Look for missing wav files and return the error count"""
+        assert self.state is not None  # fixes mypy errors
+        basename_column = self.state["filelist_headers"].index("basename")
+        wavs_dir = Path(self.state[StepNames.wavs_dir_step])
+        files_not_found = []
+        for record in self.state["filelist_data_list"][1:]:
+            wav_basename = record[basename_column]
+            wav_filename = wavs_dir / (
+                wav_basename + ("" if wav_basename.endswith(".wav") else ".wav")
+            )
+            if not wav_filename.exists():
+                files_not_found.append(wav_filename)
+        if files_not_found:
+            n = len(files_not_found)
+            if n == 1:
+                print(
+                    f"Warning: wav file '{files_not_found[0]}' was not found, please check your filelist."
+                )
+            else:
+                print(
+                    f"Warning: {n} wav files were not found, including '{files_not_found[0]}' and '{files_not_found[1]}'.\nPlease check your wavs directory '{wavs_dir}' and your filelist."
+                )
+            return n
+        print(f"Great! All audio files found in directory '{wavs_dir}'.")
+        return 0
+
+    def prompt(self):
+        error_count = self.wav_file_early_validation()
+        if error_count:
+            return input("Do you want to pick a different wavs directory? ").lower()
+        return "ok"
+
+    def validate(self, response):
+        return response in ("y", "yes", "n", "no", "ok")
+
+    def effect(self):
+        if self.response[:1] == "y":
+            self.tour.add_step(ValidateWavsStep(state_subset=self.state_subset), self)
+            self.tour.add_step(WavsDirStep(state_subset=self.state_subset), self)
+
+
 class FilelistTextRepresentationStep(Step):
     DEFAULT_NAME = StepNames.filelist_text_representation_step
     text_representation_options = tuple(x.value for x in DatasetTextRepresentation)
@@ -325,6 +370,11 @@ class LanguageHeaderStep(HeaderStep):
 
 
 class HasHeaderLineStep(Step):
+    """Check if the data set has a header line, and insert one if not.
+
+    Subsequent steps can systematically assume that self.state["filelist_data_list"][0]
+    is the header row."""
+
     DEFAULT_NAME = StepNames.data_has_header_line_step
     choices = ("no", "yes")
 
@@ -418,13 +468,7 @@ class HasLanguageStep(Step):
             )
 
         else:
-            self.tour.add_step(
-                SelectLanguageStep(
-                    name=StepNames.select_language_step,
-                    state_subset=self.state_subset,
-                ),
-                self,
-            )
+            self.tour.add_step(SelectLanguageStep(state_subset=self.state_subset), self)
 
 
 class SelectLanguageStep(Step):
@@ -643,11 +687,12 @@ class SymbolSetStep(Step):
         self.state[StepNames.symbol_set_step] = symbols
 
 
-def return_dataset_steps(dataset_index=0):
+def get_dataset_steps(dataset_index=0):
     return [
         WavsDirStep(state_subset=f"dataset_{dataset_index}"),
         FilelistStep(state_subset=f"dataset_{dataset_index}"),
         FilelistFormatStep(state_subset=f"dataset_{dataset_index}"),
+        ValidateWavsStep(state_subset=f"dataset_{dataset_index}"),
         FilelistTextRepresentationStep(state_subset=f"dataset_{dataset_index}"),
         TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
         HasSpeakerStep(state_subset=f"dataset_{dataset_index}"),
@@ -662,7 +707,7 @@ if __name__ == "__main__":
     tour = Tour(
         name="Dataset Tour",
         # steps = [TextProcessingStep(name='test')]
-        steps=return_dataset_steps(),
+        steps=get_dataset_steps(),
     )
     tour.visualize()
     tour.run()
