@@ -6,7 +6,7 @@ from everyvoice.wizard.basic import (
     NameStep,
     OutputPathStep,
 )
-from everyvoice.wizard.dataset import return_dataset_steps
+from everyvoice.wizard.dataset import get_dataset_steps
 
 WIZARD_TOUR = Tour(
     name="Basic Tour",
@@ -16,7 +16,7 @@ WIZARD_TOUR = Tour(
         ContactEmailStep(name=StepNames.contact_email_step),
         OutputPathStep(name=StepNames.output_step),
     ]
-    + return_dataset_steps()
+    + get_dataset_steps()
     + [MoreDatasetsStep(name=StepNames.more_datasets_step)],
 )
 

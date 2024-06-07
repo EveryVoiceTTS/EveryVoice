@@ -114,6 +114,12 @@ def patch_menu_prompt(
             yield stdout
 
 
+@contextmanager
+def null_patch() -> Generator[None, None, None]:
+    """dummy context manager when we must pass a monkeypatch but have nothing to patch"""
+    yield
+
+
 class Say:
     """Mock callable that returns response (if multi=False) or each value in
     response in turn (if multi=True) when it is called."""

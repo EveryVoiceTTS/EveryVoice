@@ -21,6 +21,7 @@ from everyvoice.tests.stubs import (
     Say,
     capture_stdout,
     monkeypatch,
+    null_patch,
     patch_menu_prompt,
 )
 from everyvoice.wizard import State, Step
@@ -329,9 +330,13 @@ class WizardTest(TestCase):
                     return s
             raise IndexError(f"Step {name} not found.")  # pragma: no cover
 
-        tour = Tour("unit testing", steps=dataset.return_dataset_steps())
-        filelist = str(self.data_dir / "unit-test-case1.psv")
+        tour = Tour("unit testing", steps=dataset.get_dataset_steps())
 
+        wavs_dir_step = find_step(SN.wavs_dir_step, tour.steps)
+        with monkeypatch(wavs_dir_step, "prompt", Say(str(self.data_dir))):
+            wavs_dir_step.run()
+
+        filelist = str(self.data_dir / "unit-test-case1.psv")
         filelist_step = find_step(SN.filelist_step, tour.steps)
         monkey = monkeypatch(filelist_step, "prompt", Say(filelist))
         with monkey:
@@ -364,6 +369,13 @@ class WizardTest(TestCase):
         with patch_menu_prompt(1):  # 1 is second remaining column, i.e., third column
             step.run()
         self.assertEqual(step.state["filelist_headers"][2], "text")
+
+        validate_wavs_step = find_step(SN.validate_wavs_step, tour.steps)
+        with monkeypatch(builtins, "input", Say("no")), capture_stdout() as out:
+            validate_wavs_step.run()
+        self.assertEqual(step.state[SN.validate_wavs_step], "no")
+        self.assertIn("Warning: 3 wav files were not found", out.getvalue())
+
         text_representation_step = find_step(
             SN.filelist_text_representation_step, tour.steps
         )
@@ -617,7 +629,7 @@ class WizardTest(TestCase):
 
     def test_monkey_tour_2(self):
         data_dir = Path(__file__).parent / "data"
-        with capture_stdout():
+        with capture_stdout() as out:
             tour = self.monkey_run_tour(
                 "monkey tour 2",
                 [
@@ -640,6 +652,14 @@ class WizardTest(TestCase):
                         Say("no"),
                         children_answers=[RecursiveAnswers(Say("eng"))],
                     ),
+                    StepAndAnswer(
+                        dataset.ValidateWavsStep(),
+                        monkeypatch(builtins, "input", Say("y")),
+                        children_answers=[
+                            RecursiveAnswers(Say(str(data_dir / "lj/wavs"))),
+                            RecursiveAnswers(null_patch()),
+                        ],
+                    ),
                     StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
                     StepAndAnswer(
                         dataset.SymbolSetStep(),
@@ -649,6 +669,10 @@ class WizardTest(TestCase):
                     StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
                 ],
             )
+
+        log = out.getvalue()
+        self.assertIn("Warning: 5 wav files were not found", log)
+        self.assertIn("Great! All audio files found in directory", log)
 
         # print(tour.state)
         self.assertEqual(len(tour.state["filelist_data"]), 5)

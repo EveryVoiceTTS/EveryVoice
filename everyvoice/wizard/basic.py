@@ -33,7 +33,7 @@ from everyvoice.wizard import (
     Step,
     StepNames,
 )
-from everyvoice.wizard.dataset import return_dataset_steps
+from everyvoice.wizard.dataset import get_dataset_steps
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
@@ -435,7 +435,7 @@ class MoreDatasetsStep(Step):
             self.tour.add_step(
                 MoreDatasetsStep(name=StepNames.more_datasets_step), self
             )
-            for step in reversed(return_dataset_steps(dataset_index=new_dataset_index)):
+            for step in reversed(get_dataset_steps(dataset_index=new_dataset_index)):
                 self.tour.add_step(step, self)
         else:
             self.tour.add_step(
