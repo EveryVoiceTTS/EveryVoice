@@ -4,6 +4,8 @@ from typing import Optional
 
 from anytree import NodeMixin, RenderTree
 
+from .utils import EnumDict as State
+
 TEXT_CONFIG_FILENAME_PREFIX = "everyvoice-shared-text"
 ALIGNER_CONFIG_FILENAME_PREFIX = "everyvoice-aligner"
 PREPROCESSING_CONFIG_FILENAME_PREFIX = "everyvoice-shared-data"
@@ -77,7 +79,7 @@ class Step(_Step, NodeMixin):
         self.parent = parent
         self.state_subset = state_subset
         # state will be added when the Step is added to a Tour
-        self.state: Optional[dict] = None
+        self.state: Optional[State] = None
         # tour will be added when the Step is added to a Tour
         self.tour: Optional[Tour] = None
         if effect_method is not None:
@@ -116,10 +118,10 @@ class Step(_Step, NodeMixin):
 
 
 class Tour:
-    def __init__(self, name: str, steps: list[Step], state: Optional[dict] = None):
+    def __init__(self, name: str, steps: list[Step], state: Optional[State] = None):
         """Create the tour by setting each Step as the child of the previous Step."""
         self.name = name
-        self.state: dict = state if state is not None else {}
+        self.state: State = state if state is not None else State()
         for parent, child in zip(steps, steps[1:]):
             child.parent = parent
             self.determine_state(child, self.state)
@@ -129,10 +131,10 @@ class Tour:
         self.root.tour = self
         self.determine_state(self.root, self.state)
 
-    def determine_state(self, step: Step, state: dict):
+    def determine_state(self, step: Step, state: State):
         if step.state_subset is not None:
             if step.state_subset not in state:
-                state[step.state_subset] = {}
+                state[step.state_subset] = State()
             step.state = state[step.state_subset]
         else:
             step.state = state
