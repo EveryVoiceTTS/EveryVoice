@@ -1,5 +1,7 @@
 import csv
 import json
+from collections import UserDict
+from enum import Enum
 from itertools import islice
 from pathlib import Path
 from typing import Dict, Iterable
@@ -54,11 +56,11 @@ def apply_automatic_text_conversions(
             DatasetTextRepresentation.arpabet.value in item
             and DatasetTextRepresentation.ipa_phones.value not in item
         ):
-            item[
-                DatasetTextRepresentation.ipa_phones.value
-            ] = ARPABET_TO_IPA_TRANSDUCER(
-                item[DatasetTextRepresentation.arpabet.value]
-            ).output_string
+            item[DatasetTextRepresentation.ipa_phones.value] = (
+                ARPABET_TO_IPA_TRANSDUCER(
+                    item[DatasetTextRepresentation.arpabet.value]
+                ).output_string
+            )
         # if phones don't exist but g2p is available, calculate them
         if (
             DatasetTextRepresentation.characters.value in item
@@ -143,3 +145,19 @@ def write_dict_to_config(config: Dict, path: Path):
             yaml.dump(config, f, default_flow_style=None, allow_unicode=True)
         else:
             json.dump(config, f, ensure_ascii=False)
+
+
+class EnumDict(UserDict):
+    """dict that accepts Enum elements to mean their string values"""
+
+    def convert_key(self, key):
+        if isinstance(key, Enum):
+            return key.value
+        else:
+            return key
+
+    def __getitem__(self, key):
+        return super().__getitem__(self.convert_key(key))
+
+    def __setitem__(self, key, value):
+        return super().__setitem__(self.convert_key(key), value)

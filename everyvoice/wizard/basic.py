@@ -135,7 +135,7 @@ class OutputPathStep(Step):
             print(f"Sorry, '{path}' is a file. Please select a directory.")
             return False
         assert self.state is not None, "OutputPathStep requires NameStep"
-        output_path = path / self.state.get(StepNames.name_step.value, "DEFAULT_NAME")
+        output_path = path / self.state.get(StepNames.name_step, "DEFAULT_NAME")
         if output_path.exists():
             print(
                 f"Sorry, '{output_path}' already exists. Please choose another output directory or start again and choose a different project name."
@@ -146,7 +146,7 @@ class OutputPathStep(Step):
     def effect(self):
         assert self.state is not None, "OutputPathStep requires NameStep"
         output_path = Path(self.response) / self.state.get(
-            StepNames.name_step.value, "DEFAULT_NAME"
+            StepNames.name_step, "DEFAULT_NAME"
         )
         output_path.mkdir(parents=True, exist_ok=True)
         print(f"The Configuration Wizard 🧙 will put your files here: '{output_path}'")
@@ -166,8 +166,7 @@ class ConfigFormatStep(Step):
 
     def effect(self):
         output_path = (
-            Path(self.state[StepNames.output_step.value])
-            / self.state[StepNames.name_step.value]
+            Path(self.state[StepNames.output_step]) / self.state[StepNames.name_step]
         ).expanduser()
         # create_config_files
         config_dir = output_path / "config"
@@ -190,24 +189,18 @@ class ConfigFormatStep(Step):
             dataset_state = self.state[dataset]
             # Gather Symbols for Text Configuration
             # rename keys based on dataset name:
-            dataset_name = dataset_state[StepNames.dataset_name_step.value]
+            dataset_name = dataset_state[StepNames.dataset_name_step]
             dataset_symbols = {
                 f"{dataset_name}_{k}": v
-                for k, v in dataset_state[StepNames.symbol_set_step.value].items()
+                for k, v in dataset_state[StepNames.symbol_set_step].items()
             }
             symbols.update(dataset_symbols)
-            if (
-                dataset_state.get(StepNames.data_has_language_value_step.value, "no")
-                == "yes"
-            ):
+            if dataset_state.get(StepNames.data_has_language_value_step, "no") == "yes":
                 multilingual = True
-            if (
-                dataset_state.get(StepNames.data_has_speaker_value_step.value, "no")
-                == "yes"
-            ):
+            if dataset_state.get(StepNames.data_has_speaker_value_step, "no") == "yes":
                 multispeaker = True
             # Dataset Configs
-            wavs_dir = Path(dataset_state[StepNames.wavs_dir_step.value]).expanduser()
+            wavs_dir = Path(dataset_state[StepNames.wavs_dir_step]).expanduser()
             if not wavs_dir.is_absolute():
                 if not output_path.is_absolute():
                     for _ in config_dir.parts:
@@ -249,8 +242,8 @@ class ConfigFormatStep(Step):
         )
         # Contact
         CONTACT_INFO = ContactInformation(
-            contact_name=self.state[StepNames.contact_name_step.value],
-            contact_email=self.state[StepNames.contact_email_step.value],
+            contact_name=self.state[StepNames.contact_name_step],
+            contact_email=self.state[StepNames.contact_email_step],
         )
 
         with init_context({"writing_config": config_dir.resolve()}):
@@ -262,7 +255,7 @@ class ConfigFormatStep(Step):
                 preprocessed_dir_relative_to_configs / "validation_filelist.psv"
             )
             preprocessing_config = PreprocessingConfig(
-                dataset=self.state[StepNames.name_step.value],
+                dataset=self.state[StepNames.name_step],
                 save_dir=preprocessed_dir_relative_to_configs,
                 source_data=datasets,
             )
@@ -440,11 +433,11 @@ class MoreDatasetsStep(Step):
                 + 1
             )
             self.tour.add_step(
-                MoreDatasetsStep(name=StepNames.more_datasets_step.value), self
+                MoreDatasetsStep(name=StepNames.more_datasets_step), self
             )
             for step in reversed(return_dataset_steps(dataset_index=new_dataset_index)):
                 self.tour.add_step(step, self)
         else:
             self.tour.add_step(
-                ConfigFormatStep(name=StepNames.config_format_step.value), self
+                ConfigFormatStep(name=StepNames.config_format_step), self
             )

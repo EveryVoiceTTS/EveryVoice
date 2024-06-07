@@ -11,13 +11,13 @@ from everyvoice.wizard.dataset import return_dataset_steps
 WIZARD_TOUR = Tour(
     name="Basic Tour",
     steps=[
-        NameStep(name=StepNames.name_step.value),
-        ContactNameStep(name=StepNames.contact_name_step.value),
-        ContactEmailStep(name=StepNames.contact_email_step.value),
-        OutputPathStep(name=StepNames.output_step.value),
+        NameStep(name=StepNames.name_step),
+        ContactNameStep(name=StepNames.contact_name_step),
+        ContactEmailStep(name=StepNames.contact_email_step),
+        OutputPathStep(name=StepNames.output_step),
     ]
     + return_dataset_steps()
-    + [MoreDatasetsStep(name=StepNames.more_datasets_step.value)],
+    + [MoreDatasetsStep(name=StepNames.more_datasets_step)],
 )
 
 if __name__ == "__main__":

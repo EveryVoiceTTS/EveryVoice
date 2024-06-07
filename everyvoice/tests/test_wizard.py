@@ -23,12 +23,13 @@ from everyvoice.tests.stubs import (
     monkeypatch,
     patch_menu_prompt,
 )
-from everyvoice.wizard import Step
+from everyvoice.wizard import State, Step
 from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard import Tour, basic, dataset, prompts
 from everyvoice.wizard.basic import ConfigFormatStep
+from everyvoice.wizard.utils import EnumDict
 
-CONTACT_INFO_STATE = {}
+CONTACT_INFO_STATE = State()
 CONTACT_INFO_STATE[SN.contact_name_step.value] = "Test Name"
 CONTACT_INFO_STATE[SN.contact_email_step.value] = "test@this.ca"
 
@@ -89,11 +90,11 @@ class WizardTest(TestCase):
         self.assertTrue(config_step.validate("yaml"))
         self.assertTrue(config_step.validate("json"))
         with tempfile.TemporaryDirectory() as tmpdirname:
-            config_step.state = {}
+            config_step.state = State()
             config_step.state[SN.output_step.value] = tmpdirname
             config_step.state[SN.name_step.value] = config_step.name
             config_step.state.update(CONTACT_INFO_STATE)
-            config_step.state["dataset_test"] = {}
+            config_step.state["dataset_test"] = State()
             config_step.state["dataset_test"][SN.symbol_set_step.value] = {
                 "characters": list(string.ascii_letters)
             }
@@ -944,45 +945,60 @@ class WavFileDirectoryRelativePathTest(TestCase):
         """
         Create a mock state instead of doing all prior steps to ConfigFormatStep.
         """
-        state = {
-            SN.output_step.value: "John/Smith",
-            SN.name_step.value: "Unittest",
-            "dataset_0": {
-                SN.dataset_name_step.value: "unit",
-                SN.wavs_dir_step.value: "Common-Voice",
-                SN.symbol_set_step.value: {
-                    "characters": [" ", ",", ".", "A", "D", "E", "H", "I", "J", "K"]
-                },
-                "filelist_data": [
+        state = State(
+            {
+                SN.output_step.value: "John/Smith",
+                SN.name_step.value: "Unittest",
+                "dataset_0": State(
                     {
-                        "text": "Sentence 1",
-                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/dd50ed81b889047cb4399e34b650a91fcbd3b2a5e36cf0068251d64274bffb61",
-                        "language": "und",
-                    },
-                    {
-                        "text": "Sentence 2",
-                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/6c45ab8c6e2454142c95319ca37f7e4ff6526dddbcc7fc540572e4e53264ec47",
-                        "language": "und",
-                    },
-                    {
-                        "text": "Sentence 3",
-                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/3947ae033faeb793e00f836648e240bc91c821798bccc76656ad3e7030b38878",
-                        "language": "und",
-                    },
-                    {
-                        "text": "Sentence 4",
-                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/65b61440f9621084a1a1d8c461d177c765fad3aff91e0077296081931929629b",
-                        "language": "und",
-                    },
-                    {
-                        "text": "Sentence 5",
-                        "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/8a124117481eaf8f91d23aa3acda301e7fae7de85e98c016383381d54a3d5049",
-                        "language": "und",
-                    },
-                ],
-                "sox_effects": [["channel", "1"]],
-            },
-        }
+                        SN.dataset_name_step.value: "unit",
+                        SN.wavs_dir_step.value: "Common-Voice",
+                        SN.symbol_set_step.value: {
+                            "characters": [
+                                " ",
+                                ",",
+                                ".",
+                                "A",
+                                "D",
+                                "E",
+                                "H",
+                                "I",
+                                "J",
+                                "K",
+                            ]
+                        },
+                        "filelist_data": [
+                            {
+                                "text": "Sentence 1",
+                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/dd50ed81b889047cb4399e34b650a91fcbd3b2a5e36cf0068251d64274bffb61",
+                                "language": "und",
+                            },
+                            {
+                                "text": "Sentence 2",
+                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/6c45ab8c6e2454142c95319ca37f7e4ff6526dddbcc7fc540572e4e53264ec47",
+                                "language": "und",
+                            },
+                            {
+                                "text": "Sentence 3",
+                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/3947ae033faeb793e00f836648e240bc91c821798bccc76656ad3e7030b38878",
+                                "language": "und",
+                            },
+                            {
+                                "text": "Sentence 4",
+                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/65b61440f9621084a1a1d8c461d177c765fad3aff91e0077296081931929629b",
+                                "language": "und",
+                            },
+                            {
+                                "text": "Sentence 5",
+                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/8a124117481eaf8f91d23aa3acda301e7fae7de85e98c016383381d54a3d5049",
+                                "language": "und",
+                            },
+                        ],
+                        "sox_effects": [["channel", "1"]],
+                    }
+                ),
+            }
+        )
         self.config = ConfigFormatStep()
         self.config.response = "yaml"
         self.config.state = state
@@ -1149,4 +1165,34 @@ class WavFileDirectoryRelativePathTest(TestCase):
         self.assertEqual(
             Path(config["source_data"][0]["data_dir"]),
             wavs_dir,
+        )
+
+
+class TestEnumDict(TestCase):
+    """Test the EnumDict class"""
+
+    def test_enum_dict(self):
+        """Enum values need to behave the same with or without .value"""
+        d = EnumDict()
+        d[SN.audio_config_step] = "foo"
+        self.assertEqual(d[SN.audio_config_step.value], "foo")
+        self.assertEqual(d.get(SN.audio_config_step.value), "foo")
+
+        d[SN.wavs_dir_step.value] = "bar"
+        self.assertEqual(d[SN.wavs_dir_step], "bar")
+        self.assertEqual(d.get(SN.wavs_dir_step), "bar")
+
+        self.assertEqual(d.get(SN.filelist_format_step, None), None)
+        self.assertEqual(d.get(SN.filelist_format_step.value, None), None)
+
+        d.update({SN.contact_email_step: "a@b.com"})
+        self.assertEqual(d[SN.contact_email_step.value], "a@b.com")
+
+        self.assertEqual(
+            d,
+            {
+                SN.audio_config_step.value: "foo",
+                SN.wavs_dir_step.value: "bar",
+                SN.contact_email_step.value: "a@b.com",
+            },
         )

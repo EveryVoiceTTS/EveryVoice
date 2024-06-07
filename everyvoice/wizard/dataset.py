@@ -135,7 +135,7 @@ class FilelistFormatStep(Step):
 
     def looks_like_sv(self, file_type, separator) -> bool:
         assert self.state
-        filelist_path = self.state.get(StepNames.filelist_step.value)
+        filelist_path = self.state.get(StepNames.filelist_step)
         initial_records = read_unknown_tabular_filelist(
             filelist_path, delimiter=separator, record_limit=10
         )
@@ -158,7 +158,7 @@ class FilelistFormatStep(Step):
 
     def validate(self, response):
         if response == "festival":
-            filelist_path = self.state.get(StepNames.filelist_step.value)
+            filelist_path = self.state.get(StepNames.filelist_step)
             try:
                 _ = read_festival(filelist_path, 10)
                 return True
@@ -179,8 +179,8 @@ class FilelistFormatStep(Step):
         the data to the tour state. We then inspect the headers for the data and add steps to
         select the basename and text if they are not already specified in the headers.
         """
-        file_type = self.state.get(StepNames.filelist_format_step.value)
-        filelist_path = self.state.get(StepNames.filelist_step.value)
+        file_type = self.state.get(StepNames.filelist_format_step)
+        filelist_path = self.state.get(StepNames.filelist_step)
         if not isinstance(filelist_path, Path):
             filelist_path = Path(filelist_path).expanduser()
         if file_type == "csv":
@@ -211,7 +211,7 @@ class FilelistFormatStep(Step):
             except ValueError:
                 self.tour.add_step(
                     HeaderStep(
-                        name=StepNames.text_header_step.value,
+                        name=StepNames.text_header_step,
                         prompt_text="Which column contains the [bold blue]text?",
                         header_name="text",
                         state_subset=self.state_subset,
@@ -225,7 +225,7 @@ class FilelistFormatStep(Step):
             except ValueError:
                 self.tour.add_step(
                     HeaderStep(
-                        name=StepNames.basename_header_step.value,
+                        name=StepNames.basename_header_step,
                         prompt_text="Which column contains the [bold blue]basenames?",
                         header_name="basename",
                         state_subset=self.state_subset,
@@ -319,7 +319,7 @@ class LanguageHeaderStep(HeaderStep):
         self.state["model_target_training_text_representation"] = (
             apply_automatic_text_conversions(
                 self.state["filelist_data"],
-                self.state[StepNames.filelist_text_representation_step.value],
+                self.state[StepNames.filelist_text_representation_step],
             )
         )
 
@@ -343,7 +343,7 @@ class HasHeaderLineStep(Step):
         return response in self.choices
 
     def effect(self):
-        if self.state[StepNames.data_has_header_line_step.value] == "no":
+        if self.state[StepNames.data_has_header_line_step] == "no":
             print("Reinterpreting your first row as a record, not headers.")
             self.state["filelist_data_list"].insert(
                 0, self.state["filelist_data_list"][0]
@@ -355,7 +355,7 @@ class HasSpeakerStep(Step):
     choices = ("no", "yes")
 
     def prompt(self):
-        if self.state[StepNames.filelist_format_step.value] == "festival":
+        if self.state[StepNames.filelist_format_step] == "festival":
             return "no"
         elif len(self.state.get("selected_headers", [])) >= len(
             self.state["filelist_data_list"][0]
@@ -372,10 +372,10 @@ class HasSpeakerStep(Step):
         return response in self.choices
 
     def effect(self):
-        if self.state[StepNames.data_has_speaker_value_step.value] == "yes":
+        if self.state[StepNames.data_has_speaker_value_step] == "yes":
             self.tour.add_step(
                 HeaderStep(
-                    name=StepNames.speaker_header_step.value,
+                    name=StepNames.speaker_header_step,
                     prompt_text="These are the remaining values from the first row in your data. Which column contains the [bold blue]speaker?",
                     header_name="speaker",
                     state_subset=self.state_subset,
@@ -389,7 +389,7 @@ class HasLanguageStep(Step):
     choices = ("no", "yes")
 
     def prompt(self):
-        if self.state[StepNames.filelist_format_step.value] == "festival":
+        if self.state[StepNames.filelist_format_step] == "festival":
             return "no"
         elif len(self.state.get("selected_headers", [])) >= len(
             self.state["filelist_data_list"][0]
@@ -406,10 +406,10 @@ class HasLanguageStep(Step):
         return response in self.choices
 
     def effect(self):
-        if self.state[StepNames.data_has_language_value_step.value] == "yes":
+        if self.state[StepNames.data_has_language_value_step] == "yes":
             self.tour.add_step(
                 LanguageHeaderStep(
-                    name=StepNames.language_header_step.value,
+                    name=StepNames.language_header_step,
                     prompt_text="These are the remaining values from the first row in your data. Which column contains the [bold blue]language?",
                     header_name="language",
                     state_subset=self.state_subset,
@@ -420,7 +420,7 @@ class HasLanguageStep(Step):
         else:
             self.tour.add_step(
                 SelectLanguageStep(
-                    name=StepNames.select_language_step.value,
+                    name=StepNames.select_language_step,
                     state_subset=self.state_subset,
                 ),
                 self,
@@ -467,7 +467,7 @@ class SelectLanguageStep(Step):
         self.state["model_target_training_text_representation"] = (
             apply_automatic_text_conversions(
                 self.state["filelist_data"],
-                self.state[StepNames.filelist_text_representation_step.value],
+                self.state[StepNames.filelist_text_representation_step],
                 global_isocode=isocode,
             )
         )
@@ -482,10 +482,10 @@ def reload_filelist_data_as_dict(state):
         return
 
     # reparse data
-    filelist_path = state.get(StepNames.filelist_step.value)
+    filelist_path = state.get(StepNames.filelist_step)
     if not isinstance(filelist_path, Path):
         filelist_path = Path(filelist_path).expanduser()
-    if state.get(StepNames.filelist_format_step.value, None) in [
+    if state.get(StepNames.filelist_format_step, None) in [
         "psv",
         "tsv",
         "csv",
@@ -495,14 +495,14 @@ def reload_filelist_data_as_dict(state):
             delimiter=state.get("filelist_delimiter"),
             fieldnames=state["filelist_headers"],
             file_has_header_line=(
-                state.get(StepNames.data_has_header_line_step.value, "yes") == "yes"
+                state.get(StepNames.data_has_header_line_step, "yes") == "yes"
             ),
         )
     else:
         state["filelist_data"] = read_festival(
             filelist_path,
             text_field_name=state.get(
-                StepNames.filelist_text_representation_step.value, "text"
+                StepNames.filelist_text_representation_step, "text"
             ),
         )
 
@@ -522,7 +522,7 @@ class TextProcessingStep(Step):
 
     def prompt(self):
         return get_response_from_menu_prompt(
-            prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step.value]}?",
+            prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step]}?",
             choices=(
                 "Lowercase",
                 "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
@@ -545,7 +545,7 @@ class TextProcessingStep(Step):
             self.state["symbols"] = {}
         if self.response:
             text_index = self.state["filelist_headers"].index(
-                self.state[StepNames.filelist_text_representation_step.value]
+                self.state[StepNames.filelist_text_representation_step]
             )
             for process in self.response:
                 process_fn = process_lookup[process]["fn"]
@@ -640,7 +640,7 @@ class SymbolSetStep(Step):
             symbols["characters"] = sorted(list(character_graphemes))
         if phone_graphemes:
             symbols["phones"] = sorted(list(phone_graphemes))
-        self.state[StepNames.symbol_set_step.value] = symbols
+        self.state[StepNames.symbol_set_step] = symbols
 
 
 def return_dataset_steps(dataset_index=0):
