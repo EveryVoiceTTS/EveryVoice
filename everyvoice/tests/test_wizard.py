@@ -19,6 +19,7 @@ from prompt_toolkit.output import DummyOutput
 from everyvoice.tests.stubs import (
     QuestionaryStub,
     Say,
+    capture_stderr,
     capture_stdout,
     monkeypatch,
     null_patch,
@@ -28,6 +29,7 @@ from everyvoice.wizard import State, Step
 from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard import Tour, basic, dataset, prompts
 from everyvoice.wizard.basic import ConfigFormatStep
+from everyvoice.wizard.main_tour import WIZARD_TOUR
 from everyvoice.wizard.utils import EnumDict
 
 CONTACT_INFO_STATE = State()
@@ -144,13 +146,19 @@ class WizardTest(TestCase):
             leaf[2].run()
 
     def test_main_tour(self):
-        from everyvoice.wizard.main_tour import WIZARD_TOUR
-
         tour = WIZARD_TOUR
         self.assertGreater(len(tour.steps), 6)
         # TODO try to figure out how to actually run the tour in unit testing or
         # at least add more interesting assertions that just the fact that it's
         # got several steps.
+        # self.monkey_run_tour() with a bunch of recursive answer would the thing to use here...
+
+    def test_visualize(self):
+        with capture_stdout() as out:
+            WIZARD_TOUR.visualize()
+        log = out.getvalue()
+        self.assertIn("└── Contact Name Step", log)
+        self.assertIn("└── Validate Wavs Step", log)
 
     def test_name_step(self):
         """Exercise providing a valid dataset name."""
@@ -396,7 +404,7 @@ class WizardTest(TestCase):
         self.assertIsInstance(language_step.children[0], dataset.SelectLanguageStep)
 
         select_lang_step = language_step.children[0]
-        with capture_stdout():
+        with capture_stdout(), capture_stderr():
             with patch_menu_prompt(15):  # some arbitrary language from the list
                 select_lang_step.run()
         # print(select_lang_step.state)
@@ -448,7 +456,8 @@ class WizardTest(TestCase):
 
         symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
         self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
-        symbol_set_step.run()
+        with capture_stdout(), capture_stderr():
+            symbol_set_step.run()
         self.assertEqual(len(symbol_set_step.state[SN.symbol_set_step.value]), 2)
         self.assertIn("t͡s", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
 
@@ -563,6 +572,7 @@ class WizardTest(TestCase):
 
     def monkey_run_tour(self, name: str, steps_and_answers: list[StepAndAnswer]):
         """Create and run a tour with the monkey answers given
+
         Args:
             name: Name to give the tour when creating it
             steps_and_answers: a list of steps, answers, and optional recursive answers
@@ -577,6 +587,8 @@ class WizardTest(TestCase):
                    (Answer/Monkey, optional recursive [chidren answer/monkeys])
                    to be used recursively for the children of Step.
                    This must align with what Step.effect() adds as children.
+
+        Returns: (tour, logs_from_stdout)
         """
 
         def recursive_helper(steps_and_answers: Iterable[StepAndAnswer]):
@@ -612,12 +624,13 @@ class WizardTest(TestCase):
         tour = Tour(name, steps=[step for (step, *_) in steps_and_answers])
         # fail on accidentally shared initializer
         self.assertTrue(tour.state == {} or tour.state == {"dataset_0": {}})
-        recursive_helper(steps_and_answers)
-        return tour
+        with capture_stdout() as out, capture_stderr():
+            recursive_helper(steps_and_answers)
+        return tour, out.getvalue()
 
     def test_monkey_tour_1(self):
         with tempfile.TemporaryDirectory() as tmpdirname, capture_stdout():
-            tour = self.monkey_run_tour(
+            tour, _ = self.monkey_run_tour(
                 "monkey tour 1",
                 [
                     StepAndAnswer(basic.NameStep(), Say("my-dataset-name")),
@@ -629,48 +642,46 @@ class WizardTest(TestCase):
 
     def test_monkey_tour_2(self):
         data_dir = Path(__file__).parent / "data"
-        with capture_stdout() as out:
-            tour = self.monkey_run_tour(
-                "monkey tour 2",
-                [
-                    StepAndAnswer(dataset.WavsDirStep(), Say(str(data_dir))),
-                    StepAndAnswer(
-                        dataset.FilelistStep(),
-                        Say(str(data_dir / "metadata.psv")),
-                    ),
-                    StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
-                    StepAndAnswer(
-                        dataset.FilelistTextRepresentationStep(), Say("characters")
-                    ),
-                    StepAndAnswer(
-                        dataset.HasSpeakerStep(),
-                        Say("yes"),
-                        children_answers=[RecursiveAnswers(Say(3))],
-                    ),
-                    StepAndAnswer(
-                        dataset.HasLanguageStep(),
-                        Say("no"),
-                        children_answers=[RecursiveAnswers(Say("eng"))],
-                    ),
-                    StepAndAnswer(
-                        dataset.ValidateWavsStep(),
-                        monkeypatch(builtins, "input", Say("y")),
-                        children_answers=[
-                            RecursiveAnswers(Say(str(data_dir / "lj/wavs"))),
-                            RecursiveAnswers(null_patch()),
-                        ],
-                    ),
-                    StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
-                    StepAndAnswer(
-                        dataset.SymbolSetStep(),
-                        Say(True),
-                    ),
-                    StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
-                    StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
-                ],
-            )
+        tour, log = self.monkey_run_tour(
+            "monkey tour 2",
+            [
+                StepAndAnswer(dataset.WavsDirStep(), Say(str(data_dir))),
+                StepAndAnswer(
+                    dataset.FilelistStep(),
+                    Say(str(data_dir / "metadata.psv")),
+                ),
+                StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
+                StepAndAnswer(
+                    dataset.FilelistTextRepresentationStep(), Say("characters")
+                ),
+                StepAndAnswer(
+                    dataset.HasSpeakerStep(),
+                    Say("yes"),
+                    children_answers=[RecursiveAnswers(Say(3))],
+                ),
+                StepAndAnswer(
+                    dataset.HasLanguageStep(),
+                    Say("no"),
+                    children_answers=[RecursiveAnswers(Say("eng"))],
+                ),
+                StepAndAnswer(
+                    dataset.ValidateWavsStep(),
+                    monkeypatch(builtins, "input", Say("Yes")),
+                    children_answers=[
+                        RecursiveAnswers(Say(str(data_dir / "lj/wavs"))),
+                        RecursiveAnswers(null_patch()),
+                    ],
+                ),
+                StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
+                StepAndAnswer(
+                    dataset.SymbolSetStep(),
+                    Say(True),
+                ),
+                StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
+                StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
+            ],
+        )
 
-        log = out.getvalue()
         self.assertIn("Warning: 5 wav files were not found", log)
         self.assertIn("Great! All audio files found in directory", log)
 
@@ -687,9 +698,9 @@ class WizardTest(TestCase):
 
     def test_with_language_column(self):
         data_dir = Path(__file__).parent / "data"
-        with capture_stdout(), tempfile.TemporaryDirectory() as tmpdir:
+        with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
-            tour = self.monkey_run_tour(
+            tour, _ = self.monkey_run_tour(
                 "tour with language column",
                 [
                     StepAndAnswer(basic.NameStep(), Say("project")),
@@ -763,7 +774,7 @@ class WizardTest(TestCase):
             for basename in ("f1", "f2", "f3"):
                 with open(tmpdir / (basename + ".wav"), "wb"):
                     pass
-            tour = self.monkey_run_tour(
+            tour, _ = self.monkey_run_tour(
                 "Tour with datafile missing the header line",
                 [
                     StepAndAnswer(basic.NameStep(), Say("project")),
@@ -841,7 +852,7 @@ class WizardTest(TestCase):
             for basename in ("f1", "f2", "f3"):
                 with open(tmpdir / (basename + ".wav"), "wb"):
                     pass
-            tour = self.monkey_run_tour(
+            tour, _ = self.monkey_run_tour(
                 "Tour without enough columns to have speaker or language",
                 [
                     StepAndAnswer(basic.NameStep(), Say("project")),
