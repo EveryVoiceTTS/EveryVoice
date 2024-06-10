@@ -566,7 +566,6 @@ class SoxEffectsStep(Step):
         return get_response_from_menu_prompt(
             prompt_text="Which of the following audio preprocessing options would you like to apply?",
             choices=(
-                "Resample to suggested sample rate: 22050 kHz",
                 "Normalization (-3.0dB)",
                 "Remove Silence at start and end",
                 "Remove Silence throughout",
@@ -581,9 +580,8 @@ class SoxEffectsStep(Step):
 
     def effect(self):
         audio_effects = {
-            0: ["rate", "22050"],
-            1: ["norm", "-3.0"],
-            2: [
+            0: [["norm", "-3.0"]],
+            1: [
                 [
                     "silence",
                     "1",
@@ -596,17 +594,12 @@ class SoxEffectsStep(Step):
                     "reverse"
                 ],  # reverse the clip again to revert to the right direction :)
             ],
-            3: ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
+            2: [["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"]],
         }
         self.state["sox_effects"] = [["channels", "1"]]
         if self.response:
             for effect in self.response:
-                if (
-                    effect == 2
-                ):  # trimming leading and trailing silence is now a list of lists.
-                    self.state["sox_effects"] += audio_effects[effect]
-                else:
-                    self.state["sox_effects"].append(audio_effects[effect])
+                self.state["sox_effects"] += audio_effects[effect]
 
 
 class SymbolSetStep(Step):

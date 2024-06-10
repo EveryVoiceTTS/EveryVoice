@@ -408,14 +408,14 @@ class WizardTest(TestCase):
 
         sox_effects_step = find_step(SN.sox_effects_step, tour.steps)
         # 0 is resample to 22050 kHz, 2 is remove silence at start and end
-        with patch_menu_prompt([0, 2]):
+        with patch_menu_prompt([0, 1]):
             sox_effects_step.run()
         # print(sox_effects_step.state["sox_effects"])
         self.assertEqual(
             sox_effects_step.state["sox_effects"],
             [
                 ["channels", "1"],
-                ["rate", "22050"],
+                ["norm", "-3.0"],
                 [
                     "silence",
                     "1",
