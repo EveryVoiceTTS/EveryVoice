@@ -47,6 +47,7 @@ def synthesize_audio(
         devices="1",
         device=device,
         global_step=1,
+        vocoder_global_step=1,
         output_type=[],
         text_representation=TargetTrainingTextRepresentationLevel.characters,
         output_dir=output_dir,
@@ -64,6 +65,7 @@ def synthesize_audio(
         output_key=output_key,
         device=device,
         global_step=1,
+        vocoder_global_step=1,
         vocoder_model=vocoder_model,
         vocoder_config=vocoder_config,
     )
