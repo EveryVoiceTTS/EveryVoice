@@ -127,7 +127,6 @@ class Preprocessor:
         self,
         wav_path: Path,
         normalize=True,
-        use_effects=True,
         resample_rate=None,
         sox_effects=None,
         hop_size=None,
@@ -168,7 +167,7 @@ class Preprocessor:
                 self.counters.increment("audio_empty")
             return None, None
 
-        if use_effects and sox_effects:
+        if sox_effects:
             audio, sr = apply_effects_tensor(
                 audio,
                 sr,

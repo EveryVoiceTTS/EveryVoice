@@ -65,7 +65,6 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             # This just applies the SOX effects
             audio, sr = self.preprocessor.process_audio(
                 self.wavs_dir / (entry["basename"] + ".wav"),
-                use_effects=True,
                 sox_effects=config.preprocessing.source_data[0].sox_effects,
                 hop_size=config.preprocessing.audio.fft_hop_size,
             )
@@ -91,7 +90,6 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         raw_audio, raw_sr = torchaudio.load(audio_path_with_silence)
         processed_audio, processed_sr = self.preprocessor.process_audio(
             audio_path_with_silence,
-            use_effects=True,
             sox_effects=sox_effects,
             hop_size=config.preprocessing.audio.fft_hop_size,
         )
@@ -112,7 +110,6 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         # should work with resampling too
         rs_processed_audio, rs_processed_sr = self.preprocessor.process_audio(
             audio_path_with_silence,
-            use_effects=True,
             resample_rate=22050,
             sox_effects=sox_effects,
             hop_size=config.preprocessing.audio.fft_hop_size,
