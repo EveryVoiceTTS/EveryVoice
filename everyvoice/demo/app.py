@@ -14,9 +14,6 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import 
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_writing_callback import (
     PredictionWritingWavCallback,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
-    SynthesizeOutputFormats,
-)
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     load_hifigan_from_checkpoint,
 )
@@ -47,6 +44,7 @@ def synthesize_audio(
         devices="1",
         device=device,
         global_step=1,
+        vocoder_global_step=1,  # dummy value since the vocoder step is not used
         output_type=[],
         text_representation=TargetTrainingTextRepresentationLevel.characters,
         output_dir=output_dir,
@@ -57,13 +55,16 @@ def synthesize_audio(
         batch_size=1,
         num_workers=1,
     )
-    output_key = "postnet_output" if text_to_spec_model.config.model.use_postnet else "output"
+    output_key = (
+        "postnet_output" if text_to_spec_model.config.model.use_postnet else "output"
+    )
     wav_writer = PredictionWritingWavCallback(
         output_dir=output_dir,
         config=config,
         output_key=output_key,
         device=device,
         global_step=1,
+        vocoder_global_step=1,  # dummy value since the vocoder step is not used
         vocoder_model=vocoder_model,
         vocoder_config=vocoder_config,
     )
