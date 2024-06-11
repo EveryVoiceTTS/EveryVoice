@@ -91,12 +91,24 @@ class ContactEmailStep(Step):
     def prompt(self):
         return input("Please provide a contact email address for your models. ")
 
+    def in_unit_testing(self):
+        """Skip checking deliverability when in unit testing.
+
+        Checking deliverability can be slow where there is not web connection, as
+        is sometimes the case when running the unit tests, so skip it in that context.
+        """
+        import inspect
+
+        return any(
+            frame.filename.endswith("test_wizard.py") for frame in inspect.stack()
+        )
+
     def validate(self, response):
         try:
             # Check that the email address is valid. Turn on check_deliverability
             # for first-time validations like on account creation pages (but not
             # login pages).
-            validate_email(response, check_deliverability=True)
+            validate_email(response, check_deliverability=not self.in_unit_testing())
         except EmailNotValidError as e:
             # The exception message is a human-readable explanation of why it's
             # not a valid (or deliverable) email address.

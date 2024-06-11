@@ -353,28 +353,27 @@ class WizardTest(TestCase):
         format_step = find_step(SN.filelist_format_step, tour.steps)
         with patch_menu_prompt(0):  # 0 is "psv"
             format_step.run()
-        self.assertIsInstance(format_step.children[0], dataset.HasHeaderLineStep)
-        self.assertEqual(
-            format_step.children[0].name, SN.data_has_header_line_step.value
-        )
-        self.assertIsInstance(format_step.children[1], dataset.HeaderStep)
-        self.assertEqual(format_step.children[1].name, SN.basename_header_step.value)
-        self.assertIsInstance(format_step.children[2], dataset.HeaderStep)
-        self.assertEqual(format_step.children[2].name, SN.text_header_step.value)
+        self.assertEqual(len(format_step.children), 3)
 
         step = format_step.children[0]
+        self.assertIsInstance(step, dataset.HasHeaderLineStep)
+        self.assertEqual(step.name, SN.data_has_header_line_step.value)
         with patch_menu_prompt(1):  # 1 is "yes"
             step.run()
         self.assertEqual(step.state[SN.data_has_header_line_step.value], "yes")
         self.assertEqual(len(step.state["filelist_data_list"]), 4)
 
         step = format_step.children[1]
+        self.assertIsInstance(step, dataset.HeaderStep)
+        self.assertEqual(step.name, SN.basename_header_step.value)
         with patch_menu_prompt(1):  # 1 is second column
             step.run()
         self.assertEqual(step.response, 1)
         self.assertEqual(step.state["filelist_headers"][1], "basename")
 
-        step = tour.steps[2].children[2]
+        step = format_step.children[2]
+        self.assertIsInstance(step, dataset.HeaderStep)
+        self.assertEqual(step.name, SN.text_header_step.value)
         with patch_menu_prompt(1):  # 1 is second remaining column, i.e., third column
             step.run()
         self.assertEqual(step.state["filelist_headers"][2], "text")
