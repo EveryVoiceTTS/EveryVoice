@@ -117,19 +117,25 @@ class Step(_Step, NodeMixin):
             self.run()
 
 
+class RootStep(Step):
+    """Dummy step sitting at the root of the tour"""
+
+    DEFAULT_NAME = "Root"
+
+    def run(self):
+        pass
+
+
 class Tour:
     def __init__(self, name: str, steps: list[Step], state: Optional[State] = None):
-        """Create the tour by setting each Step as the child of the previous Step."""
+        """Create the tour by placing all steps under a dummy root node"""
         self.name = name
         self.state: State = state if state is not None else State()
-        for parent, child in zip(steps, steps[1:]):
-            child.parent = parent
-            self.determine_state(child, self.state)
-            child.tour = self
         self.steps = steps
-        self.root = steps[0]
+        self.root = RootStep()
         self.root.tour = self
         self.determine_state(self.root, self.state)
+        self.add_steps(steps, self.root)
 
     def determine_state(self, step: Step, state: State):
         if step.state_subset is not None:
@@ -138,6 +144,11 @@ class Tour:
             step.state = state[step.state_subset]
         else:
             step.state = state
+
+    def add_steps(self, steps: list[Step], parent: Step):
+        """Insert steps in front of the other children of parent"""
+        for step in reversed(steps):
+            self.add_step(step, parent)
 
     def add_step(self, step: Step, parent: Step, child_index=0):
         self.determine_state(step, self.state)

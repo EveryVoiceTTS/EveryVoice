@@ -121,9 +121,9 @@ app.command(
 """,
 )
 def new_project():
-    from everyvoice.wizard.main_tour import WIZARD_TOUR
+    from everyvoice.wizard.main_tour import get_main_wizard_tour
 
-    WIZARD_TOUR.run()
+    get_main_wizard_tour().run()
 
 
 # Add preprocess to root

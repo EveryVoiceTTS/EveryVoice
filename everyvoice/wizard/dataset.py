@@ -279,8 +279,13 @@ class ValidateWavsStep(Step):
 
     def effect(self):
         if self.response[:1] == "y":
-            self.tour.add_step(ValidateWavsStep(state_subset=self.state_subset), self)
-            self.tour.add_step(WavsDirStep(state_subset=self.state_subset), self)
+            self.tour.add_steps(
+                [
+                    WavsDirStep(state_subset=self.state_subset),
+                    ValidateWavsStep(state_subset=self.state_subset),
+                ],
+                self,
+            )
 
 
 class FilelistTextRepresentationStep(Step):

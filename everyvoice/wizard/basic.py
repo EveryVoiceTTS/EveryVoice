@@ -432,11 +432,12 @@ class MoreDatasetsStep(Step):
                 )
                 + 1
             )
-            self.tour.add_step(
-                MoreDatasetsStep(name=StepNames.more_datasets_step), self
+
+            self.tour.add_steps(
+                get_dataset_steps(dataset_index=new_dataset_index)
+                + [MoreDatasetsStep()],
+                self,
             )
-            for step in reversed(get_dataset_steps(dataset_index=new_dataset_index)):
-                self.tour.add_step(step, self)
         else:
             self.tour.add_step(
                 ConfigFormatStep(name=StepNames.config_format_step), self

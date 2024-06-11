@@ -29,7 +29,7 @@ from everyvoice.wizard import State, Step
 from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard import Tour, basic, dataset, prompts
 from everyvoice.wizard.basic import ConfigFormatStep
-from everyvoice.wizard.main_tour import WIZARD_TOUR
+from everyvoice.wizard.main_tour import get_main_wizard_tour
 from everyvoice.wizard.utils import EnumDict
 
 CONTACT_INFO_STATE = State()
@@ -146,7 +146,7 @@ class WizardTest(TestCase):
             leaf[2].run()
 
     def test_main_tour(self):
-        tour = WIZARD_TOUR
+        tour = get_main_wizard_tour()
         self.assertGreater(len(tour.steps), 6)
         # TODO try to figure out how to actually run the tour in unit testing or
         # at least add more interesting assertions that just the fact that it's
@@ -154,11 +154,12 @@ class WizardTest(TestCase):
         # self.monkey_run_tour() with a bunch of recursive answer would the thing to use here...
 
     def test_visualize(self):
+        tour = get_main_wizard_tour()
         with capture_stdout() as out:
-            WIZARD_TOUR.visualize()
+            tour.visualize()
         log = out.getvalue()
-        self.assertIn("└── Contact Name Step", log)
-        self.assertIn("└── Validate Wavs Step", log)
+        self.assertIn("── Contact Name Step", log)
+        self.assertIn("── Validate Wavs Step", log)
 
     def test_name_step(self):
         """Exercise providing a valid dataset name."""
