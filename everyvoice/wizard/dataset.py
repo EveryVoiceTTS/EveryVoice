@@ -51,6 +51,30 @@ class DatasetNameStep(Step):
         )
 
 
+class DatasetPermissionStep(Step):
+    DEFAULT_NAME = StepNames.dataset_permission_step
+    choices = (
+        "No, I don't have permission to use this data.",
+        "Yes, I do have permission to use this data.",
+    )
+
+    def prompt(self):
+        prompt_text = """Do you have permission to use this data to build a TTS model? It is unethical to build a TTS model of a speaker without their knowledge or permission and there can be serious consequences for doing so."""
+        return get_response_from_menu_prompt(
+            prompt_text=prompt_text,
+            choices=self.choices,
+        )
+
+    def validate(self, response):
+        return response in self.choices
+
+    def effect(self):
+        if self.state[StepNames.dataset_permission_step.value].startswith("No"):
+            print("OK, we'll send you back to choose another dataset then!")
+            self.children = []
+            del self.root.state[self.state_subset]
+
+
 class WavsDirStep(Step):
     DEFAULT_NAME = StepNames.wavs_dir_step
 
@@ -689,15 +713,18 @@ def get_dataset_steps(dataset_index=0):
     return [
         WavsDirStep(state_subset=f"dataset_{dataset_index}"),
         FilelistStep(state_subset=f"dataset_{dataset_index}"),
-        FilelistFormatStep(state_subset=f"dataset_{dataset_index}"),
-        ValidateWavsStep(state_subset=f"dataset_{dataset_index}"),
-        FilelistTextRepresentationStep(state_subset=f"dataset_{dataset_index}"),
-        TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
-        HasSpeakerStep(state_subset=f"dataset_{dataset_index}"),
-        HasLanguageStep(state_subset=f"dataset_{dataset_index}"),
-        SymbolSetStep(state_subset=f"dataset_{dataset_index}"),
-        SoxEffectsStep(state_subset=f"dataset_{dataset_index}"),
-        DatasetNameStep(state_subset=f"dataset_{dataset_index}"),
+        [
+            DatasetPermissionStep(state_subset=f"dataset_{dataset_index}"),
+            FilelistFormatStep(state_subset=f"dataset_{dataset_index}"),
+            ValidateWavsStep(state_subset=f"dataset_{dataset_index}"),
+            FilelistTextRepresentationStep(state_subset=f"dataset_{dataset_index}"),
+            TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
+            HasSpeakerStep(state_subset=f"dataset_{dataset_index}"),
+            HasLanguageStep(state_subset=f"dataset_{dataset_index}"),
+            SymbolSetStep(state_subset=f"dataset_{dataset_index}"),
+            SoxEffectsStep(state_subset=f"dataset_{dataset_index}"),
+            DatasetNameStep(state_subset=f"dataset_{dataset_index}"),
+        ],
     ]
 
 

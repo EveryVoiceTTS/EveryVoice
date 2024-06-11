@@ -1,6 +1,6 @@
 import sys
 from enum import Enum
-from typing import Optional
+from typing import Optional, Sequence
 
 from anytree import NodeMixin, RenderTree
 
@@ -145,10 +145,19 @@ class Tour:
         else:
             step.state = state
 
-    def add_steps(self, steps: list[Step], parent: Step):
-        """Insert steps in front of the other children of parent"""
-        for step in reversed(steps):
-            self.add_step(step, parent)
+    def add_steps(self, steps: Sequence[Step | list[Step]], parent: Step):
+        """Insert steps in front of the other children of parent.
+
+        Steps are added as direct children.
+        For sublists of steps, the first is a direct child, the rest are under it.
+        """
+        for item in reversed(steps):
+            if isinstance(item, list):
+                step, *children = item
+                self.add_step(step, parent)
+                self.add_steps(children, step)
+            else:
+                self.add_step(item, parent)
 
     def add_step(self, step: Step, parent: Step, child_index=0):
         self.determine_state(step, self.state)
@@ -172,6 +181,7 @@ class StepNames(Enum):
     contact_name_step = "Contact Name Step"
     contact_email_step = "Contact Email Step"
     dataset_name_step = "Dataset Name Step"
+    dataset_permission_step = "Dataset Permission Step"
     output_step = "Output Path Step"
     wavs_dir_step = "Wavs Dir Step"
     filelist_step = "Filelist Step"
