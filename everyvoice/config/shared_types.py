@@ -18,7 +18,7 @@ from pydantic import (
     ValidationInfo,
     model_validator,
 )
-from typing_extensions import Annotated
+from typing_extensions import Annotated, Optional
 
 from everyvoice.config.utils import (
     PossiblyRelativePath,
@@ -195,8 +195,14 @@ class BaseTrainingConfig(PartialLoadConfig):
         1,
         description="The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
     )
-    check_val_every_n_epoch: int = Field(
-        1,
+    val_check_interval: Union[int, float, None] = Field(
+        500,
+        description="How often to check the validation set."
+        " Pass a float in the range [0.0, 1.0] to check after a fraction of the training epoch."
+        " Pass an int to check after a fixed number of training batches.",
+    )
+    check_val_every_n_epoch: Optional[int] = Field(
+        None,
         description="Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
     )
     max_epochs: int = Field(1000, description="Stop training after this many epochs")
