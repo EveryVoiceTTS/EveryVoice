@@ -1,5 +1,5 @@
 import sys
-from typing import List, Tuple, Union
+from typing import Union
 
 import simple_term_menu
 from questionary import Style
@@ -27,18 +27,18 @@ CUSTOM_QUESTIONARY_STYLE = Style(
 
 def get_response_from_menu_prompt(
     prompt_text: str = "",
-    choices: Tuple[str, ...] = (),
+    choices: tuple[str, ...] = (),
     title: str = "",
     multi=False,
     search=False,
     return_indices=False,
-) -> Union[int, str, List[int], List[str]]:
+) -> Union[int, str, list[int], list[str]]:
     """Given some prompt text and a list of choices, create a simple terminal window
        and return the index of the choice
 
     Args:
         prompt_text (str): rich prompt text to print before menu
-        choices (List[str]): choices to display
+        choices (list[str]): choices to display
 
     Returns:
         int: index of choice

@@ -150,18 +150,32 @@ class OutputPathStep(Step):
         output_path = path / self.state.get(StepNames.name_step, "DEFAULT_NAME")
         if output_path.exists():
             print(
-                f"Sorry, '{output_path}' already exists. Please choose another output directory or start again and choose a different project name."
+                f"Sorry, '{output_path}' already exists. "
+                "Please choose another output directory or start again and choose a different project name."
             )
             return False
+
+        # We create the output directory in validate() instead of effect() so that
+        # failure can be reported to the user and the question asked again if necessary.
+        try:
+            output_path.mkdir(parents=True, exist_ok=True)
+            # we created it just to test permission, but don't leave it lying around in
+            # case the wizard is interrupted or fails. We'll create it again when we save.
+            output_path.rmdir()
+        except OSError as e:
+            print(
+                f"Sorry, could not create '{output_path}': {e}. "
+                "Please choose another output directory."
+            )
+            return False
+
+        self.output_path = output_path
         return True
 
     def effect(self):
-        assert self.state is not None, "OutputPathStep requires NameStep"
-        output_path = Path(self.response) / self.state.get(
-            StepNames.name_step, "DEFAULT_NAME"
+        print(
+            f"The Configuration Wizard 🧙 will put your files here: '{self.output_path}'"
         )
-        output_path.mkdir(parents=True, exist_ok=True)
-        print(f"The Configuration Wizard 🧙 will put your files here: '{output_path}'")
 
 
 class ConfigFormatStep(Step):
@@ -450,6 +464,8 @@ class MoreDatasetsStep(Step):
                 + [MoreDatasetsStep()],
                 self,
             )
+        elif len([key for key in self.state.keys() if key.startswith("dataset_")]) == 0:
+            print("No dataset to save, exiting without saving any configuration.")
         else:
             self.tour.add_step(
                 ConfigFormatStep(name=StepNames.config_format_step), self
