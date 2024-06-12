@@ -225,6 +225,7 @@ def train_base_command(
         max_epochs=config.training.max_epochs,
         max_steps=config.training.max_steps,
         check_val_every_n_epoch=config.training.check_val_every_n_epoch,
+        val_check_interval=config.training.val_check_interval,
         callbacks=[monitored_ckpt_callback, last_ckpt_callback, lr_monitor],
         strategy=strategy,
         num_nodes=nodes,
