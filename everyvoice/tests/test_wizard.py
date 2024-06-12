@@ -71,6 +71,19 @@ class StepAndAnswer(NamedTuple):
             return self.answer_or_monkey
 
 
+def find_step(name: Enum, steps: Sequence[Step | list[Step]]):
+    """Find a step with the given name in steps, of potentially variable depth"""
+    for s in steps:
+        if isinstance(s, list):
+            try:
+                return find_step(name, s)
+            except IndexError:
+                pass
+        elif s.name == name.value:
+            return s
+    raise IndexError(f"Step {name} not found.")  # pragma: no cover
+
+
 class WizardTest(TestCase):
     """Basic test for the configuration wizard"""
 
@@ -218,6 +231,26 @@ class WizardTest(TestCase):
         self.assertIn("There must be something after the @-sign", output)
         self.assertIn("An email address cannot end with a period", output)
 
+    def test_no_permissions(self):
+        """Exercise lacking permissions, then trying again"""
+        tour = get_main_wizard_tour()
+        permission_step = find_step(SN.dataset_permission_step, tour.steps)
+        self.assertGreater(len(permission_step.children), 8)
+        self.assertGreater(len(tour.root.descendants), 14)
+        self.assertIn("dataset_0", tour.state)
+        with patch_menu_prompt(0):  # 0 is no, I don't have permission
+            permission_step.run()
+        self.assertEqual(permission_step.children, ())
+        self.assertLess(len(tour.root.descendants), 10)
+        self.assertNotIn("dataset_0", tour.state)
+
+        more_dataset_step = find_step(SN.more_datasets_step, tour.steps)
+        with patch_menu_prompt(1):  # 1 is Yes, I have more data
+            more_dataset_step.run()
+        self.assertIn("dataset_1", tour.state)
+        self.assertGreater(len(more_dataset_step.descendants), 8)
+        self.assertGreater(len(tour.root.descendants), 14)
+
     def test_output_path_step(self):
         """Exercise the OutputPathStep"""
         tour = Tour(
@@ -274,7 +307,7 @@ class WizardTest(TestCase):
 
         with patch_menu_prompt(1):  # answer 1 is "yes"
             step.run()
-        self.assertGreater(len(step.children), 5)
+        self.assertGreater(len(step.descendants), 10)
 
     def test_dataset_name(self):
         step = dataset.DatasetNameStep()
@@ -333,12 +366,6 @@ class WizardTest(TestCase):
         self.assertEqual(step.response, 512)
 
     def test_dataset_subtour(self):
-        def find_step(name: Enum, steps: Sequence[Step]):
-            for s in steps:
-                if s.name == name.value:
-                    return s
-            raise IndexError(f"Step {name} not found.")  # pragma: no cover
-
         tour = Tour("unit testing", steps=dataset.get_dataset_steps())
 
         wavs_dir_step = find_step(SN.wavs_dir_step, tour.steps)
@@ -350,6 +377,14 @@ class WizardTest(TestCase):
         monkey = monkeypatch(filelist_step, "prompt", Say(filelist))
         with monkey:
             filelist_step.run()
+
+        permission_step = find_step(SN.dataset_permission_step, tour.steps)
+        with patch_menu_prompt(1):  # 1 is "yes, I have permission"
+            permission_step.run()
+        self.assertTrue(
+            permission_step.state[SN.dataset_permission_step].startswith("Yes")
+        )
+
         format_step = find_step(SN.filelist_format_step, tour.steps)
         with patch_menu_prompt(0):  # 0 is "psv"
             format_step.run()
