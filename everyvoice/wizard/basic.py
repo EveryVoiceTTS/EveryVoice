@@ -148,20 +148,26 @@ class OutputPathStep(Step):
             return False
         assert self.state is not None, "OutputPathStep requires NameStep"
         output_path = path / self.state.get(StepNames.name_step, "DEFAULT_NAME")
+        TRY_AGAIN = "Please choose another output directory or start again and choose a different project name."
         if output_path.exists():
-            print(
-                f"Sorry, '{output_path}' already exists. Please choose another output directory or start again and choose a different project name."
-            )
+            print(f"Sorry, '{output_path}' already exists.", TRY_AGAIN)
             return False
+
+        # We create the output directory in validate() instead of effect() so that
+        # failure can be reported to the user and the question asked again if necessary.
+        try:
+            output_path.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            print(f"Sorry, could not create '{output_path}': {e}.", TRY_AGAIN)
+            return False
+
+        self.output_path = output_path
         return True
 
     def effect(self):
-        assert self.state is not None, "OutputPathStep requires NameStep"
-        output_path = Path(self.response) / self.state.get(
-            StepNames.name_step, "DEFAULT_NAME"
+        print(
+            f"The Configuration Wizard 🧙 will put your files here: '{self.output_path}'"
         )
-        output_path.mkdir(parents=True, exist_ok=True)
-        print(f"The Configuration Wizard 🧙 will put your files here: '{output_path}'")
 
 
 class ConfigFormatStep(Step):
@@ -450,6 +456,8 @@ class MoreDatasetsStep(Step):
                 + [MoreDatasetsStep()],
                 self,
             )
+        elif len([key for key in self.state.keys() if key.startswith("dataset_")]) == 0:
+            print("No dataset to save, exiting.")
         else:
             self.tour.add_step(
                 ConfigFormatStep(name=StepNames.config_format_step), self

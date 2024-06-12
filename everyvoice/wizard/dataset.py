@@ -5,6 +5,9 @@ from pathlib import Path
 from unicodedata import normalize
 
 import questionary
+import rich
+from rich.panel import Panel
+from rich.style import Style
 from tqdm import tqdm
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
@@ -295,20 +298,35 @@ class ValidateWavsStep(Step):
     def prompt(self):
         error_count = self.wav_file_early_validation()
         if error_count:
-            return input("Do you want to pick a different wavs directory? ").lower()
-        return "ok"
+            return get_response_from_menu_prompt(
+                title="Do you want to pick a different wavs directory?",
+                choices=(
+                    "Yes",
+                    "No, I will fix my audio basenames or add missing audio files later.",
+                ),
+            )
+        else:
+            return "OK"
 
     def validate(self, response):
-        return response in ("y", "yes", "n", "no", "ok")
+        return response[:3] in ("OK", "Yes", "No,")
 
     def effect(self):
-        if self.response[:1] == "y":
+        if self.response == "Yes":
             self.tour.add_steps(
                 [
                     WavsDirStep(state_subset=self.state_subset),
                     ValidateWavsStep(state_subset=self.state_subset),
                 ],
                 self,
+            )
+        elif self.response.startswith("No"):
+            rich.print(
+                Panel(
+                    "Continuing despite missing audio files. Make sure you fix your filelist later or add missing audio files, otherwise entries in your filelist with missing audio files will be skipped during preprocessing and therefore be ignored during training.",
+                    title="Missing audio files",
+                    border_style=Style(color="#EF1010"),
+                )
             )
 
 
@@ -711,11 +729,11 @@ class SymbolSetStep(Step):
 
 def get_dataset_steps(dataset_index=0):
     return [
-        WavsDirStep(state_subset=f"dataset_{dataset_index}"),
         FilelistStep(state_subset=f"dataset_{dataset_index}"),
         [
             DatasetPermissionStep(state_subset=f"dataset_{dataset_index}"),
             FilelistFormatStep(state_subset=f"dataset_{dataset_index}"),
+            WavsDirStep(state_subset=f"dataset_{dataset_index}"),
             ValidateWavsStep(state_subset=f"dataset_{dataset_index}"),
             FilelistTextRepresentationStep(state_subset=f"dataset_{dataset_index}"),
             TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
