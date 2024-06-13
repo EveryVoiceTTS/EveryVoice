@@ -467,11 +467,34 @@
           "description": "The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
           "title": "Ckpt Epochs"
         },
+        "val_check_interval": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 500,
+          "description": "How often to check the validation set. Pass a float in the range [0.0, 1.0] to check after a fraction of the training epoch. Pass an int to check after a fixed number of training batches.",
+          "title": "Val Check Interval"
+        },
         "check_val_every_n_epoch": {
-          "default": 1,
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
           "description": "Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
-          "title": "Check Val Every N Epoch",
-          "type": "integer"
+          "title": "Check Val Every N Epoch"
         },
         "max_epochs": {
           "default": 1000,
