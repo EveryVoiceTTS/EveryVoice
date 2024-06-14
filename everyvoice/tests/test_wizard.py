@@ -427,16 +427,6 @@ class WizardTest(TestCase):
             step.run()
         self.assertEqual(step.state["filelist_headers"][2], "text")
 
-        wavs_dir_step = find_step(SN.wavs_dir_step, tour.steps)
-        with monkeypatch(wavs_dir_step, "prompt", Say(str(self.data_dir))):
-            wavs_dir_step.run()
-
-        validate_wavs_step = find_step(SN.validate_wavs_step, tour.steps)
-        with patch_menu_prompt(1), capture_stdout() as out:
-            validate_wavs_step.run()
-        self.assertEqual(step.state[SN.validate_wavs_step][:2], "No")
-        self.assertIn("Warning: 3 wav files were not found", out.getvalue())
-
         text_representation_step = find_step(
             SN.filelist_text_representation_step, tour.steps
         )
@@ -465,6 +455,16 @@ class WizardTest(TestCase):
             select_lang_step.state["filelist_headers"],
             ["unknown_0", "basename", "characters", "unknown_3"],
         )
+
+        wavs_dir_step = find_step(SN.wavs_dir_step, tour.steps)
+        with monkeypatch(wavs_dir_step, "prompt", Say(str(self.data_dir))):
+            wavs_dir_step.run()
+
+        validate_wavs_step = find_step(SN.validate_wavs_step, tour.steps)
+        with patch_menu_prompt(1), capture_stdout() as out:
+            validate_wavs_step.run()
+        self.assertEqual(step.state[SN.validate_wavs_step][:2], "No")
+        self.assertIn("Warning: 3 wav files were not found", out.getvalue())
 
         text_processing_step = find_step(SN.text_processing_step, tour.steps)
         # 0 is lowercase, 1 is NFC Normalization, select both

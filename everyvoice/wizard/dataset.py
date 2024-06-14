@@ -273,12 +273,11 @@ class ValidateWavsStep(Step):
     def wav_file_early_validation(self) -> int:
         """Look for missing wav files and return the error count"""
         assert self.state is not None  # fixes mypy errors
-        basename_column = self.state["filelist_headers"].index("basename")
         wavs_dir = Path(self.state[StepNames.wavs_dir_step])
         files_not_found = []
         MAX_SAMPLES = 1000
-        filelist_data_list = self.state["filelist_data_list"]
-        file_list_size = len(filelist_data_list) - 1  # -1 to ignore header
+        filelist_data = self.state["filelist_data"]
+        file_list_size = len(filelist_data)
         sample: Sequence[int]
         if file_list_size > MAX_SAMPLES:
             print(
@@ -291,8 +290,8 @@ class ValidateWavsStep(Step):
             sampled_text = ""
             sample = range(file_list_size)
         for item in sample:
-            record = filelist_data_list[item + 1]  # +1 to skip past header
-            wav_basename = record[basename_column]
+            record = filelist_data[item]  # +1 to skip past header
+            wav_basename = record["basename"]
             wav_filename = wavs_dir / (
                 wav_basename + ("" if wav_basename.endswith(".wav") else ".wav")
             )
@@ -750,12 +749,12 @@ def get_dataset_steps(dataset_index=0):
         [
             DatasetPermissionStep(state_subset=f"dataset_{dataset_index}"),
             FilelistFormatStep(state_subset=f"dataset_{dataset_index}"),
-            WavsDirStep(state_subset=f"dataset_{dataset_index}"),
-            ValidateWavsStep(state_subset=f"dataset_{dataset_index}"),
             FilelistTextRepresentationStep(state_subset=f"dataset_{dataset_index}"),
             TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
             HasSpeakerStep(state_subset=f"dataset_{dataset_index}"),
             HasLanguageStep(state_subset=f"dataset_{dataset_index}"),
+            WavsDirStep(state_subset=f"dataset_{dataset_index}"),
+            ValidateWavsStep(state_subset=f"dataset_{dataset_index}"),
             SymbolSetStep(state_subset=f"dataset_{dataset_index}"),
             SoxEffectsStep(state_subset=f"dataset_{dataset_index}"),
             DatasetNameStep(state_subset=f"dataset_{dataset_index}"),

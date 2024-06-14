@@ -259,11 +259,11 @@ def read_festival(
     """
     festival_pattern = re.compile(
         r"""
-    (\s*
-    (?P<basename>[\w\d\-\_]*)
+    \(\s*
+    (?P<basename>[\w\d\-\_.]*)
     \s*
     "(?P<text>[^"]*)"
-     )
+    \s*\)
     """,
         re.VERBOSE,
     )
