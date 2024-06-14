@@ -29,7 +29,7 @@ from everyvoice.wizard import State, Step
 from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard import Tour, basic, dataset, prompts
 from everyvoice.wizard.basic import ConfigFormatStep
-from everyvoice.wizard.main_tour import WIZARD_TOUR
+from everyvoice.wizard.main_tour import get_main_wizard_tour
 from everyvoice.wizard.utils import EnumDict
 
 CONTACT_INFO_STATE = State()
@@ -69,6 +69,19 @@ class StepAndAnswer(NamedTuple):
             return monkeypatch(self.step, "prompt", self.answer_or_monkey)
         else:
             return self.answer_or_monkey
+
+
+def find_step(name: Enum, steps: Sequence[Step | list[Step]]):
+    """Find a step with the given name in steps, of potentially variable depth"""
+    for s in steps:
+        if isinstance(s, list):
+            try:
+                return find_step(name, s)
+            except IndexError:
+                pass
+        elif s.name == name.value:
+            return s
+    raise IndexError(f"Step {name} not found.")  # pragma: no cover
 
 
 class WizardTest(TestCase):
@@ -146,7 +159,7 @@ class WizardTest(TestCase):
             leaf[2].run()
 
     def test_main_tour(self):
-        tour = WIZARD_TOUR
+        tour = get_main_wizard_tour()
         self.assertGreater(len(tour.steps), 6)
         # TODO try to figure out how to actually run the tour in unit testing or
         # at least add more interesting assertions that just the fact that it's
@@ -154,11 +167,12 @@ class WizardTest(TestCase):
         # self.monkey_run_tour() with a bunch of recursive answer would the thing to use here...
 
     def test_visualize(self):
+        tour = get_main_wizard_tour()
         with capture_stdout() as out:
-            WIZARD_TOUR.visualize()
+            tour.visualize()
         log = out.getvalue()
-        self.assertIn("└── Contact Name Step", log)
-        self.assertIn("└── Validate Wavs Step", log)
+        self.assertIn("── Contact Name Step", log)
+        self.assertIn("── Validate Wavs Step", log)
 
     def test_name_step(self):
         """Exercise providing a valid dataset name."""
@@ -217,6 +231,26 @@ class WizardTest(TestCase):
         self.assertIn("There must be something after the @-sign", output)
         self.assertIn("An email address cannot end with a period", output)
 
+    def test_no_permissions(self):
+        """Exercise lacking permissions, then trying again"""
+        tour = get_main_wizard_tour()
+        permission_step = find_step(SN.dataset_permission_step, tour.steps)
+        self.assertGreater(len(permission_step.children), 8)
+        self.assertGreater(len(tour.root.descendants), 14)
+        self.assertIn("dataset_0", tour.state)
+        with patch_menu_prompt(0):  # 0 is no, I don't have permission
+            permission_step.run()
+        self.assertEqual(permission_step.children, ())
+        self.assertLess(len(tour.root.descendants), 10)
+        self.assertNotIn("dataset_0", tour.state)
+
+        more_dataset_step = find_step(SN.more_datasets_step, tour.steps)
+        with patch_menu_prompt(1):  # 1 is Yes, I have more data
+            more_dataset_step.run()
+        self.assertIn("dataset_1", tour.state)
+        self.assertGreater(len(more_dataset_step.descendants), 8)
+        self.assertGreater(len(tour.root.descendants), 14)
+
     def test_output_path_step(self):
         """Exercise the OutputPathStep"""
         tour = Tour(
@@ -250,22 +284,31 @@ class WizardTest(TestCase):
                 self.assertFalse(step.validate(tmpdirname))
             os.unlink(dataset_file)
 
+            # Bad case 3: file under read-only directory
+            ro_dir = Path(tmpdirname) / "read-only"
+            ro_dir.mkdir(mode=0x555)
+            with capture_stdout() as out:
+                self.assertFalse(step.validate(str(ro_dir)))
+            self.assertIn("could not create", out.getvalue())
+
             # Good case
             with capture_stdout() as stdout:
                 with monkeypatch(step, "prompt", Say(tmpdirname)):
                     step.run()
             self.assertIn("will put your files", stdout.getvalue())
-            output_dir = Path(tmpdirname) / "myname"
-            self.assertTrue(output_dir.exists())
-            self.assertTrue(output_dir.is_dir())
 
     def test_more_data_step(self):
         """Exercise giving an invalid response and a yes response to more data."""
-        tour = Tour("testing", [basic.MoreDatasetsStep()])
-        step = tour.steps[0]
+        tour = Tour(
+            "testing",
+            [dataset.FilelistStep(state_subset="dataset_0"), basic.MoreDatasetsStep()],
+        )
+
+        step = tour.steps[1]
         self.assertFalse(step.validate("foo"))
         self.assertTrue(step.validate("yes"))
         self.assertEqual(len(step.children), 0)
+
         with patch_menu_prompt(0):  # answer 0 is "no"
             step.run()
         self.assertEqual(len(step.children), 1)
@@ -273,7 +316,16 @@ class WizardTest(TestCase):
 
         with patch_menu_prompt(1):  # answer 1 is "yes"
             step.run()
-        self.assertGreater(len(step.children), 5)
+        self.assertGreater(len(step.descendants), 10)
+
+    def test_no_data_to_save(self):
+        """When the tour created no datasets at all, saving the config is skipped."""
+        tour = Tour("testing", [basic.MoreDatasetsStep()])
+        step = tour.steps[0]
+        with patch_menu_prompt(0), capture_stdout() as out:  # answer 0 is "no"
+            step.run()
+        self.assertEqual(len(step.children), 0)
+        self.assertIn("No dataset to save", out.getvalue())
 
     def test_dataset_name(self):
         step = dataset.DatasetNameStep()
@@ -332,56 +384,57 @@ class WizardTest(TestCase):
         self.assertEqual(step.response, 512)
 
     def test_dataset_subtour(self):
-        def find_step(name: Enum, steps: Sequence[Step]):
-            for s in steps:
-                if s.name == name.value:
-                    return s
-            raise IndexError(f"Step {name} not found.")  # pragma: no cover
-
         tour = Tour("unit testing", steps=dataset.get_dataset_steps())
-
-        wavs_dir_step = find_step(SN.wavs_dir_step, tour.steps)
-        with monkeypatch(wavs_dir_step, "prompt", Say(str(self.data_dir))):
-            wavs_dir_step.run()
 
         filelist = str(self.data_dir / "unit-test-case1.psv")
         filelist_step = find_step(SN.filelist_step, tour.steps)
         monkey = monkeypatch(filelist_step, "prompt", Say(filelist))
         with monkey:
             filelist_step.run()
+
+        permission_step = find_step(SN.dataset_permission_step, tour.steps)
+        with patch_menu_prompt(1):  # 1 is "yes, I have permission"
+            permission_step.run()
+        self.assertTrue(
+            permission_step.state[SN.dataset_permission_step].startswith("Yes")
+        )
+
         format_step = find_step(SN.filelist_format_step, tour.steps)
         with patch_menu_prompt(0):  # 0 is "psv"
             format_step.run()
-        self.assertIsInstance(format_step.children[0], dataset.HasHeaderLineStep)
-        self.assertEqual(
-            format_step.children[0].name, SN.data_has_header_line_step.value
-        )
-        self.assertIsInstance(format_step.children[1], dataset.HeaderStep)
-        self.assertEqual(format_step.children[1].name, SN.basename_header_step.value)
-        self.assertIsInstance(format_step.children[2], dataset.HeaderStep)
-        self.assertEqual(format_step.children[2].name, SN.text_header_step.value)
+        self.assertEqual(len(format_step.children), 3)
 
         step = format_step.children[0]
+        self.assertIsInstance(step, dataset.HasHeaderLineStep)
+        self.assertEqual(step.name, SN.data_has_header_line_step.value)
         with patch_menu_prompt(1):  # 1 is "yes"
             step.run()
         self.assertEqual(step.state[SN.data_has_header_line_step.value], "yes")
         self.assertEqual(len(step.state["filelist_data_list"]), 4)
 
         step = format_step.children[1]
+        self.assertIsInstance(step, dataset.HeaderStep)
+        self.assertEqual(step.name, SN.basename_header_step.value)
         with patch_menu_prompt(1):  # 1 is second column
             step.run()
         self.assertEqual(step.response, 1)
         self.assertEqual(step.state["filelist_headers"][1], "basename")
 
-        step = tour.steps[2].children[2]
+        step = format_step.children[2]
+        self.assertIsInstance(step, dataset.HeaderStep)
+        self.assertEqual(step.name, SN.text_header_step.value)
         with patch_menu_prompt(1):  # 1 is second remaining column, i.e., third column
             step.run()
         self.assertEqual(step.state["filelist_headers"][2], "text")
 
+        wavs_dir_step = find_step(SN.wavs_dir_step, tour.steps)
+        with monkeypatch(wavs_dir_step, "prompt", Say(str(self.data_dir))):
+            wavs_dir_step.run()
+
         validate_wavs_step = find_step(SN.validate_wavs_step, tour.steps)
-        with monkeypatch(builtins, "input", Say("no")), capture_stdout() as out:
+        with patch_menu_prompt(1), capture_stdout() as out:
             validate_wavs_step.run()
-        self.assertEqual(step.state[SN.validate_wavs_step], "no")
+        self.assertEqual(step.state[SN.validate_wavs_step][:2], "No")
         self.assertIn("Warning: 3 wav files were not found", out.getvalue())
 
         text_representation_step = find_step(
@@ -570,7 +623,9 @@ class WizardTest(TestCase):
             )
             self.assertEqual(answer, 1)
 
-    def monkey_run_tour(self, name: str, steps_and_answers: list[StepAndAnswer]):
+    def monkey_run_tour(
+        self, name: str, steps_and_answers: list[StepAndAnswer]
+    ) -> tuple[Tour, str]:
         """Create and run a tour with the monkey answers given
 
         Args:
@@ -642,10 +697,9 @@ class WizardTest(TestCase):
 
     def test_monkey_tour_2(self):
         data_dir = Path(__file__).parent / "data"
-        tour, log = self.monkey_run_tour(
+        tour, out = self.monkey_run_tour(
             "monkey tour 2",
             [
-                StepAndAnswer(dataset.WavsDirStep(), Say(str(data_dir))),
                 StepAndAnswer(
                     dataset.FilelistStep(),
                     Say(str(data_dir / "metadata.psv")),
@@ -664,9 +718,10 @@ class WizardTest(TestCase):
                     Say("no"),
                     children_answers=[RecursiveAnswers(Say("eng"))],
                 ),
+                StepAndAnswer(dataset.WavsDirStep(), Say(str(data_dir))),
                 StepAndAnswer(
                     dataset.ValidateWavsStep(),
-                    monkeypatch(builtins, "input", Say("Yes")),
+                    patch_menu_prompt(0),  # 0 is Yes
                     children_answers=[
                         RecursiveAnswers(Say(str(data_dir / "lj/wavs"))),
                         RecursiveAnswers(null_patch()),
@@ -682,8 +737,10 @@ class WizardTest(TestCase):
             ],
         )
 
-        self.assertIn("Warning: 5 wav files were not found", log)
-        self.assertIn("Great! All audio files found in directory", log)
+        tree = str(RenderTree(tour.root))
+        self.assertIn("├── Validate Wavs Step", tree)
+        self.assertIn("│   └── Validate Wavs Step", tree)
+        self.assertIn("Great! All audio files found in directory", out)
 
         # print(tour.state)
         self.assertEqual(len(tour.state["filelist_data"]), 5)

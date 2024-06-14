@@ -8,17 +8,21 @@ from everyvoice.wizard.basic import (
 )
 from everyvoice.wizard.dataset import get_dataset_steps
 
-WIZARD_TOUR = Tour(
-    name="Basic Tour",
-    steps=[
-        NameStep(name=StepNames.name_step),
-        ContactNameStep(name=StepNames.contact_name_step),
-        ContactEmailStep(name=StepNames.contact_email_step),
-        OutputPathStep(name=StepNames.output_step),
-    ]
-    + get_dataset_steps()
-    + [MoreDatasetsStep(name=StepNames.more_datasets_step)],
-)
+
+def get_main_wizard_tour():
+    """Get the main wizard tour"""
+    return Tour(
+        name="Basic Tour",
+        steps=[
+            NameStep(name=StepNames.name_step),
+            ContactNameStep(name=StepNames.contact_name_step),
+            ContactEmailStep(name=StepNames.contact_email_step),
+            OutputPathStep(name=StepNames.output_step),
+        ]
+        + get_dataset_steps()
+        + [MoreDatasetsStep(name=StepNames.more_datasets_step)],
+    )
+
 
 if __name__ == "__main__":
-    WIZARD_TOUR.run()
+    get_main_wizard_tour().run()

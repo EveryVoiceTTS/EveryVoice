@@ -5,6 +5,9 @@ from pathlib import Path
 from unicodedata import normalize
 
 import questionary
+import rich
+from rich.panel import Panel
+from rich.style import Style
 from tqdm import tqdm
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
@@ -49,6 +52,30 @@ class DatasetNameStep(Step):
         print(
             f"Great! The Configuration Wizard 🧙 finished the configuration for your dataset named '{self.response}'"
         )
+
+
+class DatasetPermissionStep(Step):
+    DEFAULT_NAME = StepNames.dataset_permission_step
+    choices = (
+        "No, I don't have permission to use this data.",
+        "Yes, I do have permission to use this data.",
+    )
+
+    def prompt(self):
+        prompt_text = """Do you have permission to use this data to build a TTS model? It is unethical to build a TTS model of a speaker without their knowledge or permission and there can be serious consequences for doing so."""
+        return get_response_from_menu_prompt(
+            prompt_text=prompt_text,
+            choices=self.choices,
+        )
+
+    def validate(self, response):
+        return response in self.choices
+
+    def effect(self):
+        if self.state[StepNames.dataset_permission_step.value].startswith("No"):
+            print("OK, we'll ask you to choose another dataset then!")
+            self.children = []
+            del self.root.state[self.state_subset]
 
 
 class WavsDirStep(Step):
@@ -271,16 +298,36 @@ class ValidateWavsStep(Step):
     def prompt(self):
         error_count = self.wav_file_early_validation()
         if error_count:
-            return input("Do you want to pick a different wavs directory? ").lower()
-        return "ok"
+            return get_response_from_menu_prompt(
+                title="Do you want to pick a different wavs directory?",
+                choices=(
+                    "Yes",
+                    "No, I will fix my audio basenames or add missing audio files later.",
+                ),
+            )
+        else:
+            return "OK"
 
     def validate(self, response):
-        return response in ("y", "yes", "n", "no", "ok")
+        return response[:3] in ("OK", "Yes", "No,")
 
     def effect(self):
-        if self.response[:1] == "y":
-            self.tour.add_step(ValidateWavsStep(state_subset=self.state_subset), self)
-            self.tour.add_step(WavsDirStep(state_subset=self.state_subset), self)
+        if self.response == "Yes":
+            self.tour.add_steps(
+                [
+                    WavsDirStep(state_subset=self.state_subset),
+                    ValidateWavsStep(state_subset=self.state_subset),
+                ],
+                self,
+            )
+        elif self.response.startswith("No"):
+            rich.print(
+                Panel(
+                    "Continuing despite missing audio files. Make sure you fix your filelist later or add missing audio files, otherwise entries in your filelist with missing audio files will be skipped during preprocessing and therefore be ignored during training.",
+                    title="Missing audio files",
+                    border_style=Style(color="#EF1010"),
+                )
+            )
 
 
 class FilelistTextRepresentationStep(Step):
@@ -682,17 +729,20 @@ class SymbolSetStep(Step):
 
 def get_dataset_steps(dataset_index=0):
     return [
-        WavsDirStep(state_subset=f"dataset_{dataset_index}"),
         FilelistStep(state_subset=f"dataset_{dataset_index}"),
-        FilelistFormatStep(state_subset=f"dataset_{dataset_index}"),
-        ValidateWavsStep(state_subset=f"dataset_{dataset_index}"),
-        FilelistTextRepresentationStep(state_subset=f"dataset_{dataset_index}"),
-        TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
-        HasSpeakerStep(state_subset=f"dataset_{dataset_index}"),
-        HasLanguageStep(state_subset=f"dataset_{dataset_index}"),
-        SymbolSetStep(state_subset=f"dataset_{dataset_index}"),
-        SoxEffectsStep(state_subset=f"dataset_{dataset_index}"),
-        DatasetNameStep(state_subset=f"dataset_{dataset_index}"),
+        [
+            DatasetPermissionStep(state_subset=f"dataset_{dataset_index}"),
+            FilelistFormatStep(state_subset=f"dataset_{dataset_index}"),
+            WavsDirStep(state_subset=f"dataset_{dataset_index}"),
+            ValidateWavsStep(state_subset=f"dataset_{dataset_index}"),
+            FilelistTextRepresentationStep(state_subset=f"dataset_{dataset_index}"),
+            TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
+            HasSpeakerStep(state_subset=f"dataset_{dataset_index}"),
+            HasLanguageStep(state_subset=f"dataset_{dataset_index}"),
+            SymbolSetStep(state_subset=f"dataset_{dataset_index}"),
+            SoxEffectsStep(state_subset=f"dataset_{dataset_index}"),
+            DatasetNameStep(state_subset=f"dataset_{dataset_index}"),
+        ],
     ]
 
 

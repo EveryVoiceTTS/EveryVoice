@@ -91,12 +91,24 @@ class ContactEmailStep(Step):
     def prompt(self):
         return input("Please provide a contact email address for your models. ")
 
+    def in_unit_testing(self):
+        """Skip checking deliverability when in unit testing.
+
+        Checking deliverability can be slow where there is not web connection, as
+        is sometimes the case when running the unit tests, so skip it in that context.
+        """
+        import inspect
+
+        return any(
+            frame.filename.endswith("test_wizard.py") for frame in inspect.stack()
+        )
+
     def validate(self, response):
         try:
             # Check that the email address is valid. Turn on check_deliverability
             # for first-time validations like on account creation pages (but not
             # login pages).
-            validate_email(response, check_deliverability=True)
+            validate_email(response, check_deliverability=not self.in_unit_testing())
         except EmailNotValidError as e:
             # The exception message is a human-readable explanation of why it's
             # not a valid (or deliverable) email address.
@@ -138,18 +150,32 @@ class OutputPathStep(Step):
         output_path = path / self.state.get(StepNames.name_step, "DEFAULT_NAME")
         if output_path.exists():
             print(
-                f"Sorry, '{output_path}' already exists. Please choose another output directory or start again and choose a different project name."
+                f"Sorry, '{output_path}' already exists. "
+                "Please choose another output directory or start again and choose a different project name."
             )
             return False
+
+        # We create the output directory in validate() instead of effect() so that
+        # failure can be reported to the user and the question asked again if necessary.
+        try:
+            output_path.mkdir(parents=True, exist_ok=True)
+            # we created it just to test permission, but don't leave it lying around in
+            # case the wizard is interrupted or fails. We'll create it again when we save.
+            output_path.rmdir()
+        except OSError as e:
+            print(
+                f"Sorry, could not create '{output_path}': {e}. "
+                "Please choose another output directory."
+            )
+            return False
+
+        self.output_path = output_path
         return True
 
     def effect(self):
-        assert self.state is not None, "OutputPathStep requires NameStep"
-        output_path = Path(self.response) / self.state.get(
-            StepNames.name_step, "DEFAULT_NAME"
+        print(
+            f"The Configuration Wizard 🧙 will put your files here: '{self.output_path}'"
         )
-        output_path.mkdir(parents=True, exist_ok=True)
-        print(f"The Configuration Wizard 🧙 will put your files here: '{output_path}'")
 
 
 class ConfigFormatStep(Step):
@@ -432,11 +458,14 @@ class MoreDatasetsStep(Step):
                 )
                 + 1
             )
-            self.tour.add_step(
-                MoreDatasetsStep(name=StepNames.more_datasets_step), self
+
+            self.tour.add_steps(
+                get_dataset_steps(dataset_index=new_dataset_index)
+                + [MoreDatasetsStep()],
+                self,
             )
-            for step in reversed(get_dataset_steps(dataset_index=new_dataset_index)):
-                self.tour.add_step(step, self)
+        elif len([key for key in self.state.keys() if key.startswith("dataset_")]) == 0:
+            print("No dataset to save, exiting without saving any configuration.")
         else:
             self.tour.add_step(
                 ConfigFormatStep(name=StepNames.config_format_step), self
