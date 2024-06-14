@@ -1,7 +1,9 @@
 import glob
 import os
+import random
 import re
 from pathlib import Path
+from typing import Sequence
 from unicodedata import normalize
 
 import questionary
@@ -274,7 +276,22 @@ class ValidateWavsStep(Step):
         basename_column = self.state["filelist_headers"].index("basename")
         wavs_dir = Path(self.state[StepNames.wavs_dir_step])
         files_not_found = []
-        for record in self.state["filelist_data_list"][1:]:
+        MAX_SAMPLES = 1000
+        filelist_data_list = self.state["filelist_data_list"]
+        file_list_size = len(filelist_data_list) - 1  # -1 to ignore header
+        sample: Sequence[int]
+        if file_list_size > MAX_SAMPLES:
+            print(
+                f"Checking a sample of {MAX_SAMPLES} of your audio files to make sure they are present."
+            )
+            sampled_text = " sampled"
+            sample = sorted(random.sample(range(file_list_size), MAX_SAMPLES))
+        else:
+            print("Checking if all your audio files are present.")
+            sampled_text = ""
+            sample = range(file_list_size)
+        for item in sample:
+            record = filelist_data_list[item + 1]  # +1 to skip past header
             wav_basename = record[basename_column]
             wav_filename = wavs_dir / (
                 wav_basename + ("" if wav_basename.endswith(".wav") else ".wav")
@@ -289,10 +306,10 @@ class ValidateWavsStep(Step):
                 )
             else:
                 print(
-                    f"Warning: {n} wav files were not found, including '{files_not_found[0]}' and '{files_not_found[1]}'.\nPlease check your wavs directory '{wavs_dir}' and your filelist."
+                    f"Warning: {n}{sampled_text} wav files were not found, including '{files_not_found[0]}' and '{files_not_found[1]}'.\nPlease check your wavs directory '{wavs_dir}' and your filelist."
                 )
             return n
-        print(f"Great! All audio files found in directory '{wavs_dir}'.")
+        print(f"Great! All{sampled_text} audio files found in directory '{wavs_dir}'.")
         return 0
 
     def prompt(self):
