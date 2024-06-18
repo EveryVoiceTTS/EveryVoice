@@ -25,15 +25,23 @@ os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
 def synthesize_audio(
     text,
     duration_control,
+    language,
+    speaker,
     text_to_spec_model,
     vocoder_model,
     vocoder_config,
     accelerator,
     device,
-    language=None,
-    speaker=None,
     output_dir=None,
 ):
+    if text == "":
+        raise gr.Error(
+            "Text for synthesis was not provided. Please type the text you want to be synthesized into the textfield."
+        )
+    if language is None:
+        raise gr.Error("Language is not selected. Please select a language.")
+    if speaker is None:
+        raise gr.Error("Speaker is not selected. Please select a speaker.")
     config, device, predictions = synthesize_helper(
         model=text_to_spec_model,
         vocoder_model=vocoder_model,
@@ -77,11 +85,9 @@ def synthesize_audio(
 def create_demo_app(
     text_to_spec_model_path,
     spec_to_wav_model_path,
-    language,
-    speaker,
     output_dir,
     accelerator,
-) -> gr.Interface:
+) -> gr.Blocks:
     device = get_device_from_accelerator(accelerator)
     vocoder_ckpt = torch.load(spec_to_wav_model_path, map_location=device)
     vocoder_model, vocoder_config = load_hifigan_from_checkpoint(vocoder_ckpt, device)
@@ -89,22 +95,41 @@ def create_demo_app(
         device
     )
     model.eval()
-    return gr.Interface(
-        partial(
-            synthesize_audio,
-            text_to_spec_model=model,
-            vocoder_model=vocoder_model,
-            vocoder_config=vocoder_config,
-            language=language,
-            speaker=speaker,
-            output_dir=output_dir,
-            accelerator=accelerator,
-            device=device,
-        ),
-        [
-            "textbox",
-            gr.Slider(0.75, 1.75, 1.0, step=0.25),
-        ],
-        gr.Audio(format="mp3"),
-        title="EveryVoice Demo",
+    synthesize_audio_preset = partial(
+        synthesize_audio,
+        text_to_spec_model=model,
+        vocoder_model=vocoder_model,
+        vocoder_config=vocoder_config,
+        output_dir=output_dir,
+        accelerator=accelerator,
+        device=device,
     )
+    lang_list = list(model.lang2id.keys())
+    speak_list = list(model.speaker2id.keys())
+    with gr.Blocks() as demo:
+        gr.Markdown(
+            """
+            <h1 align="center">EveryVoice Demo</h1>
+            """
+        )
+        with gr.Row():
+            with gr.Column():
+                inp_text = gr.Text(
+                    placeholder="This text will be turned into speech.",
+                    label="Input Text",
+                )
+                inp_slider = gr.Slider(
+                    0.75, 1.75, 1.0, step=0.25, label="Duration Multiplier"
+                )
+                with gr.Row():
+                    inp_lang = gr.Dropdown(lang_list, label="Language")
+                    inp_speak = gr.Dropdown(speak_list, label="Speaker")
+                btn = gr.Button("Synthesize")
+            with gr.Column():
+                out_audio = gr.Audio(format="mp3")
+        btn.click(
+            synthesize_audio_preset,
+            inputs=[inp_text, inp_slider, inp_lang, inp_speak],
+            outputs=[out_audio],
+        )
+    return demo
