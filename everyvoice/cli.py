@@ -258,14 +258,6 @@ def demo(
         file_okay=True,
         autocompletion=complete_path,
     ),
-    language: str = typer.Argument(
-        ...,
-        help="Specify which language to use in a multilingual system. TODO: let this be selectable in app",
-    ),
-    speaker: str = typer.Argument(
-        ...,
-        help="Specify which speaker to use in a multispeaker system. TODO: let this be selectable in app",
-    ),
     output_dir: Path = typer.Option(
         "synthesis_output",
         "--output-dir",
@@ -282,8 +274,6 @@ def demo(
     demo = create_demo_app(
         text_to_spec_model_path=text_to_spec_model,
         spec_to_wav_model_path=spec_to_wav_model,
-        language=language,
-        speaker=speaker,
         output_dir=output_dir,
         accelerator=accelerator,
     )
