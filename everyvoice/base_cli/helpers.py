@@ -168,6 +168,8 @@ def train_base_command(
     gradient_clip_val: float | None,
     model_kwargs={},
 ):
+    from everyvoice.base_cli.callback import ResetValidationDataloaderCallback
+
     config = load_config_base_command(model_config, config_args, config_file)
 
     save_configuration_to_log_dir(config)
@@ -197,6 +199,7 @@ def train_base_command(
             **{"sub_dir": config.training.logger.sub_dir},
         }
     )
+
     lr_monitor = LearningRateMonitor(logging_interval="step")
     logger.info("Starting training.")
     # This callback will always save the last checkpoint
@@ -226,7 +229,12 @@ def train_base_command(
         max_steps=config.training.max_steps,
         check_val_every_n_epoch=config.training.check_val_every_n_epoch,
         val_check_interval=config.training.val_check_interval,
-        callbacks=[monitored_ckpt_callback, last_ckpt_callback, lr_monitor],
+        callbacks=[
+            monitored_ckpt_callback,
+            last_ckpt_callback,
+            lr_monitor,
+            ResetValidationDataloaderCallback(),
+        ],
         strategy=strategy,
         num_nodes=nodes,
         detect_anomaly=False,  # used for debugging, but triples training time
