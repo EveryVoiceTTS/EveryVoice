@@ -1,6 +1,7 @@
 import doctest
 import tempfile
 from pathlib import Path
+from typing import Any
 from unittest import TestCase
 
 import torch
@@ -11,12 +12,13 @@ from typing_extensions import Annotated
 
 import everyvoice.utils
 from everyvoice._version import VERSION
-from everyvoice.config.shared_types import init_context
+from everyvoice.config.shared_types import _init_context_var, init_context
 from everyvoice.config.validation_helpers import (
     directory_path_must_exist,
     path_is_a_directory,
     relative_to_absolute_path,
 )
+from everyvoice.tests.stubs import capture_logs
 from everyvoice.utils import write_filelist
 from everyvoice.utils.heavy import get_device_from_accelerator
 
@@ -57,7 +59,17 @@ class UtilsTest(TestCase):
             self.assertEqual(headers[4], "extra")
 
 
-class PathIsADirectory(BaseModel):
+class AnnotationBase(BaseModel):
+    # [Using validation context with BaseModel initialization](https://docs.pydantic.dev/2.3/usage/validators/#using-validation-context-with-basemodel-initialization)
+    def __init__(__pydantic_self__, **data: Any) -> None:
+        __pydantic_self__.__pydantic_validator__.validate_python(
+            data,
+            self_instance=__pydantic_self__,
+            context=_init_context_var.get(),
+        )
+
+
+class PathIsADirectory(AnnotationBase):
     """Dummy Class for PathIsADirectoryTest"""
 
     path: Annotated[Path, BeforeValidator(path_is_a_directory)]
@@ -111,7 +123,7 @@ class PathIsADirectoryTest(TestCase):
                 PathIsADirectory(path=Path(__file__))
 
 
-class RelativePathToAbsolute(BaseModel):
+class RelativePathToAbsolute(AnnotationBase):
     """Dummy Class for RelativePathToAbsoluteTest"""
 
     path: Annotated[Path, BeforeValidator(relative_to_absolute_path)]
@@ -143,7 +155,7 @@ class RelativePathToAbsoluteTest(TestCase):
 
     def test_invalid_entry(self):
         """
-        If the provide type cannot be a path, we should fail.
+        If the provided type cannot be a path, we should fail.
         """
         with self.assertRaises(ValueError):
             RelativePathToAbsolute(path=4)
@@ -156,30 +168,53 @@ class DirectoryPathMustExist(BaseModel):
 
 
 class DirectoryPathMustExistTest(TestCase):
-    """Testing when we Annotated with directory_path_must_exist"""
+    """
+    Testing when we Annotated with directory_path_must_exist.
+    It should create a directory if it doesn't exist.
+    """
+
+    def test_path_already_exists(self):
+        path = Path(__file__).parent / "data"
+        with capture_logs() as output:
+            dir = DirectoryPathMustExist(path=path)
+            # TODO: Should check that there is no log produced saying a directory was created
+            self.assertListEqual(output, [])
+        self.assertTrue(dir.path.exists())
 
     def test_using_a_directory(self):
         """
-        Verifies that MustBeDir detects that the argument is a directory.
+        Automatically create a directory.
         """
-        try:
-            DirectoryPathMustExist(path=Path(__file__).parent / "data")
-        except ValueError:
-            self.fail("Failed to detect that the path exists")
+        with tempfile.TemporaryDirectory() as tmpdir, capture_logs() as output:
+            path = Path(tmpdir) / "test_using_a_directory"
+            self.assertFalse(path.exists())
+            dir = DirectoryPathMustExist(path=path)
+            self.assertEqual(dir.path, path)
+            self.assertIn(
+                f"Directory at {path} does not exist. Creating...",
+                output[0],
+            )
+            self.assertTrue(path.exists())
+            self.assertTrue(dir.path.exists())
 
     def test_using_a_directory_with_context(self):
         """
-        Verifies that MustBeDir detects that the argument is a directory.
+        Verifies that directory_path_must_exist(), when using a context,
+        creates the directory if it doesn't exist.
         """
-        try:
-            root_dir = Path(__file__).parent / "data"
-            root_dir = root_dir.resolve()
-            filename = Path("metadata.psv")
-            self.assertTrue((root_dir / filename).exists())
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root_dir = Path(tmpdir)
+            directory = Path("test_using_a_directory_with_context")
+            self.assertFalse((root_dir / directory).exists())
             with init_context({"writing_config": root_dir.resolve()}):
-                DirectoryPathMustExist(path=filename)
-        except ValueError:
-            self.fail("Failed to detect that the path exists")
+                dir = DirectoryPathMustExist(path=directory)
+            # Note: dir.path shouldn't not change to an absolute value.
+            self.assertEqual(dir.path, directory)
+            self.assertTrue((root_dir / directory).exists())
+            # Note: since dir.path is NOT replaced with an absolute it
+            # shouldn't exist because it was created relative to the context's
+            # path.
+            self.assertFalse(dir.path.exists())
 
 
 class GetDeviceFromAcceleratorTest(TestCase):
