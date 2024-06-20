@@ -59,7 +59,14 @@ class UtilsTest(TestCase):
             self.assertEqual(headers[4], "extra")
 
 
-class AnnotationBase(BaseModel):
+class ContextableBaseModel(BaseModel):
+    """
+    Enable using
+       with init_context({"k":v}):
+          pass
+    which enable passing a context down to a pydantic BaseModel.
+    """
+
     # [Using validation context with BaseModel initialization](https://docs.pydantic.dev/2.3/usage/validators/#using-validation-context-with-basemodel-initialization)
     def __init__(__pydantic_self__, **data: Any) -> None:
         __pydantic_self__.__pydantic_validator__.validate_python(
@@ -69,7 +76,7 @@ class AnnotationBase(BaseModel):
         )
 
 
-class PathIsADirectory(AnnotationBase):
+class PathIsADirectory(ContextableBaseModel):
     """Dummy Class for PathIsADirectoryTest"""
 
     path: Annotated[Path, BeforeValidator(path_is_a_directory)]
@@ -123,7 +130,7 @@ class PathIsADirectoryTest(TestCase):
                 PathIsADirectory(path=Path(__file__))
 
 
-class RelativePathToAbsolute(AnnotationBase):
+class RelativePathToAbsolute(ContextableBaseModel):
     """Dummy Class for RelativePathToAbsoluteTest"""
 
     path: Annotated[Path, BeforeValidator(relative_to_absolute_path)]
@@ -161,7 +168,7 @@ class RelativePathToAbsoluteTest(TestCase):
             RelativePathToAbsolute(path=4)
 
 
-class DirectoryPathMustExist(BaseModel):
+class DirectoryPathMustExist(ContextableBaseModel):
     """Dummy Class for DirectoryPathMustExistTest"""
 
     path: Annotated[Path, BeforeValidator(directory_path_must_exist)]
