@@ -35,6 +35,9 @@ jobs:
           pip install cython
           pip install -e .
           pip install coverage
+      - name: Log complete list of packages
+        run: |
+          pip freeze
       - name: Check licenses
         run: |
           pip install pip-licenses
