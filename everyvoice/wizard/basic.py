@@ -258,6 +258,7 @@ class ConfigFormatStep(Step):
                     filelist=new_filelist_path,
                     filelist_loader=filelist_loader,
                     sox_effects=sox_effects,
+                    permissions_obtained=True,  # If you get this far, you've answered the Dataset Permission Attestation step correctly
                 )
             )
         text_config = TextConfig(symbols=Symbols(**symbols))

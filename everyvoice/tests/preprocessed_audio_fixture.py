@@ -29,6 +29,7 @@ class PreprocessedAudioFixture:
                 Dataset(
                     data_dir=wavs_dir,
                     filelist=data_dir / "metadata.psv",
+                    permissions_obtained=True,
                 )
             ],
         ),
