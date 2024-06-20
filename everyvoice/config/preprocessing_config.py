@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Annotated, List, Optional, Union
 
 from annotated_types import Ge, Le
-from pydantic import Field, FilePath, ValidationInfo, model_validator
+from pydantic import Field, FilePath, ValidationInfo, field_validator, model_validator
 
 from everyvoice.config.shared_types import ConfigModel, PartialLoadConfig, init_context
 from everyvoice.config.utils import (
@@ -96,6 +96,10 @@ class AudioConfig(ConfigModel):
 
 class Dataset(PartialLoadConfig):
     label: str = Field("YourDataSet", description="A label for the source of data")
+    permissions_obtained: bool = Field(
+        False,
+        description="An attestation that permission has been obtained to use this data. You may not use EveryVoice to build a TTS system with data that you do not have permission to use and there are serious possible consequences for doing so. Finding data online does not constitute permission. The speaker should be aware and consent to their data being used in this way.",
+    )
     data_dir: PossiblyRelativePath = Field(
         Path("/please/create/a/path/to/your/dataset/data"),
         description="The path to the directory with your audio files.",
@@ -112,6 +116,14 @@ class Dataset(PartialLoadConfig):
         [["channels", "1"]],
         description="Advanced. A list of SoX effects to apply to your audio prior to preprocessing. Run python -c 'import torchaudio; print(torchaudio.sox_effects.effect_names())' to see a list of supported effects.",
     )
+
+    @field_validator("permissions_obtained")
+    def check_permissions(cls, permissions_obtained: bool) -> bool:
+        if not permissions_obtained:
+            raise ValueError(
+                "You are trying to run a model that does not have permission for the data it is using. Please confirm you have permission to use this data and edit your configuration file accordingly."
+            )
+        return permissions_obtained
 
 
 class PreprocessingConfig(PartialLoadConfig):
@@ -136,7 +148,9 @@ class PreprocessingConfig(PartialLoadConfig):
         None, description="The path to an audio configuration file."
     )
     source_data: List[Dataset] = Field(
-        default_factory=lambda: [Dataset()],
+        default_factory=lambda: [
+            Dataset(permissions_obtained=True)
+        ],  # The default factory doesn't actually point to any data, so we can treat it as having permissions obtained
         description="A list of datasets.",
     )
 
