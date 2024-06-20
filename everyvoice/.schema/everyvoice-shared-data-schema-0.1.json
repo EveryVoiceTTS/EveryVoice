@@ -125,6 +125,12 @@
           "title": "Label",
           "type": "string"
         },
+        "permissions_obtained": {
+          "default": false,
+          "description": "An attestation that permission has been obtained to use this data. You may not use EveryVoice to build a TTS system with data that you do not have permission to use and there are serious possible consequences for doing so. Finding data online does not constitute permission. The speaker should be aware and consent to their data being used in this way.",
+          "title": "Permissions Obtained",
+          "type": "boolean"
+        },
         "data_dir": {
           "default": "/please/create/a/path/to/your/dataset/data",
           "description": "The path to the directory with your audio files.",
