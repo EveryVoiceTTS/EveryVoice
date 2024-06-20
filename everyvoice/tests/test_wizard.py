@@ -227,7 +227,11 @@ class WizardTest(TestCase):
             self.assertTrue(step.validate("test@test.ca"))
             self.assertFalse(step.validate(""))
         output = stdout.getvalue()
-        self.assertIn("It must have exactly one @-sign", output)
+        # Supporting email-validator prior and post 2.2.0 where the error string changed.
+        self.assertTrue(
+            "It must have exactly one @-sign" in output
+            or "An email address must have an @-sign" in output
+        )
         self.assertIn("There must be something after the @-sign", output)
         self.assertIn("An email address cannot end with a period", output)
 
