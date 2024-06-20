@@ -149,39 +149,51 @@ class PathIsADirectoryTest(TestCase):
 class RelativePathToAbsolute(ContextableBaseModel):
     """Dummy Class for RelativePathToAbsoluteTest"""
 
-    path: Annotated[Path, BeforeValidator(relative_to_absolute_path)]
+    path: Annotated[Path | None, BeforeValidator(relative_to_absolute_path)]
 
 
 class RelativePathToAbsoluteTest(TestCase):
     """Testing when we Annotated with relative_to_absolute_path"""
 
+    def test_None(self):
+        """A special case, if path is None, it should stay None"""
+        dir = RelativePathToAbsolute(path=None)
+        self.assertIsNone(dir.path)
+
+    def test_invalid_type(self):
+        """
+        If the provided type cannot be a path, it should fail.
+        """
+        with self.assertRaisesRegex(
+            ValueError,
+            r".*Value error,  \[type=value_error, input_value=4, input_type=int\].*",
+        ):
+            RelativePathToAbsolute(path=4)
+
+    def test_already_absolute(self):
+        """Under a init_context, an absolute path must stay the same"""
+        path = Path(__file__).absolute()
+        with init_context({"config_path": path.parent / "data"}):
+            dir = RelativePathToAbsolute(path=path)
+            self.assertEqual(dir.path, path)
+
     def test_should_not_change(self):
         """
         Without context, the path should stay the same.
         """
-        path = Path(__file__).parent / "data"
-        path = path.relative_to(Path(__file__).parent)
+        path = Path("data")
         test = RelativePathToAbsolute(path=path)
         self.assertEqual(test.path, path)
 
-    def WIP_test_with_context(self):
+    def test_with_context(self):
         """
         When provided with a context, the path should be absolute.
         """
-        # FIXME: for some strange reason, the context is not getting populated.
         root_dir = Path(__file__).parent.resolve()
         path = Path("data")
         with init_context({"config_path": root_dir}):
-            test = RelativePathToAbsolute(path=path)
-            print(f"{test=}")
-            self.assertTrue(test.path.is_absolute())
-
-    def test_invalid_entry(self):
-        """
-        If the provided type cannot be a path, we should fail.
-        """
-        with self.assertRaises(ValueError):
-            RelativePathToAbsolute(path=4)
+            dir = RelativePathToAbsolute(path=path)
+            self.assertTrue(dir.path.is_absolute())
 
 
 class DirectoryPathMustExist(ContextableBaseModel):
