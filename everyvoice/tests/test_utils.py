@@ -85,9 +85,45 @@ class PathIsADirectory(ContextableBaseModel):
 class PathIsADirectoryTest(TestCase):
     """Testing when we Annotated with path_is_a_directory"""
 
+    def test_using_a_directory_with_context(self):
+        """
+        Verifies that PathIsADirectory detects that the argument is a directory
+        when using a context.
+        """
+        try:
+            root_dir = Path(__file__).parent / "data"
+            root_dir = root_dir.resolve()
+            directory = Path("hierarchy")
+            self.assertTrue((root_dir / directory).exists())
+            with init_context({"writing_config": root_dir}):
+                PathIsADirectory(path=directory)
+        except ValueError:
+            self.fail("Failed to detect that the argument is a directory")
+
+    def test_using_a_file_with_context(self):
+        """
+        Verifies that PathIsADirectory detects that the argument is a file when
+        using a context.
+        """
+        file = Path(__file__)
+        with self.assertRaisesRegex(
+            ValueError,
+            rf"{file} is not a directory",
+        ):
+            with init_context({"writing_config": file.parent.resolve()}):
+                PathIsADirectory(path=file.name)
+
+    def test_invalid_type(self):
+        """The argument to PathIsADirectory must be of type Path"""
+        with self.assertRaisesRegex(
+            ValueError,
+            r".*Value error,  \[type=value_error, input_value=4, input_type=int\].*",
+        ):
+            PathIsADirectory(path=4)
+
     def test_using_a_directory(self):
         """
-        Verifies that MustBeDir detects that the argument is a directory.
+        Verifies that PathIsADirectory detects that the argument is a directory.
         """
         try:
             root_dir = Path(__file__).parent / "data"
@@ -98,36 +134,16 @@ class PathIsADirectoryTest(TestCase):
         except ValueError:
             self.fail("Failed to detect that the argument is a directory")
 
-    def WIP_test_using_a_directory_with_context(self):
-        """
-        Verifies that MustBeDir detects that the argument is a directory.
-        """
-        # FIXME: for some strange reason, the context is not getting populated.
-        try:
-            root_dir = Path(__file__).parent / "data"
-            root_dir = root_dir.resolve()
-            directory = Path("hierarchy")
-            self.assertTrue((root_dir / directory).exists())
-            with init_context({"writing_config": root_dir.parent.resolve()}):
-                PathIsADirectory(path=directory)
-        except ValueError:
-            self.fail("Failed to detect that the argument is a directory")
-
     def test_using_a_file(self):
         """
-        Verifies that MustBeDir detects that the argument is a file.
+        Verifies that PathIsADirectory detects that the argument is a file.
         """
-        with self.assertRaises(ValueError):
-            PathIsADirectory(path=Path(__file__))
-
-    def WIP_test_using_a_file_with_context(self):
-        """
-        Verifies that MustBeDir detects that the argument is a file.
-        """
-        # FIXME: for some strange reason, the context is not getting populated.
-        with self.assertRaises(ValueError):
-            with init_context({"writing_config": Path(__file__).parent.resolve()}):
-                PathIsADirectory(path=Path(__file__))
+        path = Path(__file__)
+        with self.assertRaisesRegex(
+            ValueError,
+            rf"{path} is not a directory",
+        ):
+            PathIsADirectory(path=path)
 
 
 class RelativePathToAbsolute(ContextableBaseModel):
