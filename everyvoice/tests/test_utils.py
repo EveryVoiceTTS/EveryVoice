@@ -208,29 +208,13 @@ class DirectoryPathMustExistTest(TestCase):
     It should create a directory if it doesn't exist.
     """
 
-    def test_path_already_exists(self):
-        path = Path(__file__).parent / "data"
-        with capture_logs() as output:
-            dir = DirectoryPathMustExist(path=path)
-            # TODO: Should check that there is no log produced saying a directory was created
-            self.assertListEqual(output, [])
-        self.assertTrue(dir.path.exists())
-
-    def test_using_a_directory(self):
-        """
-        Automatically create a directory.
-        """
-        with tempfile.TemporaryDirectory() as tmpdir, capture_logs() as output:
-            path = Path(tmpdir) / "test_using_a_directory"
-            self.assertFalse(path.exists())
-            dir = DirectoryPathMustExist(path=path)
-            self.assertEqual(dir.path, path)
-            self.assertIn(
-                f"Directory at {path} does not exist. Creating...",
-                output[0],
-            )
-            self.assertTrue(path.exists())
-            self.assertTrue(dir.path.exists())
+    def test_argument_is_Path(self):
+        """directory_path_must_exist() expects a Path"""
+        with self.assertRaisesRegex(
+            ValueError,
+            r".*Assertion failed,  \[type=assertion_error, input_value='invalid_not_a_Path', input_type=str\].*",
+        ):
+            DirectoryPathMustExist(path="invalid_not_a_Path")
 
     def test_using_a_directory_with_context(self):
         """
@@ -250,6 +234,30 @@ class DirectoryPathMustExistTest(TestCase):
             # shouldn't exist because it was created relative to the context's
             # path.
             self.assertFalse(dir.path.exists())
+
+    def test_path_already_exists(self):
+        path = Path(__file__).parent / "data"
+        with capture_logs() as output:
+            dir = DirectoryPathMustExist(path=path)
+            # There should be no info logged.
+            self.assertListEqual(output, [])
+        self.assertTrue(dir.path.exists())
+
+    def test_using_a_directory(self):
+        """
+        Automatically create a directory.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir, capture_logs() as output:
+            path = Path(tmpdir) / "test_using_a_directory"
+            self.assertFalse(path.exists())
+            dir = DirectoryPathMustExist(path=path)
+            self.assertEqual(dir.path, path)
+            self.assertIn(
+                f"Directory at {path} does not exist. Creating...",
+                output[0],
+            )
+            self.assertTrue(path.exists())
+            self.assertTrue(dir.path.exists())
 
 
 class GetDeviceFromAcceleratorTest(TestCase):
