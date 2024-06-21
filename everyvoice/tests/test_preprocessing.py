@@ -59,6 +59,14 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     def test_read_filelist(self):
         self.assertEqual(self.filelist[0]["basename"], "LJ050-0269")
 
+    def test_no_permissions(self):
+        no_permissions_args = self.fp_config.model_dump()
+        no_permissions_args["preprocessing"]["source_data"][0][
+            "permissions_obtained"
+        ] = False
+        with self.assertRaises(ValueError):
+            FeaturePredictionConfig(**no_permissions_args)
+
     def test_process_audio_for_alignment(self):
         config = AlignerConfig(contact=self.contact)
         for entry in self.filelist[1:]:
@@ -392,9 +400,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     preprocessed_dir.mkdir(parents=True, exist_ok=True)
                     output_filelist = preprocessed_dir / "preprocessed_filelist.psv"
                     shutil.copyfile(filelist_test_info["path"], output_filelist)
-                    fp_config.preprocessing.source_data[0].filelist = (
-                        filelist_test_info["path"]
-                    )
+                    fp_config.preprocessing.source_data[
+                        0
+                    ].filelist = filelist_test_info["path"]
                     fp_config.preprocessing.save_dir = preprocessed_dir
                     preprocessor = Preprocessor(fp_config)
                     with capture_stdout() as output, mute_logger(
@@ -489,9 +497,13 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         with tempfile.TemporaryDirectory(
             prefix="test_incremental_preprocess", dir="."
         ) as tmpdir:
-            fp_config, lj_filelist, full_filelist, partial_filelist, to_process = (
-                self.get_simple_config(tmpdir)
-            )
+            (
+                fp_config,
+                lj_filelist,
+                full_filelist,
+                partial_filelist,
+                to_process,
+            ) = self.get_simple_config(tmpdir)
 
             fp_config.preprocessing.source_data[0].filelist = partial_filelist
             with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):

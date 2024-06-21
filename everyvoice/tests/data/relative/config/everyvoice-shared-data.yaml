@@ -11,6 +11,7 @@ source_data:
   filelist: ../r-filelist.psv
   filelist_loader: everyvoice.utils.generic_psv_filelist_reader
   label: dataset_0
+  permissions_obtained: true
   sox_effects:
   - [channel, '1']
 train_split: 0.9
