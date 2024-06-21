@@ -64,8 +64,11 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         no_permissions_args["preprocessing"]["source_data"][0][
             "permissions_obtained"
         ] = False
-        with self.assertRaises(ValueError):
-            FeaturePredictionConfig(**no_permissions_args)
+        # TODO: remove this when https://github.com/roedoejet/EveryVoice/issues/483 is fixed
+        with tempfile.TemporaryDirectory() as tmpdir:
+            no_permissions_args["training"]["logger"]["save_dir"] = tmpdir
+            with self.assertRaises(ValueError):
+                FeaturePredictionConfig(**no_permissions_args)
 
     def test_process_audio_for_alignment(self):
         config = AlignerConfig(contact=self.contact)
@@ -400,9 +403,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     preprocessed_dir.mkdir(parents=True, exist_ok=True)
                     output_filelist = preprocessed_dir / "preprocessed_filelist.psv"
                     shutil.copyfile(filelist_test_info["path"], output_filelist)
-                    fp_config.preprocessing.source_data[
-                        0
-                    ].filelist = filelist_test_info["path"]
+                    fp_config.preprocessing.source_data[0].filelist = (
+                        filelist_test_info["path"]
+                    )
                     fp_config.preprocessing.save_dir = preprocessed_dir
                     preprocessor = Preprocessor(fp_config)
                     with capture_stdout() as output, mute_logger(
