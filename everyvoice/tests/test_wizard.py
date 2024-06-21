@@ -1220,6 +1220,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
                 tmpdir = Path(tmpdir).absolute()
                 wavs_dir = tmpdir / "wavs/Common-Voice"
                 self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
+                self.config.state["dataset_0"][SN.text_processing_step] = (0,)
                 self.config.effect()
                 data_file = (
                     Path(self.config.state[SN.name_step.value])
@@ -1248,6 +1249,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
                 tmpdir = Path(tmpdir).absolute()
                 wavs_dir = tmpdir / "wavs/Common-Voice"
                 self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
+                self.config.state["dataset_0"][SN.text_processing_step] = tuple()
                 self.config.effect()
                 data_file = (
                     Path(self.config.state[SN.output_step.value])
