@@ -375,9 +375,7 @@ class TestG2p(TestCase):
         )
         # another language
         str_g2p = get_g2p_engine("str")
-        self.assertEqual(
-            str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"]
-        )
+        self.assertEqual(str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"])
         # test lang_id missing
         with self.assertRaises(NotImplementedError):
             get_g2p_engine("boop")
