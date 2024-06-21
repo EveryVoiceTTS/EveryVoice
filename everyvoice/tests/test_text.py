@@ -15,7 +15,12 @@ from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
 from everyvoice.text.text_processor import TextProcessor
-from everyvoice.utils import generic_psv_filelist_reader
+from everyvoice.utils import (
+    collapse_whitespace,
+    generic_psv_filelist_reader,
+    lower,
+    nfc_normalize,
+)
 
 
 class TextTest(BasicTestCase):
@@ -38,7 +43,7 @@ class TextTest(BasicTestCase):
         self.assertEqual(self.base_text_processor.decode_tokens(sequence, ""), text)
 
     def test_token_sequence_to_text(self):
-        sequence = [25, 22, 29, 29, 32, 1, 40, 32, 35, 29, 21]
+        sequence = [51, 48, 55, 55, 58, 1, 66, 58, 61, 55, 47]
         self.assertEqual(self.base_text_processor.encode_text("hello world"), sequence)
 
     def test_hardcoded_symbols(self):
@@ -48,19 +53,31 @@ class TextTest(BasicTestCase):
             "pad should be Unicode PAD symbol and index 0, whitespace should be index 1",
         )
 
-    def test_cleaners(self):
+    def test_cleaners_with_upper(self):
         text = "hello world"
         text_upper = "HELLO WORLD"
-        sequence = self.base_text_processor.encode_text(text_upper)
-        self.assertEqual(self.base_text_processor.decode_tokens(sequence, ""), text)
+        upper_text_processor = TextProcessor(
+            TextConfig(
+                cleaners=[collapse_whitespace, lower],
+                symbols=Symbols(letters=list(string.ascii_letters)),
+            ),
+        )
+        sequence = upper_text_processor.encode_text(text_upper)
+        self.assertEqual(upper_text_processor.decode_tokens(sequence, ""), text)
 
     def test_punctuation(self):
         text = "hello! How are you? My name's: foo;."
-        tokens = self.base_text_processor.apply_tokenization(
-            self.base_text_processor.normalize_text(text)
+        upper_text_processor = TextProcessor(
+            TextConfig(
+                cleaners=[collapse_whitespace, lower],
+                symbols=Symbols(letters=list(string.ascii_letters)),
+            ),
+        )
+        tokens = upper_text_processor.apply_tokenization(
+            upper_text_processor.normalize_text(text)
         )
         self.assertEqual(
-            self.base_text_processor.apply_punctuation_rules(tokens),
+            upper_text_processor.apply_punctuation_rules(tokens),
             [
                 "h",
                 "e",
@@ -105,6 +122,7 @@ class TextTest(BasicTestCase):
         moh_config = FeaturePredictionConfig(
             contact=self.contact,
             text=TextConfig(
+                cleaners=[collapse_whitespace, lower, nfc_normalize],
                 symbols=Symbols(
                     letters=[
                         "ʌ̃̀ː",
@@ -153,7 +171,7 @@ class TextTest(BasicTestCase):
                         "j",
                         "ʔ",
                     ]
-                )
+                ),
             ),
         )
         moh_text_processor = TextProcessor(moh_config.text)
@@ -202,10 +220,11 @@ class TextTest(BasicTestCase):
         self.assertEqual(len(sequence), 1)
 
     def test_normalization(self):
-        # This test doesn't really test very much, but just here to highlight that base cleaning involves NFC
+        # This test doesn't really test very much, but just here to highlight that base cleaning doesn't involve NFC
         accented_text_processor = TextProcessor(
             TextConfig(
-                symbols=Symbols(letters=list(string.ascii_letters), accented=["é"])
+                cleaners=[nfc_normalize],
+                symbols=Symbols(letters=list(string.ascii_letters), accented=["é"]),
             ),
         )
         text = "he\u0301llo world"
@@ -214,6 +233,9 @@ class TextTest(BasicTestCase):
         self.assertEqual(
             accented_text_processor.decode_tokens(sequence, ""),
             normalize("NFC", text),
+        )
+        self.assertNotEqual(
+            self.base_text_processor.apply_cleaners(text), normalize("NFC", text)
         )
 
     def test_missing_symbol(self):

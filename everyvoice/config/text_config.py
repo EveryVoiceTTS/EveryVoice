@@ -5,7 +5,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from everyvoice.config.shared_types import ConfigModel
 from everyvoice.config.utils import PossiblySerializedCallable
 from everyvoice.text.utils import normalize_text_helper
-from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
+from everyvoice.utils import collapse_whitespace
 
 
 class Punctuation(BaseModel):
@@ -82,9 +82,7 @@ class TextConfig(ConfigModel):
     symbols: Symbols = Field(default_factory=Symbols)
     to_replace: Dict[str, str] = {}  # Happens before cleaners
     cleaners: list[PossiblySerializedCallable] = [
-        lower,
         collapse_whitespace,
-        nfc_normalize,
     ]
 
     @model_validator(mode="after")
