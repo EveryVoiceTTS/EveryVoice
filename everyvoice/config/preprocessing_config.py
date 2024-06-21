@@ -99,6 +99,7 @@ class Dataset(PartialLoadConfig):
     permissions_obtained: bool = Field(
         False,
         description="An attestation that permission has been obtained to use this data. You may not use EveryVoice to build a TTS system with data that you do not have permission to use and there are serious possible consequences for doing so. Finding data online does not constitute permission. The speaker should be aware and consent to their data being used in this way.",
+        validate_default=True,
     )
     data_dir: PossiblyRelativePath = Field(
         Path("/please/create/a/path/to/your/dataset/data"),

@@ -316,7 +316,12 @@ class ConfigTest(BasicTestCase):
         vocoder_config = VocoderConfig(
             contact=self.contact,
             preprocessing=PreprocessingConfig(
-                source_data=[Dataset(), Dataset(), Dataset(), Dataset()]
+                source_data=[
+                    Dataset(permissions_obtained=True),
+                    Dataset(permissions_obtained=True),
+                    Dataset(permissions_obtained=True),
+                    Dataset(permissions_obtained=True),
+                ]
             ),
         )
         config: EveryVoiceConfig = EveryVoiceConfig(
