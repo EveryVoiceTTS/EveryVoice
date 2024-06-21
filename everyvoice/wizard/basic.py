@@ -211,8 +211,19 @@ class ConfigFormatStep(Step):
         symbols = {}
         multispeaker = False
         multilingual = False
+        global_cleaners = (
+            []
+        )  # TODO: this should be fixed by https://github.com/roedoejet/EveryVoice/issues/359
         for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
             dataset_state = self.state[dataset]
+            # Add Cleaners
+            # TODO: these should really be dataset-specific cleaners, not global cleaners
+            # so this should be fixed by https://github.com/roedoejet/EveryVoice/issues/359
+            if dataset_state.get(StepNames.text_processing_step):
+                global_cleaners += [
+                    TextProcessingStep().process_lookup[x]["fn"]
+                    for x in dataset_state[StepNames.text_processing_step]
+                ]
             # Gather Symbols for Text Configuration
             # rename keys based on dataset name:
             dataset_name = dataset_state[StepNames.dataset_name_step]
@@ -263,12 +274,7 @@ class ConfigFormatStep(Step):
             )
 
         text_config = TextConfig(symbols=Symbols(**symbols))
-        # Add Cleaners
-        if dataset_state.get(StepNames.text_processing_step):
-            text_config.cleaners += [
-                TextProcessingStep().process_lookup[x]["fn"]
-                for x in dataset_state[StepNames.text_processing_step]
-            ]
+        text_config.cleaners += global_cleaners
         text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
         write_dict_to_config(
             json.loads(text_config.model_dump_json(exclude_none=False)),
