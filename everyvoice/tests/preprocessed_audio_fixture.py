@@ -7,6 +7,7 @@ from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.basic_test_case import BasicTestCase
+from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 
 
 class PreprocessedAudioFixture:
@@ -34,6 +35,7 @@ class PreprocessedAudioFixture:
             ],
         ),
         text=TextConfig(
+            cleaners=[collapse_whitespace, lower, nfc_normalize],
             symbols=Symbols(
                 ascii_symbols=list(ascii_lowercase),
                 ipa=[
@@ -51,7 +53,7 @@ class PreprocessedAudioFixture:
                     "ʊ",
                     "ʒ",
                 ],
-            )
+            ),
         ),
         contact=BasicTestCase.contact,
     )

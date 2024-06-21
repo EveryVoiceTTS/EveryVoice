@@ -4,7 +4,6 @@ import random
 import re
 from pathlib import Path
 from typing import Sequence
-from unicodedata import normalize
 
 import questionary
 import rich
@@ -14,7 +13,13 @@ from tqdm import tqdm
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
-from everyvoice.utils import generic_xsv_filelist_reader, read_festival, slugify
+from everyvoice.utils import (
+    generic_xsv_filelist_reader,
+    lower,
+    nfc_normalize,
+    read_festival,
+    slugify,
+)
 from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, Step, StepNames, Tour
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
@@ -626,6 +631,10 @@ def get_iso_code(language):
 
 class TextProcessingStep(Step):
     DEFAULT_NAME = StepNames.text_processing_step
+    process_lookup = {
+        0: {"fn": lower, "desc": "lowercase"},
+        1: {"fn": nfc_normalize, "desc": "NFC Normalization"},
+    }
 
     def prompt(self):
         return get_response_from_menu_prompt(
@@ -644,10 +653,6 @@ class TextProcessingStep(Step):
 
     def effect(self):
         # Apply the selected text processing processes
-        process_lookup = {
-            0: {"fn": lambda x: x.lower(), "desc": "lowercase"},
-            1: {"fn": lambda x: normalize("NFC", x), "desc": "NFC Normalization"},
-        }
         if "symbols" not in self.state:
             self.state["symbols"] = {}
         if self.response:
@@ -655,10 +660,10 @@ class TextProcessingStep(Step):
                 self.state[StepNames.filelist_text_representation_step]
             )
             for process in self.response:
-                process_fn = process_lookup[process]["fn"]
+                process_fn = self.process_lookup[process]["fn"]
                 for i in tqdm(
                     range(len(self.state["filelist_data_list"])),
-                    desc=f"Applying {process_lookup[process]['desc']} to data",
+                    desc=f"Applying {self.process_lookup[process]['desc']} to data",
                 ):
                     self.state["filelist_data_list"][i][text_index] = process_fn(
                         self.state["filelist_data_list"][i][text_index]

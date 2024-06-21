@@ -171,7 +171,8 @@ class TextProcessor:
         Returns:
             str: the replaced text
 
-        >>> tp = TextProcessor(TextConfig())
+        >>> from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
+        >>> tp = TextProcessor(TextConfig(cleaners=[collapse_whitespace, lower, nfc_normalize]))
         >>> tp.apply_cleaners('HELLO\u0301')
         'helló'
         """
@@ -190,7 +191,8 @@ class TextProcessor:
         Returns:
             str: normalized text ready to be tokenized
 
-        >>> tp = TextProcessor(TextConfig())
+        >>> from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
+        >>> tp = TextProcessor(TextConfig(cleaners=[collapse_whitespace, lower, nfc_normalize]))
         >>> tp.normalize_text('HELLO\u0301!')
         'helló!'
         """

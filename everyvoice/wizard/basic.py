@@ -33,7 +33,7 @@ from everyvoice.wizard import (
     Step,
     StepNames,
 )
-from everyvoice.wizard.dataset import get_dataset_steps
+from everyvoice.wizard.dataset import TextProcessingStep, get_dataset_steps
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
@@ -261,7 +261,14 @@ class ConfigFormatStep(Step):
                     permissions_obtained=True,  # If you get this far, you've answered the Dataset Permission Attestation step correctly
                 )
             )
+
         text_config = TextConfig(symbols=Symbols(**symbols))
+        # Add Cleaners
+        if dataset_state.get(StepNames.text_processing_step):
+            text_config.cleaners += [
+                TextProcessingStep().process_lookup[x]["fn"]
+                for x in dataset_state[StepNames.text_processing_step]
+            ]
         text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
         write_dict_to_config(
             json.loads(text_config.model_dump_json(exclude_none=False)),
