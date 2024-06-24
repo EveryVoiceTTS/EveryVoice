@@ -1,7 +1,5 @@
 # How to fine-tune the existing checkpoints
 
-...more guides coming soon...
-
 ### Vocoder matching
 
 Vocoder (i.e. your spec-to-wav model) matching is an important part of the TTS pipeline. Because your spec-to-wav model is trained with the ground-truth Mel spectrograms from your audio, there is a mismatch between the Mel spectrograms created by your text-to-spec model and the ones that the pre-trained vocoders have seen during training. For that reason, it can be helpful to fine-tune your spec-to-wav model with the _generated_ Mel spectrograms from your text-to-spec model.

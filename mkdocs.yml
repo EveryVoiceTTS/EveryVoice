@@ -24,6 +24,7 @@ theme:
     - content.code.copy
     - content.code.select
     - announce.dismiss
+    - content.footnote.tooltips
 plugins:
   - search
   - macros
@@ -40,6 +41,7 @@ extra:
 markdown_extensions:
   - mkdocs-typer
   - mkdocs-click
+  - footnotes
   - admonition
   - pymdownx.details
   - pymdownx.superfences
@@ -50,15 +52,12 @@ nav:
   - Installation: install.md
   - Guides:
     - Getting Started: guides/index.md
+    - Ethical Considerations and Consequences of TTS: guides/ethics.md
     - Background to TTS: guides/background.md
     - Customize to your language: guides/custom.md
     - How to fine-tune: guides/finetune.md
-  - Advanced:
-    - How to Setup Code Completion for Schemas in vim: guides/schemas.md
   - Reference:
     - How to use: reference/index.md
     - Configuration: reference/configuration.md
-    - Aligner: reference/aligner.md
-    - End-to-End TTS: reference/e2e.md
-    - Feature Prediction: reference/feature_prediction.md
-    - Vocoder: reference/vocoder.md
+  - Advanced:
+    - How to Setup Code Completion for Schemas in vim: guides/schemas.md

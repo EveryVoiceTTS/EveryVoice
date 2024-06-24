@@ -8,38 +8,13 @@ from everyvoice.config.preprocessing_config import PreprocessingConfig
 preprocessing_config = PreprocessingConfig()
 ```
 
-Static typing means that if someone accidentally enters an integer that the configuration expects should be a float or some other trivial typing difference, it is
-corrected when the configuration is instantiated, and doesn't produce downstream runtime errors. It also means that intellisense is available in your code editor
-when working with a configuration class.
+Static typing means that misconfiguration errors should occur as soon as the configuration is instantiated instead of producing downstream runtime errors. It also means that intellisense is available in your code editor when working with a configuration class.
 
-## Configuration Wizard 🧙‍♀️
-
-This section of the documentation is meant for technical explanations and reference documentation - if you're just looking to get started, have a look at the {ref}`guides` section instead to learn about how the Configuration Wizard 🧙‍♀️ can help you configure everything for your dataset.
-
-Here is the reference documentation for the Configuration Wizard 🧙‍♀️
-
-<!-- ::: mkdocs-typer
-    :prog_name: everyvoice
-    :module: everyvoice.cli.app
-    :command: new-project -->
-
-<!-- ::: mkdocs-click
-    :prog_name: everyvoice
-    :module: everyvoice.cli
-    :command: CLICK_APP -->
-
-<!-- ```{eval-rst}
-.. click:: everyvoice.cli:CLICK_APP
-    :prog: everyvoice
-    :nested: full
-    :commands: new-project
-
-``` -->
 
 ## Sharing Configurations
 
 The Text and Preprocessing configurations should only be defined once per dataset and shared between your models to ensure each model makes the same assumptions about your data.
-To achieve that, each model configuration can also be defined as a path to a configuration file. So, a configuration for an [aligner model](./aligner.md) that uses separately defined text and audio preprocessing configurations might look like this:
+To achieve that, each model configuration can also be defined as a path to a configuration file. So, a configuration for an aligner that uses separately defined text and audio preprocessing configurations might look like this:
 
 ```yaml hl_lines="8 9"
 
@@ -85,9 +60,6 @@ This will then be de-serialized upon instantiation of your configuration.
 The TextConfig is where you define the symbol set for your data and any cleaners used to clean your raw text into the text needed
 for your data. You can share the TextConfig with any models that need it and only need one text configuration per dataset (and possibly only per language).
 
-!!! note
-    Only the [aligner](./aligner.md), [feature_prediction](./feature_prediction.md), and [e2e](./e2e.md) models need text configuration. The [vocoder](./vocoder.md) is trained without text and does not need a TextConfig. For more information on this, see the [background](../guides/background.md) section.
-
 
 ### TextConfig
 
@@ -101,27 +73,23 @@ for your data. You can share the TextConfig with any models that need it and onl
         show_root_heading: true
         heading_level: 6
 
-<!-- ```{eval-rst}
-.. autopydantic_settings:: everyvoice.config.text_config.TextConfig
-    :settings-show-json: False
-    :settings-show-config-member: False
-    :settings-show-config-summary: False
-    :settings-show-validator-members: True
-    :settings-show-validator-summary: True
-    :field-list-validators: True
-``` -->
-
 ### Symbols
 
-```{eval-rst}
-.. autopydantic_settings:: everyvoice.config.text_config.Symbols
-    :settings-show-json: True
-    :settings-show-config-member: False
-    :settings-show-config-summary: False
-    :settings-show-validator-members: True
-    :settings-show-validator-summary: True
-    :field-list-validators: True
+Your symbol set is created by taking the union of all values defined. For example:
 
+```yaml
+symbols:
+    dataset_0_characters: ['a', 'b', 'c']
+    dataset_1_characters: ['b', 'c', 'd']
 ```
 
-## Preprocessing Configuration
+Will create a symbol set equal to `{'a', 'b', 'c', 'd'}` (i.e. the union of both key/values). This allows you to train models with data from different languages, for example.
+
+!!! important
+    You should always manually inspect your configuration here to make sure it makes sense with respect to your data. Is there a symbol that shouldn't be there? Is there a symbol that's defined as 'punctuation' but is used as non-punctuation in your language? Please inspect these and update the configuration accordingly.
+
+::: everyvoice.config.text_config.Symbols
+    handler: python
+    options:
+        show_root_heading: true
+        heading_level: 6

@@ -2,13 +2,15 @@
 
 ## Step 1: Make sure you have Permission!
 
-So, you want to build a text-to-speech system for a new language or dataset - cool! But, just because you **can** build a text-to-speech system, doesn't mean you **should**. There are a lot of important ethical questions around text-to-speech. For example, it's not ethical to just use audio you find somewhere online if it doesn't have explicit permission to use it for the purposes of text-to-speech. The first step is always to make sure you have permission to use the data in question and that whoever contributed their voice to the data you want to use is aware and supportive of your goal.
+So, you want to build a text-to-speech system for a new language or dataset - cool! But, just because you *can* build a text-to-speech system, doesn't mean you *should*. There are a lot of important ethical questions around text-to-speech. For example, it's **not** ethical to just use audio you find somewhere online if it doesn't have explicit permission to use it for the purposes of text-to-speech. The first step is always to make sure you have permission to use the data in question and that whoever contributed their voice to the data you want to use is aware and supportive of your goal.
 
-Creating a text-to-speech model without permission is unethical, but even when you do have permission, you should take great care in how you distribute the model you have created. Increasingly, text-to-speech technology is used in fraud, unauthorized impersonation. The technology has also been used to disenfranchise voice actors and other professionals. When you create an EveryVoice model, you are responsible for ensuring the model is only used and distributed according to the permissions you have. To help with this accountability, you will be required by EveryVoice to provide a full name and contact information that will also be distributed with the model.
+Creating a text-to-speech model without permission is unethical, but even when you do have permission, you should take great care in how you distribute the model you have created. Increasingly, text-to-speech technology is used in fraud and unauthorized impersonation. The technology has also been used to disenfranchise voice actors and other professionals. When you create an EveryVoice model, you are responsible for ensuring the model is only used and distributed according to the permissions you have. To help with this accountability, you will be required by EveryVoice to attest that you have permission to use your data and to provide a full name and contact information that will also be distributed with the model.
+
+In addition, we invite you to check out our [short guide](./ethics.md) that contains prompts about ethical questions *before* starting on any of the next steps.
 
 ## Step 2: Gather Your Data
 
-The first thing to do is to get all the data you have (in this case audio with text transcripts) together in one place. Your audio should be in 'wav' format. Ideally it would be 16bit, mono (one channel) audio sampled somewhere between 22.05kHz and 48kHz. If that doesn't mean anything to you, don't worry, we can ensure the right format in later steps.
+The first thing to do is to get all the data you have (in this case audio with text transcripts) together in one place. Your audio should be in a lossless 'wav' format. Ideally it would be 16bit, mono (one channel) audio sampled somewhere between 22.05kHz and 48kHz. If that doesn't mean anything to you, don't worry, we can ensure the right format in later steps.
 It's best if your audio clips are somewhere between half a second and 10 seconds long. Any longer and it could be difficult to train. If your audio is longer than this, we suggest processing it into smaller chunks first.
 
 Your text should be consistently written and should be in a pipe-separated values spreadsheet, similar to [this file](https://github.com/roedoejet/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv). It should have a column that contains text and a column that contains the `basename` of your associated audio file. So if you have a recording of somebody saying "hello how are you?" and the corresponding audio is called `mydata0001.wav`
@@ -38,7 +40,7 @@ In this format, there are corresponding wav files labelled sin_2241_0329430812.w
 
 ## Step 3: Install EveryVoice
 
-Head over to the [install documentation](../install.md) and install EveryVoice
+Head over to the [installation documentation](../install.md) and install EveryVoice
 
 ## Step 4: Run the Configuration Wizard 🧙
 
@@ -48,11 +50,14 @@ Once you have your data, the best thing to do is to run the Configuration Wizard
 everyvoice new-project
 ```
 
-After running the wizard, cd into your newly created directory. Let's call it `test` for now.
+After running the wizard, cd into your newly created directory. Let's call it `<your_everyvoice_project>` for now.
 
 ```bash
-cd test
+cd your_everyvoice_project
 ```
+
+!!! important
+    After you run the Configuration Wizard 🧙, please inspect your text configuration `config/{{ config_filename('text') }}` to make sure everything looks right. That is, if some unexpected symbols show up, please inspect your data (if you remove symbols from the configuration here, they will be ignored during training). Sometimes characters that are treated as punctuation by default will need to be removed from the punctuation list if they are treated as non-punctuation in your language.
 
 ## Step 5: Run the Preprocessor
 
@@ -66,7 +71,7 @@ everyvoice preprocess config/{{ config_filename('text-to-spec') }}
 
 So you don't need to train your own vocoder, EveryVoice has a variety of publicly released vocoders available [here](TODO). Follow the instructions there for downloading the checkpoints.
 
-EveryVoice is also compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint from [the official implementation](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model), which is very good quality. You can find the EveryVoice-compatible version of this checkpoint [here](https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing).
+EveryVoice is also compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint from [the official HiFiGAN implementation](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model), which is very good quality. You can find the EveryVoice-compatible version of this checkpoint [here](https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing).
 
 Using a pre-trained vocoder is recommended, and the above checkpoint should work well even for new languages after [finetuning](./finetune.md).
 
@@ -84,7 +89,7 @@ By default, we run our training with PyTorch Lightning's "auto" strategy. But, i
 everyvoice train spec-to-wav config/{{ config_filename('spec-to-wav') }} -d 1 -a gpu
 ```
 
-Which would use the GPU accelerator and specify 1 device/chip.
+Which would use the GPU accelerator (`-a gpu`) and specify 1 device/chip (`-d 1`).
 
 ## Step 7: Train your Feature Prediction Network
 
@@ -101,7 +106,11 @@ everyvoice train text-to-spec config/{{ config_filename('text-to-spec') }}
 !!! tip
     While your model is training, you can use TensorBoard to view the logs which will show information about the progress of training and display spectrogram images. If you have provided a `vocoder_path` key, then you will also be able to hear audio in the logs. To use TensorBoard, make sure that your conda environment is activated and run `tensorboard --logdir path/to/logs_and_checkpoints`. Then your logs will be viewable at [http://localhost:6006](http://localhost:6006).
 
-## Step 8: Synthesize Speech in Your Language!
+## Step 8 (optional): Finetune your Vocoder
+
+When you have finished training your Feature Prediction Network, we recommend [finetuning](./finetune.md) your vocoder. This step is optional, but it will help get rid of metallic artefacts that are often present if you don't finetune your vocoder. Note, it will likely not help with any mispronounciations. If you notice these types of errors, it is likely due to issues with the training data (e.g. too much variation in pronunciation or recording quality in the dataset, or discrepencies between the recording and transcription.)
+
+## Step 9: Synthesize Speech in Your Language!
 
 #### Command Line
 
