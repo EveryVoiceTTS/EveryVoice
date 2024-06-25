@@ -9,7 +9,7 @@ The EveryVoice installation process can be somewhat involved, so we have automat
  - Install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [conda](https://docs.conda.io/projects/conda/en/stable/).
  - Clone the EveryVoice repo and its submodules:
     ```sh
-	git clone https://github.com/roedoejet/EveryVoice.git
+	git clone https://github.com/EveryVoiceTTS/EveryVoice.git
 	cd EveryVoice
 	git submodule update --init
 	```

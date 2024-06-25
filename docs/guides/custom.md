@@ -13,7 +13,7 @@ In addition, we invite you to check out our [short guide](./ethics.md) that cont
 The first thing to do is to get all the data you have (in this case audio with text transcripts) together in one place. Your audio should be in a lossless 'wav' format. Ideally it would be 16bit, mono (one channel) audio sampled somewhere between 22.05kHz and 48kHz. If that doesn't mean anything to you, don't worry, we can ensure the right format in later steps.
 It's best if your audio clips are somewhere between half a second and 10 seconds long. Any longer and it could be difficult to train. If your audio is longer than this, we suggest processing it into smaller chunks first.
 
-Your text should be consistently written and should be in a pipe-separated values spreadsheet, similar to [this file](https://github.com/roedoejet/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv). It should have a column that contains text and a column that contains the `basename` of your associated audio file. So if you have a recording of somebody saying "hello how are you?" and the corresponding audio is called `mydata0001.wav`
+Your text should be consistently written and should be in a pipe-separated values spreadsheet, similar to [this file](https://github.com/EveryVoiceTTS/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv). It should have a column that contains text and a column that contains the `basename` of your associated audio file. So if you have a recording of somebody saying "hello how are you?" and the corresponding audio is called `mydata0001.wav`
 then you should have a psv file that looks like this:
 
 ```csv hl_lines="2"

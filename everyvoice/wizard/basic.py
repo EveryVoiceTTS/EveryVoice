@@ -213,12 +213,12 @@ class ConfigFormatStep(Step):
         multilingual = False
         global_cleaners = (
             []
-        )  # TODO: this should be fixed by https://github.com/roedoejet/EveryVoice/issues/359
+        )  # TODO: this should be fixed by https://github.com/EveryVoiceTTS/EveryVoice/issues/359
         for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
             dataset_state = self.state[dataset]
             # Add Cleaners
             # TODO: these should really be dataset-specific cleaners, not global cleaners
-            # so this should be fixed by https://github.com/roedoejet/EveryVoice/issues/359
+            # so this should be fixed by https://github.com/EveryVoiceTTS/EveryVoice/issues/359
             if dataset_state.get(StepNames.text_processing_step):
                 global_cleaners += [
                     TextProcessingStep().process_lookup[x]["fn"]
