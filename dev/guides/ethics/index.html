@@ -8,11 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.everyvoice.ca/dev/reference/vocoder/">
+        <link rel="canonical" href="https://docs.everyvoice.ca/dev/guides/ethics/">
       
       
-        <link rel="prev" href="../feature_prediction/">
+        <link rel="prev" href="../">
       
+      
+        <link rel="next" href="../background/">
       
       
       <link rel="icon" href="../../favicon-32x32.png">
@@ -20,7 +22,7 @@
     
     
       
-        <title>Vocoder - EveryVoice TTS Toolkit Documentation</title>
+        <title>Ethical Considerations and Consequences of TTS - EveryVoice TTS Toolkit Documentation</title>
       
     
     
@@ -74,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#vocoder" class="md-skip">
+        <a href="#should-you-build-a-tts-model-what-are-the-possible-negative-outcomes" class="md-skip">
           Skip to content
         </a>
       
@@ -134,7 +136,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Vocoder
+              Ethical Considerations and Consequences of TTS
             
           </span>
         </div>
@@ -314,17 +316,19 @@
       
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
@@ -338,7 +342,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             Guides
@@ -352,7 +356,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/" class="md-nav__link">
+      <a href="../" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -370,10 +374,122 @@
                 
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Ethical Considerations and Consequences of TTS
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Ethical Considerations and Consequences of TTS
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#check-before-you-tech" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check Before you Tech!
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Check Before you Tech!">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#where-is-the-data-coming-from-do-you-have-explicit-permission-from-the-creator-of-the-data-and-the-speaker" class="md-nav__link">
+    <span class="md-ellipsis">
+      Where is the data coming from? Do you have explicit permission from the creator of the data, and the speaker?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-is-your-goal-how-will-tts-help-you-meet-that-goal" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is your goal? How will TTS help you meet that goal?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#where-is-the-model-going-to-be-stored-who-has-control-and-access-to-the-model-and-who-has-ownership" class="md-nav__link">
+    <span class="md-ellipsis">
+      Where is the model going to be stored? Who has control and access to the model and who has ownership?
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-are-the-possible-risks-associated-with-this-technology-and-how-will-i-mitigate-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      What are the possible risks associated with this technology and how will I mitigate them?
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
-      <a href="../../guides/background/" class="md-nav__link">
+      <a href="../background/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -394,7 +510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/custom/" class="md-nav__link">
+      <a href="../custom/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -415,7 +531,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../guides/finetune/" class="md-nav__link">
+      <a href="../finetune/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -457,7 +573,7 @@
             
   
   <span class="md-ellipsis">
-    Advanced
+    Reference
   </span>
   
 
@@ -466,71 +582,6 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            Advanced
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../guides/schemas/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    How to Setup Code Completion for Schemas in vim
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    Reference
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Reference
           </label>
@@ -543,7 +594,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../" class="md-nav__link">
+      <a href="../../reference/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -564,7 +615,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../reference/configuration/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -578,191 +629,64 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../aligner/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Aligner
-  </span>
-  
-
-      </a>
+          </ul>
+        </nav>
+      
     </li>
   
 
-              
-            
-              
-                
+    
+      
+      
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../e2e/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    End-to-End TTS
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../feature_prediction/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Feature Prediction
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
   
   
     
-  
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
       
         
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
           
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
   
   <span class="md-ellipsis">
-    Vocoder
+    Advanced
   </span>
   
 
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schemas/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Vocoder
+    How to Setup Code Completion for Schemas in vim
   </span>
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#hifiganistft-net" class="md-nav__link">
-    <span class="md-ellipsis">
-      HiFiGAN/iSTFT-Net
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="HiFiGAN/iSTFT-Net">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#command-line-interface" class="md-nav__link">
-    <span class="md-ellipsis">
-      Command Line Interface
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuration
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#main-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Main Configuration
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#training-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Training Configuration
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#model-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Model Configuration
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -802,63 +726,48 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#hifiganistft-net" class="md-nav__link">
+  <a href="#check-before-you-tech" class="md-nav__link">
     <span class="md-ellipsis">
-      HiFiGAN/iSTFT-Net
+      Check Before you Tech!
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="HiFiGAN/iSTFT-Net">
+    <nav class="md-nav" aria-label="Check Before you Tech!">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#command-line-interface" class="md-nav__link">
+  <a href="#where-is-the-data-coming-from-do-you-have-explicit-permission-from-the-creator-of-the-data-and-the-speaker" class="md-nav__link">
     <span class="md-ellipsis">
-      Command Line Interface
+      Where is the data coming from? Do you have explicit permission from the creator of the data, and the speaker?
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
+  <a href="#what-is-your-goal-how-will-tts-help-you-meet-that-goal" class="md-nav__link">
     <span class="md-ellipsis">
-      Configuration
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#main-configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Main Configuration
+      What is your goal? How will TTS help you meet that goal?
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#training-configuration" class="md-nav__link">
+  <a href="#where-is-the-model-going-to-be-stored-who-has-control-and-access-to-the-model-and-who-has-ownership" class="md-nav__link">
     <span class="md-ellipsis">
-      Training Configuration
+      Where is the model going to be stored? Who has control and access to the model and who has ownership?
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#model-configuration" class="md-nav__link">
+  <a href="#what-are-the-possible-risks-associated-with-this-technology-and-how-will-i-mitigate-them" class="md-nav__link">
     <span class="md-ellipsis">
-      Model Configuration
+      What are the possible risks associated with this technology and how will I mitigate them?
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
         
@@ -885,44 +794,42 @@
   
 
 
-<h1 id="vocoder">Vocoder<a class="headerlink" href="#vocoder" title="Permanent link">&para;</a></h1>
-<h2 id="hifiganistft-net">HiFiGAN/iSTFT-Net<a class="headerlink" href="#hifiganistft-net" title="Permanent link">&para;</a></h2>
-<p>Source Code: <a href="https://github.com/roedoejet/HiFiGAN_iSTFT_lightning">https://github.com/roedoejet/HiFiGAN_iSTFT_lightning</a></p>
-<p>This vocoder is based on the HiFiGAN/iSTFT-Net neural vocoders.</p>
-<h3 id="command-line-interface">Command Line Interface<a class="headerlink" href="#command-line-interface" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>.. click:: everyvoice.cli:CLICK_APP
-    :prog: everyvoice
-    :nested: full
-    :commands: hifigan
-</code></pre></div>
-<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
-<h4 id="main-configuration">Main Configuration<a class="headerlink" href="#main-configuration" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code>.. autopydantic_settings:: everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANConfig
-    :settings-show-json: True
-    :settings-show-config-member: False
-    :settings-show-config-summary: False
-    :settings-show-validator-members: True
-    :settings-show-validator-summary: True
-    :field-list-validators: True
-</code></pre></div>
-<h4 id="training-configuration">Training Configuration<a class="headerlink" href="#training-configuration" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code>.. autopydantic_settings:: everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANTrainingConfig
-    :settings-show-json: True
-    :settings-show-config-member: False
-    :settings-show-config-summary: False
-    :settings-show-validator-members: True
-    :settings-show-validator-summary: True
-    :field-list-validators: True
-</code></pre></div>
-<h4 id="model-configuration">Model Configuration<a class="headerlink" href="#model-configuration" title="Permanent link">&para;</a></h4>
-<div class="highlight"><pre><span></span><code>.. autopydantic_settings:: everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config.HiFiGANModelConfig
-    :settings-show-json: True
-    :settings-show-config-member: False
-    :settings-show-config-summary: False
-    :settings-show-validator-members: True
-    :settings-show-validator-summary: True
-    :field-list-validators: True
-</code></pre></div>
+<h1 id="should-you-build-a-tts-model-what-are-the-possible-negative-outcomes">Should you build a TTS Model? What are the possible negative outcomes?<a class="headerlink" href="#should-you-build-a-tts-model-what-are-the-possible-negative-outcomes" title="Permanent link">&para;</a></h1>
+<p>So, you're here because you want to build a TTS system - maybe for a language that doesn't have an existing one, but just because you <em>can</em> build a text-to-speech system, doesn't mean you <em>should</em>. The most important step of a new text-to-speech project is to consider what possible ethical problems could arise from the technology and which goals you are hoping to achieve with it. This section will walk you through some important questions to consider; you might also find that they apply broadly to other technology projects.</p>
+<h2 id="check-before-you-tech">Check Before you Tech!<a class="headerlink" href="#check-before-you-tech" title="Permanent link">&para;</a></h2>
+<p>Technology is flashy, and it seems like you can hardly turn a corner without someone talking about AI. However, as the excitment about the possibilities of this technology grow, so too have the cautionary warnings<sup id="fnref:1"><a class="footnote-ref" href="#fn:1">1</a></sup><sup id="fnref:2"><a class="footnote-ref" href="#fn:2">2</a></sup>. Amidst all the flurry of activity and hype - the fundamental question of <em>why are we building technology X, Y, or Z</em> should hopefully come up. What goals are we hoping to achieve, and what new problems might we be introducing with a new technology?</p>
+<p>The following sections provide a couple of questions based on the excellent <a href="https://fpcc.ca/resource/check-before-you-tech/">"Check Before you Tech" guide</a> for choosing language technology in a language revitalization context. While the original guide is geared towards technology users, we target our questions to technology developers and researchers. We urge you to consider these questions before beginning your TTS project.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This list is not intended to be a comprehensive list of all the ethical questions to consider, but rather a starting point for discussing and considering the impacts of the technology you are potentially creating.</p>
+</div>
+<h4 id="where-is-the-data-coming-from-do-you-have-explicit-permission-from-the-creator-of-the-data-and-the-speaker">Where is the data coming from? Do you have explicit permission from the creator of the data, and the speaker?<a class="headerlink" href="#where-is-the-data-coming-from-do-you-have-explicit-permission-from-the-creator-of-the-data-and-the-speaker" title="Permanent link">&para;</a></h4>
+<p>It is <strong>not</strong> ethical to build a TTS system with data that you do not have permission to use. You should not scrape or re-purpose data that you find online to build TTS systems unless the data comes with explicit permissions to do so.</p>
+<p>For TTS, you are building a model of someone's likeness, so you should make sure that you have obtained permission from the data creator as well as the speaker whose likeness will be modeled. When permission is asked for, you should be clear with the person(s) about what the technology could be used for.</p>
+<p>If you do not have enough time/resources to ask this question and obtain permission from all the relevant stakeholders, you should not build TTS models with the data.</p>
+<h4 id="what-is-your-goal-how-will-tts-help-you-meet-that-goal">What is your goal? How will TTS help you meet that goal?<a class="headerlink" href="#what-is-your-goal-how-will-tts-help-you-meet-that-goal" title="Permanent link">&para;</a></h4>
+<p>As mentioned above, it's important to think about what you are actually trying to achieve with TTS. Not only will this help you determine whether EveryVoice TTS is the right toolkit for your application, but it will also help you determine whether you need to spend all the time and resources necessary to build a TTS system in the first place.</p>
+<p>We invite you to consider whether your goal serving <em>you</em> or is it serving the people whose language you're working with? And if the answer is the latter, how do you know that, and how are you ensuring that that continues to be true? When discussing the project with relevant stakeholders, you should also mention any other goals you have in building this technology (e.g. publishing papers).</p>
+<h4 id="where-is-the-model-going-to-be-stored-who-has-control-and-access-to-the-model-and-who-has-ownership">Where is the model going to be stored? Who has control and access to the model and who has ownership?<a class="headerlink" href="#where-is-the-model-going-to-be-stored-who-has-control-and-access-to-the-model-and-who-has-ownership" title="Permanent link">&para;</a></h4>
+<p>If the speaker or permissions-holders for the data or models change their mind about participation, how easy is it for them to stop the model? Do they have access to a 'kill switch'? Do they need to contact someone and make a request? Are there assurances about how long these requests will take to be processed?</p>
+<p>Are there clear, agreed-upon guidelines for who has access to the model and data? Who maintains the control and access to these resources? In Canada, we encourage users to engage with the <a href="https://fnigc.ca/ocap-training/">First Nations Principles of OCAP®</a> when planning a project.</p>
+<h4 id="what-are-the-possible-risks-associated-with-this-technology-and-how-will-i-mitigate-them">What are the possible risks associated with this technology and how will I mitigate them?<a class="headerlink" href="#what-are-the-possible-risks-associated-with-this-technology-and-how-will-i-mitigate-them" title="Permanent link">&para;</a></h4>
+<p>Have you considered and discussed possible risks with the relevant stakeholders? Spend some time imagining ways that the tool could be misused, either by accidental or malicious actors. What if the model makes pronunciation mistakes? Will that embarrass the speaker? What if the model is made to say inappropriate things? What plans do you have to mitigate these risks?</p>
+<p>Since this technology is relatively new, it can sometimes be hard to consider the ways that a technology can be misused, however we already see examples where TTS models are being used to generate fake news<sup id="fnref:3"><a class="footnote-ref" href="#fn:3">3</a></sup>. Can you think of ways that similar so-called 'deep fakes' or impersonations could be used to cause harm?</p>
+<div class="footnote">
+<hr />
+<ol>
+<li id="fn:1">
+<p>Emily M. Bender, Timnit Gebru, Angelina McMillan-Major, and Shmargaret Shmitchell. 2021. On the Dangers of Stochastic Parrots: Can Language Models Be Too Big? 🦜. In Proceedings of the 2021 ACM Conference on Fairness, Accountability, and Transparency (FAccT '21). Association for Computing Machinery, New York, NY, USA, 610–623. <a href="https://doi.org/10.1145/3442188.3445922">https://doi.org/10.1145/3442188.3445922</a>&#160;<a class="footnote-backref" href="#fnref:1" title="Jump back to footnote 1 in the text">&#8617;</a></p>
+</li>
+<li id="fn:2">
+<p>Marie-Odile Junker. 2024. Data-mining and Extraction: the gold rush of AI on Indigenous Languages. In Proceedings of the Seventh Workshop on the Use of Computational Methods in the Study of Endangered Languages, pages 52–57, St. Julians, Malta. Association for Computational Linguistics. <a href="https://aclanthology.org/2024.computel-1.8/">https://aclanthology.org/2024.computel-1.8/</a>&#160;<a class="footnote-backref" href="#fnref:2" title="Jump back to footnote 2 in the text">&#8617;</a></p>
+</li>
+<li id="fn:3">
+<p><a href="https://nypost.com/2024/06/14/us-news/michigan-gop-candidate-anthony-hudson-stands-by-ai-generated-mlk-jr-endorsement-video/">https://nypost.com/2024/06/14/us-news/michigan-gop-candidate-anthony-hudson-stands-by-ai-generated-mlk-jr-endorsement-video/</a>&#160;<a class="footnote-backref" href="#fnref:3" title="Jump back to footnote 3 in the text">&#8617;</a></p>
+</li>
+</ol>
+</div>
 
 
 
@@ -969,7 +876,7 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.select", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.select", "announce.dismiss", "content.footnote.tooltips"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.ad660dcc.min.js"></script>

@@ -14,7 +14,7 @@
         <link rel="prev" href="../custom/">
       
       
-        <link rel="next" href="../schemas/">
+        <link rel="next" href="../../reference/">
       
       
       <link rel="icon" href="../../favicon-32x32.png">
@@ -377,6 +377,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../ethics/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Ethical Considerations and Consequences of TTS
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../background/" class="md-nav__link">
         
   
@@ -510,7 +531,7 @@
             
   
   <span class="md-ellipsis">
-    Advanced
+    Reference
   </span>
   
 
@@ -519,69 +540,6 @@
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
-            <span class="md-nav__icon md-icon"></span>
-            Advanced
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../schemas/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    How to Setup Code Completion for Schemas in vim
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
-  
-  <span class="md-ellipsis">
-    Reference
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Reference
           </label>
@@ -629,26 +587,47 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/aligner/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Aligner
-  </span>
-  
-
-      </a>
+          </ul>
+        </nav>
+      
     </li>
   
 
-              
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Advanced
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -657,53 +636,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../../reference/e2e/" class="md-nav__link">
+      <a href="../schemas/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    End-to-End TTS
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/feature_prediction/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Feature Prediction
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/vocoder/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Vocoder
+    How to Setup Code Completion for Schemas in vim
   </span>
   
 
@@ -774,7 +711,6 @@
 
 
 <h1 id="how-to-fine-tune-the-existing-checkpoints">How to fine-tune the existing checkpoints<a class="headerlink" href="#how-to-fine-tune-the-existing-checkpoints" title="Permanent link">&para;</a></h1>
-<p>...more guides coming soon...</p>
 <h3 id="vocoder-matching">Vocoder matching<a class="headerlink" href="#vocoder-matching" title="Permanent link">&para;</a></h3>
 <p>Vocoder (i.e. your spec-to-wav model) matching is an important part of the TTS pipeline. Because your spec-to-wav model is trained with the ground-truth Mel spectrograms from your audio, there is a mismatch between the Mel spectrograms created by your text-to-spec model and the ones that the pre-trained vocoders have seen during training. For that reason, it can be helpful to fine-tune your spec-to-wav model with the <em>generated</em> Mel spectrograms from your text-to-spec model.</p>
 <div class="admonition note">
@@ -856,7 +792,7 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.select", "announce.dismiss"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.select", "announce.dismiss", "content.footnote.tooltips"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
       <script src="../../assets/javascripts/bundle.ad660dcc.min.js"></script>
