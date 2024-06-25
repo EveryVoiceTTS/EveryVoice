@@ -211,59 +211,59 @@ Also note that you have to change `/home/username` with your own username in the
 {
   "json.schemas": [
     {
-      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-aligner-schema-0.1.json",
+      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-aligner-0.1.json",
       "fileMatch": [
         "everyvoice-aligner.json"
       ]
     },
     {
-      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-schema-0.1.json",
+      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-0.1.json",
       "fileMatch": [
         "everyvoice-shared-data.json"
       ]
     },
     {
-      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-shared-text-schema-0.1.json",
+      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-shared-text-0.1.json",
       "fileMatch": [
         "everyvoice-shared-text.json"
       ]
     },
     {
-      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-spec-to-wav-schema-0.1.json",
+      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-spec-to-wav-0.1.json",
       "fileMatch": [
         "everyvoice-spec-to-wav.json"
       ]
     },
     {
-      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-spec-schema-0.1.json",
+      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-spec-0.1.json",
       "fileMatch": [
         "everyvoice-text-to-spec.json"
       ]
     },
     {
-      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-wav-schema-0.1.json",
+      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-wav-0.1.json",
       "fileMatch": [
         "everyvoice-text-to-wav.json"
       ]
     }
   ],
   "yaml.schemas": {
-    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-aligner-schema-0.1.json": [
+    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-aligner-0.1.json": [
       "everyvoice-aligner.yaml"
     ],
-    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-schema-0.1.json": [
+    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-0.1.json": [
       "everyvoice-shared-data.yaml"
     ],
-    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-shared-text-schema-0.1.json": [
+    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-shared-text-0.1.json": [
       "everyvoice-shared-text.yaml"
     ],
-    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-spec-to-wav-schema-0.1.json": [
+    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-spec-to-wav-0.1.json": [
       "everyvoice-spec-to-wav.yaml"
     ],
-    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-spec-schema-0.1.json": [
+    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-spec-0.1.json": [
       "everyvoice-text-to-spec.yaml"
     ],
-    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-wav-schema-0.1.json": [
+    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-wav-0.1.json": [
       "everyvoice-text-to-wav.yaml"
     ]
   }

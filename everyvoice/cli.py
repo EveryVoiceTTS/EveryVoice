@@ -314,12 +314,12 @@ def update_schemas(
 
     SCHEMAS_TO_OUTPUT.update(
         {
-            f"{ALIGNER_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": AlignerConfig,
-            f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": EveryVoiceConfig,
-            f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": FeaturePredictionConfig,
-            f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": PreprocessingConfig,
-            f"{TEXT_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": TextConfig,
-            f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}-schema-{MAJOR_MINOR_VERSION}.json": VocoderConfig,
+            f"{ALIGNER_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": AlignerConfig,
+            f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": EveryVoiceConfig,
+            f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": FeaturePredictionConfig,
+            f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": PreprocessingConfig,
+            f"{TEXT_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": TextConfig,
+            f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": VocoderConfig,
         }
     )
 
