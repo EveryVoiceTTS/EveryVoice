@@ -64,11 +64,10 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         no_permissions_args["preprocessing"]["source_data"][0][
             "permissions_obtained"
         ] = False
-        # TODO: remove this when https://github.com/roedoejet/EveryVoice/issues/483 is fixed
         with tempfile.TemporaryDirectory() as tmpdir:
-            no_permissions_args["training"]["logger"]["save_dir"] = tmpdir
-            with self.assertRaises(ValueError):
-                FeaturePredictionConfig(**no_permissions_args)
+            with init_context({"writing_config": Path(tmpdir)}):
+                with self.assertRaises(ValueError):
+                    FeaturePredictionConfig(**no_permissions_args)
 
     def test_process_audio_for_alignment(self):
         config = AlignerConfig(contact=self.contact)
