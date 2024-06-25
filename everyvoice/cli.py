@@ -116,7 +116,7 @@ app.command(
 
     Example wavs directory: "/path/to/wavs/"
 
-    Example metadata: [https://github.com/roedoejet/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv](https://github.com/roedoejet/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv)
+    Example metadata: [https://github.com/EveryVoiceTTS/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv](https://github.com/EveryVoiceTTS/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv)
 
 """,
 )

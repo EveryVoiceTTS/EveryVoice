@@ -1,7 +1,7 @@
 site_name: EveryVoice TTS Toolkit Documentation
 site_url: https://docs.everyvoice.ca
-repo_url: https://github.com/roedoejet/EveryVoice
-repo_name: roedoejet/EveryVoice
+repo_url: https://github.com/EveryVoiceTTS/EveryVoice
+repo_name: EveryVoiceTTS/EveryVoice
 theme:
   name: material
   favicon: favicon-32x32.png

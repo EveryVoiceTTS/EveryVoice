@@ -39,7 +39,7 @@ class EveryVoice(pl.LightningModule):
             self.feature_prediction.config = self.config.feature_prediction
         else:
             lang2id, speaker2id = lookuptables_from_config(config.feature_prediction)
-            # TODO: What about when we are fine-tuning? Do the bins in the Variance Adaptor not change? https://github.com/roedoejet/FastSpeech2_lightning/issues/28
+            # TODO: What about when we are fine-tuning? Do the bins in the Variance Adaptor not change? https://github.com/EveryVoiceTTS/FastSpeech2_lightning/issues/28
             with open(
                 config.feature_prediction.preprocessing.save_dir / "stats.json"
             ) as f:

@@ -1146,7 +1146,7 @@ class Preprocessor:
             Panel(
                 f"You've finished preprocessing: {', '.join(to_process)}. Your files are located at {self.save_dir.absolute()}. {report}",
                 title="Congratulations 🎉",
-                subtitle="Next Steps Documentation: https://roedoejet.github.io/EveryVoice/guides/custom.html",
+                subtitle="Next Steps Documentation: https://docs.everyvoice.ca/stable/guides/custom/",
                 border_style=Style(color="#0B4F19"),
             )
         )

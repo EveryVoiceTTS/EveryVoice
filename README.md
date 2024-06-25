@@ -2,9 +2,9 @@
 
 # EveryVoice TTS Toolkit 💬
 
-[![codecov](https://codecov.io/gh/roedoejet/EveryVoice/branch/main/graph/badge.svg?token=yErCxf64IU)](https://codecov.io/gh/roedoejet/EveryVoice)
-[![Documentation](https://github.com/roedoejet/EveryVoice/actions/workflows/docs.yml/badge.svg)](https://docs.everyvoice.ca)
-[![Build Status](https://github.com/roedoejet/EveryVoice/actions/workflows/test.yml/badge.svg)](https://github.com/roedoejet/EveryVoice/actions)
+[![codecov](https://codecov.io/gh/EveryVoiceTTS/EveryVoice/branch/main/graph/badge.svg?token=yErCxf64IU)](https://codecov.io/gh/EveryVoiceTTS/EveryVoice)
+[![Documentation](https://github.com/EveryVoiceTTS/EveryVoice/actions/workflows/docs.yml/badge.svg)](https://docs.everyvoice.ca)
+[![Build Status](https://github.com/EveryVoiceTTS/EveryVoice/actions/workflows/test.yml/badge.svg)](https://github.com/EveryVoiceTTS/EveryVoice/actions)
 [![license](https://img.shields.io/badge/Licence-MIT-green)](LICENSE)
 
 This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generation for Indigenous Language Education" project.
@@ -18,7 +18,7 @@ First, you'll need to install [miniconda](https://docs.conda.io/en/latest/minico
 ### Clone the repo
 
 ```sh
-git clone https://github.com/roedoejet/EveryVoice.git
+git clone https://github.com/EveryVoiceTTS/EveryVoice.git
 cd EveryVoice
 git submodule update --init
 ```
@@ -48,7 +48,7 @@ In particular, read the [Guides](https://docs.everyvoice.ca/latest/guides/custom
 
 ## Contributing
 
-Feel free to dive in! [Open an issue](https://github.com/roedoejet/EveryVoice/issues/new) or submit PRs.
+Feel free to dive in! [Open an issue](https://github.com/EveryVoiceTTS/EveryVoice/issues/new) or submit PRs.
 
 This repo follows the [Contributor Covenant](http://contributor-covenant.org/version/1/3/0/) Code of Conduct.
 

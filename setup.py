@@ -45,7 +45,7 @@ setup(
     author="Aidan Pine",
     author_email="hello@aidanpine.ca",
     license="MIT",
-    url="https://github.com/roedoejet/EveryVoice",
+    url="https://github.com/EveryVoiceTTS/EveryVoice",
     description="Text-to-Speech Synthesis for the Speech Generation for Indigenous Language Education Small Teams Project",
     long_description=long_description,
     long_description_content_type="text/markdown",
