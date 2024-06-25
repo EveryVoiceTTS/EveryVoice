@@ -28,7 +28,7 @@ We hope direct installation from PyPI will work:
 
  - Install EveryVoice:
 
-       pip install everyvoice
+       pip install everyvoice==0.1.0a
 
 ## Manual installation
 
