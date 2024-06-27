@@ -44,7 +44,7 @@ If the automated installation process does not work for you, or if you prefer to
 
 Read the full [EveryVoice documentation](https://docs.everyvoice.ca/).
 
-In particular, read the [Guides](https://docs.everyvoice.ca/latest/guides/custom/) to get familiar with the whole process.
+In particular, read the [Guides](https://docs.everyvoice.ca/latest/guides/) to get familiar with the whole process.
 
 ## Contributing
 
