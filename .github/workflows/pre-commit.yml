@@ -1,0 +1,34 @@
+# [install the GitHub Application on the relevant repositories](https://github.com/apps/pre-commit-ci-lite/installations/new)
+name: Run pre-commit.ci lite
+
+on:
+  pull_request:
+  push:
+    branches: [main, test-me-*]
+
+jobs:
+  main:
+    # note: the step must have either the default name or contain the text pre-commit-ci-lite. the application uses this to find the right workflow.
+    # [pre-commit.ci lite](https://pre-commit.ci/lite.html
+    name: pre-commit-ci-lite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.SGILE_PAT }}
+          submodules: recursive
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install dependencies and package
+        run: |
+          pip install -r requirements.dev.txt
+          pip install pydantic
+      - name: flake8
+        run: |
+          flake8 --bug-report
+      - uses: pre-commit/action@v3.0.1
+      - uses: pre-commit-ci/lite-action@v1.0.2
+        if: always()
