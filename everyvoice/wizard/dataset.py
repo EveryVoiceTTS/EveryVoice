@@ -372,6 +372,13 @@ class FilelistTextRepresentationStep(Step):
         for i, header in enumerate(self.state["filelist_headers"]):
             if header == "text":
                 self.state["filelist_headers"][i] = self.response
+        # Rename the "text" key according to the new alias:
+        if "filelist_data" in self.state:
+            for item in self.state["filelist_data"]:
+                filelist_format = self.state[
+                    StepNames.filelist_text_representation_step
+                ]
+                item[filelist_format] = item.pop("text")
 
 
 # HEADER SELECTION
