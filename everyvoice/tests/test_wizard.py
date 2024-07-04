@@ -1028,6 +1028,88 @@ class WizardTest(TestCase):
         self.assertFalse(step.response.startswith(" "))
         self.assertEqual(step.response, str(path))
 
+    def test_festival(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            with open(tmpdir / "filelist.txt", "w", encoding="utf8") as f:
+                f.write(
+                    "\n".join(
+                        [
+                            '( f1 " foo bar " )',
+                            '( f2 " bar baz " )',
+                            '( f3 " baz foo " )',
+                        ]
+                    )
+                )
+            for basename in ("f1", "f2", "f3"):
+                with open(tmpdir / (basename + ".wav"), "wb"):
+                    pass
+            tour, _ = self.monkey_run_tour(
+                "Tour with datafile in the festival format",
+                [
+                    StepAndAnswer(basic.NameStep(), Say("project")),
+                    StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
+                    StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
+                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
+                    StepAndAnswer(
+                        dataset.WavsDirStep(state_subset="dataset_0"), Say(str(tmpdir))
+                    ),
+                    StepAndAnswer(
+                        dataset.FilelistStep(state_subset="dataset_0"),
+                        Say(str(tmpdir / "filelist.txt")),
+                    ),
+                    StepAndAnswer(
+                        dataset.FilelistFormatStep(state_subset="dataset_0"),
+                        Say("festival"),
+                    ),
+                    StepAndAnswer(
+                        dataset.FilelistTextRepresentationStep(
+                            state_subset="dataset_0"
+                        ),
+                        Say("characters"),
+                    ),
+                    StepAndAnswer(
+                        dataset.HasSpeakerStep(state_subset="dataset_0"),
+                        Say("no"),
+                    ),
+                    StepAndAnswer(
+                        dataset.HasLanguageStep(state_subset="dataset_0"),
+                        Say("no"),
+                        children_answers=[RecursiveAnswers(Say("und"))],
+                    ),
+                    StepAndAnswer(
+                        dataset.TextProcessingStep(state_subset="dataset_0"),
+                        Say(()),
+                    ),
+                    StepAndAnswer(
+                        dataset.SymbolSetStep(state_subset="dataset_0"),
+                        Say(True),
+                    ),
+                    StepAndAnswer(
+                        dataset.SoxEffectsStep(state_subset="dataset_0"),
+                        Say([]),
+                    ),
+                    StepAndAnswer(
+                        dataset.DatasetNameStep(state_subset="dataset_0"),
+                        Say("dataset"),
+                    ),
+                    StepAndAnswer(
+                        basic.MoreDatasetsStep(),
+                        Say("no"),
+                        children_answers=[RecursiveAnswers(Say("yaml"))],
+                    ),
+                ],
+            )
+            with open(tmpdir / "out/project/dataset-filelist.psv") as f:
+                output_filelist = [line.rstrip() for line in f]
+            expected_filelist = [
+                "basename|language|characters|phones",
+                "f1|und|foo bar|foo bar",
+                "f2|und|bar baz|bar baz",
+                "f3|und|baz foo|baz foo",
+            ]
+            self.assertListEqual(output_filelist, expected_filelist)
+
 
 class WavFileDirectoryRelativePathTest(TestCase):
     """
