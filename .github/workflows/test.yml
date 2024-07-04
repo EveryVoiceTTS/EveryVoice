@@ -51,7 +51,7 @@ jobs:
         id: no-extra-directories
         run: |
           cd everyvoice && [[ $(find -type d -name logs_and_checkpoints -or -name preprocessed | grep --count --invert-match 'tests/data') -eq 0 ]]
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v3
         with:
           fail_ci_if_error: false # optional (default = false)
           token: ${{ secrets.CODECOV_TOKEN }}
