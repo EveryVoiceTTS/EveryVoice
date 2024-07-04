@@ -55,6 +55,7 @@ jobs:
         with:
           fail_ci_if_error: false # optional (default = false)
           token: ${{ secrets.CODECOV_TOKEN }}
+          flags: -X,recursesubs
       - name: Make sure the CLI stays fast
         id: cli-load-time
         run: |
