@@ -1,4 +1,3 @@
-import builtins
 import os
 import string
 import tempfile
@@ -17,13 +16,14 @@ from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 
 from everyvoice.tests.stubs import (
-    QuestionaryStub,
     Say,
     capture_stderr,
     capture_stdout,
     monkeypatch,
     null_patch,
+    patch_input,
     patch_menu_prompt,
+    patch_questionary,
 )
 from everyvoice.wizard import State, Step
 from everyvoice.wizard import StepNames as SN
@@ -178,7 +178,7 @@ class WizardTest(TestCase):
         """Exercise providing a valid dataset name."""
         step = basic.NameStep()
         with capture_stdout() as stdout:
-            with monkeypatch(builtins, "input", Say("myname")):
+            with patch_input("myname"):
                 step.run()
         self.assertEqual(step.response, "myname")
         self.assertIn("'myname'", stdout.getvalue())
@@ -200,7 +200,7 @@ class WizardTest(TestCase):
 
         step = basic.NameStep("")
         with capture_stdout() as stdout:
-            with monkeypatch(builtins, "input", Say(("bad/name", "good-name"), True)):
+            with patch_input(("bad/name", "good-name"), True):
                 step.run()
         output = stdout.getvalue()
         self.assertIn("'bad/name'", stdout.getvalue())
@@ -268,7 +268,7 @@ class WizardTest(TestCase):
         # We need to answer the name step before we can validate the output path step
         step = tour.steps[0]
         with capture_stdout():
-            with monkeypatch(builtins, "input", Say("myname")):
+            with patch_input("myname"):
                 step.run()
 
         step = tour.steps[1]
@@ -333,7 +333,7 @@ class WizardTest(TestCase):
 
     def test_dataset_name(self):
         step = dataset.DatasetNameStep()
-        with monkeypatch(builtins, "input", Say(("", "bad/name", "good-name"), True)):
+        with patch_input(("", "bad/name", "good-name"), True):
             with capture_stdout() as stdout:
                 step.run()
         output = stdout.getvalue().split("\n")
@@ -353,11 +353,7 @@ class WizardTest(TestCase):
                 f.write(b"A fantastic sounding clip! (or not...)")
 
             step = dataset.WavsDirStep("")
-            with monkeypatch(
-                dataset,
-                "questionary",
-                QuestionaryStub(("not-a-path", no_wavs_dir, has_wavs_dir)),
-            ):
+            with patch_questionary(("not-a-path", no_wavs_dir, has_wavs_dir)):
                 with capture_stdout():
                     step.run()
             self.assertTrue(step.completed)
@@ -365,19 +361,15 @@ class WizardTest(TestCase):
 
     def test_sample_rate_config(self):
         step = dataset.SampleRateConfigStep("")
-        with monkeypatch(
-            dataset,
-            "questionary",
-            QuestionaryStub(
-                (
-                    "not an int",  # obvious not valid
-                    "",  # ditto
-                    3.1415,  # floats are also not allowed
-                    50,  # this is below the minimum 100 allowed
-                    512,  # yay, a good response!
-                    1024,  # won't get used becasue 512 is good.
-                )
-            ),
+        with patch_questionary(
+            (
+                "not an int",  # obvious not valid
+                "",  # ditto
+                3.1415,  # floats are also not allowed
+                50,  # this is below the minimum 100 allowed
+                512,  # yay, a good response!
+                1024,  # won't get used becasue 512 is good.
+            )
         ):
             with capture_stdout() as stdout:
                 step.run()
@@ -958,14 +950,12 @@ class WizardTest(TestCase):
     def test_keyboard_interrupt(self):
         step = basic.NameStep()
         with self.assertRaises(KeyboardInterrupt):
-            with monkeypatch(builtins, "input", Say(KeyboardInterrupt())):
+            with patch_input(KeyboardInterrupt()):
                 step.run()
 
         step = dataset.WavsDirStep()
         with self.assertRaises(KeyboardInterrupt):
-            with monkeypatch(
-                dataset, "questionary", QuestionaryStub([KeyboardInterrupt()])
-            ):
+            with patch_questionary([KeyboardInterrupt()]):
                 step.run()
 
         step = basic.MoreDatasetsStep()
