@@ -617,13 +617,7 @@ def reload_filelist_data_as_dict(state):
                 state.get(StepNames.data_has_header_line_step, "yes") == "yes"
             ),
         )
-    else:
-        state["filelist_data"] = read_festival(
-            filelist_path,
-            text_field_name=state.get(
-                StepNames.filelist_text_representation_step, "text"
-            ),
-        )
+    assert isinstance(state["filelist_data"][0], dict)
 
 
 def get_iso_code(language):

@@ -1070,11 +1070,11 @@ class WizardTest(TestCase):
                     ),
                     StepAndAnswer(
                         dataset.HasSpeakerStep(state_subset="dataset_0"),
-                        Say("no"),
+                        null_patch(),
                     ),
                     StepAndAnswer(
                         dataset.HasLanguageStep(state_subset="dataset_0"),
-                        Say("no"),
+                        null_patch(),
                         children_answers=[RecursiveAnswers(Say("und"))],
                     ),
                     StepAndAnswer(
