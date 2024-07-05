@@ -1,3 +1,4 @@
+import builtins
 import io
 import logging
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
@@ -5,7 +6,7 @@ from typing import Any, Generator, Sequence, Union
 
 from loguru import logger
 
-from everyvoice.wizard import prompts
+from everyvoice.wizard import basic, dataset, prompts
 
 _NOTSET = object()  # Sentinel object for monkeypatch()
 
@@ -135,6 +136,15 @@ def patch_menu_prompt(
 
 
 @contextmanager
+def patch_input(response: Any, multi=False) -> Generator[None, None, None]:
+    """Shortcut for patching the builtin input() function, which we need often.
+
+    Args: see class Say"""
+    with monkeypatch(builtins, "input", Say(response, multi)):
+        yield
+
+
+@contextmanager
 def null_patch() -> Generator[None, None, None]:
     """dummy context manager when we must pass a monkeypatch but have nothing to patch"""
     yield
@@ -221,3 +231,14 @@ class QuestionaryStub:
         if isinstance(response, BaseException):
             raise response
         return response
+
+
+@contextmanager
+def patch_questionary(responses: Sequence[str]) -> Generator[None, None, None]:
+    """Shortcut for monkey patching questionary everywhere
+
+    Args: See QuestionaryStub"""
+    stub = QuestionaryStub(responses)
+    module_name = "questionary"
+    with monkeypatch(basic, module_name, stub), monkeypatch(dataset, module_name, stub):
+        yield
