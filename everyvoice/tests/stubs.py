@@ -2,6 +2,7 @@ import builtins
 import io
 import logging
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
+from pathlib import Path
 from typing import Any, Generator, Sequence, Union
 
 from loguru import logger
@@ -205,14 +206,18 @@ class SimpleTermMenuStub:
 class QuestionaryStub:
     """Stub class for the questionary module"""
 
-    def __init__(self, responses: Sequence[str]) -> None:
+    def __init__(self, responses: Path | str | Sequence) -> None:
         """Constructor
 
         Args:
-            responses (str): the sequence of answers the user is simulated to provide
+            responses: the (sequence of) answers the user is simulated to provide
         """
         self.last_index = -1
-        self.responses = responses
+        self.responses: Sequence
+        if isinstance(responses, (Path, str)):
+            self.responses = [responses]
+        else:
+            self.responses = responses
 
     def path(self, *args, **kwargs):
         return self
@@ -230,11 +235,13 @@ class QuestionaryStub:
         response = self.responses[self.last_index]
         if isinstance(response, BaseException):
             raise response
+        if isinstance(response, Path):
+            return str(response)
         return response
 
 
 @contextmanager
-def patch_questionary(responses: Sequence[str]) -> Generator[None, None, None]:
+def patch_questionary(responses: Path | str | Sequence) -> Generator[None, None, None]:
     """Shortcut for monkey patching questionary everywhere
 
     Args: See QuestionaryStub"""

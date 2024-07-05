@@ -686,7 +686,7 @@ class WizardTest(TestCase):
                 [
                     StepAndAnswer(basic.NameStep(), patch_input("my-dataset-name")),
                     StepAndAnswer(
-                        basic.OutputPathStep(), patch_questionary([str(tmpdirname)])
+                        basic.OutputPathStep(), patch_questionary(tmpdirname)
                     ),
                 ],
             )
@@ -700,7 +700,7 @@ class WizardTest(TestCase):
             [
                 StepAndAnswer(
                     dataset.FilelistStep(),
-                    patch_questionary([str(data_dir / "metadata.psv")]),
+                    patch_questionary(data_dir / "metadata.psv"),
                 ),
                 StepAndAnswer(
                     dataset.FilelistFormatStep(),
@@ -720,16 +720,12 @@ class WizardTest(TestCase):
                     patch_menu_prompt(0),  # "no"
                     children_answers=[RecursiveAnswers(Say("eng"))],
                 ),
-                StepAndAnswer(
-                    dataset.WavsDirStep(), patch_questionary([str(data_dir)])
-                ),
+                StepAndAnswer(dataset.WavsDirStep(), patch_questionary(data_dir)),
                 StepAndAnswer(
                     dataset.ValidateWavsStep(),
                     patch_menu_prompt(0),  # 0 is Yes
                     children_answers=[
-                        RecursiveAnswers(
-                            patch_questionary([str(data_dir / "lj/wavs")])
-                        ),
+                        RecursiveAnswers(patch_questionary(data_dir / "lj/wavs")),
                         RecursiveAnswers(null_patch()),
                     ],
                 ),
@@ -771,15 +767,15 @@ class WizardTest(TestCase):
                         basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
                     ),
                     StepAndAnswer(
-                        basic.OutputPathStep(), patch_questionary([str(tmpdir / "out")])
+                        basic.OutputPathStep(), patch_questionary(tmpdir / "out")
                     ),
                     StepAndAnswer(
                         dataset.WavsDirStep(state_subset="dataset_0"),
-                        patch_questionary([str(data_dir)]),
+                        patch_questionary(data_dir),
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        patch_questionary([str(data_dir / "language-col.tsv")]),
+                        patch_questionary(data_dir / "language-col.tsv"),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(state_subset="dataset_0"),
@@ -851,15 +847,15 @@ class WizardTest(TestCase):
                         basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
                     ),
                     StepAndAnswer(
-                        basic.OutputPathStep(), patch_questionary([str(tmpdir / "out")])
+                        basic.OutputPathStep(), patch_questionary(tmpdir / "out")
                     ),
                     StepAndAnswer(
                         dataset.WavsDirStep(state_subset="dataset_0"),
-                        patch_questionary([str(tmpdir)]),
+                        patch_questionary(tmpdir),
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        patch_questionary([str(tmpdir / "filelist.psv")]),
+                        patch_questionary(tmpdir / "filelist.psv"),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(state_subset="dataset_0"),
@@ -934,14 +930,12 @@ class WizardTest(TestCase):
                         basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
                     ),
                     StepAndAnswer(
-                        basic.OutputPathStep(), patch_questionary([str(tmpdir / "out")])
+                        basic.OutputPathStep(), patch_questionary(tmpdir / "out")
                     ),
-                    StepAndAnswer(
-                        dataset.WavsDirStep(), patch_questionary([str(tmpdir)])
-                    ),
+                    StepAndAnswer(dataset.WavsDirStep(), patch_questionary(tmpdir)),
                     StepAndAnswer(
                         dataset.FilelistStep(),
-                        patch_questionary([str(tmpdir / "filelist.psv")]),
+                        patch_questionary(tmpdir / "filelist.psv"),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(),
@@ -1068,15 +1062,15 @@ class WizardTest(TestCase):
                         basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
                     ),
                     StepAndAnswer(
-                        basic.OutputPathStep(), patch_questionary([str(tmpdir / "out")])
+                        basic.OutputPathStep(), patch_questionary(tmpdir / "out")
                     ),
                     StepAndAnswer(
                         dataset.WavsDirStep(state_subset="dataset_0"),
-                        patch_questionary([str(tmpdir)]),
+                        patch_questionary(tmpdir),
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        patch_questionary([str(tmpdir / "filelist.txt")]),
+                        patch_questionary(tmpdir / "filelist.txt"),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(state_subset="dataset_0"),
