@@ -684,8 +684,10 @@ class WizardTest(TestCase):
             tour, _ = self.monkey_run_tour(
                 "monkey tour 1",
                 [
-                    StepAndAnswer(basic.NameStep(), Say("my-dataset-name")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdirname))),
+                    StepAndAnswer(basic.NameStep(), patch_input("my-dataset-name")),
+                    StepAndAnswer(
+                        basic.OutputPathStep(), patch_questionary([str(tmpdirname)])
+                    ),
                 ],
             )
         self.assertEqual(tour.state[SN.name_step.value], "my-dataset-name")
@@ -698,38 +700,45 @@ class WizardTest(TestCase):
             [
                 StepAndAnswer(
                     dataset.FilelistStep(),
-                    Say(str(data_dir / "metadata.psv")),
+                    patch_questionary([str(data_dir / "metadata.psv")]),
                 ),
-                StepAndAnswer(dataset.FilelistFormatStep(), Say("psv")),
                 StepAndAnswer(
-                    dataset.FilelistTextRepresentationStep(), Say("characters")
+                    dataset.FilelistFormatStep(),
+                    patch_menu_prompt(0),  # psv
+                ),
+                StepAndAnswer(
+                    dataset.FilelistTextRepresentationStep(),
+                    patch_menu_prompt(0),  # characters
                 ),
                 StepAndAnswer(
                     dataset.HasSpeakerStep(),
-                    Say("yes"),
+                    patch_menu_prompt(1),  # "yes"
                     children_answers=[RecursiveAnswers(Say(3))],
                 ),
                 StepAndAnswer(
                     dataset.HasLanguageStep(),
-                    Say("no"),
+                    patch_menu_prompt(0),  # "no"
                     children_answers=[RecursiveAnswers(Say("eng"))],
                 ),
-                StepAndAnswer(dataset.WavsDirStep(), Say(str(data_dir))),
+                StepAndAnswer(
+                    dataset.WavsDirStep(), patch_questionary([str(data_dir)])
+                ),
                 StepAndAnswer(
                     dataset.ValidateWavsStep(),
                     patch_menu_prompt(0),  # 0 is Yes
                     children_answers=[
-                        RecursiveAnswers(Say(str(data_dir / "lj/wavs"))),
+                        RecursiveAnswers(
+                            patch_questionary([str(data_dir / "lj/wavs")])
+                        ),
                         RecursiveAnswers(null_patch()),
                     ],
                 ),
-                StepAndAnswer(dataset.TextProcessingStep(), Say([0, 1])),
+                StepAndAnswer(dataset.TextProcessingStep(), patch_menu_prompt([0, 1])),
+                StepAndAnswer(dataset.SymbolSetStep(), null_patch()),
+                StepAndAnswer(dataset.SoxEffectsStep(), patch_menu_prompt([0])),
                 StepAndAnswer(
-                    dataset.SymbolSetStep(),
-                    Say(True),
+                    dataset.DatasetNameStep(), patch_input("my-monkey-dataset")
                 ),
-                StepAndAnswer(dataset.SoxEffectsStep(), Say([0])),
-                StepAndAnswer(dataset.DatasetNameStep(), Say("my-monkey-dataset")),
             ],
         )
 
@@ -756,56 +765,62 @@ class WizardTest(TestCase):
             tour, _ = self.monkey_run_tour(
                 "tour with language column",
                 [
-                    StepAndAnswer(basic.NameStep(), Say("project")),
-                    StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
-                    StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
+                    StepAndAnswer(basic.NameStep(), patch_input("project")),
+                    StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                    StepAndAnswer(
+                        basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                    ),
+                    StepAndAnswer(
+                        basic.OutputPathStep(), patch_questionary([str(tmpdir / "out")])
+                    ),
                     StepAndAnswer(
                         dataset.WavsDirStep(state_subset="dataset_0"),
-                        Say(str(data_dir)),
+                        patch_questionary([str(data_dir)]),
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        Say(str(data_dir / "language-col.tsv")),
+                        patch_questionary([str(data_dir / "language-col.tsv")]),
                     ),
                     StepAndAnswer(
-                        dataset.FilelistFormatStep(state_subset="dataset_0"), Say("tsv")
+                        dataset.FilelistFormatStep(state_subset="dataset_0"),
+                        patch_menu_prompt(1),  # tsv
                     ),
                     StepAndAnswer(
                         dataset.FilelistTextRepresentationStep(
                             state_subset="dataset_0"
                         ),
-                        Say("characters"),
+                        patch_menu_prompt(0),  # characters
                     ),
                     StepAndAnswer(
                         dataset.TextProcessingStep(state_subset="dataset_0"),
-                        Say([0, 1]),
+                        patch_menu_prompt([0, 1]),
                     ),
                     StepAndAnswer(
                         dataset.HasSpeakerStep(state_subset="dataset_0"),
-                        Say("yes"),
+                        patch_menu_prompt(1),  # "yes"
                         children_answers=[RecursiveAnswers(Say(2))],
                     ),
                     StepAndAnswer(
                         dataset.HasLanguageStep(state_subset="dataset_0"),
-                        Say("yes"),
+                        patch_menu_prompt(1),  # "yes"
                         children_answers=[RecursiveAnswers(Say(3))],
                     ),
                     StepAndAnswer(
                         dataset.SymbolSetStep(state_subset="dataset_0"),
-                        Say(True),
+                        null_patch(),
                     ),
                     StepAndAnswer(
-                        dataset.SoxEffectsStep(state_subset="dataset_0"), Say([0])
+                        dataset.SoxEffectsStep(state_subset="dataset_0"),
+                        patch_menu_prompt([0]),
                     ),
                     StepAndAnswer(
                         dataset.DatasetNameStep(state_subset="dataset_0"),
-                        Say("my-monkey-dataset"),
+                        patch_input("my-monkey-dataset"),
                     ),
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
-                        Say("no"),
-                        children_answers=[RecursiveAnswers(Say("yaml"))],
+                        patch_menu_prompt(0),
+                        children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
                     ),
                 ],
             )
@@ -830,22 +845,27 @@ class WizardTest(TestCase):
             tour, _ = self.monkey_run_tour(
                 "Tour with datafile missing the header line",
                 [
-                    StepAndAnswer(basic.NameStep(), Say("project")),
-                    StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
-                    StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
+                    StepAndAnswer(basic.NameStep(), patch_input("project")),
+                    StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
                     StepAndAnswer(
-                        dataset.WavsDirStep(state_subset="dataset_0"), Say(str(tmpdir))
+                        basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                    ),
+                    StepAndAnswer(
+                        basic.OutputPathStep(), patch_questionary([str(tmpdir / "out")])
+                    ),
+                    StepAndAnswer(
+                        dataset.WavsDirStep(state_subset="dataset_0"),
+                        patch_questionary([str(tmpdir)]),
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        Say(str(tmpdir / "filelist.psv")),
+                        patch_questionary([str(tmpdir / "filelist.psv")]),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(state_subset="dataset_0"),
-                        Say("psv"),
+                        patch_menu_prompt(0),  # psv
                         children_answers=[
-                            RecursiveAnswers(Say("no")),  # no header line
+                            RecursiveAnswers(patch_menu_prompt(0)),  # no header line
                             RecursiveAnswers(Say(0)),  # column 0 is basename
                             RecursiveAnswers(Say(1)),  # column 1 is text
                         ],
@@ -854,37 +874,37 @@ class WizardTest(TestCase):
                         dataset.FilelistTextRepresentationStep(
                             state_subset="dataset_0"
                         ),
-                        Say("characters"),
+                        patch_menu_prompt(0),  # characters
                     ),
                     StepAndAnswer(
                         dataset.HasSpeakerStep(state_subset="dataset_0"),
-                        Say("no"),
+                        patch_menu_prompt(0),  # "no"
                     ),
                     StepAndAnswer(
                         dataset.HasLanguageStep(state_subset="dataset_0"),
-                        Say("no"),
-                        children_answers=[RecursiveAnswers(Say("und"))],
+                        patch_menu_prompt(0),
+                        children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
                     ),
                     StepAndAnswer(
                         dataset.TextProcessingStep(state_subset="dataset_0"),
-                        Say(()),
+                        patch_menu_prompt(()),
                     ),
                     StepAndAnswer(
                         dataset.SymbolSetStep(state_subset="dataset_0"),
-                        Say(True),
+                        null_patch(),
                     ),
                     StepAndAnswer(
                         dataset.SoxEffectsStep(state_subset="dataset_0"),
-                        Say([]),
+                        patch_menu_prompt([]),
                     ),
                     StepAndAnswer(
                         dataset.DatasetNameStep(state_subset="dataset_0"),
-                        Say("dataset"),
+                        patch_input("dataset"),
                     ),
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
-                        Say("no"),
-                        children_answers=[RecursiveAnswers(Say("yaml"))],
+                        patch_menu_prompt(0),
+                        children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
                     ),
                 ],
             )
@@ -908,38 +928,43 @@ class WizardTest(TestCase):
             tour, _ = self.monkey_run_tour(
                 "Tour without enough columns to have speaker or language",
                 [
-                    StepAndAnswer(basic.NameStep(), Say("project")),
-                    StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
-                    StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
-                    StepAndAnswer(dataset.WavsDirStep(), Say(str(tmpdir))),
+                    StepAndAnswer(basic.NameStep(), patch_input("project")),
+                    StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                    StepAndAnswer(
+                        basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                    ),
+                    StepAndAnswer(
+                        basic.OutputPathStep(), patch_questionary([str(tmpdir / "out")])
+                    ),
+                    StepAndAnswer(
+                        dataset.WavsDirStep(), patch_questionary([str(tmpdir)])
+                    ),
                     StepAndAnswer(
                         dataset.FilelistStep(),
-                        Say(str(tmpdir / "filelist.psv")),
+                        patch_questionary([str(tmpdir / "filelist.psv")]),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(),
-                        Say("psv"),
+                        patch_menu_prompt(0),  # psv
                     ),
                     StepAndAnswer(
-                        dataset.FilelistTextRepresentationStep(), Say("characters")
+                        dataset.FilelistTextRepresentationStep(),
+                        patch_menu_prompt(0),  # characters
                     ),
                     StepAndAnswer(
                         dataset.HasSpeakerStep(),
-                        patch_menu_prompt(1),
-                        children_answers=[RecursiveAnswers(Say("foo"))],
+                        null_patch(),  # user won't get prompted since there are no columns
                     ),
                     StepAndAnswer(
                         dataset.HasLanguageStep(),
-                        patch_menu_prompt(1),
-                        children_answers=[RecursiveAnswers(Say("bar"))],
+                        null_patch(),  # user won't get prompted since there are no columns
                     ),
-                    StepAndAnswer(dataset.SelectLanguageStep(), Say("und")),
-                    StepAndAnswer(dataset.DatasetNameStep(), Say("dataset")),
+                    StepAndAnswer(dataset.SelectLanguageStep(), patch_menu_prompt(0)),
+                    StepAndAnswer(dataset.DatasetNameStep(), patch_input("dataset")),
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
-                        Say("no"),
-                        children_answers=[RecursiveAnswers(Say("yaml"))],
+                        patch_menu_prompt(0),
+                        children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
                     ),
                 ],
             )
@@ -1037,26 +1062,31 @@ class WizardTest(TestCase):
             tour, _ = self.monkey_run_tour(
                 "Tour with datafile in the festival format",
                 [
-                    StepAndAnswer(basic.NameStep(), Say("project")),
-                    StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
-                    StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
-                    StepAndAnswer(basic.OutputPathStep(), Say(str(tmpdir / "out"))),
+                    StepAndAnswer(basic.NameStep(), patch_input("project")),
+                    StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
                     StepAndAnswer(
-                        dataset.WavsDirStep(state_subset="dataset_0"), Say(str(tmpdir))
+                        basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                    ),
+                    StepAndAnswer(
+                        basic.OutputPathStep(), patch_questionary([str(tmpdir / "out")])
+                    ),
+                    StepAndAnswer(
+                        dataset.WavsDirStep(state_subset="dataset_0"),
+                        patch_questionary([str(tmpdir)]),
                     ),
                     StepAndAnswer(
                         dataset.FilelistStep(state_subset="dataset_0"),
-                        Say(str(tmpdir / "filelist.txt")),
+                        patch_questionary([str(tmpdir / "filelist.txt")]),
                     ),
                     StepAndAnswer(
                         dataset.FilelistFormatStep(state_subset="dataset_0"),
-                        Say("festival"),
+                        patch_menu_prompt(3),  # festival
                     ),
                     StepAndAnswer(
                         dataset.FilelistTextRepresentationStep(
                             state_subset="dataset_0"
                         ),
-                        Say("characters"),
+                        patch_menu_prompt(0),  # characters
                     ),
                     StepAndAnswer(
                         dataset.HasSpeakerStep(state_subset="dataset_0"),
@@ -1065,28 +1095,32 @@ class WizardTest(TestCase):
                     StepAndAnswer(
                         dataset.HasLanguageStep(state_subset="dataset_0"),
                         null_patch(),
-                        children_answers=[RecursiveAnswers(Say("und"))],
+                        children_answers=[
+                            RecursiveAnswers(
+                                patch_menu_prompt(0),  # "und" lang selection
+                            )
+                        ],
                     ),
                     StepAndAnswer(
                         dataset.TextProcessingStep(state_subset="dataset_0"),
-                        Say(()),
+                        patch_menu_prompt(()),
                     ),
                     StepAndAnswer(
                         dataset.SymbolSetStep(state_subset="dataset_0"),
-                        Say(True),
+                        null_patch(),
                     ),
                     StepAndAnswer(
                         dataset.SoxEffectsStep(state_subset="dataset_0"),
-                        Say([]),
+                        patch_menu_prompt([]),
                     ),
                     StepAndAnswer(
                         dataset.DatasetNameStep(state_subset="dataset_0"),
-                        Say("dataset"),
+                        patch_input("dataset"),
                     ),
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
-                        Say("no"),
-                        children_answers=[RecursiveAnswers(Say("yaml"))],
+                        patch_menu_prompt(0),
+                        children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
                     ),
                 ],
             )
