@@ -13,5 +13,5 @@ source_data:
   label: dataset_0
   permissions_obtained: true
   sox_effects:
-  - [channel, '1']
+  - [channels, '1']
 train_split: 0.9

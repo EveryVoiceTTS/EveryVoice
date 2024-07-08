@@ -57,7 +57,10 @@ from everyvoice.utils.heavy import (
 
 
 class Preprocessor:
-    def __init__(self, config: AlignerConfig | FeaturePredictionConfig | VocoderConfig):
+    def __init__(
+        self,
+        config: AlignerConfig | FeaturePredictionConfig | VocoderConfig,
+    ):
         self.config = config
         self.counters = Counters(Manager())
         self.cpus = 0
@@ -855,12 +858,38 @@ class Preprocessor:
         # silence % (float, box plot)
         for item in tqdm(filelist, desc="Checking Data"):
             data_point = {k: v for k, v in item.items()}
-            raw_text = item["text"]
-            n_words = len(raw_text.split(word_seg_token))
-            n_chars = len(self.text_processor.encode_text(raw_text))
-            audio, _, _ = torchaudio.load(
-                self.create_path(item, "audio", f"audio-{self.input_sampling_rate}.wav")
+            characters = item.get("characters")
+            character_tokens = item.get("character_tokens")
+            phones = item.get("phones")
+            phone_tokens = item.get("phone_tokens")
+            assert (
+                characters or phones
+            ), "Sorry, your data does not have characters or phones available in the filelist, so we can't check the data."
+            if character_tokens is None and phone_tokens is None:
+                character_tokens, phone_tokens, _ = self.process_text(
+                    item, self.text_processor, use_pfs=False, encode_as_string=True
+                )
+            default_text = phones if phones is not None else characters
+            n_words = len(default_text.split(word_seg_token))
+            n_chars = (
+                len(character_tokens.split("/"))
+                if character_tokens is not None
+                else None
             )
+            n_phones = (
+                len(phone_tokens.split("/")) if phone_tokens is not None else None
+            )
+            audio, _ = torchaudio.load(
+                str(
+                    self.create_path(
+                        item, "audio", f"audio-{self.input_sampling_rate}.wav"
+                    )
+                )
+            )
+            assert (
+                len(audio.size()) == 1 or audio.size(0) == 1
+            ), f"Audio has {audio.size(0)} channels, but should be mono"
+            audio = audio.squeeze()
             if heavy_clip_detction:
                 _, total_clipping = detect_clipping(audio)
             else:
@@ -886,19 +915,21 @@ class Preprocessor:
             data_point["energy_mean"] = float(energy.mean())
             data_point["energy_std"] = float(energy.std())
             data_point["duration"] = audio_length_s
-            data_point["speaking_rate_word"] = n_words / audio_length_s
-            data_point["speaking_rate_char"] = n_chars / audio_length_s
-            data_point["articulation_rate_word"] = (
-                data_point["energy_mean"] / data_point["speaking_rate_word"]
-            )
-            data_point["articulation_rate_char"] = (
-                data_point["energy_mean"] / data_point["speaking_rate_char"]
-            )
+            data_point["speaking_rate_words_per_second"] = n_words / audio_length_s
+            if n_chars is not None:
+                data_point["speaking_rate_characters_per_second"] = (
+                    n_chars / audio_length_s
+                )
+                data_point["n_chars"] = n_chars
+            if n_phones is not None:
+                data_point["speaking_rate_phones_per_second"] = (
+                    n_phones / audio_length_s
+                )
+                data_point["n_phones"] = n_phones
             data_point["n_missing_symbols"] = len(
-                self.text_processor.get_missing_symbols(raw_text)
+                self.text_processor.get_missing_symbols(default_text)
             )
             data_point["n_words"] = n_words
-            data_point["n_chars"] = n_chars
             data.append(data_point)
         return data
 
