@@ -43,6 +43,39 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 
+MODEL_CONFIGS = [FastSpeech2Config, HiFiGANConfig, DFAlignerConfig]
+
+
+def load_unknown_config(
+    config_file: Path,
+):
+    """This helper is for loading a config file that is unknown.
+        ValidationErrors are passed until there is a succesful one.
+
+    Args:
+        config_file (Path): path to a configuration file
+    Returns:
+        config (PreprocessingConfig | FastSpeech2Config | HiFiGANConfig | DFAlignerConfig): the loaded config
+    """
+    from everyvoice.config.preprocessing_config import PreprocessingConfig
+
+    errors = {}
+    for config_type in (
+        PreprocessingConfig,
+        FastSpeech2Config,
+        HiFiGANConfig,
+        DFAlignerConfig,
+    ):
+        try:
+            return config_type.load_config_from_path(config_file)  # type: ignore
+        except ValidationError as e:
+            error_count = e.error_count()
+            errors[error_count] = str(e)
+    min_error = min(errors.keys())
+    raise ValueError(
+        f"The config file at {config_file} was determined to not be any of the following. Please pass a valid EveryVoice model or shared data configuration file. {errors[min_error]}"
+    )
+
 
 def load_config_base_command(
     model_config: Union[

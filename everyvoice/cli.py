@@ -1,4 +1,5 @@
 import json
+import sys
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -62,6 +63,10 @@ app = typer.Typer(
     ## Preprocess
 
     Once you have a configuration, preprocess your data by running everyvoice preprocess [OPTIONS]
+
+    ## Check Data
+
+    You can optionally check your data by running everyvoice check-data [OPTIONS]
 
     ## Train
 
@@ -143,6 +148,46 @@ app.command(
     **everyvoice preprocess config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml -s energy -s pitch**
     """,
 )(preprocess_fs2)
+
+
+# Add check_data to root
+@app.command()
+def check_data(
+    config_file: Path = typer.Argument(
+        ...,
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="The path to your model configuration file.",
+        autocompletion=complete_path,
+    ),
+):
+    from everyvoice.base_cli.helpers import MODEL_CONFIGS, load_unknown_config
+    from everyvoice.config.preprocessing_config import PreprocessingConfig
+    from everyvoice.preprocessor import Preprocessor
+    from everyvoice.utils import generic_psv_filelist_reader
+
+    config = load_unknown_config(config_file)
+    if not any((isinstance(config, x) for x in MODEL_CONFIGS)):
+        print(
+            "Sorry, your file does not appear to be a valid model configuration. Please choose another model config file."
+        )
+        sys.exit(1)
+    assert not isinstance(config, PreprocessingConfig)
+    training_filelist = generic_psv_filelist_reader(config.training.training_filelist)
+    val_filelist = generic_psv_filelist_reader(config.training.validation_filelist)
+    combined_filelist_data = training_filelist + val_filelist
+    preprocessor = Preprocessor(config)
+    checked_data = preprocessor.check_data(filelist=combined_filelist_data)
+    if not combined_filelist_data:
+        print(
+            f"Sorry, the data at {config.training.training_filelist} and {config.training.validation_filelist} is empty so there is nothing to check."
+        )
+        sys.exit(1)
+    else:
+        with open("checked-data.json", "w", encoding="utf8") as f:
+            json.dump(checked_data, f)
+
 
 # Add the train commands
 train_group = typer.Typer(
