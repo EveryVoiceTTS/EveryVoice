@@ -1,6 +1,6 @@
 import re
 from collections import Counter
-from typing import Optional, Type, overload
+from typing import Optional, overload
 
 import numpy as np
 import numpy.typing as npt
@@ -418,7 +418,7 @@ class TextProcessor:
 
     @overload
     def decode_tokens(  # noqa E704
-        self, sequence: list[int], join_character: Type[None]
+        self, sequence: list[int], join_character: None
     ) -> list[str]: ...
 
     @overload
