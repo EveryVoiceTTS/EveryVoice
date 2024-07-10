@@ -211,6 +211,8 @@ class ConfigFormatStep(Step):
         symbols = {}
         multispeaker = False
         multilingual = False
+        cache_speaker = None
+        cache_language = None
         global_cleaners = (
             []
         )  # TODO: this should be fixed by https://github.com/EveryVoiceTTS/EveryVoice/issues/359
@@ -232,10 +234,22 @@ class ConfigFormatStep(Step):
                 for k, v in dataset_state[StepNames.symbol_set_step].items()
             }
             symbols.update(dataset_symbols)
-            if dataset_state.get(StepNames.data_has_language_value_step, "no") == "yes":
-                multilingual = True
-            if dataset_state.get(StepNames.data_has_speaker_value_step, "no") == "yes":
-                multispeaker = True
+            # Check if the filelists has more than one distinct speaker or language and adjust Config corrspondingly
+            if not multilingual:
+                for item in dataset_state["filelist_data"]:
+                    if (
+                        item["language"] != cache_language
+                        and cache_language is not None
+                    ):
+                        multilingual = True
+                    if cache_language is None:
+                        cache_language = item["language"]
+            if not multispeaker:
+                for item in dataset_state["filelist_data"]:
+                    if item["speaker"] != cache_speaker and cache_speaker is not None:
+                        multispeaker = True
+                    if cache_speaker is None:
+                        cache_speaker = item["speaker"]
             # Dataset Configs
             wavs_dir = Path(dataset_state[StepNames.wavs_dir_step]).expanduser()
             if not wavs_dir.is_absolute():

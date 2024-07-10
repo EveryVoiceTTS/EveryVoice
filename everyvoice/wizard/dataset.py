@@ -435,6 +435,9 @@ class LanguageHeaderStep(HeaderStep):
         )
         # re-parse data:
         reload_filelist_data_as_dict(self.state)
+        # Add speaker IDs if they are not specified in the filelist
+        if self.state[StepNames.data_has_speaker_value_step] == "no":
+            add_missing_speaker(self.state)
         # apply automatic conversions
         self.state["model_target_training_text_representation"] = (
             apply_automatic_text_conversions(
@@ -497,6 +500,9 @@ class HasSpeakerStep(Step):
         return response in self.choices
 
     def effect(self):
+        print(
+            "Note: if your dataset has speakers with names matching with speakers from other provided datasets, they will be considered the same. If this is not the desired behaviour, you will have to alter the speaker IDs in the relevant datasets to indicate that they are different."
+        )
         if self.state[StepNames.data_has_speaker_value_step] == "yes":
             self.tour.add_step(
                 HeaderStep(
@@ -507,6 +513,59 @@ class HasSpeakerStep(Step):
                 ),
                 self,
             )
+        else:
+            self.tour.add_step(KnowSpeakerStep(state_subset=self.state_subset), self)
+
+
+class KnowSpeakerStep(Step):
+    DEFAULT_NAME = StepNames.know_speaker_step
+    choices = ("no", "yes")
+
+    def prompt(self):
+        self.dataset_index = self.state_subset.split("_")[-1]
+        return get_response_from_menu_prompt(
+            choices=self.choices,
+            title=f"Would you like to specify a speaker ID for this dataset? Otherwise a default ID of 'speaker_{self.dataset_index}' will be assigned.",
+            multi=False,
+            search=False,
+        )
+
+    def validate(self, response):
+        return response in self.choices
+
+    def effect(self):
+        if self.state[StepNames.know_speaker_step] == "yes":
+            self.tour.add_step(AddSpeakerStep(state_subset=self.state_subset), self)
+        else:
+            # Even though AddSpeakerStep is not run, the speaker ID is assigned to its keyword
+            self.state[StepNames.add_speaker_step] = f"speaker_{self.dataset_index}"
+            print(
+                f"OK, '{self.state[StepNames.add_speaker_step]}' will be used as a speaker ID in this dataset then."
+            )
+
+
+class AddSpeakerStep(Step):
+    DEFAULT_NAME = StepNames.add_speaker_step
+
+    def prompt(self):
+        return input("Please enter the desired speaker ID: ")
+
+    def validate(self, response):
+        if len(response) == 0:
+            print("Sorry, the speaker needs an ID.")
+            return False
+        slug = slugify(response)
+        if not slug == response:
+            print(
+                f"Sorry, your ID: '{response}' is not valid. Please avoid using special characters in it and re-type something like {slug} instead."
+            )
+            return False
+        return True
+
+    def effect(self):
+        print(
+            f"Great! '{self.response}' will be used as the speaker ID for this dataset."
+        )
 
 
 class HasLanguageStep(Step):
@@ -580,6 +639,9 @@ class SelectLanguageStep(Step):
         )
         # re-parse data:
         reload_filelist_data_as_dict(self.state)
+        # Add speaker IDs if they are not specified in the filelist
+        if self.state[StepNames.data_has_speaker_value_step] == "no":
+            add_missing_speaker(self.state)
         # Apply the language code:
         isocode = get_iso_code(self.response)
         # Apply text conversions and get target training representation
@@ -590,6 +652,11 @@ class SelectLanguageStep(Step):
                 global_isocode=isocode,
             )
         )
+
+
+def add_missing_speaker(state):
+    for item in state["filelist_data"]:
+        item["speaker"] = state[StepNames.add_speaker_step]
 
 
 def reload_filelist_data_as_dict(state):
