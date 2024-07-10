@@ -196,6 +196,8 @@ class StepNames(Enum):
     text_header_step = "Text Header Step"
     data_has_speaker_value_step = "Data Has Speaker Step"
     speaker_header_step = "Speaker Header Step"
+    know_speaker_step = "Know Speaker Step"
+    add_speaker_step = "Add Speaker Step"
     data_has_language_value_step = "Data Has Language Step"
     language_header_step = "Language Header Step"
     select_language_step = "Select Language Step"
