@@ -119,16 +119,34 @@ class WizardTest(TestCase):
             )
             config_step.state["dataset_test"][SN.dataset_name_step.value] = "test"
             config_step.state["dataset_test"]["filelist_data"] = [
-                {"basename": "0001", "text": "hello"},
-                {"basename": "0002", "text": "hello", None: "test"},
-                {"basename": "0003.wav", "text": "hello", None: "test"},
+                {
+                    "basename": "0001",
+                    "text": "hello",
+                    "language": "und",
+                    "speaker": "default",
+                },
+                {
+                    "basename": "0002",
+                    "text": "hello",
+                    "language": "und",
+                    "speaker": "default",
+                    None: "test",
+                },
+                {
+                    "basename": "0003.wav",
+                    "text": "hello",
+                    "language": "und",
+                    "speaker": "default",
+                    None: "test",
+                },
             ]
             config_step.state["dataset_test"]["sox_effects"] = []
             with capture_stdout() as stdout:
                 config_step.effect()
             with open(Path(tmpdirname) / "Config Step" / "test-filelist.psv") as f:
                 self.assertEqual(
-                    f.read(), "basename|text\n0001|hello\n0002|hello\n0003|hello\n"
+                    f.read(),
+                    "basename|language|speaker|text\n0001|und|default|hello\n0002|und|default|hello\n0003|und|default|hello\n",
                 )
             self.assertIn("Congratulations", stdout.getvalue())
             self.assertTrue(
@@ -342,6 +360,17 @@ class WizardTest(TestCase):
         self.assertIn("finished the configuration", output[2])
         self.assertTrue(step.completed)
 
+    def test_speaker_name(self):
+        step = dataset.AddSpeakerStep()
+        with patch_input(("", "bad/name", "good-name"), True):
+            with capture_stdout() as stdout:
+                step.run()
+        output = stdout.getvalue().split("\n")
+        self.assertIn("speaker needs an ID", output[0])
+        self.assertIn("is not valid", output[1])
+        self.assertIn("will be used as the speaker ID", output[2])
+        self.assertTrue(step.completed)
+
     def test_wavs_dir(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
             no_wavs_dir = os.path.join(tmpdirname, "no-wavs-here")
@@ -433,7 +462,21 @@ class WizardTest(TestCase):
         children_before = len(speaker_step.children)
         with patch_menu_prompt(0):  # 0 is "no"
             speaker_step.run()
-        self.assertEqual(len(speaker_step.children), children_before)
+        self.assertEqual(len(speaker_step.children), children_before + 1)
+        self.assertIsInstance(speaker_step.children[0], dataset.KnowSpeakerStep)
+
+        know_speaker_step = speaker_step.children[0]
+        children_before = len(know_speaker_step.children)
+        with patch_menu_prompt(1):  # 1 is "yes"
+            know_speaker_step.run()
+        self.assertEqual(len(know_speaker_step.children), children_before + 1)
+        self.assertIsInstance(know_speaker_step.children[0], dataset.AddSpeakerStep)
+
+        add_speaker_step = know_speaker_step.children[0]
+        children_before = len(add_speaker_step.children)
+        with patch_input("default"):
+            add_speaker_step.run()
+        self.assertEqual(len(add_speaker_step.children), children_before)
 
         language_step = find_step(SN.data_has_language_value_step, tour.steps)
         children_before = len(language_step.children)
@@ -870,6 +913,11 @@ class WizardTest(TestCase):
                     StepAndAnswer(
                         dataset.HasSpeakerStep(state_subset="dataset_0"),
                         patch_menu_prompt(0),  # "no"
+                        children_answers=[
+                            RecursiveAnswers(
+                                patch_menu_prompt(0)
+                            ),  # don't want to specify speaker ID
+                        ],
                     ),
                     StepAndAnswer(
                         dataset.HasLanguageStep(state_subset="dataset_0"),
@@ -927,29 +975,57 @@ class WizardTest(TestCase):
                     StepAndAnswer(
                         basic.OutputPathStep(), patch_questionary(tmpdir / "out")
                     ),
-                    StepAndAnswer(dataset.WavsDirStep(), patch_questionary(tmpdir)),
                     StepAndAnswer(
-                        dataset.FilelistStep(),
+                        dataset.WavsDirStep(state_subset="dataset_0"),
+                        patch_questionary(tmpdir),
+                    ),
+                    StepAndAnswer(
+                        dataset.FilelistStep(state_subset="dataset_0"),
                         patch_questionary(tmpdir / "filelist.psv"),
                     ),
                     StepAndAnswer(
-                        dataset.FilelistFormatStep(),
+                        dataset.FilelistFormatStep(state_subset="dataset_0"),
                         patch_menu_prompt(0),  # psv
                     ),
                     StepAndAnswer(
-                        dataset.FilelistTextRepresentationStep(),
+                        dataset.FilelistTextRepresentationStep(
+                            state_subset="dataset_0"
+                        ),
                         patch_menu_prompt(0),  # characters
                     ),
                     StepAndAnswer(
-                        dataset.HasSpeakerStep(),
+                        dataset.HasSpeakerStep(state_subset="dataset_0"),
+                        null_patch(),  # user won't get prompted since there are no columns
+                        children_answers=[
+                            RecursiveAnswers(
+                                patch_menu_prompt(0)
+                            )  # don't want to specify speaker ID
+                        ],
+                    ),
+                    StepAndAnswer(
+                        dataset.HasLanguageStep(state_subset="dataset_0"),
                         null_patch(),  # user won't get prompted since there are no columns
                     ),
                     StepAndAnswer(
-                        dataset.HasLanguageStep(),
-                        null_patch(),  # user won't get prompted since there are no columns
+                        dataset.SelectLanguageStep(state_subset="dataset_0"),
+                        patch_menu_prompt(0),
                     ),
-                    StepAndAnswer(dataset.SelectLanguageStep(), patch_menu_prompt(0)),
-                    StepAndAnswer(dataset.DatasetNameStep(), patch_input("dataset")),
+                    StepAndAnswer(
+                        dataset.TextProcessingStep(state_subset="dataset_0"),
+                        patch_menu_prompt(()),
+                    ),
+                    StepAndAnswer(
+                        dataset.SymbolSetStep(state_subset="dataset_0"),
+                        null_patch(),
+                    ),
+                    StepAndAnswer(
+                        dataset.SoxEffectsStep(state_subset="dataset_0"),
+                        patch_menu_prompt([]),
+                    ),
+                    StepAndAnswer(
+                        dataset.DatasetNameStep(state_subset="dataset_0"),
+                        patch_input("dataset"),
+                    ),
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
                         patch_menu_prompt(0),
@@ -957,9 +1033,25 @@ class WizardTest(TestCase):
                     ),
                 ],
             )
-            self.assertEqual(tour.state["filelist_headers"], ["basename", "characters"])
-            self.assertEqual(tour.state[SN.data_has_speaker_value_step.value], "no")
-            self.assertEqual(tour.state[SN.data_has_language_value_step.value], "no")
+            self.assertEqual(
+                tour.state["dataset_0"]["filelist_headers"], ["basename", "characters"]
+            )
+            self.assertEqual(
+                tour.state["dataset_0"][SN.data_has_speaker_value_step.value], "no"
+            )
+            self.assertEqual(
+                tour.state["dataset_0"][SN.data_has_language_value_step.value], "no"
+            )
+            self.assertEqual(len(tour.state["dataset_0"]["filelist_data"]), 3)
+            with open(tmpdir / "out/project/dataset-filelist.psv") as f:
+                output_filelist = [line.rstrip() for line in f]
+            expected_filelist = [
+                "basename|language|speaker|characters|phones",
+                "f1|und|speaker_0|foo bar|foo bar",
+                "f2|und|speaker_0|bar baz|bar baz",
+                "f3|und|speaker_0|baz foo|baz foo",
+            ]
+            self.assertListEqual(output_filelist, expected_filelist)
 
     def test_keyboard_interrupt(self):
         step = basic.NameStep()
@@ -1080,6 +1172,14 @@ class WizardTest(TestCase):
                     StepAndAnswer(
                         dataset.HasSpeakerStep(state_subset="dataset_0"),
                         null_patch(),
+                        children_answers=[
+                            RecursiveAnswers(
+                                patch_menu_prompt(1),
+                                children_answers=[
+                                    RecursiveAnswers(patch_input("default_speaker"))
+                                ],
+                            ),  # want to specify speaker ID
+                        ],
                     ),
                     StepAndAnswer(
                         dataset.HasLanguageStep(state_subset="dataset_0"),
@@ -1116,10 +1216,10 @@ class WizardTest(TestCase):
             with open(tmpdir / "out/project/dataset-filelist.psv") as f:
                 output_filelist = [line.rstrip() for line in f]
             expected_filelist = [
-                "basename|language|characters|phones",
-                "f1|und|foo bar|foo bar",
-                "f2|und|bar baz|bar baz",
-                "f3|und|baz foo|baz foo",
+                "basename|language|speaker|characters|phones",
+                "f1|und|default_speaker|foo bar|foo bar",
+                "f2|und|default_speaker|bar baz|bar baz",
+                "f3|und|default_speaker|baz foo|baz foo",
             ]
             self.assertListEqual(output_filelist, expected_filelist)
 
@@ -1163,26 +1263,31 @@ class WavFileDirectoryRelativePathTest(TestCase):
                                 "text": "Sentence 1",
                                 "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/dd50ed81b889047cb4399e34b650a91fcbd3b2a5e36cf0068251d64274bffb61",
                                 "language": "und",
+                                "speaker": "default",
                             },
                             {
                                 "text": "Sentence 2",
                                 "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/6c45ab8c6e2454142c95319ca37f7e4ff6526dddbcc7fc540572e4e53264ec47",
                                 "language": "und",
+                                "speaker": "default",
                             },
                             {
                                 "text": "Sentence 3",
                                 "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/3947ae033faeb793e00f836648e240bc91c821798bccc76656ad3e7030b38878",
                                 "language": "und",
+                                "speaker": "default",
                             },
                             {
                                 "text": "Sentence 4",
                                 "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/65b61440f9621084a1a1d8c461d177c765fad3aff91e0077296081931929629b",
                                 "language": "und",
+                                "speaker": "default",
                             },
                             {
                                 "text": "Sentence 5",
                                 "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/8a124117481eaf8f91d23aa3acda301e7fae7de85e98c016383381d54a3d5049",
                                 "language": "und",
+                                "speaker": "default",
                             },
                         ],
                         "sox_effects": [["channel", "1"]],
