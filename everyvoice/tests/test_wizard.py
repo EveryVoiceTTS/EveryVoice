@@ -1223,6 +1223,336 @@ class WizardTest(TestCase):
             ]
             self.assertListEqual(output_filelist, expected_filelist)
 
+    def test_multilingual_multispeaker_true_config(self):
+        """
+        Makes sure that multilingual and multispeaker parameters of config are set to true when two monolingual and monospeaker datasets are provided with different specified languages and speakers.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            with open(tmpdir / "filelist1.psv", "w", encoding="utf8") as f:
+                f.write(
+                    "\n".join(
+                        [
+                            "basename|language|speaker|text",
+                            "f1|eng|speaker_1|foo foo",
+                            "f2|eng|speaker_1|bar bar",
+                            "f3|eng|speaker_1|baz baz",
+                        ]
+                    )
+                )
+            with open(tmpdir / "filelist2.txt", "w", encoding="utf8") as f:
+                f.write(
+                    "\n".join(
+                        [
+                            '( f4 " foo bar " )',
+                            '( f5 " bar baz " )',
+                            '( f6 " baz foo " )',
+                        ]
+                    )
+                )
+            for basename in ("f1", "f2", "f3", "f4", "f5", "f6"):
+                with open(tmpdir / (basename + ".wav"), "wb"):
+                    pass
+            more_dataset_children_answers = [
+                RecursiveAnswers(
+                    patch_questionary(tmpdir / "filelist2.txt")
+                ),  # filelist step
+                RecursiveAnswers(
+                    patch_menu_prompt(1),  # yes to permission
+                    children_answers=[
+                        RecursiveAnswers(patch_menu_prompt(3)),  # festival format
+                        RecursiveAnswers(patch_menu_prompt(0)),  # characters
+                        RecursiveAnswers(
+                            patch_menu_prompt(())
+                        ),  # no text preprocessing
+                        RecursiveAnswers(
+                            null_patch(),  # skip the question about a speaker column in the data since its festival
+                            children_answers=[
+                                RecursiveAnswers(
+                                    patch_menu_prompt(
+                                        1
+                                    ),  # want to specify the speaker ID
+                                    children_answers=[
+                                        RecursiveAnswers(
+                                            patch_input("default_speaker")
+                                        )  # new speaker ID
+                                    ],
+                                ),
+                            ],
+                        ),
+                        RecursiveAnswers(
+                            null_patch(),  # skip the question about a language column in the data since its festival
+                            children_answers=[
+                                RecursiveAnswers(
+                                    patch_menu_prompt(0),  # "und" lang selection
+                                )
+                            ],
+                        ),
+                        RecursiveAnswers(patch_questionary(tmpdir)),  # wav directory
+                        RecursiveAnswers(null_patch()),  # ValidateWavsStep
+                        RecursiveAnswers(null_patch()),  # SymbolSetStep
+                        RecursiveAnswers(patch_menu_prompt([])),  # no Sox
+                        RecursiveAnswers(patch_input("dataset1")),  # Dataset name
+                    ],
+                ),
+                RecursiveAnswers(
+                    patch_menu_prompt(0),
+                    children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
+                ),
+            ]
+            steps_and_answers = [
+                StepAndAnswer(basic.NameStep(), patch_input("project")),
+                StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                StepAndAnswer(
+                    basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                ),
+                StepAndAnswer(
+                    basic.OutputPathStep(), patch_questionary(tmpdir / "out")
+                ),
+                # First dataset
+                StepAndAnswer(
+                    dataset.WavsDirStep(state_subset="dataset_0"),
+                    patch_questionary(tmpdir),
+                ),
+                StepAndAnswer(
+                    dataset.FilelistStep(state_subset="dataset_0"),
+                    patch_questionary(tmpdir / "filelist1.psv"),
+                ),
+                StepAndAnswer(
+                    dataset.FilelistFormatStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # psv
+                ),
+                StepAndAnswer(
+                    dataset.FilelistTextRepresentationStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # characters
+                ),
+                StepAndAnswer(
+                    dataset.HasSpeakerStep(state_subset="dataset_0"),
+                    patch_menu_prompt(1),  # 1 is yes
+                    children_answers=[RecursiveAnswers(Say(2))],
+                ),
+                StepAndAnswer(
+                    dataset.HasLanguageStep(state_subset="dataset_0"),
+                    patch_menu_prompt(1),  # 1 is yes
+                    children_answers=[RecursiveAnswers(Say(1))],
+                ),
+                StepAndAnswer(
+                    dataset.TextProcessingStep(state_subset="dataset_0"),
+                    patch_menu_prompt(()),
+                ),
+                StepAndAnswer(
+                    dataset.SymbolSetStep(state_subset="dataset_0"),
+                    null_patch(),
+                ),
+                StepAndAnswer(
+                    dataset.SoxEffectsStep(state_subset="dataset_0"),
+                    patch_menu_prompt([]),
+                ),
+                StepAndAnswer(
+                    dataset.DatasetNameStep(state_subset="dataset_0"),
+                    patch_input("dataset0"),
+                ),
+                StepAndAnswer(
+                    basic.MoreDatasetsStep(),
+                    patch_menu_prompt(1),  # 1 is yes
+                    children_answers=more_dataset_children_answers,
+                ),
+            ]
+            tour, _ = self.monkey_run_tour(
+                "Tour with datafile in the festival format",
+                steps_and_answers,
+            )
+            with open(tmpdir / "out/project/dataset0-filelist.psv") as f:
+                output_filelist = [line.rstrip() for line in f]
+            expected_filelist1 = [
+                "basename|language|speaker|characters|phones",
+                "f1|eng|speaker_1|foo foo|fu fu",
+                "f2|eng|speaker_1|bar bar|bɑɹ bɑɹ",
+                "f3|eng|speaker_1|baz baz|bæz bæz",
+            ]
+            self.assertListEqual(output_filelist, expected_filelist1)
+
+            with open(tmpdir / "out/project/dataset1-filelist.psv") as f:
+                output_filelist = [line.rstrip() for line in f]
+            expected_filelist2 = [
+                "basename|language|speaker|characters|phones",
+                "f4|und|default_speaker|foo bar|foo bar",
+                "f5|und|default_speaker|bar baz|bar baz",
+                "f6|und|default_speaker|baz foo|baz foo",
+            ]
+            self.assertListEqual(output_filelist, expected_filelist2)
+
+            with open(tmpdir / "out/project/config/everyvoice-text-to-spec.yaml") as f:
+                text_to_spec_config = "\n".join(f)
+            self.assertIn("multilingual: true", text_to_spec_config)
+            self.assertIn("multispeaker: true", text_to_spec_config)
+
+    def test_multilingual_multispeaker_false_config(self):
+        """
+        Makes sure that multilingual and multispeaker parameters of config are set to false when two monolingual and monospeaker datasets are provided with the specified languages and speakers which are the same.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            with open(tmpdir / "filelist1.psv", "w", encoding="utf8") as f:
+                f.write(
+                    "\n".join(
+                        [
+                            "basename|language|text",
+                            "f1|und|foo foo",
+                            "f2|und|bar bar",
+                            "f3|und|baz baz",
+                        ]
+                    )
+                )
+            with open(tmpdir / "filelist2.txt", "w", encoding="utf8") as f:
+                f.write(
+                    "\n".join(
+                        [
+                            '( f4 " foo bar " )',
+                            '( f5 " bar baz " )',
+                            '( f6 " baz foo " )',
+                        ]
+                    )
+                )
+            for basename in ("f1", "f2", "f3", "f4", "f5", "f6"):
+                with open(tmpdir / (basename + ".wav"), "wb"):
+                    pass
+            more_dataset_children_answers = [
+                RecursiveAnswers(
+                    patch_questionary(tmpdir / "filelist2.txt")
+                ),  # filelist step
+                RecursiveAnswers(
+                    patch_menu_prompt(1),  # yes to permission
+                    children_answers=[
+                        RecursiveAnswers(patch_menu_prompt(3)),  # festival format
+                        RecursiveAnswers(patch_menu_prompt(0)),  # characters
+                        RecursiveAnswers(
+                            patch_menu_prompt(())
+                        ),  # no text preprocessing
+                        RecursiveAnswers(
+                            null_patch(),  # skip the question about a speaker column in the data since its festival
+                            children_answers=[
+                                RecursiveAnswers(
+                                    patch_menu_prompt(
+                                        1
+                                    ),  # want to specify the speaker ID
+                                    children_answers=[
+                                        RecursiveAnswers(
+                                            patch_input("speaker_0")
+                                        )  # new speaker ID
+                                    ],
+                                ),
+                            ],
+                        ),
+                        RecursiveAnswers(
+                            null_patch(),  # skip the question about a language column in the data since its festival
+                            children_answers=[
+                                RecursiveAnswers(
+                                    patch_menu_prompt(0),  # "und" lang selection
+                                )
+                            ],
+                        ),
+                        RecursiveAnswers(patch_questionary(tmpdir)),  # wav directory
+                        RecursiveAnswers(null_patch()),  # ValidateWavsStep
+                        RecursiveAnswers(null_patch()),  # SymbolSetStep
+                        RecursiveAnswers(patch_menu_prompt([])),  # no Sox
+                        RecursiveAnswers(patch_input("dataset1")),  # Dataset name
+                    ],
+                ),
+                RecursiveAnswers(
+                    patch_menu_prompt(0),
+                    children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
+                ),
+            ]
+            steps_and_answers = [
+                StepAndAnswer(basic.NameStep(), patch_input("project")),
+                StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                StepAndAnswer(
+                    basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                ),
+                StepAndAnswer(
+                    basic.OutputPathStep(), patch_questionary(tmpdir / "out")
+                ),
+                # First dataset
+                StepAndAnswer(
+                    dataset.WavsDirStep(state_subset="dataset_0"),
+                    patch_questionary(tmpdir),
+                ),
+                StepAndAnswer(
+                    dataset.FilelistStep(state_subset="dataset_0"),
+                    patch_questionary(tmpdir / "filelist1.psv"),
+                ),
+                StepAndAnswer(
+                    dataset.FilelistFormatStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # psv
+                ),
+                StepAndAnswer(
+                    dataset.FilelistTextRepresentationStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # characters
+                ),
+                StepAndAnswer(
+                    dataset.HasSpeakerStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # 0 is no
+                    children_answers=[
+                        RecursiveAnswers(patch_menu_prompt(0)),  # 0 is no
+                    ],
+                ),
+                StepAndAnswer(
+                    dataset.HasLanguageStep(state_subset="dataset_0"),
+                    patch_menu_prompt(1),  # 1 is yes
+                    children_answers=[RecursiveAnswers(Say(1))],
+                ),
+                StepAndAnswer(
+                    dataset.TextProcessingStep(state_subset="dataset_0"),
+                    patch_menu_prompt(()),
+                ),
+                StepAndAnswer(
+                    dataset.SymbolSetStep(state_subset="dataset_0"),
+                    null_patch(),
+                ),
+                StepAndAnswer(
+                    dataset.SoxEffectsStep(state_subset="dataset_0"),
+                    patch_menu_prompt([]),
+                ),
+                StepAndAnswer(
+                    dataset.DatasetNameStep(state_subset="dataset_0"),
+                    patch_input("dataset0"),
+                ),
+                StepAndAnswer(
+                    basic.MoreDatasetsStep(),
+                    patch_menu_prompt(1),  # 1 is yes
+                    children_answers=more_dataset_children_answers,
+                ),
+            ]
+            tour, _ = self.monkey_run_tour(
+                "Tour with datafile in the festival format",
+                steps_and_answers,
+            )
+            with open(tmpdir / "out/project/dataset0-filelist.psv") as f:
+                output_filelist = [line.rstrip() for line in f]
+            expected_filelist1 = [
+                "basename|language|speaker|characters|phones",
+                "f1|und|speaker_0|foo foo|foo foo",
+                "f2|und|speaker_0|bar bar|bar bar",
+                "f3|und|speaker_0|baz baz|baz baz",
+            ]
+            self.assertListEqual(output_filelist, expected_filelist1)
+
+            with open(tmpdir / "out/project/dataset1-filelist.psv") as f:
+                output_filelist = [line.rstrip() for line in f]
+            expected_filelist2 = [
+                "basename|language|speaker|characters|phones",
+                "f4|und|speaker_0|foo bar|foo bar",
+                "f5|und|speaker_0|bar baz|bar baz",
+                "f6|und|speaker_0|baz foo|baz foo",
+            ]
+            self.assertListEqual(output_filelist, expected_filelist2)
+
+            with open(tmpdir / "out/project/config/everyvoice-text-to-spec.yaml") as f:
+                text_to_spec_config = "\n".join(f)
+            self.assertIn("multilingual: false", text_to_spec_config)
+            self.assertIn("multispeaker: false", text_to_spec_config)
+
 
 class WavFileDirectoryRelativePathTest(TestCase):
     """
