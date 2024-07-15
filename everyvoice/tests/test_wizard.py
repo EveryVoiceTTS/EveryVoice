@@ -648,14 +648,9 @@ class WizardTest(TestCase):
             """
             for step_and_answer in steps_and_answers:
                 step = step_and_answer.step
-                # print(step.name)
-                old_children_len = len(step.children)
                 with step_and_answer.monkey:
                     step.run()
-                if (
-                    len(step.children) > old_children_len
-                    and step_and_answer.children_answers
-                ):
+                if step.children and step_and_answer.children_answers:
                     # Here we assemble steps_and_answers for the recursive call from
                     # the actual children of step and the provided children_answers.
                     recursive_helper(
