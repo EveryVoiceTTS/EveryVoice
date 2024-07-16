@@ -106,6 +106,10 @@ def create_demo_app(
     )
     lang_list = list(model.lang2id.keys())
     speak_list = list(model.speaker2id.keys())
+    default_lang = lang_list[0]
+    interactive_lang = len(lang_list) > 1
+    default_speak = speak_list[0]
+    interactive_speak = len(speak_list) > 1
     with gr.Blocks() as demo:
         gr.Markdown(
             """
@@ -122,8 +126,18 @@ def create_demo_app(
                     0.75, 1.75, 1.0, step=0.25, label="Duration Multiplier"
                 )
                 with gr.Row():
-                    inp_lang = gr.Dropdown(lang_list, label="Language")
-                    inp_speak = gr.Dropdown(speak_list, label="Speaker")
+                    inp_lang = gr.Dropdown(
+                        choices=lang_list,
+                        value=default_lang,
+                        interactive=interactive_lang,
+                        label="Language",
+                    )
+                    inp_speak = gr.Dropdown(
+                        choices=speak_list,
+                        value=default_speak,
+                        interactive=interactive_speak,
+                        label="Speaker",
+                    )
                 btn = gr.Button("Synthesize")
             with gr.Column():
                 out_audio = gr.Audio(format="mp3")
