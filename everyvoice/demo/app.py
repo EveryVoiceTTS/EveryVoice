@@ -85,6 +85,8 @@ def synthesize_audio(
 def create_demo_app(
     text_to_spec_model_path,
     spec_to_wav_model_path,
+    languages,
+    speakers,
     output_dir,
     accelerator,
 ) -> gr.Blocks:
@@ -104,8 +106,38 @@ def create_demo_app(
         accelerator=accelerator,
         device=device,
     )
-    lang_list = list(model.lang2id.keys())
-    speak_list = list(model.speaker2id.keys())
+    model_languages = list(model.lang2id.keys())
+    model_speakers = list(model.speaker2id.keys())
+    lang_list = []
+    speak_list = []
+    if languages == ["all"]:
+        lang_list = model_languages
+    else:
+        for language in languages:
+            if language in model_languages:
+                lang_list.append(language)
+            else:
+                print(
+                    f"Attention: The model have not been trained for speech synthesis in '{language}' language. The '{language}' language option will not be available for selection."
+                )
+    if speakers == ["all"]:
+        speak_list = model_speakers
+    else:
+        for speaker in speakers:
+            if speaker in model_speakers:
+                speak_list.append(speaker)
+            else:
+                print(
+                    f"Attention: The model have not been trained for speech synthesis with '{speaker}' speaker. The '{speaker}' speaker option will not be available for selection."
+                )
+    if lang_list == []:
+        raise ValueError(
+            f"Language option has been activated, but valid languages have not been provided. The model has been trained in {model_languages} languages. Please select either 'all' or at least some of them."
+        )
+    if speak_list == []:
+        raise ValueError(
+            f"Speaker option has been activated, but valid speakers have not been provided. The model has been trained with {model_speakers} speakers. Please select either 'all' or at least some of them."
+        )
     default_lang = lang_list[0]
     interactive_lang = len(lang_list) > 1
     default_speak = speak_list[0]

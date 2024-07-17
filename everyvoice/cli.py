@@ -2,7 +2,7 @@ import json
 import sys
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, List
 
 import typer
 
@@ -303,6 +303,18 @@ def demo(
         file_okay=True,
         autocompletion=complete_path,
     ),
+    languages: List[str] = typer.Option(
+        ["all"],
+        "--language",
+        "-l",
+        help="Specify languages to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --language eng --language fin",
+    ),
+    speakers: List[str] = typer.Option(
+        ["all"],
+        "--speaker",
+        "-s",
+        help="Specify speakers to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --speaker speaker_1 --speaker Sue",
+    ),
     output_dir: Path = typer.Option(
         "synthesis_output",
         "--output-dir",
@@ -319,6 +331,8 @@ def demo(
     demo = create_demo_app(
         text_to_spec_model_path=text_to_spec_model,
         spec_to_wav_model_path=spec_to_wav_model,
+        languages=languages,
+        speakers=speakers,
         output_dir=output_dir,
         accelerator=accelerator,
     )
