@@ -847,8 +847,16 @@ class Preprocessor:
         if process == "attn":
             return self.process_attn_prior
 
-    def check_data(self, filelist, word_seg_token=" ", heavy_clip_detction=False):
+    def check_data(
+        self,
+        filelist,
+        word_seg_token=" ",
+        heavy_clip_detction=False,
+        heavy_objective_evaluation=False,
+    ):
         data = []
+        if heavy_objective_evaluation:
+            model = torchaudio.pipelines.SQUIM_OBJECTIVE.get_model()
         # speaking rate (words/second, float, scatterplot or bar chart)
         # speaking rate (characters/second, float, scatterplot or bar chart)
         # articulation level (mean energy/speaking rate)
@@ -879,7 +887,7 @@ class Preprocessor:
             n_phones = (
                 len(phone_tokens.split("/")) if phone_tokens is not None else None
             )
-            audio, _ = torchaudio.load(
+            audio, sr = torchaudio.load(
                 str(
                     self.create_path(
                         item, "audio", f"audio-{self.input_sampling_rate}.wav"
@@ -890,6 +898,15 @@ class Preprocessor:
                 len(audio.size()) == 1 or audio.size(0) == 1
             ), f"Audio has {audio.size(0)} channels, but should be mono"
             audio = audio.squeeze()
+
+            if heavy_objective_evaluation:
+                # use objective metrics from https://pytorch.org/audio/main/tutorials/squim_tutorial.html
+                if sr != 16000:
+                    audio = torchaudio.functional.resample(audio, sr, 16000)
+                stoi_hyp, pesq_hyp, si_sdr_hyp = model(audio)
+                data_point["stoi"] = float(stoi_hyp[0])
+                data_point["pesq"] = float(pesq_hyp[0])
+                data_point["si_sdr"] = float(si_sdr_hyp[0])
             if heavy_clip_detction:
                 _, total_clipping = detect_clipping(audio)
             else:
