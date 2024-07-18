@@ -151,7 +151,7 @@ app.command(
 
 
 # Add check_data to root
-@app.command()
+@app.command(hidden=True)
 def check_data(
     config_file: Path = typer.Argument(
         ...,
@@ -161,6 +161,8 @@ def check_data(
         help="The path to your model configuration file.",
         autocompletion=complete_path,
     ),
+    heavy_clip_detection: bool = typer.Option(False),
+    heavy_objective_evaluation: bool = typer.Option(False),
 ):
     from everyvoice.base_cli.helpers import MODEL_CONFIGS, load_unknown_config
     from everyvoice.config.preprocessing_config import PreprocessingConfig
@@ -178,7 +180,11 @@ def check_data(
     val_filelist = generic_psv_filelist_reader(config.training.validation_filelist)
     combined_filelist_data = training_filelist + val_filelist
     preprocessor = Preprocessor(config)
-    checked_data = preprocessor.check_data(filelist=combined_filelist_data)
+    checked_data = preprocessor.check_data(
+        filelist=combined_filelist_data,
+        heavy_clip_detction=heavy_clip_detection,
+        heavy_objective_evaluation=heavy_objective_evaluation,
+    )
     if not combined_filelist_data:
         print(
             f"Sorry, the data at {config.training.training_filelist} and {config.training.validation_filelist} is empty so there is nothing to check."
