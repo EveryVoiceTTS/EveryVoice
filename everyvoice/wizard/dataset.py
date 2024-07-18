@@ -439,11 +439,11 @@ class LanguageHeaderStep(HeaderStep):
         if self.state[StepNames.data_has_speaker_value_step] == "no":
             add_missing_speaker(self.state)
         # apply automatic conversions
-        self.state["model_target_training_text_representation"] = (
-            apply_automatic_text_conversions(
-                self.state["filelist_data"],
-                self.state[StepNames.filelist_text_representation_step],
-            )
+        self.state[
+            "model_target_training_text_representation"
+        ] = apply_automatic_text_conversions(
+            self.state["filelist_data"],
+            self.state[StepNames.filelist_text_representation_step],
         )
 
 
@@ -525,7 +525,7 @@ class KnowSpeakerStep(Step):
         self.dataset_index = self.state_subset.split("_")[-1]
         return get_response_from_menu_prompt(
             choices=self.choices,
-            title=f"Would you like to specify a speaker ID for this dataset? Otherwise a default ID of 'speaker_{self.dataset_index}' will be assigned.",
+            title=f"Since your data does not have a speaker column, we will use a default ID of 'speaker_{self.dataset_index}'. Would you like to specify an alternative speaker ID for this dataset instead?",
             multi=False,
             search=False,
         )
@@ -645,12 +645,12 @@ class SelectLanguageStep(Step):
         # Apply the language code:
         isocode = get_iso_code(self.response)
         # Apply text conversions and get target training representation
-        self.state["model_target_training_text_representation"] = (
-            apply_automatic_text_conversions(
-                self.state["filelist_data"],
-                self.state[StepNames.filelist_text_representation_step],
-                global_isocode=isocode,
-            )
+        self.state[
+            "model_target_training_text_representation"
+        ] = apply_automatic_text_conversions(
+            self.state["filelist_data"],
+            self.state[StepNames.filelist_text_representation_step],
+            global_isocode=isocode,
         )
 
 
