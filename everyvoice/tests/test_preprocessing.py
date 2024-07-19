@@ -69,6 +69,17 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                 with self.assertRaises(ValueError):
                     FeaturePredictionConfig(**no_permissions_args)
 
+    def test_check_data(self):
+        checked_data = self.preprocessor.check_data(
+            self.filelist, heavy_objective_evaluation=True
+        )
+        self.assertIn("pesq", checked_data[0])
+        self.assertIn("stoi", checked_data[0])
+        self.assertIn("si_sdr", checked_data[0])
+        self.assertGreater(checked_data[0]["pesq"], 3.0)
+        self.assertLess(checked_data[0]["pesq"], 5.0)
+        self.assertAlmostEqual(checked_data[0]["duration"], 5.17, 2)
+
     def test_process_audio_for_alignment(self):
         config = AlignerConfig(contact=self.contact)
         for entry in self.filelist[1:]:
