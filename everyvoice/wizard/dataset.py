@@ -439,11 +439,11 @@ class LanguageHeaderStep(HeaderStep):
         if self.state[StepNames.data_has_speaker_value_step] == "no":
             add_missing_speaker(self.state)
         # apply automatic conversions
-        self.state[
-            "model_target_training_text_representation"
-        ] = apply_automatic_text_conversions(
-            self.state["filelist_data"],
-            self.state[StepNames.filelist_text_representation_step],
+        self.state["model_target_training_text_representation"] = (
+            apply_automatic_text_conversions(
+                self.state["filelist_data"],
+                self.state[StepNames.filelist_text_representation_step],
+            )
         )
 
 
@@ -645,12 +645,12 @@ class SelectLanguageStep(Step):
         # Apply the language code:
         isocode = get_iso_code(self.response)
         # Apply text conversions and get target training representation
-        self.state[
-            "model_target_training_text_representation"
-        ] = apply_automatic_text_conversions(
-            self.state["filelist_data"],
-            self.state[StepNames.filelist_text_representation_step],
-            global_isocode=isocode,
+        self.state["model_target_training_text_representation"] = (
+            apply_automatic_text_conversions(
+                self.state["filelist_data"],
+                self.state[StepNames.filelist_text_representation_step],
+                global_isocode=isocode,
+            )
         )
 
 
@@ -676,6 +676,7 @@ def reload_filelist_data_as_dict(state):
         "tsv",
         "csv",
     ]:
+        headers = state["filelist_headers"]
         state["filelist_data"] = generic_xsv_filelist_reader(
             filelist_path,
             delimiter=state.get("filelist_delimiter"),
@@ -684,6 +685,10 @@ def reload_filelist_data_as_dict(state):
                 state.get(StepNames.data_has_header_line_step, "yes") == "yes"
             ),
         )
+        state["filelist_data"] = []
+        for row in state["filelist_data_list"][1:]:
+            item = {headers[i]: row[i] for i in range(len(row))}
+            state["filelist_data"].append(item)
     assert isinstance(state["filelist_data"][0], dict)
 
 
