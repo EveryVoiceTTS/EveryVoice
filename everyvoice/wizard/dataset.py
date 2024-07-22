@@ -808,6 +808,8 @@ class SymbolSetStep(Step):
         return bool(response)
 
     def effect(self):
+        from everyvoice.config.text_config import Punctuation
+
         character_graphemes = set()
         phone_graphemes = set()
         for item in tqdm(
@@ -819,11 +821,16 @@ class SymbolSetStep(Step):
                 phone_graphemes.update(guess_ipa_phones_in_text(item["phones"]))
         if not phone_graphemes and not character_graphemes:
             return
+        punctuation = Punctuation().all
         symbols = {}
         if character_graphemes:
-            symbols["characters"] = sorted(list(character_graphemes))
+            symbols["characters"] = [
+                x for x in sorted(list(character_graphemes)) if x not in punctuation
+            ]
         if phone_graphemes:
-            symbols["phones"] = sorted(list(phone_graphemes))
+            symbols["phones"] = [
+                x for x in sorted(list(phone_graphemes)) if x not in punctuation
+            ]
         self.state[StepNames.symbol_set_step] = symbols
 
 
