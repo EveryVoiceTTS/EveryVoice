@@ -682,6 +682,7 @@ def reload_filelist_data_as_dict(state):
         "tsv",
         "csv",
     ]:
+        headers = state["filelist_headers"]
         state["filelist_data"] = generic_xsv_filelist_reader(
             filelist_path,
             delimiter=state.get("filelist_delimiter"),
@@ -690,6 +691,10 @@ def reload_filelist_data_as_dict(state):
                 state.get(StepNames.data_has_header_line_step, "yes") == "yes"
             ),
         )
+        state["filelist_data"] = []
+        for row in state["filelist_data_list"][1:]:
+            item = {headers[i]: row[i] for i in range(len(row))}
+            state["filelist_data"].append(item)
     assert isinstance(state["filelist_data"][0], dict)
 
 
