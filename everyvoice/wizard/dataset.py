@@ -2,6 +2,7 @@ import glob
 import os
 import random
 import re
+import sys
 from pathlib import Path
 from typing import Sequence
 
@@ -174,7 +175,14 @@ class FilelistFormatStep(Step):
             filelist_path, delimiter=separator, record_limit=10
         )
 
-        column_count = len(initial_records[0])
+        if len(initial_records) > 0:
+            column_count = len(initial_records[0])
+        else:
+            print(
+                f"ERROR: The filelist you specify ({filelist_path}) is empty. Please double check."
+            )
+            sys.exit(1)
+
         if column_count < 2:
             print(
                 f"File '{filelist_path}' does not look like a '{file_type}' file: no record separator found on header line."
@@ -439,11 +447,11 @@ class LanguageHeaderStep(HeaderStep):
         if self.state[StepNames.data_has_speaker_value_step] == "no":
             add_missing_speaker(self.state)
         # apply automatic conversions
-        self.state[
-            "model_target_training_text_representation"
-        ] = apply_automatic_text_conversions(
-            self.state["filelist_data"],
-            self.state[StepNames.filelist_text_representation_step],
+        self.state["model_target_training_text_representation"] = (
+            apply_automatic_text_conversions(
+                self.state["filelist_data"],
+                self.state[StepNames.filelist_text_representation_step],
+            )
         )
 
 
@@ -645,12 +653,12 @@ class SelectLanguageStep(Step):
         # Apply the language code:
         isocode = get_iso_code(self.response)
         # Apply text conversions and get target training representation
-        self.state[
-            "model_target_training_text_representation"
-        ] = apply_automatic_text_conversions(
-            self.state["filelist_data"],
-            self.state[StepNames.filelist_text_representation_step],
-            global_isocode=isocode,
+        self.state["model_target_training_text_representation"] = (
+            apply_automatic_text_conversions(
+                self.state["filelist_data"],
+                self.state[StepNames.filelist_text_representation_step],
+                global_isocode=isocode,
+            )
         )
 
 
