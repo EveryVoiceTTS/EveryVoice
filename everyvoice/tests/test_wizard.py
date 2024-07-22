@@ -552,6 +552,10 @@ class WizardTest(TestCase):
             symbol_set_step.run()
         self.assertEqual(len(symbol_set_step.state[SN.symbol_set_step.value]), 2)
         self.assertIn("t͡s", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
+        self.assertNotIn(
+            ":", symbol_set_step.state[SN.symbol_set_step.value]["characters"]
+        )
+        self.assertNotIn(":", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
         # assert that symbols contain no duplicates
         self.assertEqual(
             len(set(symbol_set_step.state[SN.symbol_set_step.value]["characters"])),
