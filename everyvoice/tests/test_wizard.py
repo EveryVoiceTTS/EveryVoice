@@ -553,6 +553,28 @@ class WizardTest(TestCase):
         self.assertEqual(len(symbol_set_step.state[SN.symbol_set_step.value]), 2)
         self.assertIn("t͡s", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
 
+    def test_empty_filelist(self):
+        tour = Tour(
+            name="empty filelist",
+            steps=[
+                dataset.FilelistStep(),
+                dataset.FilelistFormatStep(),
+            ],
+        )
+        filelist = str(self.data_dir / "empty.psv")
+
+        filelist_step = tour.steps[0]
+        with monkeypatch(filelist_step, "prompt", Say(filelist)):
+            filelist_step.run()
+
+        format_step = tour.steps[1]
+        with self.assertRaises(SystemExit) as cm:
+            with patch_menu_prompt(1) as stdout:
+                format_step.run()
+            output = stdout.getvalue()
+            self.assertIn("is empty", output)
+        self.assertEqual(cm.exception.code, 1)
+
     def test_wrong_fileformat_psv(self):
         tour = Tour(
             name="mismatched fileformat",

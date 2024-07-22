@@ -178,9 +178,7 @@ class FilelistFormatStep(Step):
         if len(initial_records) > 0:
             column_count = len(initial_records[0])
         else:
-            print(
-                f"ERROR: The filelist you specify ({filelist_path}) is empty. Please double check."
-            )
+            print(f"ERROR: File ({filelist_path} is empty. Please double check.")
             sys.exit(1)
 
         if column_count < 2:
