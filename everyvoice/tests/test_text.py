@@ -65,6 +65,10 @@ class TextTest(BasicTestCase):
         sequence = upper_text_processor.encode_text(text_upper)
         self.assertEqual(upper_text_processor.decode_tokens(sequence, ""), text)
 
+    def test_no_duplicate_punctuation(self):
+        with self.assertRaises(ValidationError):
+            TextConfig(symbols=Symbols(letters=[":"] + list(string.ascii_letters)))
+
     def test_punctuation(self):
         text = "hello! How are you? My name's: foo;."
         upper_text_processor = TextProcessor(

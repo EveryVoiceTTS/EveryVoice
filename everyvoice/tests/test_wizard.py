@@ -1590,8 +1590,6 @@ class WavFileDirectoryRelativePathTest(TestCase):
                         SN.symbol_set_step.value: {
                             "characters": [
                                 " ",
-                                ",",
-                                ".",
                                 "A",
                                 "D",
                                 "E",

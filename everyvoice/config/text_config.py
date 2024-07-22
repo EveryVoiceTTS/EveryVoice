@@ -63,6 +63,23 @@ class Symbols(BaseModel):
         return set(w for _, v in self if not isinstance(v, Punctuation) for w in v)
 
     @model_validator(mode="after")
+    def cannot_have_punctuation_in_symbol_set(self) -> "Symbols":
+        """You cannot have the same symbol defined in punctuation as elsewhere.
+
+        Raises:
+            ValueError: raised if a symbol from punctuation is found elsewhere
+
+        Returns:
+            Symbols: The validated symbol set
+        """
+        for punctuation in self.punctuation.all:
+            if punctuation in self.all_except_punctuation:
+                raise ValueError(
+                    f"Sorry, the symbol '{punctuation}' occurs in both your declared punctuation and in your other symbol set. Please inspect your text configuration and either remove the symbol from the punctuation or other symbol set."
+                )
+        return self
+
+    @model_validator(mode="after")
     def member_must_be_list_of_strings(self) -> "Symbols":
         """Except for `punctuation` & `pad`, all user defined member variables
         have to be a list of strings.

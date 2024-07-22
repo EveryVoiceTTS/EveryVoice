@@ -1,6 +1,6 @@
 cleaners: [everyvoice.utils.lower, everyvoice.utils.collapse_whitespace, everyvoice.utils.nfc_normalize]
 symbols:
-  dataset_0-symbols: [' ', '''', ',', '-', ., C, E, H, K, P, T, a, b, c, d, e, f,
+  dataset_0-symbols: [' ', C, E, H, K, P, T, a, b, c, d, e, f,
     g, h, i, l, m, n, o, p, r, s, t, u, v, w, x, y]
   pad: _
   silence: [<SIL>]
