@@ -17,6 +17,7 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           token: ${{ secrets.SGILE_PAT }}
           submodules: recursive
       - name: Set up Python
@@ -27,16 +28,10 @@ jobs:
         run: |
           pip install -r requirements.dev.txt
           pip install pydantic
-      - name: File changes
-        uses: trilom/file-changes-action@v1.2.4
-        id: file_changes
-        with:
-          prNumber: ${{ github.event.number }}
-          output: " "
       - name: pre-commit
-        uses: pre-commit/action@v3.0.1
-        with:
-          extra_args: --files ${{ steps.file_changes.outputs.files }}
+        run: |
+          python -m pip install pre-commit
+          python -m pre_commit run --show-diff-on-failure --color=always --color=always --from-ref ${{ github.event.pull_request.base.sha }} --to-ref ${{ github.event.pull_request.head.sha }}
       - name: Pre commit lite
         uses: pre-commit-ci/lite-action@v1.0.2
         if: always()
