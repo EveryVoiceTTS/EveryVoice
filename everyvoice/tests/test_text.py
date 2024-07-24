@@ -48,8 +48,8 @@ class TextTest(BasicTestCase):
 
     def test_hardcoded_symbols(self):
         self.assertEqual(
-            self.base_text_processor.encode_text("\x80 "),
-            [0, 1],
+            self.base_text_processor.encode_text("\x80 \x80"),
+            [0, 1, 0],
             "pad should be Unicode PAD symbol and index 0, whitespace should be index 1",
         )
 

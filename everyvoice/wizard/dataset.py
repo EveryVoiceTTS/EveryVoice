@@ -721,9 +721,20 @@ class TextProcessingStep(Step):
         if "symbols" not in self.state:
             self.state["symbols"] = {}
         if self.response:
+            from everyvoice.config.text_config import TextConfig
+
             text_index = self.state["filelist_headers"].index(
                 self.state[StepNames.filelist_text_representation_step]
             )
+            global_cleaners = TextConfig().cleaners
+            for cleaner in global_cleaners:
+                for i in tqdm(
+                    range(len(self.state["filelist_data_list"])),
+                    desc="Applying global default text normalization to data",
+                ):
+                    self.state["filelist_data_list"][i][text_index] = cleaner(
+                        self.state["filelist_data_list"][i][text_index]
+                    )
             for process in self.response:
                 process_fn = self.process_lookup[process]["fn"]
                 for i in tqdm(

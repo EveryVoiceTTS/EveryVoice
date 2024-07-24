@@ -435,7 +435,7 @@ class WizardTest(TestCase):
         with patch_menu_prompt(1):  # 1 is "yes"
             step.run()
         self.assertEqual(step.state[SN.data_has_header_line_step.value], "yes")
-        self.assertEqual(len(step.state["filelist_data_list"]), 4)
+        self.assertEqual(len(step.state["filelist_data_list"]), 5)
 
         step = format_step.children[1]
         self.assertIsInstance(step, dataset.HeaderStep)
@@ -503,7 +503,7 @@ class WizardTest(TestCase):
         with patch_menu_prompt(1), capture_stdout() as out:
             validate_wavs_step.run()
         self.assertEqual(step.state[SN.validate_wavs_step][:2], "No")
-        self.assertIn("Warning: 3 wav files were not found", out.getvalue())
+        self.assertIn("Warning: 4 wav files were not found", out.getvalue())
 
         text_processing_step = find_step(SN.text_processing_step, tour.steps)
         # 0 is lowercase, 1 is NFC Normalization, select both
@@ -513,11 +513,16 @@ class WizardTest(TestCase):
         # print(text_processing_step.state)
         self.assertEqual(
             text_processing_step.state["filelist_data_list"][2][2],
-            "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
+            "cased nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
+        )
+
+        self.assertEqual(
+            text_processing_step.state["filelist_data_list"][3][2],
+            "let us see if it collapses whitespace",  # the "nfd: éàê" bit here is now NFC
         )
 
         # Make sure realoading the data as dict stripped the header line
-        self.assertEqual(len(step.state["filelist_data"]), 3)
+        self.assertEqual(len(step.state["filelist_data"]), 4)
 
         sox_effects_step = find_step(SN.sox_effects_step, tour.steps)
         # 0 is resample to 22050 kHz, 2 is remove silence at start and end
@@ -547,7 +552,7 @@ class WizardTest(TestCase):
         )
 
         symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
-        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
+        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 4)
         with capture_stdout(), capture_stderr():
             symbol_set_step.run()
         self.assertEqual(len(symbol_set_step.state[SN.symbol_set_step.value]), 2)
