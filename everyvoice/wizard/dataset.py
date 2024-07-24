@@ -14,13 +14,7 @@ from tqdm import tqdm
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
-from everyvoice.utils import (
-    generic_xsv_filelist_reader,
-    lower,
-    nfc_normalize,
-    read_festival,
-    slugify,
-)
+from everyvoice.utils import lower, nfc_normalize, read_festival, slugify
 from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, Step, StepNames, Tour
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
@@ -683,14 +677,6 @@ def reload_filelist_data_as_dict(state):
         "csv",
     ]:
         headers = state["filelist_headers"]
-        state["filelist_data"] = generic_xsv_filelist_reader(
-            filelist_path,
-            delimiter=state.get("filelist_delimiter"),
-            fieldnames=state["filelist_headers"],
-            file_has_header_line=(
-                state.get(StepNames.data_has_header_line_step, "yes") == "yes"
-            ),
-        )
         state["filelist_data"] = []
         for row in state["filelist_data_list"][1:]:
             item = {headers[i]: row[i] for i in range(len(row))}
