@@ -723,29 +723,59 @@ class TextProcessingStep(Step):
         if "symbols" not in self.state:
             self.state["symbols"] = {}
         # Get Text Index
-        text_index = self.state["filelist_headers"].index(
-            self.state[StepNames.filelist_text_representation_step]
-        )
-        # Process global cleaners
-        global_cleaners = TextConfig().cleaners
-        for cleaner in global_cleaners:
-            for i in tqdm(
-                range(len(self.state["filelist_data_list"])),
-                desc="Applying global default text normalization to data",
-            ):
-                self.state["filelist_data_list"][i][text_index] = cleaner(
-                    self.state["filelist_data_list"][i][text_index]
-                )
-        # Process any dataset-specified cleaners
-        for process in self.response:
-            process_fn = self.process_lookup[process]["fn"]
-            for i in tqdm(
-                range(len(self.state["filelist_data_list"])),
-                desc=f"Applying {self.process_lookup[process]['desc']} to data",
-            ):
-                self.state["filelist_data_list"][i][text_index] = process_fn(
-                    self.state["filelist_data_list"][i][text_index]
-                )
+        if self.state.get("filelist_data_list", None):
+            text_index = self.state["filelist_headers"].index(
+                self.state[StepNames.filelist_text_representation_step]
+            )
+            # Process global cleaners
+            global_cleaners = TextConfig().cleaners
+            for cleaner in global_cleaners:
+                for i in tqdm(
+                    range(len(self.state["filelist_data_list"])),
+                    desc="Applying global default text normalization to data",
+                ):
+                    self.state["filelist_data_list"][i][text_index] = cleaner(
+                        self.state["filelist_data_list"][i][text_index]
+                    )
+            # Process any dataset-specified cleaners
+            for process in self.response:
+                process_fn = self.process_lookup[process]["fn"]
+                for i in tqdm(
+                    range(len(self.state["filelist_data_list"])),
+                    desc=f"Applying {self.process_lookup[process]['desc']} to data",
+                ):
+                    self.state["filelist_data_list"][i][text_index] = process_fn(
+                        self.state["filelist_data_list"][i][text_index]
+                    )
+        else:
+            # Process global cleaners
+            global_cleaners = TextConfig().cleaners
+            for cleaner in global_cleaners:
+                for item in tqdm(
+                    self.state["filelist_data"],
+                    desc=f"Applying global default text normalization to '{self.state[StepNames.filelist_text_representation_step]}' data",
+                ):
+                    item[self.state[StepNames.filelist_text_representation_step]] = (
+                        cleaner(
+                            item[
+                                self.state[StepNames.filelist_text_representation_step]
+                            ]
+                        )
+                    )
+            # Process any dataset-specified cleaners
+            for process in self.response:
+                process_fn = self.process_lookup[process]["fn"]
+                for item in tqdm(
+                    self.state["filelist_data"],
+                    desc=f"Applying {self.process_lookup[process]['desc']} to '{self.state[StepNames.filelist_text_representation_step]}' data",
+                ):
+                    item[self.state[StepNames.filelist_text_representation_step]] = (
+                        process_fn(
+                            item[
+                                self.state[StepNames.filelist_text_representation_step]
+                            ]
+                        )
+                    )
 
 
 class SoxEffectsStep(Step):
