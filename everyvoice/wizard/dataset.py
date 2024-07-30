@@ -717,22 +717,35 @@ class TextProcessingStep(Step):
         return True
 
     def effect(self):
+        from everyvoice.config.text_config import TextConfig
+
         # Apply the selected text processing processes
         if "symbols" not in self.state:
             self.state["symbols"] = {}
-        if self.response:
-            text_index = self.state["filelist_headers"].index(
-                self.state[StepNames.filelist_text_representation_step]
-            )
-            for process in self.response:
-                process_fn = self.process_lookup[process]["fn"]
-                for i in tqdm(
-                    range(len(self.state["filelist_data_list"])),
-                    desc=f"Applying {self.process_lookup[process]['desc']} to data",
-                ):
-                    self.state["filelist_data_list"][i][text_index] = process_fn(
-                        self.state["filelist_data_list"][i][text_index]
-                    )
+        # Get Text Index
+        text_index = self.state["filelist_headers"].index(
+            self.state[StepNames.filelist_text_representation_step]
+        )
+        # Process global cleaners
+        global_cleaners = TextConfig().cleaners
+        for cleaner in global_cleaners:
+            for i in tqdm(
+                range(len(self.state["filelist_data_list"])),
+                desc="Applying global default text normalization to data",
+            ):
+                self.state["filelist_data_list"][i][text_index] = cleaner(
+                    self.state["filelist_data_list"][i][text_index]
+                )
+        # Process any dataset-specified cleaners
+        for process in self.response:
+            process_fn = self.process_lookup[process]["fn"]
+            for i in tqdm(
+                range(len(self.state["filelist_data_list"])),
+                desc=f"Applying {self.process_lookup[process]['desc']} to data",
+            ):
+                self.state["filelist_data_list"][i][text_index] = process_fn(
+                    self.state["filelist_data_list"][i][text_index]
+                )
 
 
 class SoxEffectsStep(Step):
