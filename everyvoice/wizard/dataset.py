@@ -14,13 +14,7 @@ from tqdm import tqdm
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
-from everyvoice.utils import (
-    generic_xsv_filelist_reader,
-    lower,
-    nfc_normalize,
-    read_festival,
-    slugify,
-)
+from everyvoice.utils import lower, nfc_normalize, read_festival, slugify
 from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, Step, StepNames, Tour
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
@@ -682,14 +676,11 @@ def reload_filelist_data_as_dict(state):
         "tsv",
         "csv",
     ]:
-        state["filelist_data"] = generic_xsv_filelist_reader(
-            filelist_path,
-            delimiter=state.get("filelist_delimiter"),
-            fieldnames=state["filelist_headers"],
-            file_has_header_line=(
-                state.get(StepNames.data_has_header_line_step, "yes") == "yes"
-            ),
-        )
+        headers = state["filelist_headers"]
+        state["filelist_data"] = []
+        for row in state["filelist_data_list"][1:]:
+            item = {headers[i]: row[i] for i in range(len(row))}
+            state["filelist_data"].append(item)
     assert isinstance(state["filelist_data"][0], dict)
 
 
@@ -726,13 +717,27 @@ class TextProcessingStep(Step):
         return True
 
     def effect(self):
+        from everyvoice.config.text_config import TextConfig
+
         # Apply the selected text processing processes
         if "symbols" not in self.state:
             self.state["symbols"] = {}
-        if self.response:
+        # Get Text Index
+        if self.state.get("filelist_data_list", None):
             text_index = self.state["filelist_headers"].index(
                 self.state[StepNames.filelist_text_representation_step]
             )
+            # Process global cleaners
+            global_cleaners = TextConfig().cleaners
+            for cleaner in global_cleaners:
+                for i in tqdm(
+                    range(len(self.state["filelist_data_list"])),
+                    desc="Applying global default text normalization to data",
+                ):
+                    self.state["filelist_data_list"][i][text_index] = cleaner(
+                        self.state["filelist_data_list"][i][text_index]
+                    )
+            # Process any dataset-specified cleaners
             for process in self.response:
                 process_fn = self.process_lookup[process]["fn"]
                 for i in tqdm(
@@ -741,6 +746,35 @@ class TextProcessingStep(Step):
                 ):
                     self.state["filelist_data_list"][i][text_index] = process_fn(
                         self.state["filelist_data_list"][i][text_index]
+                    )
+        else:
+            # Process global cleaners
+            global_cleaners = TextConfig().cleaners
+            for cleaner in global_cleaners:
+                for item in tqdm(
+                    self.state["filelist_data"],
+                    desc=f"Applying global default text normalization to '{self.state[StepNames.filelist_text_representation_step]}' data",
+                ):
+                    item[self.state[StepNames.filelist_text_representation_step]] = (
+                        cleaner(
+                            item[
+                                self.state[StepNames.filelist_text_representation_step]
+                            ]
+                        )
+                    )
+            # Process any dataset-specified cleaners
+            for process in self.response:
+                process_fn = self.process_lookup[process]["fn"]
+                for item in tqdm(
+                    self.state["filelist_data"],
+                    desc=f"Applying {self.process_lookup[process]['desc']} to '{self.state[StepNames.filelist_text_representation_step]}' data",
+                ):
+                    item[self.state[StepNames.filelist_text_representation_step]] = (
+                        process_fn(
+                            item[
+                                self.state[StepNames.filelist_text_representation_step]
+                            ]
+                        )
                     )
 
 
@@ -803,6 +837,8 @@ class SymbolSetStep(Step):
         return bool(response)
 
     def effect(self):
+        from everyvoice.config.text_config import Punctuation
+
         character_graphemes = set()
         phone_graphemes = set()
         for item in tqdm(
@@ -814,11 +850,16 @@ class SymbolSetStep(Step):
                 phone_graphemes.update(guess_ipa_phones_in_text(item["phones"]))
         if not phone_graphemes and not character_graphemes:
             return
+        punctuation = Punctuation().all
         symbols = {}
         if character_graphemes:
-            symbols["characters"] = sorted(list(character_graphemes))
+            symbols["characters"] = [
+                x for x in sorted(list(character_graphemes)) if x not in punctuation
+            ]
         if phone_graphemes:
-            symbols["phones"] = sorted(list(phone_graphemes))
+            symbols["phones"] = [
+                x for x in sorted(list(phone_graphemes)) if x not in punctuation
+            ]
         self.state[StepNames.symbol_set_step] = symbols
 
 

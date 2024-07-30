@@ -408,6 +408,80 @@ class WizardTest(TestCase):
         self.assertTrue(step.completed)
         self.assertEqual(step.response, 512)
 
+    def test_whitespace_always_collapsed(self):
+        tour = Tour("unit testing", steps=dataset.get_dataset_steps())
+        filelist = str(self.data_dir / "unit-test-case1.psv")
+        filelist_step = find_step(SN.filelist_step, tour.steps)
+        monkey = monkeypatch(filelist_step, "prompt", Say(filelist))
+        with monkey:
+            filelist_step.run()
+
+        permission_step = find_step(SN.dataset_permission_step, tour.steps)
+        with patch_menu_prompt(1):  # 1 is "yes, I have permission"
+            permission_step.run()
+        self.assertTrue(
+            permission_step.state[SN.dataset_permission_step].startswith("Yes")
+        )
+
+        format_step = find_step(SN.filelist_format_step, tour.steps)
+        with patch_menu_prompt(0):  # 0 is "psv"
+            format_step.run()
+        step = format_step.children[0]
+        with patch_menu_prompt(1):  # 1 is "yes"
+            step.run()
+
+        step = format_step.children[1]
+        with patch_menu_prompt(1):  # 1 is second column
+            step.run()
+
+        step = format_step.children[2]
+        with patch_menu_prompt(1):  # 1 is second remaining column, i.e., third column
+            step.run()
+
+        text_representation_step = find_step(
+            SN.filelist_text_representation_step, tour.steps
+        )
+        with patch_menu_prompt(0):  # 0 is "characters"
+            text_representation_step.run()
+        speaker_step = find_step(SN.data_has_speaker_value_step, tour.steps)
+        with patch_menu_prompt(0):  # 0 is "no"
+            speaker_step.run()
+
+        know_speaker_step = speaker_step.children[0]
+        with patch_menu_prompt(1):  # 1 is "yes"
+            know_speaker_step.run()
+
+        add_speaker_step = know_speaker_step.children[0]
+        with patch_input("default"):
+            add_speaker_step.run()
+
+        language_step = find_step(SN.data_has_language_value_step, tour.steps)
+        with patch_menu_prompt(0):  # 0 is "no"
+            language_step.run()
+
+        select_lang_step = language_step.children[0]
+        with capture_stdout(), capture_stderr():
+            with patch_menu_prompt(15):  # some arbitrary language from the list
+                select_lang_step.run()
+
+        wavs_dir_step = find_step(SN.wavs_dir_step, tour.steps)
+        with monkeypatch(wavs_dir_step, "prompt", Say(str(self.data_dir))):
+            wavs_dir_step.run()
+
+        validate_wavs_step = find_step(SN.validate_wavs_step, tour.steps)
+        with patch_menu_prompt(1), capture_stdout():
+            validate_wavs_step.run()
+
+        text_processing_step = find_step(SN.text_processing_step, tour.steps)
+        # 0 is lowercase, 1 is NFC Normalization, select none
+        with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
+            with patch_menu_prompt([]):
+                text_processing_step.run()
+        self.assertEqual(
+            text_processing_step.state["filelist_data_list"][3][2],
+            "let us see if it collapses whitespace",
+        )
+
     def test_dataset_subtour(self):
         tour = Tour("unit testing", steps=dataset.get_dataset_steps())
 
@@ -435,7 +509,7 @@ class WizardTest(TestCase):
         with patch_menu_prompt(1):  # 1 is "yes"
             step.run()
         self.assertEqual(step.state[SN.data_has_header_line_step.value], "yes")
-        self.assertEqual(len(step.state["filelist_data_list"]), 4)
+        self.assertEqual(len(step.state["filelist_data_list"]), 5)
 
         step = format_step.children[1]
         self.assertIsInstance(step, dataset.HeaderStep)
@@ -503,7 +577,7 @@ class WizardTest(TestCase):
         with patch_menu_prompt(1), capture_stdout() as out:
             validate_wavs_step.run()
         self.assertEqual(step.state[SN.validate_wavs_step][:2], "No")
-        self.assertIn("Warning: 3 wav files were not found", out.getvalue())
+        self.assertIn("Warning: 4 wav files were not found", out.getvalue())
 
         text_processing_step = find_step(SN.text_processing_step, tour.steps)
         # 0 is lowercase, 1 is NFC Normalization, select both
@@ -513,11 +587,16 @@ class WizardTest(TestCase):
         # print(text_processing_step.state)
         self.assertEqual(
             text_processing_step.state["filelist_data_list"][2][2],
-            "cased \t nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
+            "cased nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
+        )
+
+        self.assertEqual(
+            text_processing_step.state["filelist_data_list"][3][2],
+            "let us see if it collapses whitespace",
         )
 
         # Make sure realoading the data as dict stripped the header line
-        self.assertEqual(len(step.state["filelist_data"]), 3)
+        self.assertEqual(len(step.state["filelist_data"]), 4)
 
         sox_effects_step = find_step(SN.sox_effects_step, tour.steps)
         # 0 is resample to 22050 kHz, 2 is remove silence at start and end
@@ -547,11 +626,24 @@ class WizardTest(TestCase):
         )
 
         symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
-        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 3)
+        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 4)
         with capture_stdout(), capture_stderr():
             symbol_set_step.run()
         self.assertEqual(len(symbol_set_step.state[SN.symbol_set_step.value]), 2)
         self.assertIn("t͡s", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
+        self.assertNotIn(
+            ":", symbol_set_step.state[SN.symbol_set_step.value]["characters"]
+        )
+        self.assertNotIn(":", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
+        # assert that symbols contain no duplicates
+        self.assertEqual(
+            len(set(symbol_set_step.state[SN.symbol_set_step.value]["characters"])),
+            len(symbol_set_step.state[SN.symbol_set_step.value]["characters"]),
+        )
+        self.assertEqual(
+            len(set(symbol_set_step.state[SN.symbol_set_step.value]["phones"])),
+            len(symbol_set_step.state[SN.symbol_set_step.value]["phones"]),
+        )
 
     def test_empty_filelist(self):
         tour = Tour(
@@ -1599,8 +1691,6 @@ class WavFileDirectoryRelativePathTest(TestCase):
                         SN.symbol_set_step.value: {
                             "characters": [
                                 " ",
-                                ",",
-                                ".",
                                 "A",
                                 "D",
                                 "E",

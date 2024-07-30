@@ -48,8 +48,8 @@ class TextTest(BasicTestCase):
 
     def test_hardcoded_symbols(self):
         self.assertEqual(
-            self.base_text_processor.encode_text("\x80 "),
-            [0, 1],
+            self.base_text_processor.encode_text("\x80 \x80"),
+            [0, 1, 0],
             "pad should be Unicode PAD symbol and index 0, whitespace should be index 1",
         )
 
@@ -64,6 +64,10 @@ class TextTest(BasicTestCase):
         )
         sequence = upper_text_processor.encode_text(text_upper)
         self.assertEqual(upper_text_processor.decode_tokens(sequence, ""), text)
+
+    def test_no_duplicate_punctuation(self):
+        with self.assertRaises(ValidationError):
+            TextConfig(symbols=Symbols(letters=[":"] + list(string.ascii_letters)))
 
     def test_punctuation(self):
         text = "hello! How are you? My name's: foo;."
