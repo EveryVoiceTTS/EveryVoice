@@ -356,12 +356,20 @@ generic_xsv_filelist_reader = generic_dict_loader
 generic_csv_filelist_reader = partial(generic_dict_loader, delimiter=",")
 
 
-def collapse_whitespace(text):
+def collapse_whitespace(text: str):
     """
     >>> collapse_whitespace("  asdf  	   qwer   ")
     ' asdf qwer '
     """
     return re.sub(_whitespace_re, " ", text)
+
+
+def strip_text(text: str):
+    """
+    >>> strip_text("  asdf  qwer ")
+    'asdf  qwer'
+    """
+    return text.strip()
 
 
 @contextmanager
