@@ -914,36 +914,32 @@ for your data. You can share the TextConfig with any models that need it and onl
 
               <details class="quote">
                 <summary>Source code in <code>everyvoice/config/text_config.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 81</span>
-<span class="normal"> 82</span>
-<span class="normal"> 83</span>
-<span class="normal"> 84</span>
-<span class="normal"> 85</span>
-<span class="normal"> 86</span>
-<span class="normal"> 87</span>
-<span class="normal"> 88</span>
-<span class="normal"> 89</span>
-<span class="normal"> 90</span>
-<span class="normal"> 91</span>
-<span class="normal"> 92</span>
-<span class="normal"> 93</span>
-<span class="normal"> 94</span>
-<span class="normal"> 95</span>
-<span class="normal"> 96</span>
-<span class="normal"> 97</span>
-<span class="normal"> 98</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 98</span>
 <span class="normal"> 99</span>
 <span class="normal">100</span>
 <span class="normal">101</span>
 <span class="normal">102</span>
 <span class="normal">103</span>
 <span class="normal">104</span>
-<span class="normal">105</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">TextConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">TextConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
     <span class="n">symbols</span><span class="p">:</span> <span class="n">Symbols</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Symbols</span><span class="p">)</span>
     <span class="n">to_replace</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Happens before cleaners</span>
-    <span class="n">cleaners</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">collapse_whitespace</span><span class="p">,</span>
-    <span class="p">]</span>
+    <span class="n">cleaners</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">strip_text</span><span class="p">]</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">clean_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TextConfig&quot;</span><span class="p">:</span>
@@ -981,7 +977,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
 
 <h7 id="everyvoice.config.text_config.TextConfig.cleaners" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">cleaners</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">collapse_whitespace</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">cleaners</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">strip_text</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
@@ -1103,7 +1099,24 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">75</span>
 <span class="normal">76</span>
 <span class="normal">77</span>
-<span class="normal">78</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Symbols</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span>
+<span class="normal">81</span>
+<span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span>
+<span class="normal">92</span>
+<span class="normal">93</span>
+<span class="normal">94</span>
+<span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Symbols</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">silence</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="p">[</span><span class="s2">&quot;&lt;SIL&gt;&quot;</span><span class="p">],</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The symbol(s) used to indicate silence.&quot;</span>
     <span class="p">)</span>
@@ -1117,6 +1130,23 @@ for your data. You can share the TextConfig with any models that need it and onl
     <span class="k">def</span> <span class="nf">all_except_punctuation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the set containing all characters.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">w</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Punctuation</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span>
+
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;You cannot have the same symbol defined in punctuation as elsewhere.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: raised if a symbol from punctuation is found elsewhere</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Symbols: The validated symbol set</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">punctuation</span><span class="o">.</span><span class="n">all</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_except_punctuation</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Sorry, the symbol &#39;</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">&#39; occurs in both your declared punctuation and in your other symbol set. Please inspect your text configuration and either remove the symbol from the punctuation or other symbol set.&quot;</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
@@ -1171,16 +1201,61 @@ for your data. You can share the TextConfig with any models that need it and onl
 <div class="doc doc-object doc-function">
 
 
-<h7 id="everyvoice.config.text_config.Symbols.member_must_be_list_of_strings" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">member_must_be_list_of_strings</span><span class="p">()</span></code>
+<h7 id="everyvoice.config.text_config.Symbols.cannot_have_punctuation_in_symbol_set" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">cannot_have_punctuation_in_symbol_set</span><span class="p">()</span></code>
 
-<a href="#everyvoice.config.text_config.Symbols.member_must_be_list_of_strings" class="headerlink" title="Permanent link">&para;</a></h7>
+<a href="#everyvoice.config.text_config.Symbols.cannot_have_punctuation_in_symbol_set" class="headerlink" title="Permanent link">&para;</a></h7>
 
 
     <div class="doc doc-contents ">
 
-      <p>Except for <code>punctuation</code> &amp; <code>pad</code>, all user defined member variables
-have to be a list of strings.</p>
+      <p>You cannot have the same symbol defined in punctuation as elsewhere.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code>ValueError</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>raised if a symbol from punctuation is found elsewhere</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>Symbols</code></td>            <td>
+                  <code><a class="autorefs autorefs-internal" title="everyvoice.config.text_config.Symbols" href="#everyvoice.config.text_config.Symbols">Symbols</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The validated symbol set</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
             <details class="quote">
               <summary>Source code in <code>everyvoice/config/text_config.py</code></summary>
@@ -1197,7 +1272,60 @@ have to be a list of strings.</p>
 <span class="normal">75</span>
 <span class="normal">76</span>
 <span class="normal">77</span>
-<span class="normal">78</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<span class="normal">78</span>
+<span class="normal">79</span>
+<span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;You cannot have the same symbol defined in punctuation as elsewhere.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: raised if a symbol from punctuation is found elsewhere</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Symbols: The validated symbol set</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">punctuation</span><span class="o">.</span><span class="n">all</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_except_punctuation</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Sorry, the symbol &#39;</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">&#39; occurs in both your declared punctuation and in your other symbol set. Please inspect your text configuration and either remove the symbol from the punctuation or other symbol set.&quot;</span>
+            <span class="p">)</span>
+    <span class="k">return</span> <span class="bp">self</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h7 id="everyvoice.config.text_config.Symbols.member_must_be_list_of_strings" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">member_must_be_list_of_strings</span><span class="p">()</span></code>
+
+<a href="#everyvoice.config.text_config.Symbols.member_must_be_list_of_strings" class="headerlink" title="Permanent link">&para;</a></h7>
+
+
+    <div class="doc doc-contents ">
+
+      <p>Except for <code>punctuation</code> &amp; <code>pad</code>, all user defined member variables
+have to be a list of strings.</p>
+
+            <details class="quote">
+              <summary>Source code in <code>everyvoice/config/text_config.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">82</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span>
+<span class="normal">89</span>
+<span class="normal">90</span>
+<span class="normal">91</span>
+<span class="normal">92</span>
+<span class="normal">93</span>
+<span class="normal">94</span>
+<span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Except for `punctuation` &amp; `pad`, all user defined member variables</span>
 <span class="sd">    have to be a list of strings.</span>
