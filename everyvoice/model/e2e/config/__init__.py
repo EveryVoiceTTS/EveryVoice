@@ -18,15 +18,15 @@ from everyvoice.utils import load_config_from_json_or_yaml_path
 
 # The contact information only needs to be registered on the main config
 class AlignerConfigNoContact(AlignerConfig):
-    contact: Optional[ContactInformation] = None
+    contact: Optional[ContactInformation] = None  # type: ignore
 
 
 class VocoderConfigNoContact(VocoderConfig):
-    contact: Optional[ContactInformation] = None
+    contact: Optional[ContactInformation] = None  # type: ignore
 
 
 class FeaturePredictionConfigNoContact(FeaturePredictionConfig):
-    contact: Optional[ContactInformation] = None
+    contact: Optional[ContactInformation] = None  # type: ignore
 
 
 class E2ETrainingConfig(BaseTrainingConfig):
@@ -36,17 +36,17 @@ class E2ETrainingConfig(BaseTrainingConfig):
 
 class EveryVoiceConfig(BaseModelWithContact):
     aligner: AlignerConfig | AlignerConfigNoContact = Field(
-        default_factory=AlignerConfigNoContact
+        default_factory=AlignerConfigNoContact  # type: ignore
     )
     path_to_aligner_config_file: Optional[FilePath] = None
 
     feature_prediction: FeaturePredictionConfig | FeaturePredictionConfigNoContact = (
-        Field(default_factory=FeaturePredictionConfigNoContact)
+        Field(default_factory=FeaturePredictionConfigNoContact)  # type: ignore
     )
     path_to_feature_prediction_config_file: Optional[FilePath] = None
 
     vocoder: VocoderConfig | VocoderConfigNoContact = Field(
-        default_factory=VocoderConfigNoContact
+        default_factory=VocoderConfigNoContact  # type: ignore
     )
     path_to_vocoder_config_file: Optional[FilePath] = None
 
