@@ -183,7 +183,8 @@ def evaluate(
         sys.exit(0)
 
     if audio_directory:
-        # HEADERS = ["Average " + x for x in HEADERS]
+        import numpy as np
+
         results = []
         for wav_file in tqdm(
             audio_directory.glob("*.wav"),
@@ -195,6 +196,26 @@ def evaluate(
             Panel(
                 tabulate(results, HEADERS, tablefmt="simple"),
                 title=f"Objective Metrics for files in {audio_directory}:",
+            )
+        )
+        arr = np.asarray(results)
+        # remove nans
+        arr = arr[~np.isnan(arr).any(axis=1)]
+        n_metrics = arr.shape[1]
+        mean_results = [arr[:, x].mean() for x in range(n_metrics)]
+        std_results = [arr[:, x].std() for x in range(n_metrics)]
+        avg_results = [
+            f"{format(mean_results[x], '.4f')} ± {format(std_results[x], '.4f')}"
+            for x in range(n_metrics)
+        ]
+        rich_print(
+            Panel(
+                tabulate(
+                    [avg_results],
+                    [f"Average {x}" for x in HEADERS],
+                    tablefmt="simple",
+                ),
+                title=f"Average Objective Metrics for files in {audio_directory}:",
             )
         )
         print(f"Printing results to {audio_directory / 'evaluation.json'}")
