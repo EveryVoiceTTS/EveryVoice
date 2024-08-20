@@ -11,7 +11,7 @@ lightning>=2.0.0
 loguru==0.6.0
 matplotlib==3.6.0
 merge-args
-nltk==3.7
+nltk==3.9.1
 pandas~=2.0
 panphon==0.20.0
 protobuf~=4.25  # https://github.com/EveryVoiceTTS/EveryVoice/issues/387
