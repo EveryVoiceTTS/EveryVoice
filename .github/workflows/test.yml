@@ -14,6 +14,8 @@ jobs:
       pull-requests: write
     defaults:
       run:
+        # Required for conda-incubator/setup-miniconda
+        # https://github.com/conda-incubator/setup-miniconda?tab=readme-ov-file#important
         shell: bash -l {0}
     steps:
       - name: Checkout repository and submodules
@@ -31,17 +33,23 @@ jobs:
       - name: Install dependencies and package
         run: |
           CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -r requirements.test.txt
+          pip install -r requirements.dev.txt
           pip install cython
           pip install -e .
           pip install coverage
-      - name: Log complete list of packages
-        run: |
-          pip freeze
+      - run: pip freeze
+      - run: pip list
       - name: Check licenses
         run: |
           pip install pip-licenses
           if pip-licenses | grep -E -v 'Artistic License|LGPL|Public Domain' | grep GNU; then echo 'Please avoid introducing *GPL dependencies'; false; fi
+      - uses: tj-actions/changed-files@v45
+        id: file_changes
+      - name: Custom replacement for pre-commit/action
+        # pre-commit/action is not compatible with conda-incubator/setup-miniconda because it sets the shell wrong.
+        run: python -m pre_commit run --show-diff-on-failure --color=always --files ${{ steps.file_changes.outputs.all_changed_files }}
+      - uses: pre-commit-ci/lite-action@v1.0.2
+        if: always()
       - name: Run tests
         run: |
           cd everyvoice && coverage run run_tests.py dev
