@@ -139,6 +139,7 @@ def inspect(
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
+            model: Any  # HiFiGAN | FastSpeech2 | dict[str, Any] but no import for speed
             try:
                 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import (
                     HiFiGAN,
