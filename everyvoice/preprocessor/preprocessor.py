@@ -5,6 +5,10 @@
 - extracts inputs (ex. phonological feats)
 """
 
+from loguru import logger
+
+logger.info("Loading everyvoice preprocessor")
+
 import functools
 import json
 import multiprocessing as mp
@@ -22,7 +26,6 @@ import torch
 import torchaudio
 from clipdetect import detect_clipping
 from joblib import Parallel, delayed
-from loguru import logger
 from rich import print as rich_print
 from rich.panel import Panel
 from rich.style import Style
