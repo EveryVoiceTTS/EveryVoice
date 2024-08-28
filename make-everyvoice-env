@@ -142,7 +142,7 @@ r() {
 
 set -o errexit
 
-r conda create -y $ENV_OPTION python=$PYTHON_VERSION
+r conda create -y $ENV_OPTION python=$PYTHON_VERSION ffmpeg
 eval "$(conda shell.bash hook)"
 r conda activate "$ENV2ACTIVATE"
 
