@@ -686,17 +686,14 @@ def get_iso_code(language):
 class TextProcessingStep(Step):
     DEFAULT_NAME = StepNames.text_processing_step
     process_lookup = {
-        0: {"fn": lower, "desc": "lowercase"},
+        0: {"fn": lower, "desc": "Lowercase"},
         1: {"fn": nfc_normalize, "desc": "NFC Normalization"},
     }
 
     def prompt(self):
         return get_response_from_menu_prompt(
-            prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step]}?",
-            choices=(
-                "Lowercase",
-                "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
-            ),
+            prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step]}? See https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html for information about NFC normalization.",
+            choices=([process["desc"] for process in self.process_lookup.values()]),
             multi=True,
             return_indices=True,
         )
