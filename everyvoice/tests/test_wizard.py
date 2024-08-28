@@ -475,7 +475,7 @@ class WizardTest(TestCase):
         text_processing_step = find_step(SN.text_processing_step, tour.steps)
         # 0 is lowercase, 1 is NFC Normalization, select none
         with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
-            with patch_menu_prompt([]):
+            with patch_menu_prompt(None):
                 text_processing_step.run()
         self.assertEqual(
             text_processing_step.state["filelist_data_list"][3][2],
@@ -1048,7 +1048,7 @@ class WizardTest(TestCase):
                     ),
                     StepAndAnswer(
                         dataset.SoxEffectsStep(state_subset="dataset_0"),
-                        patch_menu_prompt([]),
+                        patch_menu_prompt(None),
                     ),
                     StepAndAnswer(
                         dataset.DatasetNameStep(state_subset="dataset_0"),
@@ -1380,22 +1380,19 @@ class WizardTest(TestCase):
                             patch_menu_prompt(())
                         ),  # no text preprocessing
                         RecursiveAnswers(
-                            null_patch(),  # skip the question about a speaker column in the data since its festival
+                            null_patch(),  # no speaker column Q for festival format
                             children_answers=[
                                 RecursiveAnswers(
-                                    patch_menu_prompt(
-                                        1
-                                    ),  # want to specify the speaker ID
+                                    patch_menu_prompt(1),  # will specify the speaker ID
                                     children_answers=[
-                                        RecursiveAnswers(
-                                            patch_input("default_speaker")
-                                        )  # new speaker ID
+                                        # new speaker ID
+                                        RecursiveAnswers(patch_input("default_speaker"))
                                     ],
                                 ),
                             ],
                         ),
                         RecursiveAnswers(
-                            null_patch(),  # skip the question about a language column in the data since its festival
+                            null_patch(),  # no language column Q for festival format
                             children_answers=[
                                 RecursiveAnswers(
                                     patch_menu_prompt(0),  # "und" lang selection
