@@ -835,6 +835,7 @@ class SymbolSetStep(Step):
                 character_graphemes.update(guess_graphemes_in_text(item["characters"]))
             if "phones" in item:
                 phone_graphemes.update(guess_ipa_phones_in_text(item["phones"]))
+        character_graphemes.discard(" ")  # we don't want the space as a grapheme
         if not phone_graphemes and not character_graphemes:
             return
         punctuation = Punctuation().all

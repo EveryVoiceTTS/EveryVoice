@@ -1,5 +1,6 @@
 from typing import Dict
 
+from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from everyvoice.config.shared_types import ConfigModel
@@ -109,12 +110,13 @@ class TextConfig(ConfigModel):
         """
         for k, v in self.symbols:
             if k not in ["punctuation", "silence"]:
-                setattr(
-                    self.symbols,
-                    k,
-                    [
-                        normalize_text_helper(x, self.to_replace, self.cleaners)
-                        for x in v
-                    ],
-                )
+                normalized = [
+                    normalize_text_helper(x, self.to_replace, self.cleaners) for x in v
+                ]
+                if "" in normalized or len(normalized) != len(set(normalized)):
+                    logger.warning(
+                        f"Normalization created a duplicate or inserted '' in {k}={normalized}. "
+                        "Please check your shared-text config for problems."
+                    )
+                setattr(self.symbols, k, normalized)
         return self

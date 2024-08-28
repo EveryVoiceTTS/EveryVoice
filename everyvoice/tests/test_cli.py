@@ -246,7 +246,7 @@ class CLITest(TestCase):
             self.assertEqual(result.exit_code, 1)
             self.assertIn(
                 "We are expecting a FastSpeech2Config but it looks like you provided a DFAlignerConfig",
-                output[0],
+                "\n".join(output),
             )
 
     def test_expensive_imports_are_tucked_away(self):
