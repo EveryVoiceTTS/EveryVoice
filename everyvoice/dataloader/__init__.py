@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 from typing import Callable, Optional, Union
 
+from loguru import logger
+
+logger.info("Loading pytorch_lightning")
 import pytorch_lightning as pl
 import torch
 from torch.utils.data import DataLoader

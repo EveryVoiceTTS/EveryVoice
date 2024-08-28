@@ -20,6 +20,10 @@ from loguru import logger
 from pydantic import ValidationError
 from tqdm import tqdm
 
+# This is where we start loading expensive stuff for most CLI commands: give the
+# user a signal that's immediately visible so they know something's happening.
+logger.info("Loading everyvoice package and dependencies")
+
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import InvalidConfiguration
 from everyvoice.model.aligner.config import DFAlignerConfig

@@ -1,10 +1,17 @@
 import os
 from functools import partial
 
+from loguru import logger
+
+logger.info("Loading gradio")
 import gradio as gr
+
+logger.info("Loading torch")
 import torch
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
+
+logger.info("Loading fs2")
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
     synthesize_helper,
 )
