@@ -1,8 +1,11 @@
 import os
+import subprocess
+import sys
 from functools import partial
 
 import gradio as gr
 import torch
+from loguru import logger
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
@@ -82,6 +85,17 @@ def synthesize_audio(
     return sr, wav[0]
 
 
+def require_ffmpeg():
+    """Make sure ffmpeg is found and can be run, or else exit"""
+    try:
+        subprocess.run(["ffmpeg", "-h"], capture_output=True)
+    except Exception:
+        logger.error(
+            "ffmpeg not found or cannot be executed.\nffmpeg is required to run the demo.\nPlease install it, e.g., with 'conda install ffmpeg' or with your OS's package manager."
+        )
+        sys.exit(1)
+
+
 def create_demo_app(
     text_to_spec_model_path,
     spec_to_wav_model_path,
@@ -90,6 +104,7 @@ def create_demo_app(
     output_dir,
     accelerator,
 ) -> gr.Blocks:
+    require_ffmpeg()
     device = get_device_from_accelerator(accelerator)
     vocoder_ckpt = torch.load(spec_to_wav_model_path, map_location=device)
     vocoder_model, vocoder_config = load_hifigan_from_checkpoint(vocoder_ckpt, device)
