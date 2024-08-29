@@ -23,7 +23,7 @@ jobs:
       - run: pip install -r requirements.dev.txt
       - run: pip install -e .
       - run: pip list
-      - uses: tj-actions/changed-files@v36
+      - uses: tj-actions/changed-files@v45
         id: file_changes
       - uses: pre-commit/action@v3.0.1
         with:
