@@ -157,9 +157,6 @@ class FilelistFormatStep(Step):
         return get_response_from_menu_prompt(
             prompt_text="Select which format your filelist is in:",
             choices=("psv", "tsv", "csv", "festival"),
-            multi=False,
-            search=False,
-            return_indices=False,
         )
 
     def looks_like_sv(self, file_type, separator) -> bool:
@@ -359,9 +356,6 @@ class FilelistTextRepresentationStep(Step):
         return get_response_from_menu_prompt(
             prompt_text=f"Which representation is your text in? Choose '{DatasetTextRepresentation.ipa_phones.value}' if your text data only uses International Phonetic Alphabet characters (punctuation is also OK). Choose '{DatasetTextRepresentation.arpabet}' if your text data uses all ARPABET (punctuation is OK). Choose '{DatasetTextRepresentation.characters}' otherwise.",
             choices=self.text_representation_options,
-            multi=False,
-            search=False,
-            return_indices=False,
         )
 
     def validate(self, response):
@@ -405,8 +399,6 @@ class HeaderStep(Step):
         response = get_response_from_menu_prompt(
             prompt_text=self.prompt_text,
             choices=choices,
-            multi=False,
-            search=False,
             return_indices=True,
         )
         return choice_indices[response]
@@ -526,8 +518,6 @@ class KnowSpeakerStep(Step):
         return get_response_from_menu_prompt(
             choices=self.choices,
             title=f"Since your data does not have a speaker column, we will use a default ID of 'speaker_{self.dataset_index}'. Would you like to specify an alternative speaker ID for this dataset instead?",
-            multi=False,
-            search=False,
         )
 
     def validate(self, response):
@@ -625,7 +615,6 @@ class SelectLanguageStep(Step):
         return get_response_from_menu_prompt(
             choices=supported_langs_choices,
             title="Which of the following supported languages is the language of your dataset?",
-            multi=False,
             search=True,
         )
 
@@ -697,19 +686,15 @@ def get_iso_code(language):
 class TextProcessingStep(Step):
     DEFAULT_NAME = StepNames.text_processing_step
     process_lookup = {
-        0: {"fn": lower, "desc": "lowercase"},
+        0: {"fn": lower, "desc": "Lowercase"},
         1: {"fn": nfc_normalize, "desc": "NFC Normalization"},
     }
 
     def prompt(self):
         return get_response_from_menu_prompt(
-            prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step]}?",
-            choices=(
-                "Lowercase",
-                "NFC Normalization - See here for more information: https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html",
-            ),
+            prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step]}? See https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html for information about NFC normalization.",
+            choices=([process["desc"] for process in self.process_lookup.values()]),
             multi=True,
-            search=False,
             return_indices=True,
         )
 
@@ -790,7 +775,6 @@ class SoxEffectsStep(Step):
                 "Remove Silence throughout",
             ),
             multi=True,
-            search=False,
             return_indices=True,
         )
 
@@ -848,6 +832,7 @@ class SymbolSetStep(Step):
                 character_graphemes.update(guess_graphemes_in_text(item["characters"]))
             if "phones" in item:
                 phone_graphemes.update(guess_ipa_phones_in_text(item["phones"]))
+        character_graphemes.discard(" ")  # we don't want the space as a grapheme
         if not phone_graphemes and not character_graphemes:
             return
         punctuation = Punctuation().all
