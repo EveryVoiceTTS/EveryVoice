@@ -914,8 +914,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
               <details class="quote">
                 <summary>Source code in <code>everyvoice/config/text_config.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 98</span>
-<span class="normal"> 99</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 99</span>
 <span class="normal">100</span>
 <span class="normal">101</span>
 <span class="normal">102</span>
@@ -936,7 +935,9 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">117</span>
 <span class="normal">118</span>
 <span class="normal">119</span>
-<span class="normal">120</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">TextConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">TextConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
     <span class="n">symbols</span><span class="p">:</span> <span class="n">Symbols</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Symbols</span><span class="p">)</span>
     <span class="n">to_replace</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Happens before cleaners</span>
     <span class="n">cleaners</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">strip_text</span><span class="p">]</span>
@@ -950,14 +951,15 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;punctuation&quot;</span><span class="p">,</span> <span class="s2">&quot;silence&quot;</span><span class="p">]:</span>
-                <span class="nb">setattr</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">,</span>
-                    <span class="n">k</span><span class="p">,</span>
-                    <span class="p">[</span>
-                        <span class="n">normalize_text_helper</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_replace</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleaners</span><span class="p">)</span>
-                        <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">v</span>
-                    <span class="p">],</span>
-                <span class="p">)</span>
+                <span class="n">normalized</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">normalize_text_helper</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_replace</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cleaners</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">v</span>
+                <span class="p">]</span>
+                <span class="k">if</span> <span class="s2">&quot;&quot;</span> <span class="ow">in</span> <span class="n">normalized</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">normalized</span><span class="p">)):</span>
+                    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Normalization created a duplicate or inserted &#39;&#39; in </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">normalized</span><span class="si">}</span><span class="s2">. &quot;</span>
+                        <span class="s2">&quot;Please check your shared-text config for problems.&quot;</span>
+                    <span class="p">)</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">normalized</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
               </details>
@@ -1071,8 +1073,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
               <details class="quote">
                 <summary>Source code in <code>everyvoice/config/text_config.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">50</span>
-<span class="normal">51</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">51</span>
 <span class="normal">52</span>
 <span class="normal">53</span>
 <span class="normal">54</span>
@@ -1116,7 +1117,8 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">92</span>
 <span class="normal">93</span>
 <span class="normal">94</span>
-<span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Symbols</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">95</span>
+<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Symbols</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">silence</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="p">[</span><span class="s2">&quot;&lt;SIL&gt;&quot;</span><span class="p">],</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The symbol(s) used to indicate silence.&quot;</span>
     <span class="p">)</span>
@@ -1259,8 +1261,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
             <details class="quote">
               <summary>Source code in <code>everyvoice/config/text_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">65</span>
-<span class="normal">66</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">66</span>
 <span class="normal">67</span>
 <span class="normal">68</span>
 <span class="normal">69</span>
@@ -1274,7 +1275,8 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">77</span>
 <span class="normal">78</span>
 <span class="normal">79</span>
-<span class="normal">80</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<span class="normal">80</span>
+<span class="normal">81</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;You cannot have the same symbol defined in punctuation as elsewhere.</span>
 
@@ -1312,8 +1314,7 @@ have to be a list of strings.</p>
 
             <details class="quote">
               <summary>Source code in <code>everyvoice/config/text_config.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">82</span>
-<span class="normal">83</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">83</span>
 <span class="normal">84</span>
 <span class="normal">85</span>
 <span class="normal">86</span>
@@ -1325,7 +1326,8 @@ have to be a list of strings.</p>
 <span class="normal">92</span>
 <span class="normal">93</span>
 <span class="normal">94</span>
-<span class="normal">95</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+<span class="normal">95</span>
+<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Except for `punctuation` &amp; `pad`, all user defined member variables</span>
 <span class="sd">    have to be a list of strings.</span>
