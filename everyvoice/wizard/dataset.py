@@ -8,9 +8,9 @@ from typing import Sequence
 
 import questionary
 import rich
-from tqdm import tqdm
 from rich.panel import Panel
 from rich.style import Style
+from tqdm import tqdm
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
@@ -34,7 +34,9 @@ class DatasetNameStep(Step):
     DEFAULT_NAME = StepNames.dataset_name_step
 
     def prompt(self):
-        return input( "What would you like to call this dataset? This is needed because EveryVoice lets you train models with multiple sources of data. Please choose a name that distinguishes this data source, e.g. 'john-english' or 'maria-spanish' or something similarly descriptive: ")
+        return input(
+            "What would you like to call this dataset? This is needed because EveryVoice lets you train models with multiple sources of data. Please choose a name that distinguishes this data source, e.g. 'john-english' or 'maria-spanish' or something similarly descriptive: "
+        )
 
     def validate(self, response):
         if len(response) == 0:
