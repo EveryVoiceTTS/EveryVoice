@@ -49,7 +49,7 @@ class UtilsTest(TestCase):
             tempdir = Path(tempdir)
             basic_path = tempdir / "test.psv"
             write_filelist(basic_files, basic_path)
-            with open(basic_path) as f:
+            with open(basic_path, encoding="utf8") as f:
                 headers = f.readline().strip().split("|")
             self.assertEqual(len(headers), 5)
             self.assertEqual(headers[0], "basename")

@@ -210,10 +210,10 @@ class ConfigTest(BasicTestCase):
 
     def test_update_from_file(self):
         """Test that updating the config from yaml/json works"""
-        with open(self.data_dir / "update.json") as f:
+        with open(self.data_dir / "update.json", encoding="utf8") as f:
             update = json.load(f)
         self.config.update_config(update)
-        with open(self.data_dir / "update.yaml") as f:
+        with open(self.data_dir / "update.yaml", encoding="utf8") as f:
             update = yaml.safe_load(f)
         self.config.update_config(update)
         self.assertEqual(self.config.feature_prediction.training.batch_size, 123)

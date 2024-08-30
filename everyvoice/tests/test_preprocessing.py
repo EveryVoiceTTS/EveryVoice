@@ -495,8 +495,8 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
         full_filelist = self.data_dir / "metadata.psv"
         partial_filelist = tmpdir / "partial-metadata.psv"
-        with open(partial_filelist, mode="w") as f_out:
-            with open(full_filelist) as f_in:
+        with open(partial_filelist, mode="w", encoding="utf8") as f_out:
+            with open(full_filelist, encoding="utf8") as f_in:
                 lines = list(f_in)
                 for line in lines[:4]:
                     f_out.write(line)
@@ -569,7 +569,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
             fp_config.preprocessing.source_data[0].data_dir = self.data_dir
             input_filelist = tmpdir / "empty-metadata.psv"
-            with open(input_filelist, mode="w") as f:
+            with open(input_filelist, mode="w", encoding="utf8") as f:
                 print("basename|raw_text|characters|speaker|language", file=f)
                 print("empty|foo bar baz|foo bar baz|noone|und", file=f)
             fp_config.preprocessing.source_data[0].filelist = input_filelist
@@ -634,7 +634,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
             lock_file = tmpdir / "preprocessed" / ".config-lock"
             lock_file.chmod(0o666)
-            with open(tmpdir / "preprocessed" / ".config-lock", "w") as f:
+            with open(
+                tmpdir / "preprocessed" / ".config-lock", "w", encoding="utf8"
+            ) as f:
                 f.write("This is not valid JSON")
             fail_config_lock(
                 fp_config.preprocessing,

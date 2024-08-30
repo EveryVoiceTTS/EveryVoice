@@ -107,7 +107,7 @@ class CLITest(TestCase):
             fp_trainer.save_checkpoint(fp_path)
             vocoder_path = tmpdir / "vocoder.ckpt"
             vocoder_trainer.save_checkpoint(vocoder_path)
-            with open(tmpdir / "utt.list", "w") as f:
+            with open(tmpdir / "utt.list", "w", encoding="utf8") as f:
                 f.write(
                     "\n".join(
                         ["this is a test", "here is another test", "and a foo bar test"]
