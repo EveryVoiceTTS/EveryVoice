@@ -8,6 +8,7 @@
 import functools
 import json
 import multiprocessing as mp
+import os
 import random
 import sys
 from collections import Counter
@@ -54,6 +55,8 @@ from everyvoice.utils.heavy import (
     dynamic_range_compression_torch,
     get_spectral_transform,
 )
+
+_warned_about_windows = False
 
 
 class Preprocessor:
@@ -171,11 +174,21 @@ class Preprocessor:
             return None, None
 
         if sox_effects:
-            audio, sr = apply_effects_tensor(
-                audio,
-                sr,
-                sox_effects,
-            )
+            if os.name == "nt":  # pragma: no cover
+                global _warned_about_windows
+                if not _warned_about_windows:
+                    _warned_about_windows = True
+                    logger.warning(
+                        "SoX effects are not supported on Windows, skipping them.\n"
+                        "Please don't try to train models with EveryVoice on Windows.\n"
+                        "Windows support is only for development and testing."
+                    )
+            else:
+                audio, sr = apply_effects_tensor(
+                    audio,
+                    sr,
+                    sox_effects,
+                )
 
         if resample_rate is not None and resample_rate != sr:
             audio = resample(audio, sr, resample_rate)
