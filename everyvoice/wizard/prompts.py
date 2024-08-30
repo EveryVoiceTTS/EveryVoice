@@ -1,10 +1,18 @@
+"""
+Encapsulate the logic for prompting the user for input in a simple terminal window
+"""
+
 import sys
 from typing import Iterable, Sequence
 
-import simple_term_menu
+import rich
 from questionary import Style
-from rich import print
 from rich.panel import Panel
+
+try:
+    import simple_term_menu
+except NotImplementedError:  # pragma: no cover
+    import everyvoice.wizard.simple_term_menu_win_stub as simple_term_menu
 
 CUSTOM_QUESTIONARY_STYLE = Style(
     [
@@ -53,7 +61,7 @@ def get_response_from_menu_prompt(
         true  | true           | Iterable[int]: indices of choices selected
     """
     if prompt_text:
-        print(Panel(prompt_text))
+        rich.print(Panel(prompt_text))
     menu = simple_term_menu.TerminalMenu(
         choices,
         title=title,

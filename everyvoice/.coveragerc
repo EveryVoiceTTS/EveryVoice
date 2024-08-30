@@ -5,6 +5,7 @@ omit =
     *tmp*
     */run_tests.py
     */tests/*
+    */wizard/simple_term_menu_win_stub.py
 
 [report]
 precision = 2
