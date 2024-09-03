@@ -33,7 +33,7 @@ from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard import Tour, basic, dataset, prompts
 from everyvoice.wizard.basic import ConfigFormatStep
 from everyvoice.wizard.main_tour import get_main_wizard_tour
-from everyvoice.wizard.utils import EnumDict
+from everyvoice.wizard.utils import EnumDict, NodeMixinWithNavigation
 
 CONTACT_INFO_STATE = State()
 CONTACT_INFO_STATE[SN.contact_name_step.value] = "Test Name"
@@ -1990,3 +1990,31 @@ class TestEnumDict(TestCase):
                 SN.contact_email_step.value: "a@b.com",
             },
         )
+
+
+class Node(NodeMixinWithNavigation):
+    def __init__(self, name, parent=None):
+        super().__init__()
+        self.name = name
+        self.parent = parent
+
+
+class TestNodeMixin(TestCase):
+    def test_node_mixin(self):
+        """Test the NodeMixinWithNavigation class"""
+        root = Node("root")
+        n1 = Node("n1", parent=root)
+        _ = Node("n1:1", parent=n1)
+        _ = Node("n1:2", parent=n1)
+        n2 = Node("n2", parent=root)
+        n21 = Node("n2:1", parent=n2)
+        n211 = Node("n2:1:1", parent=n21)
+        _ = Node("n2:1:1:1", parent=n211)
+        _ = Node("n3", parent=root)
+
+        forward_order = list(PreOrderIter(root))
+        for prev, next in zip(forward_order, forward_order[1:] + [None]):
+            self.assertEqual(prev.next(), next)
+
+        for next, prev in zip(forward_order, [None] + forward_order[:-1]):
+            self.assertEqual(next.prev(), prev)

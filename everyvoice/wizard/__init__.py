@@ -5,9 +5,10 @@ import sys
 from enum import Enum
 from typing import Optional, Sequence
 
-from anytree import NodeMixin, RenderTree
+from anytree import RenderTree
 
 from .utils import EnumDict as State
+from .utils import NodeMixinWithNavigation
 
 TEXT_CONFIG_FILENAME_PREFIX = "everyvoice-shared-text"
 ALIGNER_CONFIG_FILENAME_PREFIX = "everyvoice-aligner"
@@ -68,7 +69,7 @@ class _Step:
         pass
 
 
-class Step(_Step, NodeMixin):
+class Step(_Step, NodeMixinWithNavigation):
     """Just a mixin to allow a tree-based interpretation of steps"""
 
     def __init__(
@@ -174,13 +175,22 @@ class Tour:
 
     def run(self):
         """Run the tour by traversing the tree depth-first"""
-        for _, _, node in RenderTree(self.root):
-            node.run()
+        node = self.root
+        while node is not None:
+            try:
+                node.run()
+            except KeyboardInterrupt:
+                print("\nKeyboard Interrupt")
+                node = self.keyboard_interrupt_action(node)
+                continue
+            node = node.next()
 
-    def visualize(self):
+    def visualize(self, highlight: Optional[Step] = None):
         """Display the tree structure of the tour on stdout"""
         for pre, _, node in RenderTree(self.root):
             treestr = f"{pre}{node.name}"
+            if node == highlight:
+                treestr += "        <========"
             print(treestr.ljust(8))
 
 

@@ -4,9 +4,11 @@ from collections import UserDict
 from enum import Enum
 from itertools import islice
 from pathlib import Path
-from typing import Dict, Iterable
+from typing import Iterable
 
 import yaml
+from anytree import NodeMixin, PreOrderIter
+from anytree.util import leftsibling, rightsibling
 from tqdm import tqdm
 
 from everyvoice.config.type_definitions import (
@@ -129,14 +131,14 @@ def read_unknown_tabular_filelist(
     return files
 
 
-def write_dict_to_config(config: Dict, path: Path):
+def write_dict_to_config(config: dict, path: Path):
     """Given an object, write it to file.
        We have to serialize the json first to make use of the custom serializers,
        and we don't always write the json directly since we might want to add extra
        information after serialization.
 
     Args:
-        config (Dict): The Configuration Dict to write
+        config (dict): The Configuration Dict to write
         path (Path): The output path; must end with either json or yaml
     """
     with open(path, "w", encoding="utf8") as f:
@@ -161,3 +163,32 @@ class EnumDict(UserDict):
 
     def __setitem__(self, key, value):
         return super().__setitem__(self.convert_key(key), value)
+
+
+class NodeMixinWithNavigation(NodeMixin):
+    """A NodeMixin subclass that allows for navigation between siblings
+    as needed by the everyvoice wizard module."""
+
+    def next(self):
+        """Return the next step in pre-order traversal"""
+        if self.children:
+            return self.children[0]
+        elif sibling := rightsibling(self):
+            return sibling
+        else:
+            parent = self.parent
+            while parent:
+                if sibling := rightsibling(parent):
+                    return sibling
+                parent = parent.parent
+            return None
+
+    def prev(self):
+        """Return the previous step in pre-order traversal"""
+        if sibling := leftsibling(self):
+            *_, last = PreOrderIter(sibling)
+            return last
+        elif self.parent:
+            return self.parent
+        else:
+            return None
