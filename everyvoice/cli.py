@@ -147,7 +147,7 @@ def evaluate(
         load_squim_subjective_model,
     )
 
-    HEADERS = ["STOI", "PESQ", "SI-SDR"]
+    HEADERS = ["BASENAME", "STOI", "PESQ", "SI-SDR"]
 
     objective_model, o_sr = load_squim_objective_model()
     if non_matching_reference:
@@ -164,7 +164,7 @@ def evaluate(
         stoi, pesq, si_sdr = calculate_objective_metrics_from_single_path(
             single_audio, objective_model, o_sr
         )
-        row = [stoi, pesq, si_sdr]
+        row = [single_audio.stem, stoi, pesq, si_sdr]
         if non_matching_reference:
             mos = calculate_subjective_metrics_from_single_path(
                 single_audio, non_matching_reference, subjective_model, s_sr
@@ -199,11 +199,14 @@ def evaluate(
             )
         )
         arr = np.asarray(results)
+        arr_float = arr[:, 1:].astype(np.float16)
         # remove nans
-        arr = arr[~np.isnan(arr).any(axis=1)]
-        n_metrics = arr.shape[1]
-        mean_results = [arr[:, x].mean() for x in range(n_metrics)]
-        std_results = [arr[:, x].std() for x in range(n_metrics)]
+        arr_float = arr_float[
+            ~np.isnan(arr_float).any(axis=1)
+        ]  # ignore basename and check if any of the other values are nans
+        n_metrics = arr_float.shape[1]
+        mean_results = [arr_float[:, x].mean() for x in range(n_metrics)]
+        std_results = [arr_float[:, x].std() for x in range(n_metrics)]
         avg_results = [
             f"{format(mean_results[x], '.4f')} ± {format(std_results[x], '.4f')}"
             for x in range(n_metrics)
@@ -212,7 +215,7 @@ def evaluate(
             Panel(
                 tabulate(
                     [avg_results],
-                    [f"Average {x}" for x in HEADERS],
+                    [f"Average {x}" for x in HEADERS[1:]],
                     tablefmt="simple",
                 ),
                 title=f"Average Objective Metrics for files in {audio_directory}:",

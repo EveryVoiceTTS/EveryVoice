@@ -228,6 +228,7 @@ class CLITest(TestCase):
             ],
         )
         self.assertEqual(result.exit_code, 0)
+        self.assertIn("LJ010-0008", result.stdout)
         self.assertIn("STOI", result.stdout)
         self.assertIn("MOS", result.stdout)
         self.assertIn("SI-SDR", result.stdout)
