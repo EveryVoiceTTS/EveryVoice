@@ -222,6 +222,7 @@ def write_filelist(files, path):
             delimiter="|",
             quoting=csv.QUOTE_NONE,
             escapechar="\\",
+            lineterminator="\n",
         )
         writer.writeheader()
         for f in files:
