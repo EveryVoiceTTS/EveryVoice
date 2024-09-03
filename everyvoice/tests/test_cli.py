@@ -54,6 +54,7 @@ class CLITest(TestCase):
             "synthesize",
             "preprocess",
             "inspect-checkpoint",
+            "evaluate",
         ]
 
     def wip_test_synthesize(self):
@@ -214,6 +215,23 @@ class CLITest(TestCase):
         result = self.runner.invoke(app, ["update-schemas"])
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("FileExistsError", str(result))
+
+    def test_evaluate(self):
+        result = self.runner.invoke(
+            app,
+            [
+                "evaluate",
+                "-f",
+                self.data_dir / "LJ010-0008.wav",
+                "-r",
+                self.data_dir / "lj" / "wavs" / "LJ050-0269.wav",
+            ],
+        )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("STOI", result.stdout)
+        self.assertIn("MOS", result.stdout)
+        self.assertIn("SI-SDR", result.stdout)
+        self.assertIn("PESQ", result.stdout)
 
     def test_inspect_checkpoint_help(self):
         result = self.runner.invoke(app, ["inspect-checkpoint", "--help"])
