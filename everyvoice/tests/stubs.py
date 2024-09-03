@@ -1,6 +1,7 @@
 import builtins
 import io
 import logging
+import os
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
 from typing import Any, Generator, Sequence, Union
@@ -19,8 +20,8 @@ def monkeypatch(obj, name, value) -> Generator:
     Yields:
         value: the value monkey-patched, for use with "as v" notation"""
     saved_value = getattr(obj, name, _NOTSET)
+    setattr(obj, name, value)
     try:
-        setattr(obj, name, value)
         yield value
     finally:
         if saved_value is _NOTSET:  # pragma: no cover
@@ -56,8 +57,10 @@ def mute_logger(module: str) -> Generator[None, None, None]:
         config = FastSpeech2Config()
     """
     logger.disable(module)
-    yield
-    logger.enable(module)
+    try:
+        yield
+    finally:
+        logger.enable(module)
 
 
 @contextmanager
@@ -68,8 +71,10 @@ def capture_logs():
     # [How to test loguru logger with unittest?](https://github.com/Delgan/loguru/issues/616)
     output = []
     handler_id = logger.add(output.append)
-    yield output
-    logger.remove(handler_id)
+    try:
+        yield output
+    finally:
+        logger.remove(handler_id)
 
 
 @contextmanager
@@ -110,6 +115,21 @@ def capture_stderr():
     f = io.StringIO()
     with redirect_stderr(f):
         yield f
+
+
+@contextmanager
+def temp_chdir(path: Path) -> Generator[None, None, None]:
+    """Context manager to temporarily change the current working directory.
+
+    Args:
+        path: the directory to change to
+    """
+    cwd = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(cwd)
 
 
 @contextmanager

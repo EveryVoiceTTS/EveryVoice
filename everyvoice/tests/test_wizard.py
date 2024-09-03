@@ -1,3 +1,5 @@
+"""Unit tests for the wizard module"""
+
 import os
 import string
 import tempfile
@@ -24,6 +26,7 @@ from everyvoice.tests.stubs import (
     patch_input,
     patch_menu_prompt,
     patch_questionary,
+    temp_chdir,
 )
 from everyvoice.wizard import State, Step
 from everyvoice.wizard import StepNames as SN
@@ -309,11 +312,12 @@ class WizardTest(TestCase):
             os.unlink(dataset_file)
 
             # Bad case 3: file under read-only directory
-            ro_dir = Path(tmpdirname) / "read-only"
-            ro_dir.mkdir(mode=0x555)
-            with capture_stdout() as out:
-                self.assertFalse(step.validate(str(ro_dir)))
-            self.assertIn("could not create", out.getvalue())
+            if os.name != "nt":  # Windows does not support chmod
+                ro_dir = Path(tmpdirname) / "read-only"
+                ro_dir.mkdir(mode=0x555)
+                with capture_stdout() as out:
+                    self.assertFalse(step.validate(str(ro_dir)))
+                self.assertIn("could not create", out.getvalue())
 
             # Good case
             with capture_stdout() as stdout:
@@ -1776,15 +1780,15 @@ class WavFileDirectoryRelativePathTest(TestCase):
         self.config.state.update(CONTACT_INFO_STATE)
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
-                os.chdir(tmpdir)
-                tmpdir = Path(tmpdir).absolute()
-                self.config.effect()
-                data_file = (
-                    Path(self.config.state[SN.name_step.value])
-                    / "config/everyvoice-shared-data.yaml"
-                )
-                with data_file.open(encoding="utf8") as fin:
-                    config = yaml.load(fin, Loader=yaml.FullLoader)
+                with temp_chdir(tmpdir):
+                    tmpdir = Path(tmpdir).absolute()
+                    self.config.effect()
+                    data_file = (
+                        Path(self.config.state[SN.name_step.value])
+                        / "config/everyvoice-shared-data.yaml"
+                    )
+                    with data_file.open(encoding="utf8") as fin:
+                        config = yaml.load(fin, Loader=yaml.FullLoader)
         # Unittest/config/everyvoice-shared-data.yaml
         # Common-Voice/
         self.assertEqual(
@@ -1803,15 +1807,15 @@ class WavFileDirectoryRelativePathTest(TestCase):
         self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
-                os.chdir(tmpdir)
-                tmpdir = Path(tmpdir).absolute()
-                self.config.effect()
-                data_file = (
-                    Path(self.config.state[SN.name_step.value])
-                    / "config/everyvoice-shared-data.yaml"
-                )
-                with data_file.open(encoding="utf8") as fin:
-                    config = yaml.load(fin, Loader=yaml.FullLoader)
+                with temp_chdir(tmpdir):
+                    tmpdir = Path(tmpdir).absolute()
+                    self.config.effect()
+                    data_file = (
+                        Path(self.config.state[SN.name_step.value])
+                        / "config/everyvoice-shared-data.yaml"
+                    )
+                    with data_file.open(encoding="utf8") as fin:
+                        config = yaml.load(fin, Loader=yaml.FullLoader)
         # Unittest/config/everyvoice-shared-data.yaml
         # wavs/Common-Voice/
         self.assertEqual(
@@ -1828,16 +1832,16 @@ class WavFileDirectoryRelativePathTest(TestCase):
         self.config.state.update(CONTACT_INFO_STATE)
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
-                os.chdir(tmpdir)
-                tmpdir = Path(tmpdir).absolute()
-                self.config.effect()
-                data_file = (
-                    Path(self.config.state[SN.output_step.value])
-                    / self.config.state[SN.name_step.value]
-                    / "config/everyvoice-shared-data.yaml"
-                )
-                with data_file.open(encoding="utf8") as fin:
-                    config = yaml.load(fin, Loader=yaml.FullLoader)
+                with temp_chdir(tmpdir):
+                    tmpdir = Path(tmpdir).absolute()
+                    self.config.effect()
+                    data_file = (
+                        Path(self.config.state[SN.output_step.value])
+                        / self.config.state[SN.name_step.value]
+                        / "config/everyvoice-shared-data.yaml"
+                    )
+                    with data_file.open(encoding="utf8") as fin:
+                        config = yaml.load(fin, Loader=yaml.FullLoader)
         # John/Smith/Unittest/config/everyvoice-shared-data.yaml
         # Common-Voice/
         self.assertEqual(
@@ -1856,16 +1860,16 @@ class WavFileDirectoryRelativePathTest(TestCase):
         self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
-                os.chdir(tmpdir)
-                tmpdir = Path(tmpdir).absolute()
-                self.config.effect()
-                data_file = (
-                    Path(self.config.state[SN.output_step.value])
-                    / self.config.state[SN.name_step.value]
-                    / "config/everyvoice-shared-data.yaml"
-                )
-                with data_file.open(encoding="utf8") as fin:
-                    config = yaml.load(fin, Loader=yaml.FullLoader)
+                with temp_chdir(tmpdir):
+                    tmpdir = Path(tmpdir).absolute()
+                    self.config.effect()
+                    data_file = (
+                        Path(self.config.state[SN.output_step.value])
+                        / self.config.state[SN.name_step.value]
+                        / "config/everyvoice-shared-data.yaml"
+                    )
+                    with data_file.open(encoding="utf8") as fin:
+                        config = yaml.load(fin, Loader=yaml.FullLoader)
         # John/Smith/Unittest/config/everyvoice-shared-data.yaml
         # wavs/Common-Voice/
         self.assertEqual(
@@ -1883,18 +1887,18 @@ class WavFileDirectoryRelativePathTest(TestCase):
         self.config.state.update(CONTACT_INFO_STATE)
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
-                os.chdir(tmpdir)
-                tmpdir = Path(tmpdir).absolute()
-                wavs_dir = tmpdir / "wavs/Common-Voice"
-                self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
-                self.config.state["dataset_0"][SN.text_processing_step] = (0,)
-                self.config.effect()
-                data_file = (
-                    Path(self.config.state[SN.name_step.value])
-                    / "config/everyvoice-shared-data.yaml"
-                )
-                with data_file.open(encoding="utf8") as fin:
-                    config = yaml.load(fin, Loader=yaml.FullLoader)
+                with temp_chdir(tmpdir):
+                    tmpdir = Path(tmpdir).absolute()
+                    wavs_dir = tmpdir / "wavs/Common-Voice"
+                    self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
+                    self.config.state["dataset_0"][SN.text_processing_step] = (0,)
+                    self.config.effect()
+                    data_file = (
+                        Path(self.config.state[SN.name_step.value])
+                        / "config/everyvoice-shared-data.yaml"
+                    )
+                    with data_file.open(encoding="utf8") as fin:
+                        config = yaml.load(fin, Loader=yaml.FullLoader)
         # Unittest/config/everyvoice-shared-data.yaml
         # /tmpdir/wavs/Common-Voice/
         self.assertEqual(
@@ -1912,19 +1916,19 @@ class WavFileDirectoryRelativePathTest(TestCase):
         self.config.state.update(CONTACT_INFO_STATE)
         with capture_stdout():
             with tempfile.TemporaryDirectory() as tmpdir:
-                os.chdir(tmpdir)
-                tmpdir = Path(tmpdir).absolute()
-                wavs_dir = tmpdir / "wavs/Common-Voice"
-                self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
-                self.config.state["dataset_0"][SN.text_processing_step] = tuple()
-                self.config.effect()
-                data_file = (
-                    Path(self.config.state[SN.output_step.value])
-                    / self.config.state[SN.name_step.value]
-                    / "config/everyvoice-shared-data.yaml"
-                )
-                with data_file.open(encoding="utf8") as fin:
-                    config = yaml.load(fin, Loader=yaml.FullLoader)
+                with temp_chdir(tmpdir):
+                    tmpdir = Path(tmpdir).absolute()
+                    wavs_dir = tmpdir / "wavs/Common-Voice"
+                    self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
+                    self.config.state["dataset_0"][SN.text_processing_step] = tuple()
+                    self.config.effect()
+                    data_file = (
+                        Path(self.config.state[SN.output_step.value])
+                        / self.config.state[SN.name_step.value]
+                        / "config/everyvoice-shared-data.yaml"
+                    )
+                    with data_file.open(encoding="utf8") as fin:
+                        config = yaml.load(fin, Loader=yaml.FullLoader)
         # John/Smith/Unittest/config/everyvoice-shared-data.yaml
         # /tmpdir/wavs/Common-Voice/
         self.assertEqual(
