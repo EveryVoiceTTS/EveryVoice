@@ -233,6 +233,27 @@ class CLITest(TestCase):
         self.assertIn("MOS", result.stdout)
         self.assertIn("SI-SDR", result.stdout)
         self.assertIn("PESQ", result.stdout)
+        dir_result = self.runner.invoke(
+            app,
+            [
+                "evaluate",
+                "-d",
+                self.data_dir / "lj" / "wavs",
+                "-r",
+                self.data_dir / "LJ010-0008.wav",
+            ],
+        )
+        self.assertEqual(dir_result.exit_code, 0)
+        self.assertIn("LJ050-0269", dir_result.stdout, "should print out the basenames")
+        self.assertIn(
+            "Average STOI",
+            dir_result.stdout,
+            "should report metrics in terms of averages",
+        )
+        self.assertTrue(
+            (self.data_dir / "lj" / "wavs" / "evaluation.json").exists(),
+            "should print out results to a file",
+        )
 
     def test_inspect_checkpoint_help(self):
         result = self.runner.invoke(app, ["inspect-checkpoint", "--help"])
