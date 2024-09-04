@@ -537,7 +537,7 @@ def update_schemas(
                 "If it's already been published to the schema store, please bump the EveryVoice minor version number and generate the schemas again.\n"
                 "If the current minor version is still in development, just delete the schema files and try again."
             )
-        with open(schema_dir_path / filename, "w") as f:
+        with open(schema_dir_path / filename, "w", encoding="utf8") as f:
             json.dump(schema.model_json_schema(), f, indent=2)
             f.write("\n")
 
