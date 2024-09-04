@@ -24,9 +24,19 @@ SUITES: dict[str, tuple[str, ...]] = {
     "preprocessing": ("test_preprocessing",),
     "model": ("test_model",),
     "cli": ("test_wizard", "test_cli"),
+    "evaluation": ("test_evaluation",),
     **SUBMODULE_SUITES,
 }
-dev_suites = ("config", "loader", "text", "preprocessing", "model", "cli", "fs2")
+dev_suites = (
+    "config",
+    "loader",
+    "text",
+    "preprocessing",
+    "model",
+    "cli",
+    "fs2",
+    "evaluation",
+)
 SUITES["dev"] = sum((SUITES[suite] for suite in dev_suites), start=())
 
 

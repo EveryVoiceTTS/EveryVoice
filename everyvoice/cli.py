@@ -2,9 +2,11 @@ import json
 import sys
 from enum import Enum
 from pathlib import Path
-from typing import Any, List
+from typing import Any, List, Optional
 
 import typer
+from rich import print as rich_print
+from rich.panel import Panel
 
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
@@ -80,8 +82,148 @@ app = typer.Typer(
     ## Synthesize
 
     Once you have a trained model, generate some audio by running: everyvoice synthesize [text-to-spec|spec-to-wav] [OPTIONS]
+
+    ## Evaluate
+
+    You can also try to evaluate your model by running: everyvoice evaluate [synthesized_audio.wav|folder_containing_wavs] [OPTIONS]
+
 """,
 )
+
+
+@app.command(
+    short_help="Evaluate your synthesized audio",
+    name="evaluate",
+    help="""
+    # Evalution help
+
+    This command will evaluate an audio file, or a folder containing multiple audio files. Currently this is done by calculating the metrics from Kumar et. al. 2023.
+    We will report the predicted Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) by default.
+    We will also report the estimation of subjective Mean Opinion Score (MOS) if a Non-Matching Reference is provided. Please refer to Kumar et. al. for more information.
+
+
+
+    Kumar, Anurag, et al. “TorchAudio-Squim: Reference-less Speech Quality and Intelligibility measures in TorchAudio.” ICASSP 2023-2023 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2023.
+    """,
+)
+def evaluate(
+    audio_file: Optional[Path] = typer.Option(
+        None,
+        "--audio-file",
+        "-f",
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="The path to a single audio file for evaluation.",
+        autocompletion=complete_path,
+    ),
+    audio_directory: Optional[Path] = typer.Option(
+        None,
+        "--audio-directory",
+        "-d",
+        file_okay=False,
+        dir_okay=True,
+        help="The directory where multiple audio files are located for evaluation",
+        autocompletion=complete_path,
+    ),
+    non_matching_reference: Optional[Path] = typer.Option(
+        None,
+        "--non-matching-reference",
+        "-r",
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="The path to a Non Mathing Reference audio file, required for MOS prediction.",
+        autocompletion=complete_path,
+    ),
+):
+    from tabulate import tabulate
+    from tqdm import tqdm
+
+    from everyvoice.evaluation import (
+        calculate_objective_metrics_from_single_path,
+        calculate_subjective_metrics_from_single_path,
+        load_squim_objective_model,
+        load_squim_subjective_model,
+    )
+
+    HEADERS = ["BASENAME", "STOI", "PESQ", "SI-SDR"]
+
+    objective_model, o_sr = load_squim_objective_model()
+    if non_matching_reference:
+        subjective_model, s_sr = load_squim_subjective_model()
+        HEADERS.append("MOS")
+
+    if audio_file and audio_directory:
+        print(
+            "Sorry, please choose to evaluate either a single file or an entire directory. Got values for both."
+        )
+        sys.exit(1)
+
+    def calculate_row(single_audio):
+        stoi, pesq, si_sdr = calculate_objective_metrics_from_single_path(
+            single_audio, objective_model, o_sr
+        )
+        row = [single_audio.stem, stoi, pesq, si_sdr]
+        if non_matching_reference:
+            mos = calculate_subjective_metrics_from_single_path(
+                single_audio, non_matching_reference, subjective_model, s_sr
+            )
+            row.append(mos)
+        return row
+
+    if audio_file:
+        row = calculate_row(audio_file)
+        rich_print(
+            Panel(
+                tabulate([row], HEADERS, tablefmt="simple"),
+                title=f"Objective Metrics for {audio_file}:",
+            )
+        )
+        sys.exit(0)
+
+    if audio_directory:
+        import numpy as np
+
+        results = []
+        for wav_file in tqdm(
+            audio_directory.glob("*.wav"),
+            desc=f"Evaluating filies in {audio_directory}",
+        ):
+            row = calculate_row(wav_file)
+            results.append(row)
+        rich_print(
+            Panel(
+                tabulate(results, HEADERS, tablefmt="simple"),
+                title=f"Objective Metrics for files in {audio_directory}:",
+            )
+        )
+        arr = np.asarray(results)
+        arr_float = arr[:, 1:].astype(np.float16)
+        # remove nans
+        arr_float = arr_float[
+            ~np.isnan(arr_float).any(axis=1)
+        ]  # ignore basename and check if any of the other values are nans
+        n_metrics = arr_float.shape[1]
+        mean_results = [arr_float[:, x].mean() for x in range(n_metrics)]
+        std_results = [arr_float[:, x].std() for x in range(n_metrics)]
+        avg_results = [
+            f"{format(mean_results[x], '.4f')} ± {format(std_results[x], '.4f')}"
+            for x in range(n_metrics)
+        ]
+        rich_print(
+            Panel(
+                tabulate(
+                    [avg_results],
+                    [f"Average {x}" for x in HEADERS[1:]],
+                    tablefmt="simple",
+                ),
+                title=f"Average Objective Metrics for files in {audio_directory}:",
+            )
+        )
+        print(f"Printing results to {audio_directory / 'evaluation.json'}")
+        with open(audio_directory / "evaluation.json", "w") as f:
+            json.dump(results, f)
 
 
 class ModelTypes(str, Enum):
