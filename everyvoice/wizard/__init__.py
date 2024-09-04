@@ -1,3 +1,5 @@
+"""The main module for the wizard package."""
+
 import os
 import sys
 from enum import Enum
@@ -73,11 +75,7 @@ class Step(_Step, NodeMixin):
         self,
         name: None | Enum | str = None,
         default=None,
-        prompt_method=None,
-        validate_method=None,
-        effect_method=None,
         parent=None,
-        children=None,
         state_subset=None,
     ):
         if name is None:
@@ -91,14 +89,6 @@ class Step(_Step, NodeMixin):
         self.state: Optional[State] = None
         # tour will be added when the Step is added to a Tour
         self.tour: Optional[Tour] = None
-        if effect_method is not None:
-            self.effect = effect_method  # type: ignore[method-assign]
-        if prompt_method is not None:
-            self.prompt = prompt_method  # type: ignore[method-assign]
-        if validate_method is not None:
-            self.validate = validate_method  # type: ignore[method-assign]
-        if children:
-            self.children = children
         self._validation_failures = 0
 
     def __repr__(self) -> str:
@@ -147,6 +137,7 @@ class Tour:
         self.add_steps(steps, self.root)
 
     def determine_state(self, step: Step, state: State):
+        """Determines the state to use for the step based on the state subset"""
         if step.state_subset is not None:
             if step.state_subset not in state:
                 state[step.state_subset] = State()
@@ -168,18 +159,28 @@ class Tour:
             else:
                 self.add_step(item, parent)
 
-    def add_step(self, step: Step, parent: Step, child_index=0):
+    def add_step(self, step: Step, parent: Step):
+        """Insert a step in the specified position in the tour.
+
+        Args:
+            step: The step to add
+            parent: The parent to add the step to
+        """
         self.determine_state(step, self.state)
         step.tour = self
         children = list(parent.children)
-        children.insert(child_index, step)
+        children.insert(0, step)
         parent.children = children
 
     def run(self):
+        """Run the tour by traversing the tree depth-first"""
         for _, _, node in RenderTree(self.root):
+            self.visualize()
+            print(f"Running {node.name}")
             node.run()
 
     def visualize(self):
+        """Display the tree structure of the tour on stdout"""
         for pre, _, node in RenderTree(self.root):
             treestr = f"{pre}{node.name}"
             print(treestr.ljust(8))

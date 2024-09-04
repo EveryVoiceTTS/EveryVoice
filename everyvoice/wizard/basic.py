@@ -235,7 +235,7 @@ class ConfigFormatStep(Step):
             # so this should be fixed by https://github.com/EveryVoiceTTS/EveryVoice/issues/359
             if dataset_state.get(StepNames.text_processing_step):
                 global_cleaners += [
-                    TextProcessingStep().process_lookup[x]["fn"]
+                    TextProcessingStep.process_lookup[x]["fn"]
                     for x in dataset_state[StepNames.text_processing_step]
                 ]
             # Gather Symbols for Text Configuration

@@ -10,7 +10,7 @@ from typing import Callable, Iterable, NamedTuple, Optional, Sequence
 from unittest import TestCase
 
 import yaml
-from anytree import RenderTree
+from anytree import PreOrderIter, RenderTree
 
 # [Unit testing questionary](https://github.com/prompt-toolkit/python-prompt-toolkit/blob/master/docs/pages/advanced_topics/unit_testing.rst)
 from prompt_toolkit.application import create_app_session
@@ -87,6 +87,27 @@ def find_step(name: Enum, steps: Sequence[Step | list[Step]]):
     raise IndexError(f"Step {name} not found.")  # pragma: no cover
 
 
+class TestStep(Step):
+    """A Step subclass that allows specified the effect, prompt and validate
+    methods in the constructor."""
+
+    def __init__(
+        self,
+        name: str,
+        parent=None,
+        prompt_method: Optional[Callable] = None,
+        validate_method: Optional[Callable] = None,
+        effect_method: Optional[Callable] = None,
+    ):
+        super().__init__(name, parent=parent)
+        if prompt_method:
+            self.prompt = prompt_method  # type: ignore[method-assign]
+        if validate_method:
+            self.validate = validate_method  # type: ignore[method-assign]
+        if effect_method:
+            self.effect = effect_method  # type: ignore[method-assign]
+
+
 class WizardTest(TestCase):
     """Basic test for the configuration wizard"""
 
@@ -94,8 +115,8 @@ class WizardTest(TestCase):
 
     def test_implementation_missing(self):
         nothing_step = Step(name="Dummy Step")
-        no_validate_step = Step(name="Dummy Step", prompt_method=lambda: "test")
-        no_prompt_step = Step(name="Dummy Step", validate_method=lambda: True)
+        no_validate_step = TestStep(name="Dummy Step", prompt_method=lambda: "test")
+        no_prompt_step = TestStep(name="Dummy Step", validate_method=lambda: True)
         for step in [nothing_step, no_validate_step, no_prompt_step]:
             with self.assertRaises(NotImplementedError):
                 step.run()
@@ -159,7 +180,7 @@ class WizardTest(TestCase):
             )
 
     def test_access_response(self):
-        root_step = Step(
+        root_step = TestStep(
             name="Dummy Step",
             prompt_method=lambda: "foo",
             validate_method=lambda x: True,
@@ -170,16 +191,16 @@ class WizardTest(TestCase):
             if self.parent.response + x == "foobar":
                 return True
 
-        second_step = Step(
+        second_step = TestStep(
             name="Dummy Step 2", prompt_method=lambda: "bar", parent=root_step
         )
         second_step.validate = MethodType(validate, second_step)
-        for i, leaf in enumerate(RenderTree(root_step)):
+        for i, node in enumerate(PreOrderIter(root_step)):
             if i != 0:
                 self.assertEqual(second_step.parent.response, "foo")
-                self.assertTrue(leaf[2].validate("bar"))
-                self.assertFalse(leaf[2].validate("foo"))
-            leaf[2].run()
+                self.assertTrue(node.validate("bar"))
+                self.assertFalse(node.validate("foo"))
+            node.run()
 
     def test_main_tour(self):
         tour = get_main_wizard_tour()
@@ -463,7 +484,7 @@ class WizardTest(TestCase):
             know_speaker_step.run()
 
         add_speaker_step = know_speaker_step.children[0]
-        with patch_input("default"):
+        with patch_input("default"), capture_stdout():
             add_speaker_step.run()
 
         language_step = find_step(SN.data_has_language_value_step, tour.steps)
@@ -559,7 +580,7 @@ class WizardTest(TestCase):
 
         add_speaker_step = know_speaker_step.children[0]
         children_before = len(add_speaker_step.children)
-        with patch_input("default"):
+        with patch_input("default"), capture_stdout():
             add_speaker_step.run()
         self.assertEqual(len(add_speaker_step.children), children_before)
 
@@ -1724,7 +1745,6 @@ class WavFileDirectoryRelativePathTest(TestCase):
                         SN.wavs_dir_step.value: "Common-Voice",
                         SN.symbol_set_step.value: {
                             "characters": [
-                                " ",
                                 "A",
                                 "D",
                                 "E",
