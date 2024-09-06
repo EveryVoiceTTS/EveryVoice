@@ -311,13 +311,18 @@ class WizardTest(TestCase):
                 self.assertFalse(step.validate(tmpdirname))
             os.unlink(dataset_file)
 
+            tmpdir = Path(tmpdirname)
             # Bad case 3: file under read-only directory
             if os.name != "nt":  # Windows does not support chmod
-                ro_dir = Path(tmpdirname) / "read-only"
+                ro_dir = tmpdir / "read-only"
                 ro_dir.mkdir(mode=0x555)
                 with capture_stdout() as out:
                     self.assertFalse(step.validate(str(ro_dir)))
                 self.assertIn("could not create", out.getvalue())
+
+            # Case with a deep path, make sure we don't leave part of it around
+            self.assertTrue(step.validate(tmpdir / "deep" / "path"))
+            self.assertFalse((tmpdir / "deep").exists())
 
             # Good case
             with capture_stdout() as stdout:

@@ -140,6 +140,27 @@ class OutputPathStep(Step):
     def sanitize_input(self, response):
         return self.sanitize_paths(response)
 
+    def can_mkdir(self, path: Path) -> bool:
+        """Make sure it's possible to create path, without leaving it behind."""
+        dirs_to_make = []
+        d = path
+        while not d.exists() and d not in (Path("/"), Path(""), Path(".")):
+            dirs_to_make.append(d)
+            d = d.parent
+        dirs_made = []
+        try:
+            for d in reversed(dirs_to_make):
+                try:
+                    d.mkdir()
+                    dirs_made.append(d)
+                except OSError as e:
+                    print(f"Sorry, could not create '{d}': {e}.")
+                    return False
+        finally:
+            for d in reversed(dirs_made):
+                d.rmdir()
+        return True
+
     def validate(self, response) -> bool:
         path = Path(response)
         if path.is_file():
@@ -156,16 +177,8 @@ class OutputPathStep(Step):
 
         # We create the output directory in validate() instead of effect() so that
         # failure can be reported to the user and the question asked again if necessary.
-        try:
-            output_path.mkdir(parents=True, exist_ok=True)
-            # we created it just to test permission, but don't leave it lying around in
-            # case the wizard is interrupted or fails. We'll create it again when we save.
-            output_path.rmdir()
-        except OSError as e:
-            print(
-                f"Sorry, could not create '{output_path}': {e}. "
-                "Please choose another output directory."
-            )
+        if not self.can_mkdir(output_path):
+            print("Please choose another output directory.")
             return False
 
         self.output_path = output_path
