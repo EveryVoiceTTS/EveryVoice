@@ -1,4 +1,5 @@
 import doctest
+import re
 import tempfile
 from pathlib import Path
 from typing import Any
@@ -108,7 +109,7 @@ class PathIsADirectoryTest(TestCase):
         file = Path(__file__)
         with self.assertRaisesRegex(
             ValueError,
-            rf"{file} is not a directory",
+            re.escape(f"{file} is not a directory"),
         ):
             with init_context({"writing_config": file.parent.resolve()}):
                 PathIsADirectory(path=file.name)
@@ -141,7 +142,7 @@ class PathIsADirectoryTest(TestCase):
         path = Path(__file__)
         with self.assertRaisesRegex(
             ValueError,
-            rf"{path} is not a directory",
+            re.escape(f"{path} is not a directory"),
         ):
             PathIsADirectory(path=path)
 

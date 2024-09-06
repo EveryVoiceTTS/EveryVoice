@@ -1,12 +1,19 @@
 import json
-import tempfile
 import time
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Callable
 from unittest import TestCase
 
 import yaml
 from pydantic import ValidationError
+
+try:
+    from readalongs.portable_tempfile import (
+        PortableNamedTemporaryFile as NamedTemporaryFile,
+    )
+except ImportError:
+    from tempfile import NamedTemporaryFile
 
 from everyvoice import exceptions
 from everyvoice.config.preprocessing_config import (
@@ -91,7 +98,7 @@ class ConfigTest(BasicTestCase):
         self.assertEqual(config_32.training.batch_size, 32)
 
     def test_config_save_dirs(self):
-        with tempfile.TemporaryDirectory(prefix="test_config_save_dirs") as tempdir:
+        with TemporaryDirectory(prefix="test_config_save_dirs") as tempdir:
             # Preprocessing Config
             tempdir = Path(tempdir)
             with self.assertRaises(ValidationError):
@@ -101,7 +108,7 @@ class ConfigTest(BasicTestCase):
             self.assertTrue((tempdir / preprocessing_config.save_dir).exists())
 
     def test_config_partial(self):
-        with tempfile.TemporaryDirectory(
+        with TemporaryDirectory(
             prefix="test_config_partial"
         ) as tempdir_str, init_context({"writing_config": Path(tempdir_str)}):
             # Preprocessing Config
@@ -113,9 +120,7 @@ class ConfigTest(BasicTestCase):
             self.assertTrue(isinstance(config.audio, AudioConfig))
             # bad partial
             with self.assertRaises(exceptions.InvalidConfiguration):
-                with tempfile.NamedTemporaryFile(
-                    prefix="test", mode="w", suffix=".yaml"
-                ) as tf:
+                with NamedTemporaryFile(prefix="test", mode="w", suffix=".yaml") as tf:
                     tf.write(" ")
                     tf.flush()
                     PreprocessingConfig(path_to_audio_config_file=tf.name)
@@ -188,7 +193,7 @@ class ConfigTest(BasicTestCase):
 
     def test_config_partial_override(self):
         """Test override of partial"""
-        with tempfile.NamedTemporaryFile(
+        with NamedTemporaryFile(
             prefix="test_config_partial_override", mode="w", suffix=".yaml"
         ) as tf:
             tf.write(AudioConfig().model_dump_json())
@@ -285,7 +290,7 @@ class ConfigTest(BasicTestCase):
         self.assertEqual(self.config.feature_prediction.text.cleaners, [lower])
 
     def test_load_empty_config(self):
-        with tempfile.NamedTemporaryFile(
+        with NamedTemporaryFile(
             prefix="test_load_empty_config", mode="w", suffix=".yaml"
         ) as tf:
             tf.write(" ")
@@ -295,7 +300,7 @@ class ConfigTest(BasicTestCase):
 
     def test_change_with_indices(self):
         """Text the --config-args can also work with arrays"""
-        with tempfile.TemporaryDirectory(
+        with TemporaryDirectory(
             prefix="test_change_with_indices"
         ) as tempdir, init_context({"writing_config": Path(tempdir)}):
             config = FeaturePredictionConfig(contact=self.contact)
@@ -307,8 +312,8 @@ class ConfigTest(BasicTestCase):
                 }
             )
             self.assertEqual(
-                str(config.preprocessing.source_data[0].filelist),
-                "/foo/bar/filelist.psv",
+                config.preprocessing.source_data[0].filelist,
+                Path("/foo/bar/filelist.psv"),
             )
 
     def test_shared_sox(self) -> None:
@@ -482,9 +487,9 @@ class LoadConfigTest(BasicTestCase):
 
     def test_absolute_path(self):
         """Load a config that has absolute paths."""
-        with tempfile.TemporaryDirectory(
-            prefix="test_absolute_path"
-        ) as tempdir, init_context({"writing_config": Path(tempdir)}):
+        with TemporaryDirectory(prefix="test_absolute_path") as tempdir, init_context(
+            {"writing_config": Path(tempdir)}
+        ):
             tempdir = Path(tempdir).absolute()
             # Write preprocessing:
             preprocessing_config_path = tempdir / "aligner-preprocessing.json"
@@ -541,9 +546,9 @@ class LoadConfigTest(BasicTestCase):
 
     def test_missing_path(self):
         """Load a config that is missing a partial config file."""
-        with tempfile.TemporaryDirectory(
-            prefix="test_missing_path"
-        ) as tempdir, init_context({"writing_config": Path(tempdir)}):
+        with TemporaryDirectory(prefix="test_missing_path") as tempdir, init_context(
+            {"writing_config": Path(tempdir)}
+        ):
             tempdir = Path(tempdir)
             _writer_helper(AudioConfig(), tempdir / "audio.json")
             config = PreprocessingConfig(
