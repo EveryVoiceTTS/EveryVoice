@@ -105,6 +105,18 @@ class TestStep(Step):
             self.effect = effect_method  # type: ignore[method-assign]
 
 
+def make_trivial_tour(trace: bool = False) -> Tour:
+    return Tour(
+        "trivial tour for testing",
+        [
+            basic.NameStep(),
+            basic.ContactNameStep(),
+            basic.ContactEmailStep(),
+        ],
+        trace=trace,
+    )
+
+
 class WizardTest(TestCase):
     """Basic test for the configuration wizard"""
 
@@ -212,8 +224,8 @@ class WizardTest(TestCase):
         with capture_stdout() as out:
             tour.visualize()
         log = out.getvalue()
-        self.assertIn("── Contact Name Step", log)
-        self.assertIn("── Validate Wavs Step", log)
+        self.assertIn("── Contact Name ", log)
+        self.assertIn("── Validate Wavs ", log)
 
     def test_name_step(self):
         """Exercise providing a valid dataset name."""
@@ -1718,3 +1730,18 @@ class WizardTest(TestCase):
                 text_to_spec_config = "\n".join(f)
             self.assertIn("multilingual: false", text_to_spec_config)
             self.assertIn("multispeaker: false", text_to_spec_config)
+
+    def test_trace(self):
+        tour = make_trivial_tour(trace=True)
+        tour.trace = True
+        with patch_input(["project_name", "user name", "email@mail.com"], multi=True):
+            with capture_stdout() as out:
+                tour.run()
+        for step in tour.steps:
+            # When not the current step:
+            self.assertIn(step.name.replace(" Step", "") + "  ", out.getvalue())
+            # When it is the current step:
+            self.assertRegex(out.getvalue(), step.name.replace(" Step", "") + " *←")
+            # When previously filled:
+            if step != tour.steps[-1]:
+                self.assertIn(step.name.replace(" Step", "") + ": ", out.getvalue())

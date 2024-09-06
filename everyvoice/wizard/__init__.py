@@ -7,6 +7,7 @@ from typing import Optional, Sequence
 
 from anytree import RenderTree
 from rich import print as rich_print
+from rich.panel import Panel
 
 from .utils import EnumDict as State
 from .utils import NodeMixinWithNavigation
@@ -102,6 +103,8 @@ class Step(_Step, NodeMixinWithNavigation):
         """
         self.response = self.prompt()
         self.response = self.sanitize_input(self.response)
+        if self.tour is not None and self.tour.trace:
+            rich_print(f"{self.name}: '{self.response}'")
         if self.validate(self.response):
             self.completed = True
             try:
@@ -130,11 +133,18 @@ class RootStep(Step):
 
 
 class Tour:
-    def __init__(self, name: str, steps: list[Step], state: Optional[State] = None):
+    def __init__(
+        self,
+        name: str,
+        steps: list[Step],
+        state: Optional[State] = None,
+        trace: bool = False,
+    ):
         """Create the tour by placing all steps under a dummy root node"""
         self.name = name
         self.state: State = state if state is not None else State()
         self.steps = steps
+        self.trace = trace
         self.root = RootStep()
         self.root.tour = self
         self.determine_state(self.root, self.state)
@@ -180,6 +190,8 @@ class Tour:
         """Run the tour by traversing the tree depth-first"""
         node = self.root
         while node is not None:
+            if self.trace and not node.name == "Root":
+                self.visualize(node)
             try:
                 node.run()
             except KeyboardInterrupt:
@@ -190,11 +202,32 @@ class Tour:
 
     def visualize(self, highlight: Optional[Step] = None):
         """Display the tree structure of the tour on stdout"""
+
+        def display(pre: str, name: str) -> str:
+            return pre + name.replace(" Step", "").replace(
+                "Representation", "Rep."
+            ).replace("Root", "Wizard Steps")
+
+        just_width = 4 + max(
+            len(display(pre, node.name)) for pre, _, node in RenderTree(self.root)
+        )
+        text = ""
         for pre, _, node in RenderTree(self.root):
-            treestr = f"{pre}{node.name}"
-            if node == highlight:
-                treestr += "        <========"
-            rich_print(treestr.ljust(8))
+            treestr = display(pre, node.name)
+            if highlight is not None:
+                if node == highlight:
+                    treestr = (
+                        "[yellow]" + treestr.ljust(just_width) + "←———" + "[/yellow]"
+                    )
+                elif node.response is not None:
+                    treestr = (
+                        "[green]"
+                        + (treestr + ":").ljust(just_width)
+                        + str(node.response)
+                        + "[/green]"
+                    )
+            text += treestr + "\n"
+        rich_print(Panel(text.rstrip()))
 
 
 class StepNames(Enum):
@@ -224,7 +257,7 @@ class StepNames(Enum):
     select_language_step = "Select Language Step"
     text_processing_step = "Text Processing Step"
     g2p_step = "G2P Step"
-    symbol_set_step = "Symbol-Set step"
+    symbol_set_step = "Symbol-Set Step"
     sample_rate_config_step = "Sample Rate Config Step"
     audio_config_step = "Audio Config Step"
     sox_effects_step = "SoX Effects Step"

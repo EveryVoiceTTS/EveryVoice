@@ -9,7 +9,7 @@ from everyvoice.wizard.basic import (
 from everyvoice.wizard.dataset import get_dataset_steps
 
 
-def get_main_wizard_tour():
+def get_main_wizard_tour(trace: bool = False) -> Tour:
     """Get the main wizard tour"""
     return Tour(
         name="Basic Tour",
@@ -21,6 +21,7 @@ def get_main_wizard_tour():
         ]
         + get_dataset_steps()
         + [MoreDatasetsStep(name=StepNames.more_datasets_step)],
+        trace=trace,
     )
 
 
