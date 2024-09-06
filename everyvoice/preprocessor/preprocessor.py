@@ -15,6 +15,7 @@ from collections import Counter
 from glob import glob
 from multiprocessing import Manager
 from pathlib import Path
+from textwrap import dedent
 from typing import Optional
 
 import numpy as np
@@ -56,10 +57,10 @@ from everyvoice.utils.heavy import (
     get_spectral_transform,
 )
 
-_warned_about_windows = False
-
 
 class Preprocessor:
+    _warned_about_windows = False
+
     def __init__(
         self,
         config: AlignerConfig | FeaturePredictionConfig | VocoderConfig,
@@ -175,14 +176,24 @@ class Preprocessor:
 
         if sox_effects:
             if os.name == "nt":  # pragma: no cover
-                global _warned_about_windows
-                if not _warned_about_windows:
-                    _warned_about_windows = True
-                    logger.warning(
-                        "SoX effects are not supported on Windows, skipping them.\n"
-                        "Please don't try to train models with EveryVoice on Windows.\n"
-                        "Windows support is only for development and testing."
-                    )
+                WINDOWS_WARNING = dedent(
+                    """
+                    SoX effects are not supported on Windows. Please run preprocess on a MacOS or Linux.
+                    To ignore this error for development purposes, set the EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS
+                    environment variable. But be aware that if you do so, your audio will not be preprocessed
+                    correctly and your models will not be good.
+                    """
+                )
+                if os.environ.get("EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS", False):
+                    if not Preprocessor._warned_about_windows:
+                        logger.warning(
+                            WINDOWS_WARNING
+                            + "\nContinuing anyway since EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS is set."
+                        )
+                        Preprocessor._warned_about_windows = True
+                else:
+                    logger.error(WINDOWS_WARNING)
+                    sys.exit(1)
             else:
                 audio, sr = apply_effects_tensor(
                     audio,
