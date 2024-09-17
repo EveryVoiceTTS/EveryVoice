@@ -243,6 +243,7 @@ def train_base_command(
         every_n_train_steps=config.training.ckpt_steps,
         every_n_epochs=config.training.ckpt_epochs,
         enable_version_counter=True,
+        save_on_train_epoch_end=True,
     )
     # This callback will only save the top-k checkpoints
     # based on minimization of the monitored loss
