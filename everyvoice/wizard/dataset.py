@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Sequence
 
 import questionary
-import rich
+from rich import print as rich_print
 from rich.panel import Panel
 from rich.style import Style
 from tqdm import tqdm
@@ -40,18 +40,18 @@ class DatasetNameStep(Step):
 
     def validate(self, response):
         if len(response) == 0:
-            print("Sorry, your dataset needs a name.")
+            rich_print("Sorry, your dataset needs a name.")
             return False
         slug = slugify(response)
         if not slug == response:
-            print(
+            rich_print(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."
             )
             return False
         return True
 
     def effect(self):
-        print(
+        rich_print(
             f"Great! The Configuration Wizard 🧙 finished the configuration for your dataset named '{self.response}'"
         )
 
@@ -75,7 +75,7 @@ class DatasetPermissionStep(Step):
 
     def effect(self):
         if self.state[StepNames.dataset_permission_step.value].startswith("No"):
-            print("OK, we'll ask you to choose another dataset then!")
+            rich_print("OK, we'll ask you to choose another dataset then!")
             self.children = []
             del self.root.state[self.state_subset]
 
@@ -101,7 +101,7 @@ class WavsDirStep(Step):
         glob_iter = glob.iglob(os.path.join(path_expanded, "**/*.wav"), recursive=True)
         contains_wavs = next(glob_iter, None) is not None
         if not contains_wavs:
-            print(
+            rich_print(
                 f"Sorry, no .wav files were found in '{path_expanded}'. Please choose a directory with audio files."
             )
         return valid_path and contains_wavs
@@ -120,13 +120,13 @@ class SampleRateConfigStep(Step):
         try:
             self.response = int(response)
             if self.response < 100 or float(response) != self.response:
-                print(
+                rich_print(
                     f"{response} is not a valid sample rate. Please enter an integer representing the sample rate in Hertz of your data."
                 )
                 return False
             return True
         except ValueError:
-            print(
+            rich_print(
                 f"{response} is not a valid sample rate. Please enter an integer representing the sample rate in Hertz of your data."
             )
             return False
@@ -167,18 +167,18 @@ class FilelistFormatStep(Step):
         if len(initial_records) > 0:
             column_count = len(initial_records[0])
         else:
-            print(f"ERROR: File ({filelist_path} is empty. Please double check.")
+            rich_print(f"ERROR: File ({filelist_path} is empty. Please double check.")
             sys.exit(1)
 
         if column_count < 2:
-            print(
+            rich_print(
                 f"File '{filelist_path}' does not look like a '{file_type}' file: no record separator found on header line."
             )
             return False
 
         for i, record in enumerate(initial_records):
             if len(record) != column_count:
-                print(
+                rich_print(
                     f"File '{filelist_path}' does not look like a '{file_type}' file: the {i}th record has a different number of fields than the header row."
                 )
                 return False
@@ -192,7 +192,7 @@ class FilelistFormatStep(Step):
                 _ = read_festival(filelist_path, 10)
                 return True
             except ValueError:
-                print(f"File '{filelist_path}' is not in the festival format.")
+                rich_print(f"File '{filelist_path}' is not in the festival format.")
                 return False
 
         separator = self.separators.get(response, None)
@@ -280,13 +280,13 @@ class ValidateWavsStep(Step):
         file_list_size = len(filelist_data)
         sample: Sequence[int]
         if file_list_size > MAX_SAMPLES:
-            print(
+            rich_print(
                 f"Checking a sample of {MAX_SAMPLES} of your audio files to make sure they are present."
             )
             sampled_text = " sampled"
             sample = sorted(random.sample(range(file_list_size), MAX_SAMPLES))
         else:
-            print("Checking if all your audio files are present.")
+            rich_print("Checking if all your audio files are present.")
             sampled_text = ""
             sample = range(file_list_size)
         for item in sample:
@@ -300,15 +300,17 @@ class ValidateWavsStep(Step):
         if files_not_found:
             n = len(files_not_found)
             if n == 1:
-                print(
+                rich_print(
                     f"Warning: wav file '{files_not_found[0]}' was not found, please check your filelist."
                 )
             else:
-                print(
+                rich_print(
                     f"Warning: {n}{sampled_text} wav files were not found, including '{files_not_found[0]}' and '{files_not_found[1]}'.\nPlease check your wavs directory '{wavs_dir}' and your filelist."
                 )
             return n
-        print(f"Great! All{sampled_text} audio files found in directory '{wavs_dir}'.")
+        rich_print(
+            f"Great! All{sampled_text} audio files found in directory '{wavs_dir}'."
+        )
         return 0
 
     def prompt(self):
@@ -337,7 +339,7 @@ class ValidateWavsStep(Step):
                 self,
             )
         elif self.response.startswith("No"):
-            rich.print(
+            rich_print(
                 Panel(
                     "Continuing despite missing audio files. Make sure you fix your filelist later or add missing audio files, otherwise entries in your filelist with missing audio files will be skipped during preprocessing and therefore be ignored during training.",
                     title="Missing audio files",
@@ -462,7 +464,7 @@ class HasHeaderLineStep(Step):
 
     def effect(self):
         if self.state[StepNames.data_has_header_line_step] == "no":
-            print("Reinterpreting your first row as a record, not headers.")
+            rich_print("Reinterpreting your first row as a record, not headers.")
             self.state["filelist_data_list"].insert(
                 0, self.state["filelist_data_list"][0]
             )
@@ -478,7 +480,7 @@ class HasSpeakerStep(Step):
         elif len(self.state.get("selected_headers", [])) >= len(
             self.state["filelist_data_list"][0]
         ):
-            print("No columns left, we will assume you have no speaker column.")
+            rich_print("No columns left, we will assume you have no speaker column.")
             return "no"
         else:
             return get_response_from_menu_prompt(
@@ -490,7 +492,7 @@ class HasSpeakerStep(Step):
         return response in self.choices
 
     def effect(self):
-        print(
+        rich_print(
             "Note: if your dataset has speakers with names matching with speakers from other provided datasets, they will be considered the same. If this is not the desired behaviour, you will have to alter the speaker IDs in the relevant datasets to indicate that they are different."
         )
         if self.state[StepNames.data_has_speaker_value_step] == "yes":
@@ -527,7 +529,7 @@ class KnowSpeakerStep(Step):
         else:
             # Even though AddSpeakerStep is not run, the speaker ID is assigned to its keyword
             self.state[StepNames.add_speaker_step] = f"speaker_{self.dataset_index}"
-            print(
+            rich_print(
                 f"OK, '{self.state[StepNames.add_speaker_step]}' will be used as a speaker ID in this dataset then."
             )
 
@@ -540,18 +542,18 @@ class AddSpeakerStep(Step):
 
     def validate(self, response):
         if len(response) == 0:
-            print("Sorry, the speaker needs an ID.")
+            rich_print("Sorry, the speaker needs an ID.")
             return False
         slug = slugify(response)
         if not slug == response:
-            print(
+            rich_print(
                 f"Sorry, your ID: '{response}' is not valid. Please avoid using special characters in it and re-type something like {slug} instead."
             )
             return False
         return True
 
     def effect(self):
-        print(
+        rich_print(
             f"Great! '{self.response}' will be used as the speaker ID for this dataset."
         )
 
@@ -566,7 +568,7 @@ class HasLanguageStep(Step):
         elif len(self.state.get("selected_headers", [])) >= len(
             self.state["filelist_data_list"][0]
         ):
-            print("No columns left, we will assume you have no language column.")
+            rich_print("No columns left, we will assume you have no language column.")
             return "no"
         else:
             return get_response_from_menu_prompt(
@@ -602,7 +604,7 @@ class SelectLanguageStep(Step):
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 
         g2p_langs_full = get_arpabet_langs()[1]
-        print(
+        rich_print(
             "Note: if your dataset has more than one language in it, you will have to provide a 'language' column to indicate the language of each sample, because the configuration wizard can't guess!"
         )
         # TODO: currently we only support the languages from g2p, but we should add more
@@ -810,7 +812,7 @@ class SymbolSetStep(Step):
         # TODO: This is a bit of a weird step, since it doesn't really prompt anything, it just applies the effect of trying to find
         #       character graphemes/phones. I'd still like to keep it here, since we might add more to this step in the future, and
         #       I don't want to lump the grapheme clustering logic into the effect of another step.
-        print(
+        rich_print(
             f"We will now read your entire dataset and try to determine the characters and/or phones in your dataset according to Unicode Grapheme clustering rules. Please carefully check your {TEXT_CONFIG_FILENAME_PREFIX}.yaml file (which is created at the end of the wizard) and adjust the symbol set as appropriate. If your language uses standard punctuation symbols to represent sounds, it is extra important that you go remove any of these symbols from the punctuation categories."
         )
         return True

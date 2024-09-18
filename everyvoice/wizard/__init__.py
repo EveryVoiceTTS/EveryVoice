@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Optional, Sequence
 
 from anytree import RenderTree
+from rich import print as rich_print
 
 from .utils import EnumDict as State
 from .utils import NodeMixinWithNavigation
@@ -112,7 +113,9 @@ class Step(_Step, NodeMixinWithNavigation):
         else:
             self._validation_failures += 1
             if self._validation_failures > 20:
-                print(f"ERROR: {self.name} giving up after 20 validation failures.")
+                rich_print(
+                    f"ERROR: {self.name} giving up after 20 validation failures."
+                )
                 sys.exit(1)
             self.run()
 
@@ -180,7 +183,7 @@ class Tour:
             try:
                 node.run()
             except KeyboardInterrupt:
-                print("\nKeyboard Interrupt")
+                rich_print("\nKeyboard Interrupt")
                 node = self.keyboard_interrupt_action(node)
                 continue
             node = node.next()
@@ -191,7 +194,7 @@ class Tour:
             treestr = f"{pre}{node.name}"
             if node == highlight:
                 treestr += "        <========"
-            print(treestr.ljust(8))
+            rich_print(treestr.ljust(8))
 
 
 class StepNames(Enum):

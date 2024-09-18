@@ -62,9 +62,12 @@ def get_response_from_menu_prompt(
     """
     if prompt_text:
         rich.print(Panel(prompt_text))
+    # using TerminalMenu's title parameter truncates the title to the width of
+    # the menu instead of wrapping it, so we use rich.print instead.
+    if title:
+        rich.print(title)
     menu = simple_term_menu.TerminalMenu(
         choices,
-        title=title,
         multi_select=multi,
         multi_select_select_on_accept=(not multi),
         multi_select_empty_ok=multi,

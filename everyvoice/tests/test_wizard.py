@@ -1,6 +1,7 @@
 """Unit tests for the wizard module"""
 
 import os
+import re
 import string
 import tempfile
 from enum import Enum
@@ -266,7 +267,7 @@ class WizardTest(TestCase):
             self.assertFalse(step.validate("test@test."))
             self.assertTrue(step.validate("test@test.ca"))
             self.assertFalse(step.validate(""))
-        output = stdout.getvalue()
+        output = stdout.getvalue().replace(" \n", " ")
         # Supporting email-validator prior and post 2.2.0 where the error string changed.
         self.assertTrue(
             "It must have exactly one @-sign" in output
@@ -382,10 +383,10 @@ class WizardTest(TestCase):
         with patch_input(("", "bad/name", "good-name"), True):
             with capture_stdout() as stdout:
                 step.run()
-        output = stdout.getvalue().split("\n")
+        output = stdout.getvalue().replace(" \n", " ").split("\n")
         self.assertIn("your dataset needs a name", output[0])
         self.assertIn("is not valid", output[1])
-        self.assertIn("finished the configuration", output[2])
+        self.assertIn("finished the configuration", "".join(output[2:]))
         self.assertTrue(step.completed)
 
     def test_speaker_name(self):
@@ -393,10 +394,10 @@ class WizardTest(TestCase):
         with patch_input(("", "bad/name", "good-name"), True):
             with capture_stdout() as stdout:
                 step.run()
-        output = stdout.getvalue().split("\n")
+        output = stdout.getvalue().replace(" \n", " ").split("\n")
         self.assertIn("speaker needs an ID", output[0])
         self.assertIn("is not valid", output[1])
-        self.assertIn("will be used as the speaker ID", output[2])
+        self.assertIn("will be used as the speaker ID", "".join(output[2:]))
         self.assertTrue(step.completed)
 
     def test_wavs_dir(self):
@@ -430,7 +431,7 @@ class WizardTest(TestCase):
         ):
             with capture_stdout() as stdout:
                 step.run()
-        output = stdout.getvalue().split("\n")
+        output = stdout.getvalue().replace(" \n", " ").split(".\n")
         for i in range(4):
             self.assertIn("not a valid sample rate", output[i])
         self.assertTrue(step.completed)
@@ -605,7 +606,7 @@ class WizardTest(TestCase):
         with patch_menu_prompt(1), capture_stdout() as out:
             validate_wavs_step.run()
         self.assertEqual(step.state[SN.validate_wavs_step][:2], "No")
-        self.assertIn("Warning: 4 wav files were not found", out.getvalue())
+        self.assertRegex(out.getvalue(), "Warning: .*4.* wav files were not found")
 
         text_processing_step = find_step(SN.text_processing_step, tour.steps)
         # 0 is lowercase, 1 is NFC Normalization, select both
@@ -712,9 +713,9 @@ class WizardTest(TestCase):
         # try with: 1/tsv (wrong), 2/csv (wrong), 3/festival (wrong) and finally 0 tsv (right)
         with patch_menu_prompt((1, 2, 3, 0), multi=True) as stdout:
             format_step.run()
-        output = stdout.getvalue()
-        self.assertIn("does not look like a 'tsv'", output)
-        self.assertIn("does not look like a 'csv'", output)
+        output = re.sub(r" *\n", " ", stdout.getvalue())
+        self.assertRegex(output, "does not look like a .*'tsv'")
+        self.assertRegex(output, "does not look like a .*'csv'")
         self.assertIn("is not in the festival format", output)
         self.assertTrue(format_step.completed)
         # print(format_step.state)
@@ -736,10 +737,10 @@ class WizardTest(TestCase):
         # try with: 0/psv (wrong), 1/tsv (wrong), 2/csv (wrong), and finally 3/festival (right)
         with patch_menu_prompt((0, 1, 2, 3), multi=True) as stdout:
             format_step.run()
-        output = stdout.getvalue()
-        self.assertIn("does not look like a 'psv'", output)
-        self.assertIn("does not look like a 'tsv'", output)
-        self.assertIn("does not look like a 'csv'", output)
+        output = stdout.getvalue().replace(" \n", " ")
+        self.assertRegex(output, "does not look like a .*'psv'")
+        self.assertRegex(output, "does not look like a .*'tsv'")
+        self.assertRegex(output, "does not look like a .*'csv'")
         self.assertTrue(format_step.completed)
         # print(format_step.state)
 

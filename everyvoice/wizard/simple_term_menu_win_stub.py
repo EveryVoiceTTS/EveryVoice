@@ -31,21 +31,20 @@ class TerminalMenu:
     It's not nearly as pretty as what we do on Linux with the real thing, but
     it's good enough for development and testing."""
 
-    def __init__(self, choices, title, multi_select, **_kwargs):
+    def __init__(self, choices, multi_select, **_kwargs):
         self.choices = choices
-        self.title = title
         self.multi_select = multi_select
 
     def show(self):
         if self.multi_select:
             responses = questionary.checkbox(
-                self.title,
-                self.choices,
+                message="",
+                choices=self.choices,
             ).unsafe_ask()
             return [self.choices.index(response) for response in responses]
         else:
             response = questionary.select(
-                self.title,
+                message="",
                 choices=self.choices,
             ).unsafe_ask()
             return self.choices.index(response)
