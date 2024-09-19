@@ -9,6 +9,7 @@ from anytree import RenderTree
 from rich import print as rich_print
 from rich.panel import Panel
 
+from .prompts import get_response_from_menu_prompt
 from .utils import EnumDict as State
 from .utils import NodeMixinWithNavigation
 
@@ -122,6 +123,23 @@ class Step(_Step, NodeMixinWithNavigation):
                 sys.exit(1)
             self.run()
 
+    def is_reversible(self):
+        """Return True if the step's effects can be reversed, False otherwise.
+
+        Also implement undo if you return True and undoing the step requires state changes.
+        """
+        return False
+
+    def undo(self):
+        """Undo the effects of the step.
+
+        If you implement undo, also implement is_reversible with return True
+        """
+        self.response = None
+        self.completed = False
+        if self.state is not None:
+            del self.state[self.name]
+
 
 class RootStep(Step):
     """Dummy step sitting at the root of the tour"""
@@ -187,6 +205,47 @@ class Tour:
         children = list(parent.children)
         children.insert(0, step)
         parent.children = children
+
+    def keyboard_interrupt_action(self, node):
+        """Handle a keyboard interrupt by asking the user what to do"""
+        action = None
+        # Three Ctrl-C in a row, we just exist, but two in a row might be an
+        # accident so ask again.
+        for _ in range(2):
+            try:
+                action = get_response_from_menu_prompt(
+                    "What would you like to do?",
+                    [
+                        "Go back one step",
+                        "Continue",
+                        "View the question tree",
+                        "Save progress",
+                        "Exit",
+                    ],
+                    return_indices=True,
+                )
+                break
+            except KeyboardInterrupt:
+                continue
+        if action == 0:
+            prev = node.prev()
+            if prev.is_reversible():
+                prev.undo()
+                return prev
+            else:
+                rich_print(
+                    f"Sorry, the effects of the {prev.name} cannot be undone, continuing. If you need to go back, you'll have to restart the wizard."
+                )
+                return node
+        elif action == 1:
+            return node
+        elif action == 2:
+            self.visualize(highlight=node)
+            return node
+        elif action == 3:
+            return node
+        else:  # still None, or the highest value in the choice list.
+            sys.exit(1)
 
     def run(self):
         """Run the tour by traversing the tree depth-first"""

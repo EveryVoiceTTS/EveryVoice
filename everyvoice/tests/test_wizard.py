@@ -1731,6 +1731,53 @@ class WizardTest(TestCase):
             self.assertIn("multilingual: false", text_to_spec_config)
             self.assertIn("multispeaker: false", text_to_spec_config)
 
+    def test_control_c(self):
+        # Three Ctrl-C exits
+        tour = make_trivial_tour()
+        with patch_input(KeyboardInterrupt()), patch_menu_prompt(KeyboardInterrupt()):
+            with self.assertRaises(SystemExit):
+                tour.run()
+
+        # Ctrl-C plus option 4 (Exit) exits
+        tour = make_trivial_tour()
+        with patch_input(KeyboardInterrupt()):
+            with patch_menu_prompt(4):  # 4 is "Exit" in keyboard interrupt handling
+                with self.assertRaises(SystemExit):
+                    tour.run()
+
+        resulting_state = {
+            SN.name_step.value: "project_name",
+            SN.contact_name_step.value: "user name",
+            SN.contact_email_step.value: "email@mail.com",
+        }
+
+        tour = make_trivial_tour()
+        with patch_input(
+            ["project_name", KeyboardInterrupt(), "user name", "email@mail.com"],
+            multi=True,
+        ):
+            # Ctrl-C once, then hit 1 to continue
+            with patch_menu_prompt([KeyboardInterrupt(), 1], multi=True):
+                tour.run()
+        self.assertEqual(tour.state, resulting_state)
+
+        tour = make_trivial_tour()
+        with patch_input(
+            [
+                "bad_name",
+                KeyboardInterrupt(),
+                "project_name",
+                "bad user name",
+                KeyboardInterrupt(),
+                "user name",
+                "email@mail.com",
+            ],
+            multi=True,
+        ):
+            with patch_menu_prompt(0):  # say 0==go back each time
+                tour.run()
+        self.assertEqual(tour.state, resulting_state)
+
     def test_trace(self):
         tour = make_trivial_tour(trace=True)
         tour.trace = True

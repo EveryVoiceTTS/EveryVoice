@@ -66,6 +66,9 @@ class NameStep(Step):
             f"Great! Launching Configuration Wizard 🧙 for project named '{self.response}'."
         )
 
+    def is_reversible(self):
+        return True
+
 
 class ContactNameStep(Step):
     DEFAULT_NAME = StepNames.contact_name_step
@@ -83,6 +86,9 @@ class ContactNameStep(Step):
 
     def effect(self):
         rich_print(f"Great! Nice to meet you, '{self.response}'.")
+
+    def is_reversible(self):
+        return True
 
 
 class ContactEmailStep(Step):
@@ -124,6 +130,9 @@ class ContactEmailStep(Step):
         rich_print(
             f"Great! Your contact email '{self.response}' will be saved to your models."
         )
+
+    def is_reversible(self):
+        return True
 
 
 class OutputPathStep(Step):
@@ -188,6 +197,9 @@ class OutputPathStep(Step):
         rich_print(
             f"The Configuration Wizard 🧙 will put your files here: '{self.output_path}'"
         )
+
+    def is_reversible(self):
+        return True
 
 
 class ConfigFormatStep(Step):
