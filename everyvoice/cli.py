@@ -478,7 +478,7 @@ def demo(
         file_okay=True,
         exists=True,
         dir_okay=False,
-        help="The path to a trained text-to-spec EveryVoice model.",
+        help="The path to a trained text-to-spec (i.e., feature prediction) EveryVoice model.",
         autocompletion=complete_path,
     ),
     spec_to_wav_model: Path = typer.Argument(
