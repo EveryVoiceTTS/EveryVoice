@@ -24,6 +24,9 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.train imp
     train as train_fs2,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
+    export as export_hfg,
+)
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
@@ -230,6 +233,40 @@ class ModelTypes(str, Enum):
     text_to_spec = "text-to-spec"
     spec_to_wav = "spec-to-wav"
 
+
+# Add the export commands
+export_group = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    context_settings={"help_option_names": ["-h", "--help"]},
+    rich_markup_mode="markdown",
+    cls=TyperGroupOrderAsDeclared,
+    help="""
+    # Export Help
+
+        - **spec-to-wav** --- You can export your spec-to-wav model to a much smaller format for synthesis. Advanced: this will export only the generator, leaving the weights of the discriminators behind.
+    """,
+)
+
+export_group.command(
+    short_help="Export and optimize a spec-to-wav model for inference",
+    name="spec-to-wav",
+    help="""Export your spec-to-wav model.
+
+    # Important!
+
+    This will reduce the size of your checkpoint but it means that the exported checkpoint cannot be resumed for training, it can only be used for inference/synthesis.
+
+    For example:
+
+    **everyvoice export spec-to-wav <path_to_ckpt> <output_path>**
+    """,
+)(export_hfg)
+
+app.add_typer(
+    export_group,
+    name="export",
+    short_help="Export your EveryVoice models",
+)
 
 app.command(
     short_help="Segment a long audio file",
