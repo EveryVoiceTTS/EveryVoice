@@ -1,6 +1,5 @@
 """The main module for the wizard package."""
 
-import os
 import sys
 from enum import Enum
 from pathlib import Path
@@ -26,58 +25,59 @@ TEXT_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-wav"
 
 
 class _Step:
-    """The main class for steps within a tour.
+    """_Step defines and documents the interface for step classes.
 
-    Each step must implement the prompt and validate methods.
-    This method must save the answer in the response attribute.
+    Each step must implement the prompt and validate methods, and can optionally
+    override the others.
     """
 
     def __init__(self, name: str):
-        self.response = None
-        self.completed = False
         self.name = name
 
     def prompt(self):
-        """Prompt the user and return the result.
-
-        Raises:
-            NotImplementedError: If you don't implement anything, this will be raised
-        """
+        """Implement this method to prompt the user and return the step's response."""
         raise NotImplementedError(
             f"This step ({self.name}) doesn't have a prompt method implemented. Please implement one."
         )
 
     def sanitize_input(self, response):
         """
-        Perform data sanitization of user provided input.
+        Override this method to perform data sanitization of user-provided input.
         """
-        return response
-
-    def sanitize_paths(self, response):
-        """For steps that return path, have sanitize_input call sanitize_paths"""
-        # Remove surrounding whitespace
-        response = response.strip()
-        # Support ~ and ~username path expansions
-        response = os.path.expanduser(response)
         return response
 
     def validate(self, response) -> bool:
-        """Validate the response.
-
-        Raises:
-            NotImplementedError: _description_
-        """
+        """Each step class must implement this method to validate user responses."""
         raise NotImplementedError(
             f"This step ({self.name}) doesn't have a validate method implemented. Please implement one."
         )
 
     def effect(self):
-        """Run some arbitrary code after the step resolves"""
+        """Override this method to run additional code after the step resolves"""
         pass
+
+    def is_reversible(self):
+        """Override this to return True if the step's effects can be reversed.
+
+        Also implement undo if you return True and undoing the step requires more than
+        the basics in Step.undo().
+        """
+        return False
+
+    def undo(self):
+        """Implement undo() to reverse the effects of running the step.
+
+        Only required if is_reversible() returns True.
+        Don't forget to call super().undo() in subclasses.
+        """
+        raise NotImplementedError(f"{self.name} is not reversible.")
 
 
 class Step(_Step, NodeMixinWithNavigation):
-    """Just a mixin to allow a tree-based interpretation of steps"""
+    """Step is a mixin to allow a tree-based interpretation of steps
+    and it provides state management for the steps.
+
+    Every step class must inherit from this class."""
 
     def __init__(
         self,
@@ -89,7 +89,9 @@ class Step(_Step, NodeMixinWithNavigation):
         if name is None:
             name = getattr(self, "DEFAULT_NAME", "default step name missing")
         name = name.value if isinstance(name, Enum) else name
-        super(Step, self).__init__(name)
+        super().__init__(name)
+        self.response = None
+        self.completed = False
         self.default = default
         self.parent = parent
         self.state_subset = state_subset
@@ -130,17 +132,10 @@ class Step(_Step, NodeMixinWithNavigation):
                 sys.exit(1)
             self.run()
 
-    def is_reversible(self):
-        """Return True if the step's effects can be reversed, False otherwise.
-
-        Also implement undo if you return True and undoing the step requires state changes.
-        """
-        return False
-
     def undo(self):
-        """Undo the effects of the step.
+        """Basic undoing of the effects of running run() itself.
 
-        If you implement undo, also implement is_reversible with return True
+        Subclasses should further undo their own effects if any, then call super().undo().
         """
         self.response = None
         self.completed = False

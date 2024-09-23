@@ -38,7 +38,7 @@ from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
 )
-from everyvoice.wizard.utils import write_dict_to_config
+from everyvoice.wizard.utils import sanitize_paths, write_dict_to_config
 
 
 class NameStep(Step):
@@ -147,7 +147,7 @@ class OutputPathStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        return self.sanitize_paths(response)
+        return sanitize_paths(response)
 
     def can_mkdir(self, path: Path) -> bool:
         """Make sure it's possible to create path, without leaving it behind."""

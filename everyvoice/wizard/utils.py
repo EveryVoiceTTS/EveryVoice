@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 from collections import UserDict
 from enum import Enum
 from itertools import islice
@@ -192,3 +193,15 @@ class NodeMixinWithNavigation(NodeMixin):
             return self.parent
         else:
             return None
+
+
+def sanitize_paths(response):
+    """Remove extra whitespaces and expand ~ and ~username path expansions.
+
+    For steps that return a path, have sanitize_input() call sanitize_paths().
+    """
+    # Remove surrounding whitespace
+    response = response.strip()
+    # Support ~ and ~username path expansions
+    response = os.path.expanduser(response)
+    return response

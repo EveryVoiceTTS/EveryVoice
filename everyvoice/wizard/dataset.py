@@ -24,6 +24,7 @@ from everyvoice.wizard.utils import (
     apply_automatic_text_conversions,
     read_unknown_tabular_filelist,
     rename_unknown_headers,
+    sanitize_paths,
 )
 from everyvoice.wizard.validators import validate_path
 
@@ -91,7 +92,7 @@ class WavsDirStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        return self.sanitize_paths(response)
+        return sanitize_paths(response)
 
     def validate(self, response) -> bool:
         valid_path = validate_path(response, is_dir=True, exists=True)
@@ -141,7 +142,7 @@ class FilelistStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        return self.sanitize_paths(response)
+        return sanitize_paths(response)
 
     def validate(self, response) -> bool:
         return validate_path(response, is_file=True, exists=True)
@@ -704,9 +705,6 @@ class TextProcessingStep(Step):
     def effect(self):
         from everyvoice.config.text_config import TextConfig
 
-        # Apply the selected text processing processes
-        if "symbols" not in self.state:
-            self.state["symbols"] = {}
         # Get Text Index
         if self.state.get("filelist_data_list", None):
             text_index = self.state["filelist_headers"].index(
@@ -809,9 +807,11 @@ class SymbolSetStep(Step):
     DEFAULT_NAME = StepNames.symbol_set_step
 
     def prompt(self):
-        # TODO: This is a bit of a weird step, since it doesn't really prompt anything, it just applies the effect of trying to find
-        #       character graphemes/phones. I'd still like to keep it here, since we might add more to this step in the future, and
-        #       I don't want to lump the grapheme clustering logic into the effect of another step.
+        # TODO: This is a bit of a weird step, since it doesn't really prompt anything,
+        #       it just applies the effect of trying to find character graphemes/phones.
+        #       I'd still like to keep it here, since we might add more to this step in
+        #       the future, and I don't want to lump the grapheme clustering logic into
+        #       the effect of another step.
         rich_print(
             f"We will now read your entire dataset and try to determine the characters and/or phones in your dataset according to Unicode Grapheme clustering rules. Please carefully check your {TEXT_CONFIG_FILENAME_PREFIX}.yaml file (which is created at the end of the wizard) and adjust the symbol set as appropriate. If your language uses standard punctuation symbols to represent sounds, it is extra important that you go remove any of these symbols from the punctuation categories."
         )
