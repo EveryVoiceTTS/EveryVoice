@@ -1,3 +1,4 @@
+import os
 import sys
 from enum import Enum
 from typing import Optional, Sequence
@@ -40,6 +41,14 @@ class _Step:
         """
         Perform data sanitization of user provided input.
         """
+        return response
+
+    def sanitize_paths(self, response):
+        """For steps that return path, have sanitize_input call sanitize_paths"""
+        # Remove surrounding whitespace
+        response = response.strip()
+        # Support ~ and ~username path expansions
+        response = os.path.expanduser(response)
         return response
 
     def validate(self, response) -> bool:

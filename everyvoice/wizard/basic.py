@@ -138,8 +138,7 @@ class OutputPathStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        response = super().sanitize_input(response)
-        return response.strip()
+        return self.sanitize_paths(response)
 
     def validate(self, response) -> bool:
         path = Path(response)

@@ -91,8 +91,7 @@ class WavsDirStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        response = super().sanitize_input(response)
-        return response.strip()
+        return self.sanitize_paths(response)
 
     def validate(self, response) -> bool:
         valid_path = validate_path(response, is_dir=True, exists=True)
@@ -142,8 +141,7 @@ class FilelistStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        response = super().sanitize_input(response)
-        return response.strip()
+        return self.sanitize_paths(response)
 
     def validate(self, response) -> bool:
         return validate_path(response, is_file=True, exists=True)
