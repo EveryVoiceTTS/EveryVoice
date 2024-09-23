@@ -56,13 +56,17 @@ class _Step:
         """Override this method to run additional code after the step resolves"""
         pass
 
-    def is_reversible(self):
-        """Override this to return True if the step's effects can be reversed.
+    # declare `REVERSIBLE = True` in Step classes where the step's effects can be reversed.
+    # If the step is reversible, implement undo() to reverse the effects of running the step.
+    REVERSIBLE = False
+    # declare `AUTOMATIC = True` in Step classes where the step does not prompt the user.
+    AUTOMATIC = False
 
-        Also implement undo if you return True and undoing the step requires more than
-        the basics in Step.undo().
-        """
-        return False
+    def is_reversible(self):
+        return self.REVERSIBLE
+
+    def is_automatic(self):
+        return self.AUTOMATIC
 
     def undo(self):
         """Implement undo() to reverse the effects of running the step.
@@ -137,25 +141,31 @@ class Step(_Step, NodeMixinWithNavigation):
 
         Subclasses should further undo their own effects if any, then call super().undo().
         """
-        self.response = None
-        self.completed = False
-        if self.state is not None:
-            del self.state[self.name]
+        self.response = None  # reset the response
+        self.completed = False  # reset the completion flag
+        self.state.pop(self.name, None)  # remove the state entry for the step
+        self.children = ()  # remove any children added by the step
+        if saved_state := getattr(self, "saved_state", None):
+            # restore the saved state if it exists
+            for key, value in saved_state.items():
+                if value is None:
+                    self.state.pop(key, None)
+                else:
+                    self.state[key] = value
+            del self.saved_state
 
 
 class RootStep(Step):
     """Dummy step sitting at the root of the tour"""
 
     DEFAULT_NAME = "Root"
+    REVERSIBLE = True
 
     def run(self, saved_response=None):
         pass
 
     def validate(self, response):
         return response is None
-
-    def is_reversible(self):
-        return True
 
 
 class Tour:
@@ -186,6 +196,11 @@ class Tour:
             step.state = state[step.state_subset]
         else:
             step.state = state
+
+    def remove_dataset(self, state_subset: str):
+        """Remove a dataset from the tour by state_subset"""
+        if state_subset in self.state:
+            del self.state[state_subset]
 
     def add_steps(self, steps: Sequence[Step | list[Step]], parent: Step):
         """Insert steps in front of the other children of parent.
@@ -237,6 +252,11 @@ class Tour:
                 continue
         if action == 0:
             prev = node.prev()
+            while prev.is_automatic():
+                assert prev.is_reversible()
+                prev.undo()
+                prev = prev.prev()
+                assert prev.is_reversible()
             if prev.is_reversible():
                 prev.undo()
                 return prev

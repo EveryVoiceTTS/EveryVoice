@@ -304,7 +304,7 @@ class WizardTest(TestCase):
         more_dataset_step = find_step(SN.more_datasets_step, tour.steps)
         with patch_menu_prompt(1):  # 1 is Yes, I have more data
             more_dataset_step.run()
-        self.assertIn("dataset_1", tour.state)
+        self.assertIn("dataset_0", tour.state)
         self.assertGreater(len(more_dataset_step.descendants), 8)
         self.assertGreater(len(tour.root.descendants), 14)
 

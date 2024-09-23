@@ -43,6 +43,7 @@ from everyvoice.wizard.utils import sanitize_paths, write_dict_to_config
 
 class NameStep(Step):
     DEFAULT_NAME = StepNames.name_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input(
@@ -66,12 +67,10 @@ class NameStep(Step):
             f"Great! Launching Configuration Wizard 🧙 for project named '{self.response}'."
         )
 
-    def is_reversible(self):
-        return True
-
 
 class ContactNameStep(Step):
     DEFAULT_NAME = StepNames.contact_name_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input("What is your full name? ")
@@ -87,12 +86,10 @@ class ContactNameStep(Step):
     def effect(self):
         rich_print(f"Great! Nice to meet you, '{self.response}'.")
 
-    def is_reversible(self):
-        return True
-
 
 class ContactEmailStep(Step):
     DEFAULT_NAME = StepNames.contact_email_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input("Please provide a contact email address for your models. ")
@@ -131,12 +128,10 @@ class ContactEmailStep(Step):
             f"Great! Your contact email '{self.response}' will be saved to your models."
         )
 
-    def is_reversible(self):
-        return True
-
 
 class OutputPathStep(Step):
     DEFAULT_NAME = StepNames.output_step
+    REVERSIBLE = True
 
     def prompt(self):
         return questionary.path(
@@ -198,12 +193,11 @@ class OutputPathStep(Step):
             f"The Configuration Wizard 🧙 will put your files here: '{self.output_path}'"
         )
 
-    def is_reversible(self):
-        return True
-
 
 class ConfigFormatStep(Step):
     DEFAULT_NAME = StepNames.config_format_step
+    # ConfigFormatStep writes the results to disk and exits, so it's not reversible.
+    REVERSIBLE = False
 
     def prompt(self):
         return get_response_from_menu_prompt(
@@ -487,6 +481,7 @@ class ConfigFormatStep(Step):
 
 class MoreDatasetsStep(Step):
     DEFAULT_NAME = StepNames.more_datasets_step
+    REVERSIBLE = True
 
     def prompt(self):
         return get_response_from_menu_prompt(
@@ -506,7 +501,7 @@ class MoreDatasetsStep(Step):
                         for key in self.state.keys()
                         if key.startswith("dataset_")
                     ],
-                    default=0,
+                    default=-1,
                 )
                 + 1
             )
@@ -522,3 +517,9 @@ class MoreDatasetsStep(Step):
             self.tour.add_step(
                 ConfigFormatStep(name=StepNames.config_format_step), self
             )
+
+    def undo(self):
+        if self.response == "yes":
+            # delete the dataset from the state
+            self.tour.remove_dataset(self.children[0].state_subset)
+        super().undo()

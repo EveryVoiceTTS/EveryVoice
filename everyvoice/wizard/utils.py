@@ -166,6 +166,9 @@ class EnumDict(UserDict):
     def __setitem__(self, key, value):
         return super().__setitem__(self.convert_key(key), value)
 
+    def __delitem__(self, key):
+        super().__delitem__(self.convert_key(key))
+
 
 class NodeMixinWithNavigation(NodeMixin):
     """A NodeMixin subclass that allows for navigation between siblings

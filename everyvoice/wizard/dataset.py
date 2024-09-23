@@ -2,6 +2,7 @@ import glob
 import os
 import random
 import sys
+from copy import copy, deepcopy
 from pathlib import Path
 from typing import Sequence
 
@@ -33,6 +34,7 @@ from everyvoice.wizard.validators import validate_path
 
 class DatasetNameStep(Step):
     DEFAULT_NAME = StepNames.dataset_name_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input(
@@ -59,6 +61,7 @@ class DatasetNameStep(Step):
 
 class DatasetPermissionStep(Step):
     DEFAULT_NAME = StepNames.dataset_permission_step
+    # REVERSIBLE not declared because this class overrides is_reversible instead
     choices = (
         "No, I don't have permission to use this data.",
         "Yes, I do have permission to use this data.",
@@ -75,14 +78,26 @@ class DatasetPermissionStep(Step):
         return response in self.choices
 
     def effect(self):
-        if self.state[StepNames.dataset_permission_step.value].startswith("No"):
+        if self.response.startswith("No"):
             rich_print("OK, we'll ask you to choose another dataset then!")
-            self.children = []
-            del self.root.state[self.state_subset]
+            self.children = ()
+            self.tour.remove_dataset(self.state_subset)
+
+    def is_reversible(self):
+        # Permission can be revoked, but if you said no you can't go back because we
+        # destroy too much of the state in the effect(). Just pick another data file.
+        return not self.response.startswith("No")
+
+    def undo(self):
+        # Do not call super().undo() here! We don't want to remove the dataset steps
+        self.response = None
+        self.completed = False
+        self.state.pop(self.name, None)
 
 
 class WavsDirStep(Step):
     DEFAULT_NAME = StepNames.wavs_dir_step
+    REVERSIBLE = True
 
     def prompt(self):
         return questionary.path(
@@ -110,6 +125,7 @@ class WavsDirStep(Step):
 
 class SampleRateConfigStep(Step):
     DEFAULT_NAME = StepNames.sample_rate_config_step
+    REVERSIBLE = True
 
     def prompt(self):
         return questionary.text(
@@ -135,6 +151,7 @@ class SampleRateConfigStep(Step):
 
 class FilelistStep(Step):
     DEFAULT_NAME = StepNames.filelist_step
+    REVERSIBLE = True
 
     def prompt(self):
         return questionary.path(
@@ -150,6 +167,7 @@ class FilelistStep(Step):
 
 class FilelistFormatStep(Step):
     DEFAULT_NAME = StepNames.filelist_format_step
+    REVERSIBLE = True
     separators = {"psv": "|", "tsv": "\t", "csv": ","}
 
     def prompt(self):
@@ -209,6 +227,14 @@ class FilelistFormatStep(Step):
         the data to the tour state. We then inspect the headers for the data and add steps to
         select the basename and text if they are not already specified in the headers.
         """
+        self.saved_state = {
+            "filelist_delimiter": None,
+            "filelist_headers": None,
+            "filelist_data_list": None,
+            "filelist_data": None,
+            "selected_headers": None,
+        }
+
         file_type = self.state.get(StepNames.filelist_format_step)
         filelist_path = self.state.get(StepNames.filelist_step)
         if not isinstance(filelist_path, Path):
@@ -270,6 +296,8 @@ class FilelistFormatStep(Step):
 
 class ValidateWavsStep(Step):
     DEFAULT_NAME = StepNames.validate_wavs_step
+    AUTOMATIC = True
+    REVERSIBLE = True
 
     def wav_file_early_validation(self) -> int:
         """Look for missing wav files and return the error count"""
@@ -351,6 +379,7 @@ class ValidateWavsStep(Step):
 
 class FilelistTextRepresentationStep(Step):
     DEFAULT_NAME = StepNames.filelist_text_representation_step
+    REVERSIBLE = True
     text_representation_options = tuple(x.value for x in DatasetTextRepresentation)
 
     def prompt(self):
@@ -364,11 +393,15 @@ class FilelistTextRepresentationStep(Step):
 
     def effect(self):
         # Apply the text representation level as the new alias for text:
+        self.saved_state = {
+            "filelist_headers": copy(self.state["filelist_headers"]),
+        }
         for i, header in enumerate(self.state["filelist_headers"]):
             if header == "text":
                 self.state["filelist_headers"][i] = self.response
         # Rename the "text" key according to the new alias:
         if "filelist_data" in self.state:
+            self.saved_state["filelist_data"] = deepcopy(self.state["filelist_data"])
             for item in self.state["filelist_data"]:
                 filelist_format = self.state[
                     StepNames.filelist_text_representation_step
@@ -381,6 +414,7 @@ class FilelistTextRepresentationStep(Step):
 
 class HeaderStep(Step):
     DEFAULT_NAME = StepNames.text_header_step
+    REVERSIBLE = True
 
     def __init__(self, name: str, prompt_text: str, header_name: str, **kwargs):
         super(HeaderStep, self).__init__(name=name, **kwargs)
@@ -411,12 +445,24 @@ class HeaderStep(Step):
         # Rename the filelist header with the standard header name
         if "selected_headers" not in self.state:
             self.state["selected_headers"] = []
+        self.saved_state = {
+            "selected_headers": copy(self.state["selected_headers"]),
+            "filelist_headers": copy(self.state["filelist_headers"]),
+        }
         self.state["selected_headers"].append(self.response)
         self.state["filelist_headers"][self.response] = self.header_name
 
 
 class LanguageHeaderStep(HeaderStep):
+    REVERSIBLE = True
+
     def effect(self):
+        self.saved_state = {
+            "filelist_headers": copy(self.state["filelist_headers"]),
+            "selected_headers": copy(self.state.get("selected_headers", None)),
+            "filelist_data": deepcopy(self.state.get("filelist_data", None)),
+            "model_target_training_text_representation": None,
+        }
         # Rename the filelist header with the standard header name
         if "selected_headers" not in self.state:
             self.state["selected_headers"] = []
@@ -447,6 +493,7 @@ class HasHeaderLineStep(Step):
     is the header row."""
 
     DEFAULT_NAME = StepNames.data_has_header_line_step
+    REVERSIBLE = True
     choices = ("no", "yes")
 
     def prompt(self):
@@ -464,15 +511,21 @@ class HasHeaderLineStep(Step):
         return response in self.choices
 
     def effect(self):
-        if self.state[StepNames.data_has_header_line_step] == "no":
+        if self.response == "no":
             rich_print("Reinterpreting your first row as a record, not headers.")
             self.state["filelist_data_list"].insert(
                 0, self.state["filelist_data_list"][0]
             )
 
+    def undo(self):
+        if self.response == "no":
+            self.state["filelist_data_list"].pop(0)
+        return super().undo()
+
 
 class HasSpeakerStep(Step):
     DEFAULT_NAME = StepNames.data_has_speaker_value_step
+    REVERSIBLE = True
     choices = ("no", "yes")
 
     def prompt(self):
@@ -512,6 +565,7 @@ class HasSpeakerStep(Step):
 
 class KnowSpeakerStep(Step):
     DEFAULT_NAME = StepNames.know_speaker_step
+    REVERSIBLE = True
     choices = ("no", "yes")
 
     def prompt(self):
@@ -537,6 +591,7 @@ class KnowSpeakerStep(Step):
 
 class AddSpeakerStep(Step):
     DEFAULT_NAME = StepNames.add_speaker_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input("Please enter the desired speaker ID: ")
@@ -561,6 +616,7 @@ class AddSpeakerStep(Step):
 
 class HasLanguageStep(Step):
     DEFAULT_NAME = StepNames.data_has_language_value_step
+    REVERSIBLE = True
     choices = ("no", "yes")
 
     def prompt(self):
@@ -598,6 +654,7 @@ class HasLanguageStep(Step):
 
 class SelectLanguageStep(Step):
     DEFAULT_NAME = StepNames.select_language_step
+    REVERSIBLE = True
 
     def prompt(self):
         from g2p import get_arpabet_langs
@@ -623,6 +680,11 @@ class SelectLanguageStep(Step):
         return isinstance(response, str)
 
     def effect(self):
+        self.saved_state = {
+            "filelist_headers": copy(self.state["filelist_headers"]),
+            "filelist_data": deepcopy(self.state.get("filelist_data", None)),
+            "model_target_training_text_representation": None,
+        }
         # Rename unselected headers to unknown:
         self.state["filelist_headers"] = rename_unknown_headers(
             self.state["filelist_headers"]
@@ -677,6 +739,7 @@ def reload_filelist_data_as_dict(state):
 
 class TextProcessingStep(Step):
     DEFAULT_NAME = StepNames.text_processing_step
+    REVERSIBLE = True
     process_lookup = {
         0: {"fn": lower, "desc": "Lowercase"},
         1: {"fn": nfc_normalize, "desc": "NFC Normalization"},
@@ -696,8 +759,12 @@ class TextProcessingStep(Step):
     def effect(self):
         from everyvoice.config.text_config import TextConfig
 
+        self.saved_state = {}
         # Get Text Index
         if self.state.get("filelist_data_list", None):
+            self.saved_state["filelist_data_list"] = deepcopy(
+                self.state["filelist_data_list"]
+            )
             text_index = self.state["filelist_headers"].index(
                 self.state[StepNames.filelist_text_representation_step]
             )
@@ -722,6 +789,7 @@ class TextProcessingStep(Step):
                         self.state["filelist_data_list"][i][text_index]
                     )
         else:
+            self.saved_state["filelist_data"] = deepcopy(self.state["filelist_data"])
             # Process global cleaners
             global_cleaners = TextConfig().cleaners
             for cleaner in global_cleaners:
@@ -754,6 +822,7 @@ class TextProcessingStep(Step):
 
 class SoxEffectsStep(Step):
     DEFAULT_NAME = StepNames.sox_effects_step
+    REVERSIBLE = True
 
     def prompt(self):
         return get_response_from_menu_prompt(
@@ -793,9 +862,15 @@ class SoxEffectsStep(Step):
             for effect in self.response:
                 self.state["sox_effects"] += audio_effects[effect]
 
+    def undo(self):
+        del self.state["sox_effects"]
+        super().undo()
+
 
 class SymbolSetStep(Step):
     DEFAULT_NAME = StepNames.symbol_set_step
+    AUTOMATIC = True
+    REVERSIBLE = True
 
     def prompt(self):
         # TODO: This is a bit of a weird step, since it doesn't really prompt anything,
