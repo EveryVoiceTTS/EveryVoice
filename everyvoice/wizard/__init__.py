@@ -3,11 +3,15 @@
 import os
 import sys
 from enum import Enum
+from pathlib import Path
 from typing import Optional, Sequence
 
-from anytree import RenderTree
+import yaml
+from anytree import PreOrderIter, RenderTree
 from rich import print as rich_print
 from rich.panel import Panel
+
+from everyvoice._version import VERSION
 
 from .prompts import get_response_from_menu_prompt
 from .utils import EnumDict as State
@@ -98,11 +102,14 @@ class Step(_Step, NodeMixinWithNavigation):
     def __repr__(self) -> str:
         return f"{self.name}: {super().__repr__()}"
 
-    def run(self):
+    def run(self, saved_response=None):
         """Prompt the user and save the response to the response attribute.
         If this method returns something truthy, continue, otherwise ask the prompt again.
         """
-        self.response = self.prompt()
+        if saved_response is not None:
+            self.response = saved_response
+        else:
+            self.response = self.prompt()
         self.response = self.sanitize_input(self.response)
         if self.tour is not None and self.tour.trace:
             rich_print(f"{self.name}: '{self.response}'")
@@ -146,8 +153,14 @@ class RootStep(Step):
 
     DEFAULT_NAME = "Root"
 
-    def run(self):
+    def run(self, saved_response=None):
         pass
+
+    def validate(self, response):
+        return response is None
+
+    def is_reversible(self):
+        return True
 
 
 class Tour:
@@ -243,13 +256,95 @@ class Tour:
             self.visualize(highlight=node)
             return node
         elif action == 3:
+            self.save_progress(node)
             return node
         else:  # still None, or the highest value in the choice list.
             sys.exit(1)
 
-    def run(self):
-        """Run the tour by traversing the tree depth-first"""
+    def resume(self, resume_from: Path) -> Optional[Step]:
+        """Resume the tour from a file containing the saved progress
+
+        Returns: the node to continue from after applying the saved history.
+        """
+
+        try:
+            with open(resume_from, "r", encoding="utf8") as f:
+                q_and_a_list = yaml.safe_load(f)
+        except (OSError, yaml.YAMLError) as e:
+            rich_print(f"Error loading progress from {resume_from}: {e}")
+            sys.exit(1)
+        if (
+            not isinstance(q_and_a_list, list)
+            or not q_and_a_list
+            or not all(
+                isinstance(item, list) and len(item) == 2 for item in q_and_a_list
+            )
+        ):
+            rich_print(
+                f"Error loading progress from {resume_from}: invalid format. "
+                "This does not look like a valid resume-from file. Aborting."
+            )
+            sys.exit(1)
+
+        q_and_a_iter = iter(q_and_a_list)
+        software, version = next(q_and_a_iter)
+        if software != "EveryVoice Wizard" or version != VERSION:
+            rich_print(
+                f"[yellow]Warning: saved progress file is for {software} version '{version}', "
+                f"but this is version '{VERSION}'. Proceeding anyway, but be aware that "
+                "the saved responses may not be compatible.[/yellow]"
+            )
+        q_and_a = next(q_and_a_iter, None)
         node = self.root
+        while node is not None and q_and_a is not None:
+            saved_node_name, saved_response = q_and_a
+            if saved_node_name.lower() != node.name.lower():
+                rich_print(
+                    f"Error: next tour question is {node.name} but resume list has {saved_node_name} instead.\n"
+                    "Your resume-from file is likely out of sync. Aborting."
+                )
+                sys.exit(1)
+            if node.validate(saved_response):
+                if node.name != "Root":
+                    rich_print(
+                        f"Applying saved response '{saved_response}' for [green]{node.name}[/green]"
+                    )
+                node.run(saved_response=saved_response)
+            else:
+                rich_print(
+                    Panel(
+                        f"Error: saved response '{saved_response}' for {node.name} is invalid. "
+                        "The remaining saved responses will not be applied, but you can continue from here."
+                    )
+                )
+                return node
+
+            node = node.next()
+            q_and_a = next(q_and_a_iter, None)
+
+        if q_and_a is not None:
+            assert node is None
+            rich_print(
+                "Error: saved responses left to apply but no more questions in the tour. Aborting."
+            )
+            sys.exit(1)
+
+        if node is not None:
+            assert q_and_a is None
+            rich_print(
+                Panel(
+                    "All saved responses were applied successfully, resuming where you left off."
+                )
+            )
+
+        return node
+
+    def run(self, resume_from: Optional[Path] = None):
+        """Run the tour by traversing the tree depth-first"""
+        if resume_from is not None:
+            node = self.resume(resume_from)
+        else:
+            node = self.root
         while node is not None:
             if self.debug_state and node.name != "Root":
                 rich_print(self.state)
@@ -291,6 +386,31 @@ class Tour:
                     )
             text += treestr + "\n"
         rich_print(Panel(text.rstrip()))
+
+    def get_progress(self, current_node: Step):
+        """Return a list of questions and answers for the tour"""
+        q_and_a_list = [[node.name, node.response] for node in PreOrderIter(self.root)]
+        current_node_index = q_and_a_list.index(
+            [current_node.name, current_node.response]
+        )
+        return q_and_a_list[:current_node_index]
+
+    def save_progress(self, current_node: Step):
+        """Save the questions and answers of the tour to a file for future resuming"""
+        filename = input("Enter the filename to save the tree to: ")
+        try:
+            with open(filename, "w", encoding="utf8") as f:
+                yaml.dump(
+                    [["EveryVoice Wizard", VERSION]] + self.get_progress(current_node),
+                    f,
+                    allow_unicode=True,
+                )
+            rich_print("Saved progress to", filename)
+
+            with open(filename, "r", encoding="utf8") as f:
+                rich_print(yaml.safe_load(f))
+        except OSError as e:
+            rich_print(f"Error saving progress to {filename}: {e}")
 
 
 class StepNames(Enum):

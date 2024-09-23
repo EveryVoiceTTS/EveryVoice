@@ -35,7 +35,8 @@ class TerminalMenu:
         self.choices = choices
         self.multi_select = multi_select
 
-    def show(self):
+    def show(self) -> int | list[int]:
+        """Show the menu and return the index/indices of the selected choice(s)."""
         if self.multi_select:
             responses = questionary.checkbox(
                 message="",

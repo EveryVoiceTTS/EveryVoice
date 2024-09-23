@@ -3,7 +3,7 @@ Encapsulate the logic for prompting the user for input in a simple terminal wind
 """
 
 import sys
-from typing import Iterable, Sequence
+from typing import Sequence
 
 import rich
 from questionary import Style
@@ -40,7 +40,7 @@ def get_response_from_menu_prompt(
     multi=False,
     search=False,
     return_indices=False,
-) -> str | int | Iterable[str] | Iterable[int]:
+) -> str | int | list[str] | list[int]:
     """Given some prompt text and a list of choices, create a simple terminal window
        and return the index of the choice
 
@@ -57,8 +57,8 @@ def get_response_from_menu_prompt(
         ----- | -------------- | -------
         false | false          | str: choice selected
         false | true           | int: index of choice selected
-        true  | false          | Iterable[str]: choices selected
-        true  | true           | Iterable[int]: indices of choices selected
+        true  | false          | list[str]: choices selected
+        true  | true           | list[int]: indices of choices selected
     """
     if prompt_text:
         rich.print(Panel(prompt_text))
@@ -80,9 +80,9 @@ def get_response_from_menu_prompt(
     sys.stdout.write("\033[K")
     if multi:
         if selection is None:
-            return ()
+            return []
         elif return_indices:
-            return selection
+            return list(selection)  # selection might be a tuple, but we need a list
         else:
             return [choices[i] for i in selection]
     else:

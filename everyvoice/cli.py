@@ -309,10 +309,22 @@ def new_project(
     debug_state: bool = typer.Option(
         False, help="Print the state along with the trace", hidden=True
     ),
+    resume_from: Optional[Path] = typer.Option(
+        None,
+        "--resume-from",
+        "-r",
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="Saved Q&A list to resume from",
+        autocompletion=complete_path,
+    ),
 ):
     from everyvoice.wizard.main_tour import get_main_wizard_tour
 
-    get_main_wizard_tour(trace=trace, debug_state=debug_state).run()
+    get_main_wizard_tour(trace=trace, debug_state=debug_state).run(
+        resume_from=resume_from
+    )
 
 
 # Add preprocess to root
