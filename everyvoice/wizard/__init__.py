@@ -139,12 +139,14 @@ class Tour:
         steps: list[Step],
         state: Optional[State] = None,
         trace: bool = False,
+        debug_state: bool = False,
     ):
         """Create the tour by placing all steps under a dummy root node"""
         self.name = name
         self.state: State = state if state is not None else State()
         self.steps = steps
         self.trace = trace
+        self.debug_state = debug_state
         self.root = RootStep()
         self.root.tour = self
         self.determine_state(self.root, self.state)
@@ -190,7 +192,9 @@ class Tour:
         """Run the tour by traversing the tree depth-first"""
         node = self.root
         while node is not None:
-            if self.trace and not node.name == "Root":
+            if self.debug_state and node.name != "Root":
+                rich_print(self.state)
+            if self.trace and node.name != "Root":
                 self.visualize(node)
             try:
                 node.run()

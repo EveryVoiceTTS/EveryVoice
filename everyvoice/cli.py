@@ -306,10 +306,13 @@ app.command(
 )
 def new_project(
     trace: bool = typer.Option(False, help="Enable trace/debugging mode", hidden=True),
+    debug_state: bool = typer.Option(
+        False, help="Print the state along with the trace", hidden=True
+    ),
 ):
     from everyvoice.wizard.main_tour import get_main_wizard_tour
 
-    get_main_wizard_tour(trace=trace).run()
+    get_main_wizard_tour(trace=trace, debug_state=debug_state).run()
 
 
 # Add preprocess to root
