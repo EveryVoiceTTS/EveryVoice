@@ -196,14 +196,14 @@ class CLITest(TestCase):
             # i.e., that we didn't change the models but forget to update the schemas.
             for filename in SCHEMAS_TO_OUTPUT:
                 with open(Path(tmpdir) / filename, encoding="utf8") as f:
-                    new_schema = f.read()
+                    new_schema = f.read().replace("\\\\", "/")  # force paths to posix
                 try:
                     with open(EV_DIR / ".schema" / filename, encoding="utf8") as f:
                         saved_schema = f.read()
-                except FileNotFoundError:
+                except FileNotFoundError as e:
                     raise AssertionError(
                         f'Schema file {filename} is missing, please run "everyvoice update-schemas".'
-                    )
+                    ) from e
                 self.assertEqual(
                     saved_schema,
                     new_schema,
@@ -296,6 +296,7 @@ class CLITest(TestCase):
             stderr=subprocess.PIPE,
             stdout=subprocess.PIPE,
             env=dict(os.environ, PYTHONPROFILEIMPORTTIME="1"),
+            check=True,
         )
 
         msg = '\n\nPlease avoid causing {} being imported from "everyvoice -h".\nIt is a relatively expensive import and slows down shell completion.\nRun "PYTHONPROFILEIMPORTTIME=1 everyvoice -h" and inspect the logs to see why it\'s being imported.'
@@ -305,7 +306,7 @@ class CLITest(TestCase):
 
 class TestBaseCLIHelper(TestCase):
     def test_save_configuration_to_log_dir(self):
-        with TemporaryDirectory() as tempdir, mute_logger(
+        with TemporaryDirectory(ignore_cleanup_errors=True) as tempdir, mute_logger(
             "everyvoice.base_cli.helpers"
         ):
             tempdir = Path(tempdir)

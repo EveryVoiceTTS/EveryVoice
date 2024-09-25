@@ -1,4 +1,5 @@
 import doctest
+import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -123,11 +124,13 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             3.5,
             "Should be exactly 3.5 seconds of audio at 44100 Hz sampling rate",
         )
-        self.assertEqual(
-            round(processed_audio.size()[0] / processed_sr, 2),
-            2.5,
-            msg="Should be about half a second of silence removed from the beginning and end",
-        )
+        skip_sox = os.environ.get("EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS", False)
+        if not skip_sox:
+            self.assertEqual(
+                round(processed_audio.size()[0] / processed_sr, 2),
+                2.5,
+                msg="Should be about half a second of silence removed from the beginning and end",
+            )
         # should work with resampling too
         rs_processed_audio, rs_processed_sr = self.preprocessor.process_audio(
             audio_path_with_silence,
@@ -135,11 +138,12 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             sox_effects=sox_effects,
             hop_size=config.preprocessing.audio.fft_hop_size,
         )
-        self.assertEqual(
-            round(rs_processed_audio.size()[0] / rs_processed_sr, 2),
-            2.5,
-            msg="Should be about half a second of silence removed from the beginning and end when resampled too",
-        )
+        if not skip_sox:
+            self.assertEqual(
+                round(rs_processed_audio.size()[0] / rs_processed_sr, 2),
+                2.5,
+                msg="Should be about half a second of silence removed from the beginning and end when resampled too",
+            )
 
     def test_process_empty_audio(self):
         for fn in ["empty.wav", "zeros.wav"]:
