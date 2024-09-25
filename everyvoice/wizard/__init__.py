@@ -175,8 +175,6 @@ class Tour:
     def run(self):
         """Run the tour by traversing the tree depth-first"""
         for _, _, node in RenderTree(self.root):
-            self.visualize()
-            print(f"Running {node.name}")
             node.run()
 
     def visualize(self):
