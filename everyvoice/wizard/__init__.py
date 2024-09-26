@@ -71,10 +71,14 @@ class _Step:
     def undo(self):
         """Implement undo() to reverse the effects of running the step.
 
-        Only required if is_reversible() returns True.
+        Note that the default implementation Step.undo() will work for most steps.
+        When effect() modifies the state, add the previous value to self.saved_state
+        When effect() adds children, they get removed automatically.
+        So only override this method if you need to do more than that and
+        is_reversible() returns True
         Don't forget to call super().undo() in subclasses.
         """
-        raise NotImplementedError(f"{self.name} is not reversible.")
+        pass
 
 
 class Step(_Step, NodeMixinWithNavigation):
@@ -143,7 +147,8 @@ class Step(_Step, NodeMixinWithNavigation):
         """
         self.response = None  # reset the response
         self.completed = False  # reset the completion flag
-        self.state.pop(self.name, None)  # remove the state entry for the step
+        if self.state:
+            self.state.pop(self.name, None)  # remove the state entry for the step
         self.children = ()  # remove any children added by the step
         if saved_state := getattr(self, "saved_state", None):
             # restore the saved state if it exists

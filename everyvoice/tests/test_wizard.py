@@ -3,7 +3,9 @@
 import os
 import re
 import string
+import sys
 import tempfile
+from copy import deepcopy
 from enum import Enum
 from pathlib import Path
 from types import MethodType
@@ -105,7 +107,7 @@ class TestStep(Step):
             self.effect = effect_method  # type: ignore[method-assign]
 
 
-def make_trivial_tour(trace: bool = False) -> Tour:
+def make_trivial_tour(trace: bool = False, debug_state: bool = False) -> Tour:
     return Tour(
         "trivial tour for testing",
         [
@@ -114,6 +116,7 @@ def make_trivial_tour(trace: bool = False) -> Tour:
             basic.ContactEmailStep(),
         ],
         trace=trace,
+        debug_state=debug_state,
     )
 
 
@@ -129,6 +132,8 @@ class WizardTest(TestCase):
         for step in [nothing_step, no_validate_step, no_prompt_step]:
             with self.assertRaises(NotImplementedError):
                 step.run()
+            self.assertFalse(step.is_reversible())
+            self.assertFalse(step.is_automatic())
 
     def test_config_format_effect(self):
         """This is testing if a null key can be passed without throwing an
@@ -785,6 +790,9 @@ class WizardTest(TestCase):
             self.assertFalse(
                 validate_path(file_name, is_dir=False, is_file=True, exists=False)
             )
+            self.assertFalse(
+                validate_path(file_name, is_dir=True, is_file=False, exists=True)
+            )
 
             not_file_name = os.path.join(tmpdirname, "file-does-not-exist")
             self.assertFalse(
@@ -846,8 +854,21 @@ class WizardTest(TestCase):
             """
             for step_and_answer in steps_and_answers:
                 step = step_and_answer.step
+                # saved_monkey = copy(step_and_answer.monkey)
                 with step_and_answer.monkey:
                     step.run()
+
+                # Test undoing and redoing every reversible step that passes through here.
+                if step.is_reversible():
+                    state = deepcopy(step.state)
+                    step.undo()
+                    self.assertNotEqual(state, step.state)
+                    # with saved_monkey:
+                    print(repr(step_and_answer.monkey), file=sys.stderr)
+                    with step_and_answer.monkey:
+                        step.run()
+                    self.assertEqual(state, step.state)
+
                 if step.children and step_and_answer.children_answers:
                     # Here we assemble steps_and_answers for the recursive call from
                     # the actual children of step and the provided children_answers.
@@ -1780,7 +1801,6 @@ class WizardTest(TestCase):
 
     def test_trace(self):
         tour = make_trivial_tour(trace=True)
-        tour.trace = True
         with patch_input(["project_name", "user name", "email@mail.com"], multi=True):
             with capture_stdout() as out:
                 tour.run()
@@ -1792,3 +1812,13 @@ class WizardTest(TestCase):
             # When previously filled:
             if step != tour.steps[-1]:
                 self.assertIn(step.name.replace(" Step", "") + ": ", out.getvalue())
+
+    def test_debug_state(self):
+        tour = make_trivial_tour(debug_state=True)
+        responses = ["project_name", "user name", "email@mail.com"]
+        with patch_input(responses, multi=True):
+            with capture_stdout() as out:
+                tour.run()
+        for step, response in zip(tour.steps, responses[:-1]):
+            # When not the current step:
+            self.assertIn(f"'{step.name}': '{response}'", out.getvalue())
