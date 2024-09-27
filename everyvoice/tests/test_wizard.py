@@ -1752,36 +1752,14 @@ class WizardTest(TestCase):
             self.assertIn("multilingual: false", text_to_spec_config)
             self.assertIn("multispeaker: false", text_to_spec_config)
 
-    def test_control_c(self):
-        # Three Ctrl-C exits
-        tour = make_trivial_tour()
-        with patch_input(KeyboardInterrupt()), patch_menu_prompt(KeyboardInterrupt()):
-            with self.assertRaises(SystemExit):
-                tour.run()
+    trivial_tour_results = {
+        SN.name_step.value: "project_name",
+        SN.contact_name_step.value: "Jane Doe",
+        SN.contact_email_step.value: "email@mail.com",
+    }
 
-        # Ctrl-C plus option 4 (Exit) exits
-        tour = make_trivial_tour()
-        with patch_input(KeyboardInterrupt()):
-            with patch_menu_prompt(4):  # 4 is "Exit" in keyboard interrupt handling
-                with self.assertRaises(SystemExit):
-                    tour.run()
-
-        resulting_state = {
-            SN.name_step.value: "project_name",
-            SN.contact_name_step.value: "user name",
-            SN.contact_email_step.value: "email@mail.com",
-        }
-
-        tour = make_trivial_tour()
-        with patch_input(
-            ["project_name", KeyboardInterrupt(), "user name", "email@mail.com"],
-            multi=True,
-        ):
-            # Ctrl-C once, then hit 1 to continue
-            with patch_menu_prompt([KeyboardInterrupt(), 1], multi=True):
-                tour.run()
-        self.assertEqual(tour.state, resulting_state)
-
+    def test_control_c_go_back(self):
+        # Ctrl-C plus option 0 goes back
         tour = make_trivial_tour()
         with patch_input(
             [
@@ -1790,14 +1768,160 @@ class WizardTest(TestCase):
                 "project_name",
                 "bad user name",
                 KeyboardInterrupt(),
-                "user name",
+                "Jane Doe",
                 "email@mail.com",
             ],
             multi=True,
         ):
             with patch_menu_prompt(0):  # say 0==go back each time
                 tour.run()
-        self.assertEqual(tour.state, resulting_state)
+        self.assertEqual(tour.state, self.trivial_tour_results)
+
+    def test_control_c_continue(self):
+        # Ctrl-C plus option 1 continues
+        tour = make_trivial_tour()
+        with patch_input(
+            ["project_name", KeyboardInterrupt(), "Jane Doe", "email@mail.com"],
+            multi=True,
+        ):
+            # Ctrl-C once, then hit 1 to continue
+            with patch_menu_prompt([KeyboardInterrupt(), 1], multi=True):
+                tour.run()
+        self.assertEqual(tour.state, self.trivial_tour_results)
+
+    def test_control_c_display_tree(self):
+        # Ctrl-C plus option 2 displays the current tree
+        tour = make_trivial_tour()
+        with patch_input(
+            ["project_name", "Jane Doe", KeyboardInterrupt(), "email@mail.com"],
+            multi=True,
+        ):
+            with patch_menu_prompt(2) as output:
+                tour.run()
+            self.assertRegex(output.getvalue(), r"Contact Name: *Jane Doe")
+        self.assertEqual(tour.state, self.trivial_tour_results)
+
+    def test_control_c_save_progress(self):
+        # Ctrl-C plus option 3 saves progress to file
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdir = Path(tmpdirname)
+            tour = make_trivial_tour()
+            progress_file = tmpdir / "saved-progress"
+            with patch_input(
+                [
+                    "project_name",
+                    "Jane Doe",
+                    KeyboardInterrupt(),
+                    str(progress_file),
+                    "email@mail.com",
+                ],
+                multi=True,
+            ):
+                with patch_menu_prompt(3):
+                    tour.run()
+                self.assertTrue(progress_file.exists())
+
+            # resume works
+            tour = make_trivial_tour()
+            with patch_input("email@mail.com"), capture_stdout() as out:
+                tour.run(resume_from=progress_file)
+            self.assertIn("Applying saved response", out.getvalue())
+            self.assertEqual(tour.state, self.trivial_tour_results)
+
+            with open(progress_file, encoding="utf8") as f:
+                progress_lines = f.readlines()
+
+            # resume from a changed version works with a warning
+            changed_version = tmpdir / "changed-version"
+            with open(changed_version, "w", encoding="utf8") as f:
+                f.write(progress_lines[0])
+                f.write(progress_lines[1].replace("\n", "changed\n"))
+                f.write("".join(progress_lines[2:]))
+            tour = make_trivial_tour()
+            with patch_input("email@mail.com"), capture_stdout() as out:
+                tour.run(resume_from=changed_version)
+            self.assertIn("Proceeding anyway", out.getvalue())
+            self.assertIn("Applying saved response", out.getvalue())
+            self.assertEqual(tour.state, self.trivial_tour_results)
+
+            # This one has an invalid response but lets the user recover
+            invalid_response = tmpdir / "invalid-response"
+            with open(invalid_response, "w", encoding="utf8") as f:
+                f.write("".join(progress_lines))
+                f.write("- - Contact Email Step\n  - invalid email\n")
+            tour = make_trivial_tour()
+            with patch_input("email@mail.com"), capture_stdout() as out:
+                tour.run(resume_from=invalid_response)
+            self.assertIn("Error: saved response 'invalid email'", out.getvalue())
+            self.assertEqual(tour.state, self.trivial_tour_results)
+
+            # From here on, it's lots of ways to fail, which always causes a SystemExit
+
+            bad_progress_file = tmpdir / "bad-progress"
+            with open(bad_progress_file, "w", encoding="utf8") as f:
+                f.write("not a list of questions and answers")
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=bad_progress_file)
+
+            bad_progress_file2 = tmpdir / "bad-progress2"
+            with open(bad_progress_file2, "w", encoding="utf8") as f:
+                f.write("- - question 1\n  - answer 1\n  - extra garbage\n")
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=bad_progress_file2)
+
+            truncated_progress_file = tmpdir / "truncated-progress"
+            with open(truncated_progress_file, "w", encoding="utf8") as f:
+                f.write("".join(progress_lines[:-1]))
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=truncated_progress_file)
+
+            missing_first_line = tmpdir / "missing-first-line"
+            with open(missing_first_line, "w", encoding="utf8") as f:
+                f.write("".join(progress_lines[1:]))
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=missing_first_line)
+
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=Path(os.devnull))
+
+            questions_out_of_order = tmpdir / "questions-out-of-order"
+            with open(questions_out_of_order, "w", encoding="utf8") as f:
+                f.write(
+                    "".join(
+                        [
+                            *progress_lines[:-4],
+                            *progress_lines[-2:],
+                            *progress_lines[-4:-2],
+                        ]
+                    )
+                )
+            with self.assertRaises(SystemExit), capture_stdout() as out:
+                tour.run(resume_from=questions_out_of_order)
+            self.assertIn("out of sync", out.getvalue())
+
+            extra_question_not_in_tour = tmpdir / "extra-question"
+            with open(extra_question_not_in_tour, "w", encoding="utf8") as f:
+                f.write("".join(progress_lines))
+                f.write("- - Contact Email Step\n  - email@mail.com\n")
+                f.write("- - Not a real Step\n  - bogus answer\n")
+            tour = make_trivial_tour()
+            with self.assertRaises(SystemExit), capture_stdout() as out:
+                tour.run(resume_from=extra_question_not_in_tour)
+            self.assertIn("saved responses left", out.getvalue())
+
+    def test_control_c_exit(self):
+        # Ctrl-C plus option 4 (Exit) exits
+        tour = make_trivial_tour()
+        with patch_input(KeyboardInterrupt()):
+            with patch_menu_prompt(4):  # 4 is "Exit" in keyboard interrupt handling
+                with self.assertRaises(SystemExit):
+                    tour.run()
+
+        # Three Ctrl-C also exits
+        tour = make_trivial_tour()
+        with patch_input(KeyboardInterrupt()), patch_menu_prompt(KeyboardInterrupt()):
+            with self.assertRaises(SystemExit):
+                tour.run()
 
     def test_trace(self):
         tour = make_trivial_tour(trace=True)
