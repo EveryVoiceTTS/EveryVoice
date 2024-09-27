@@ -29,7 +29,7 @@ from everyvoice.tests.stubs import (
 )
 from everyvoice.wizard import State, Step
 from everyvoice.wizard import StepNames as SN
-from everyvoice.wizard import Tour, basic, dataset, prompts
+from everyvoice.wizard import Tour, basic, dataset, prompts, utils
 from everyvoice.wizard.main_tour import get_main_wizard_tour
 
 CONTACT_INFO_STATE = State()
@@ -941,11 +941,11 @@ class WizardTest(TestCase):
         self.assertTrue(tour.steps[-1].completed)
 
     def test_get_iso_code(self):
-        self.assertEqual(dataset.get_iso_code("eng"), "eng")
-        self.assertEqual(dataset.get_iso_code("[eng]"), "eng")
-        self.assertEqual(dataset.get_iso_code("es"), "es")
-        self.assertEqual(dataset.get_iso_code("[es]"), "es")
-        self.assertIs(dataset.get_iso_code(None), None)
+        self.assertEqual(utils.get_iso_code("eng"), "eng")
+        self.assertEqual(utils.get_iso_code("[eng]"), "eng")
+        self.assertEqual(utils.get_iso_code("es"), "es")
+        self.assertEqual(utils.get_iso_code("[es]"), "es")
+        self.assertIs(utils.get_iso_code(None), None)
 
     def test_with_language_column(self):
         data_dir = Path(__file__).parent / "data"

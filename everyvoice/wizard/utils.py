@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import re
 from collections import UserDict
 from enum import Enum
 from itertools import islice
@@ -205,3 +206,18 @@ def sanitize_paths(response):
     # Support ~ and ~username path expansions
     response = os.path.expanduser(response)
     return response
+
+
+def get_iso_code(language):
+    """Parse the language code from the language string.
+
+    Args:
+        language (str): either a language code or "[code]: Language Name"
+    """
+    if language is None:
+        return None
+    result = re.search(r"\[[\w-]*\]", language)
+    if result is None:
+        return language
+    else:
+        return result.group()[1:-1]

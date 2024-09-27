@@ -1,7 +1,6 @@
 import glob
 import os
 import random
-import re
 import sys
 from pathlib import Path
 from typing import Sequence
@@ -22,6 +21,7 @@ from everyvoice.wizard.prompts import (
 )
 from everyvoice.wizard.utils import (
     apply_automatic_text_conversions,
+    get_iso_code,
     read_unknown_tabular_filelist,
     rename_unknown_headers,
     sanitize_paths,
@@ -645,6 +645,7 @@ class SelectLanguageStep(Step):
 
 
 def add_missing_speaker(state):
+    """Set all speakers IDs to the default speaker ID."""
     for item in state["filelist_data"]:
         item["speaker"] = state[StepNames.add_speaker_step]
 
@@ -672,16 +673,6 @@ def reload_filelist_data_as_dict(state):
             item = {headers[i]: row[i] for i in range(len(row))}
             state["filelist_data"].append(item)
     assert isinstance(state["filelist_data"][0], dict)
-
-
-def get_iso_code(language):
-    if language is None:
-        return None
-    result = re.search(r"\[[\w-]*\]", language)
-    if result is None:
-        return language
-    else:
-        return result.group()[1:-1]
 
 
 class TextProcessingStep(Step):
