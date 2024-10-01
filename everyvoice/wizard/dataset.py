@@ -23,6 +23,7 @@ from everyvoice.wizard.prompts import (
 from everyvoice.wizard.utils import (
     apply_automatic_text_conversions,
     get_iso_code,
+    has_columns_left,
     read_unknown_tabular_filelist,
     rename_unknown_headers,
     sanitize_paths,
@@ -61,7 +62,7 @@ class DatasetNameStep(Step):
 
 class DatasetPermissionStep(Step):
     DEFAULT_NAME = StepNames.dataset_permission_step
-    # REVERSIBLE not declared because this class overrides is_reversible instead
+    REVERSIBLE = True
     choices = (
         "No, I don't have permission to use this data.",
         "Yes, I do have permission to use this data.",
@@ -83,10 +84,9 @@ class DatasetPermissionStep(Step):
             self.children = ()
             self.tour.remove_dataset(self.state_subset)
 
-    def is_reversible(self):
-        # Permission can be revoked, but if you said no you can't go back because we
-        # destroy too much of the state in the effect(). Just pick another data file.
-        return not self.response.startswith("No")
+            # Permission can be revoked, but if you said no you can't go back because
+            # we destroy too much of the state here. Just pick another data file.
+            self.REVERSIBLE = False
 
     def undo(self):
         # Do not call super().undo() here! We don't want to remove the dataset steps
@@ -529,12 +529,8 @@ class HasSpeakerStep(Step):
     choices = ("no", "yes")
 
     def prompt(self):
-        if self.state[StepNames.filelist_format_step] == "festival":
-            return "no"
-        elif len(self.state.get("selected_headers", [])) >= len(
-            self.state["filelist_data_list"][0]
-        ):
-            rich_print("No columns left, we will assume you have no speaker column.")
+        if not has_columns_left(self.state):
+            rich_print("No columns available to have a speaker column.")
             return "no"
         else:
             return get_response_from_menu_prompt(
@@ -546,6 +542,7 @@ class HasSpeakerStep(Step):
         return response in self.choices
 
     def effect(self):
+        self.AUTOMATIC = not has_columns_left(self.state)
         rich_print(
             "Note: if your dataset has speakers with names matching with speakers from other provided datasets, they will be considered the same. If this is not the desired behaviour, you will have to alter the speaker IDs in the relevant datasets to indicate that they are different."
         )
@@ -568,8 +565,11 @@ class KnowSpeakerStep(Step):
     REVERSIBLE = True
     choices = ("no", "yes")
 
+    @property
+    def dataset_index(self) -> str:
+        return self.state_subset.split("_")[-1]
+
     def prompt(self):
-        self.dataset_index = self.state_subset.split("_")[-1]
         return get_response_from_menu_prompt(
             choices=self.choices,
             title=f"Since your data does not have a speaker column, we will use a default ID of 'speaker_{self.dataset_index}'. Would you like to specify an alternative speaker ID for this dataset instead?",
@@ -620,12 +620,8 @@ class HasLanguageStep(Step):
     choices = ("no", "yes")
 
     def prompt(self):
-        if self.state[StepNames.filelist_format_step] == "festival":
-            return "no"
-        elif len(self.state.get("selected_headers", [])) >= len(
-            self.state["filelist_data_list"][0]
-        ):
-            rich_print("No columns left, we will assume you have no language column.")
+        if not has_columns_left(self.state):
+            rich_print("No columns available to have a speaker column.")
             return "no"
         else:
             return get_response_from_menu_prompt(
@@ -637,6 +633,7 @@ class HasLanguageStep(Step):
         return response in self.choices
 
     def effect(self):
+        self.AUTOMATIC = not has_columns_left(self.state)
         if self.state[StepNames.data_has_language_value_step] == "yes":
             self.tour.add_step(
                 LanguageHeaderStep(

@@ -35,7 +35,10 @@ class _Step:
         self.name = name
 
     def prompt(self):
-        """Implement this method to prompt the user and return the step's response."""
+        """Implement this method to prompt the user and return the step's response.
+
+        This method must not have side effects, as it will not get called in resume mode.
+        """
         raise NotImplementedError(
             f"This step ({self.name}) doesn't have a prompt method implemented. Please implement one."
         )

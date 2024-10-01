@@ -224,3 +224,13 @@ def get_iso_code(language):
         return language
     else:
         return result.group()[1:-1]
+
+
+def has_columns_left(state) -> bool:
+    """Determine if the given state has columns with yet unspecified contents."""
+    from everyvoice.wizard import StepNames
+
+    assert state is not None
+    return not state[StepNames.filelist_format_step] == "festival" and len(
+        state.get("selected_headers", [])
+    ) < len(state["filelist_data_list"][0])

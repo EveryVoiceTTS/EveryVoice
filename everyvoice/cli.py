@@ -316,7 +316,7 @@ def new_project(
         exists=True,
         dir_okay=False,
         file_okay=True,
-        help="Saved Q&A list to resume from",
+        help="Resume from previously saved progress.",
         autocompletion=complete_path,
     ),
 ):

@@ -75,6 +75,7 @@ def get_response_from_menu_prompt(
         show_multi_select_hint=multi,
         show_search_hint=search,
         status_bar_style=("fg_gray", "bg_black"),
+        quit_keys=(),
     )
     selection = menu.show()
     sys.stdout.write("\033[K")
