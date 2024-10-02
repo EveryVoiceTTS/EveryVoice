@@ -165,3 +165,89 @@ class ModelTest(BasicTestCase):
             ]
         )
         self.assertEqual(result, [Stats, si, DatasetTextRepresentation.characters])
+
+
+class TestLoadingModel(BasicTestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self.config_dir = self.data_dir / "relative" / "config"
+
+    def test_model_is_not_a_feature_prediction(self):
+        """
+        Loading a Vocoder Model instead of a FeaturePrediction Model.
+        """
+        from pytorch_lightning import Trainer
+        from pytorch_lightning.callbacks import ModelCheckpoint
+
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            model = HiFiGAN(
+                HiFiGANConfig.load_config_from_path(
+                    self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+                )
+            )
+            trainer = Trainer(
+                default_root_dir=tmpdir_str,
+                enable_progress_bar=False,
+                logger=False,
+                max_epochs=1,
+                limit_train_batches=1,
+                limit_val_batches=1,
+                callbacks=[ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)],
+            )
+            trainer.strategy.connect(model)
+            ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
+            trainer.save_checkpoint(ckpt_fn)
+            import re
+
+            with self.assertRaisesRegex(
+                TypeError,
+                re.escape(
+                    "Unable to load config.  Possible causes: is it really a FastSpeech2Config? or the correct version?"
+                ),
+            ):
+                FastSpeech2.load_from_checkpoint(ckpt_fn)
+
+    def test_model_is_not_a_vocoder(self):
+        """
+        Loading a FeaturePrediction Model instead of a Vocoder Model.
+        """
+        from pytorch_lightning import Trainer
+        from pytorch_lightning.callbacks import ModelCheckpoint
+
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            model = FastSpeech2(
+                FastSpeech2Config.load_config_from_path(
+                    self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+                ),
+                stats=Stats(
+                    pitch=StatsInfo(
+                        min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+                    ),
+                    energy=StatsInfo(
+                        min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                    ),
+                ),
+                lang2id={"foo": 0, "bar": 1},
+                speaker2id={"baz": 0, "qux": 1},
+            )
+            trainer = Trainer(
+                default_root_dir=tmpdir_str,
+                enable_progress_bar=False,
+                logger=False,
+                max_epochs=1,
+                limit_train_batches=1,
+                limit_val_batches=1,
+                callbacks=[ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)],
+            )
+            trainer.strategy.connect(model)
+            ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
+            trainer.save_checkpoint(ckpt_fn)
+            import re
+
+            with self.assertRaisesRegex(
+                TypeError,
+                re.escape(
+                    "Unable to load config.  Possible causes: is it really a VocoderConfig? or the correct version?"
+                ),
+            ):
+                HiFiGAN.load_from_checkpoint(ckpt_fn)
