@@ -5,6 +5,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, Sequence
 
+import questionary
 import yaml
 from anytree import PreOrderIter, RenderTree
 from rich import print as rich_print
@@ -12,9 +13,9 @@ from rich.panel import Panel
 
 from everyvoice._version import VERSION
 
-from .prompts import get_response_from_menu_prompt
+from .prompts import CUSTOM_QUESTIONARY_STYLE, get_response_from_menu_prompt
 from .utils import EnumDict as State
-from .utils import NodeMixinWithNavigation
+from .utils import NodeMixinWithNavigation, sanitize_paths
 
 TEXT_CONFIG_FILENAME_PREFIX = "everyvoice-shared-text"
 ALIGNER_CONFIG_FILENAME_PREFIX = "everyvoice-aligner"
@@ -420,7 +421,15 @@ class Tour:
 
     def save_progress(self, current_node: Step):
         """Save the questions and answers of the tour to a file for future resuming"""
-        filename = input("Enter the filename to save the tree to: ")
+        filename = questionary.path(
+            "Where should we save your progress to?",
+            default="",
+            style=CUSTOM_QUESTIONARY_STYLE,
+        ).ask()
+        if not filename:
+            rich_print("No output file provided, progress not saved.")
+            return
+        filename = sanitize_paths(filename)
         try:
             with open(filename, "w", encoding="utf8") as f:
                 yaml.dump(
@@ -428,7 +437,10 @@ class Tour:
                     f,
                     allow_unicode=True,
                 )
-            rich_print("Saved progress to", filename)
+            rich_print(
+                f"Saved progress to '{filename}'\n"
+                f"You can resume from this state by running 'everyvoice new-project --resume-from {filename}'."
+            )
 
             with open(filename, "r", encoding="utf8") as f:
                 rich_print(yaml.safe_load(f))

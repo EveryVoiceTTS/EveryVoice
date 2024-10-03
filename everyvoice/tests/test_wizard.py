@@ -1812,11 +1812,10 @@ class WizardTest(TestCase):
                     "project_name",
                     "Jane Doe",
                     KeyboardInterrupt(),
-                    str(progress_file),
                     "email@mail.com",
                 ],
                 multi=True,
-            ):
+            ), patch_questionary(str(progress_file), ask_ok=True):
                 with patch_menu_prompt(3):
                     tour.run()
                 self.assertTrue(progress_file.exists())
@@ -1945,4 +1944,4 @@ class WizardTest(TestCase):
                 tour.run()
         for step, response in zip(tour.steps, responses[:-1]):
             # When not the current step:
-            self.assertIn(f"'{step.name}': '{response}'", out.getvalue())
+            self.assertRegex(out.getvalue(), f"'{step.name}'.*: .*'{response}'")

@@ -8,6 +8,7 @@ from typing import Any, Generator, Sequence, Union
 
 from loguru import logger
 
+from everyvoice import wizard
 from everyvoice.wizard import basic, dataset, prompts
 
 
@@ -260,14 +261,16 @@ class SimpleTermMenuStub:
 class QuestionaryStub:
     """Stub class for the questionary module"""
 
-    def __init__(self, responses: Path | str | Sequence) -> None:
+    def __init__(self, responses: Path | str | Sequence, ask_ok: bool = False) -> None:
         """Constructor
 
         Args:
             responses: the (sequence of) answers the user is simulated to provide
+            ask_ok: if True, allow calling .ask(), which is an error otherwise
         """
         self.last_index = -1
         self.responses: Sequence
+        self.ask_ok = ask_ok
         if isinstance(responses, (Path, str)):
             self.responses = [responses]
         else:
@@ -279,10 +282,13 @@ class QuestionaryStub:
     text = path
 
     def ask(self):  # pragma: no cover
-        # This will trigger a unit test failure if we use .ask()
-        raise Exception(
-            "Always use unsafe_ask() for questionary instances so that KeyboardInterrupt gets passed up to us."
-        )
+        if self.ask_ok:
+            return self.unsafe_ask()
+        else:
+            # This will trigger a unit test failure if we use .ask()
+            raise Exception(
+                "Always use unsafe_ask() for questionary instances so that KeyboardInterrupt gets passed up to us."
+            )
 
     def unsafe_ask(self):
         self.last_index += 1
@@ -299,17 +305,19 @@ class patch_questionary:
 
     Args: See QuestionaryStub"""
 
-    def __init__(self, responses: Path | str | Sequence):
+    def __init__(self, responses: Path | str | Sequence, ask_ok: bool = False):
         self.responses = responses
+        self.ask_ok = ask_ok
 
     def __enter__(self):
-        stub = QuestionaryStub(self.responses)
-        module_name = "questionary"
-        self.monkey1 = monkeypatch(basic, module_name, stub)
-        self.monkey2 = monkeypatch(dataset, module_name, stub)
-        self.monkey1.__enter__()
-        return self.monkey2.__enter__()
+        stub = QuestionaryStub(self.responses, self.ask_ok)
+        patch_name = "questionary"
+        self.monkeys = [
+            monkeypatch(module_to_patch, patch_name, stub)
+            for module_to_patch in [wizard, basic, dataset]
+        ]
+        return [monkey.__enter__() for monkey in self.monkeys]
 
     def __exit__(self, *_exc_info):
-        self.monkey2.__exit__(*_exc_info)
-        self.monkey1.__exit__(*_exc_info)
+        for monkey in self.monkeys:
+            monkey.__exit__(*_exc_info)
