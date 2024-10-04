@@ -250,7 +250,7 @@ class Tour:
                     [
                         "Go back one step",
                         "Continue",
-                        "View the question tree",
+                        "View progress",
                         "Save progress",
                         "Exit",
                     ],
