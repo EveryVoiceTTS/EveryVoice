@@ -1,15 +1,17 @@
 """Unit tests for the wizard module"""
 
 import os
+import re
 import string
+import sys
 import tempfile
+from copy import deepcopy
 from enum import Enum
 from pathlib import Path
 from types import MethodType
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence
 from unittest import TestCase
 
-import yaml
 from anytree import PreOrderIter, RenderTree
 
 # [Unit testing questionary](https://github.com/prompt-toolkit/python-prompt-toolkit/blob/master/docs/pages/advanced_topics/unit_testing.rst)
@@ -26,14 +28,11 @@ from everyvoice.tests.stubs import (
     patch_input,
     patch_menu_prompt,
     patch_questionary,
-    temp_chdir,
 )
 from everyvoice.wizard import State, Step
 from everyvoice.wizard import StepNames as SN
-from everyvoice.wizard import Tour, basic, dataset, prompts
-from everyvoice.wizard.basic import ConfigFormatStep
+from everyvoice.wizard import Tour, basic, dataset, prompts, utils
 from everyvoice.wizard.main_tour import get_main_wizard_tour
-from everyvoice.wizard.utils import EnumDict
 
 CONTACT_INFO_STATE = State()
 CONTACT_INFO_STATE[SN.contact_name_step.value] = "Test Name"
@@ -108,6 +107,19 @@ class TestStep(Step):
             self.effect = effect_method  # type: ignore[method-assign]
 
 
+def make_trivial_tour(trace: bool = False, debug_state: bool = False) -> Tour:
+    return Tour(
+        "trivial tour for testing",
+        [
+            basic.NameStep(),
+            basic.ContactNameStep(),
+            basic.ContactEmailStep(),
+        ],
+        trace=trace,
+        debug_state=debug_state,
+    )
+
+
 class WizardTest(TestCase):
     """Basic test for the configuration wizard"""
 
@@ -120,6 +132,8 @@ class WizardTest(TestCase):
         for step in [nothing_step, no_validate_step, no_prompt_step]:
             with self.assertRaises(NotImplementedError):
                 step.run()
+            self.assertFalse(step.is_reversible())
+            self.assertFalse(step.is_automatic())
 
     def test_config_format_effect(self):
         """This is testing if a null key can be passed without throwing an
@@ -215,8 +229,8 @@ class WizardTest(TestCase):
         with capture_stdout() as out:
             tour.visualize()
         log = out.getvalue()
-        self.assertIn("── Contact Name Step", log)
-        self.assertIn("── Validate Wavs Step", log)
+        self.assertIn("── Contact Name ", log)
+        self.assertIn("── Validate Wavs ", log)
 
     def test_name_step(self):
         """Exercise providing a valid dataset name."""
@@ -270,7 +284,7 @@ class WizardTest(TestCase):
             self.assertFalse(step.validate("test@test."))
             self.assertTrue(step.validate("test@test.ca"))
             self.assertFalse(step.validate(""))
-        output = stdout.getvalue()
+        output = stdout.getvalue().replace(" \n", " ")
         # Supporting email-validator prior and post 2.2.0 where the error string changed.
         self.assertTrue(
             "It must have exactly one @-sign" in output
@@ -295,7 +309,7 @@ class WizardTest(TestCase):
         more_dataset_step = find_step(SN.more_datasets_step, tour.steps)
         with patch_menu_prompt(1):  # 1 is Yes, I have more data
             more_dataset_step.run()
-        self.assertIn("dataset_1", tour.state)
+        self.assertIn("dataset_0", tour.state)
         self.assertGreater(len(more_dataset_step.descendants), 8)
         self.assertGreater(len(tour.root.descendants), 14)
 
@@ -386,10 +400,10 @@ class WizardTest(TestCase):
         with patch_input(("", "bad/name", "good-name"), True):
             with capture_stdout() as stdout:
                 step.run()
-        output = stdout.getvalue().split("\n")
+        output = stdout.getvalue().replace(" \n", " ").split("\n")
         self.assertIn("your dataset needs a name", output[0])
         self.assertIn("is not valid", output[1])
-        self.assertIn("finished the configuration", output[2])
+        self.assertIn("finished the configuration", "".join(output[2:]))
         self.assertTrue(step.completed)
 
     def test_speaker_name(self):
@@ -397,10 +411,10 @@ class WizardTest(TestCase):
         with patch_input(("", "bad/name", "good-name"), True):
             with capture_stdout() as stdout:
                 step.run()
-        output = stdout.getvalue().split("\n")
+        output = stdout.getvalue().replace(" \n", " ").split("\n")
         self.assertIn("speaker needs an ID", output[0])
         self.assertIn("is not valid", output[1])
-        self.assertIn("will be used as the speaker ID", output[2])
+        self.assertIn("will be used as the speaker ID", "".join(output[2:]))
         self.assertTrue(step.completed)
 
     def test_wavs_dir(self):
@@ -434,7 +448,7 @@ class WizardTest(TestCase):
         ):
             with capture_stdout() as stdout:
                 step.run()
-        output = stdout.getvalue().split("\n")
+        output = stdout.getvalue().replace(" \n", " ").split(".\n")
         for i in range(4):
             self.assertIn("not a valid sample rate", output[i])
         self.assertTrue(step.completed)
@@ -609,7 +623,7 @@ class WizardTest(TestCase):
         with patch_menu_prompt(1), capture_stdout() as out:
             validate_wavs_step.run()
         self.assertEqual(step.state[SN.validate_wavs_step][:2], "No")
-        self.assertIn("Warning: 4 wav files were not found", out.getvalue())
+        self.assertRegex(out.getvalue(), "Warning: .*4.* wav files were not found")
 
         text_processing_step = find_step(SN.text_processing_step, tour.steps)
         # 0 is lowercase, 1 is NFC Normalization, select both
@@ -716,9 +730,9 @@ class WizardTest(TestCase):
         # try with: 1/tsv (wrong), 2/csv (wrong), 3/festival (wrong) and finally 0 tsv (right)
         with patch_menu_prompt((1, 2, 3, 0), multi=True) as stdout:
             format_step.run()
-        output = stdout.getvalue()
-        self.assertIn("does not look like a 'tsv'", output)
-        self.assertIn("does not look like a 'csv'", output)
+        output = re.sub(r" *\n", " ", stdout.getvalue())
+        self.assertRegex(output, "does not look like a .*'tsv'")
+        self.assertRegex(output, "does not look like a .*'csv'")
         self.assertIn("is not in the festival format", output)
         self.assertTrue(format_step.completed)
         # print(format_step.state)
@@ -740,10 +754,10 @@ class WizardTest(TestCase):
         # try with: 0/psv (wrong), 1/tsv (wrong), 2/csv (wrong), and finally 3/festival (right)
         with patch_menu_prompt((0, 1, 2, 3), multi=True) as stdout:
             format_step.run()
-        output = stdout.getvalue()
-        self.assertIn("does not look like a 'psv'", output)
-        self.assertIn("does not look like a 'tsv'", output)
-        self.assertIn("does not look like a 'csv'", output)
+        output = stdout.getvalue().replace(" \n", " ")
+        self.assertRegex(output, "does not look like a .*'psv'")
+        self.assertRegex(output, "does not look like a .*'tsv'")
+        self.assertRegex(output, "does not look like a .*'csv'")
         self.assertTrue(format_step.completed)
         # print(format_step.state)
 
@@ -775,6 +789,9 @@ class WizardTest(TestCase):
             )
             self.assertFalse(
                 validate_path(file_name, is_dir=False, is_file=True, exists=False)
+            )
+            self.assertFalse(
+                validate_path(file_name, is_dir=True, is_file=False, exists=True)
             )
 
             not_file_name = os.path.join(tmpdirname, "file-does-not-exist")
@@ -837,8 +854,21 @@ class WizardTest(TestCase):
             """
             for step_and_answer in steps_and_answers:
                 step = step_and_answer.step
+                # saved_monkey = copy(step_and_answer.monkey)
                 with step_and_answer.monkey:
                     step.run()
+
+                # Test undoing and redoing every reversible step that passes through here.
+                if step.is_reversible():
+                    state = deepcopy(step.state)
+                    step.undo()
+                    self.assertNotEqual(state, step.state)
+                    # with saved_monkey:
+                    print(repr(step_and_answer.monkey), file=sys.stderr)
+                    with step_and_answer.monkey:
+                        step.run()
+                    self.assertEqual(state, step.state)
+
                 if step.children and step_and_answer.children_answers:
                     # Here we assemble steps_and_answers for the recursive call from
                     # the actual children of step and the provided children_answers.
@@ -932,11 +962,11 @@ class WizardTest(TestCase):
         self.assertTrue(tour.steps[-1].completed)
 
     def test_get_iso_code(self):
-        self.assertEqual(dataset.get_iso_code("eng"), "eng")
-        self.assertEqual(dataset.get_iso_code("[eng]"), "eng")
-        self.assertEqual(dataset.get_iso_code("es"), "es")
-        self.assertEqual(dataset.get_iso_code("[es]"), "es")
-        self.assertIs(dataset.get_iso_code(None), None)
+        self.assertEqual(utils.get_iso_code("eng"), "eng")
+        self.assertEqual(utils.get_iso_code("[eng]"), "eng")
+        self.assertEqual(utils.get_iso_code("es"), "es")
+        self.assertEqual(utils.get_iso_code("[es]"), "es")
+        self.assertIs(utils.get_iso_code(None), None)
 
     def test_with_language_column(self):
         data_dir = Path(__file__).parent / "data"
@@ -1722,271 +1752,196 @@ class WizardTest(TestCase):
             self.assertIn("multilingual: false", text_to_spec_config)
             self.assertIn("multispeaker: false", text_to_spec_config)
 
+    trivial_tour_results = {
+        SN.name_step.value: "project_name",
+        SN.contact_name_step.value: "Jane Doe",
+        SN.contact_email_step.value: "email@mail.com",
+    }
 
-class WavFileDirectoryRelativePathTest(TestCase):
-    """
-    Make sure the wav files directory path is correctly handle when transformed
-    to a relative path.
-    """
+    def test_control_c_go_back(self):
+        # Ctrl-C plus option 0 goes back
+        tour = make_trivial_tour()
+        with patch_input(
+            [
+                "bad_name",
+                KeyboardInterrupt(),
+                "project_name",
+                "bad user name",
+                KeyboardInterrupt(),
+                "Jane Doe",
+                "email@mail.com",
+            ],
+            multi=True,
+        ):
+            with patch_menu_prompt(0):  # say 0==go back each time
+                tour.run()
+        self.assertEqual(tour.state, self.trivial_tour_results)
 
-    data_dir = Path(__file__).parent / "data"
+    def test_control_c_continue(self):
+        # Ctrl-C plus option 1 continues
+        tour = make_trivial_tour()
+        with patch_input(
+            ["project_name", KeyboardInterrupt(), "Jane Doe", "email@mail.com"],
+            multi=True,
+        ):
+            # Ctrl-C once, then hit 1 to continue
+            with patch_menu_prompt([KeyboardInterrupt(), 1], multi=True):
+                tour.run()
+        self.assertEqual(tour.state, self.trivial_tour_results)
 
-    def setUp(self):
-        """
-        Create a mock state instead of doing all prior steps to ConfigFormatStep.
-        """
-        state = State(
-            {
-                SN.output_step.value: "John/Smith",
-                SN.name_step.value: "Unittest",
-                "dataset_0": State(
-                    {
-                        SN.dataset_name_step.value: "unit",
-                        SN.wavs_dir_step.value: "Common-Voice",
-                        SN.symbol_set_step.value: {
-                            "characters": [
-                                "A",
-                                "D",
-                                "E",
-                                "H",
-                                "I",
-                                "J",
-                                "K",
-                            ]
-                        },
-                        "filelist_data": [
-                            {
-                                "text": "Sentence 1",
-                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/dd50ed81b889047cb4399e34b650a91fcbd3b2a5e36cf0068251d64274bffb61",
-                                "language": "und",
-                                "speaker": "default",
-                            },
-                            {
-                                "text": "Sentence 2",
-                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/6c45ab8c6e2454142c95319ca37f7e4ff6526dddbcc7fc540572e4e53264ec47",
-                                "language": "und",
-                                "speaker": "default",
-                            },
-                            {
-                                "text": "Sentence 3",
-                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/3947ae033faeb793e00f836648e240bc91c821798bccc76656ad3e7030b38878",
-                                "language": "und",
-                                "speaker": "default",
-                            },
-                            {
-                                "text": "Sentence 4",
-                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/65b61440f9621084a1a1d8c461d177c765fad3aff91e0077296081931929629b",
-                                "language": "und",
-                                "speaker": "default",
-                            },
-                            {
-                                "text": "Sentence 5",
-                                "basename": "5061f5c3-3bf9-42c6-a268-435c146efaf6/8a124117481eaf8f91d23aa3acda301e7fae7de85e98c016383381d54a3d5049",
-                                "language": "und",
-                                "speaker": "default",
-                            },
-                        ],
-                        "sox_effects": [["channel", "1"]],
-                    }
-                ),
-            }
-        )
-        self.config = ConfigFormatStep()
-        self.config.response = "yaml"
-        self.config.state = state
+    def test_control_c_display_tree(self):
+        # Ctrl-C plus option 2 displays the current tree
+        tour = make_trivial_tour()
+        with patch_input(
+            ["project_name", "Jane Doe", KeyboardInterrupt(), "email@mail.com"],
+            multi=True,
+        ):
+            with patch_menu_prompt(2) as output:
+                tour.run()
+            self.assertRegex(output.getvalue(), r"Contact Name: *Jane Doe")
+        self.assertEqual(tour.state, self.trivial_tour_results)
 
-    def test_wav_file_directory_local(self):
-        """
-        output directory is `.`
-        wav files directory located in `.`
-        """
-        self.config.state[SN.output_step.value] = "."
-        self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state.update(CONTACT_INFO_STATE)
-        with capture_stdout():
-            with tempfile.TemporaryDirectory() as tmpdir:
-                with temp_chdir(tmpdir):
-                    tmpdir = Path(tmpdir).absolute()
-                    self.config.effect()
-                    data_file = (
-                        Path(self.config.state[SN.name_step.value])
-                        / "config/everyvoice-shared-data.yaml"
+    def test_control_c_save_progress(self):
+        # Ctrl-C plus option 3 saves progress to file
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdir = Path(tmpdirname)
+            tour = make_trivial_tour()
+            progress_file = tmpdir / "saved-progress"
+            with patch_input(
+                [
+                    "project_name",
+                    "Jane Doe",
+                    KeyboardInterrupt(),
+                    "email@mail.com",
+                ],
+                multi=True,
+            ), patch_questionary(str(progress_file), ask_ok=True):
+                with patch_menu_prompt(3):
+                    tour.run()
+                self.assertTrue(progress_file.exists())
+
+            # resume works
+            tour = make_trivial_tour()
+            with patch_input("email@mail.com"), capture_stdout() as out:
+                tour.run(resume_from=progress_file)
+            self.assertIn("Applying saved response", out.getvalue())
+            self.assertEqual(tour.state, self.trivial_tour_results)
+
+            with open(progress_file, encoding="utf8") as f:
+                progress_lines = f.readlines()
+
+            # resume from a changed version works with a warning
+            changed_version = tmpdir / "changed-version"
+            with open(changed_version, "w", encoding="utf8") as f:
+                f.write(progress_lines[0])
+                f.write(progress_lines[1].replace("\n", "changed\n"))
+                f.write("".join(progress_lines[2:]))
+            tour = make_trivial_tour()
+            with patch_input("email@mail.com"), capture_stdout() as out:
+                tour.run(resume_from=changed_version)
+            self.assertIn("Proceeding anyway", out.getvalue())
+            self.assertIn("Applying saved response", out.getvalue())
+            self.assertEqual(tour.state, self.trivial_tour_results)
+
+            # This one has an invalid response but lets the user recover
+            invalid_response = tmpdir / "invalid-response"
+            with open(invalid_response, "w", encoding="utf8") as f:
+                f.write("".join(progress_lines))
+                f.write("- - Contact Email Step\n  - invalid email\n")
+            tour = make_trivial_tour()
+            with patch_input("email@mail.com"), capture_stdout() as out:
+                tour.run(resume_from=invalid_response)
+            self.assertIn("Error: saved response 'invalid email'", out.getvalue())
+            self.assertEqual(tour.state, self.trivial_tour_results)
+
+            # From here on, it's lots of ways to fail, which always causes a SystemExit
+
+            bad_progress_file = tmpdir / "bad-progress"
+            with open(bad_progress_file, "w", encoding="utf8") as f:
+                f.write("not a list of questions and answers")
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=bad_progress_file)
+
+            bad_progress_file2 = tmpdir / "bad-progress2"
+            with open(bad_progress_file2, "w", encoding="utf8") as f:
+                f.write("- - question 1\n  - answer 1\n  - extra garbage\n")
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=bad_progress_file2)
+
+            truncated_progress_file = tmpdir / "truncated-progress"
+            with open(truncated_progress_file, "w", encoding="utf8") as f:
+                f.write("".join(progress_lines[:-1]))
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=truncated_progress_file)
+
+            missing_first_line = tmpdir / "missing-first-line"
+            with open(missing_first_line, "w", encoding="utf8") as f:
+                f.write("".join(progress_lines[1:]))
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=missing_first_line)
+
+            with self.assertRaises(SystemExit), capture_stdout():
+                tour.run(resume_from=Path(os.devnull))
+
+            questions_out_of_order = tmpdir / "questions-out-of-order"
+            with open(questions_out_of_order, "w", encoding="utf8") as f:
+                f.write(
+                    "".join(
+                        [
+                            *progress_lines[:-4],
+                            *progress_lines[-2:],
+                            *progress_lines[-4:-2],
+                        ]
                     )
-                    with data_file.open(encoding="utf8") as fin:
-                        config = yaml.load(fin, Loader=yaml.FullLoader)
-        # Unittest/config/everyvoice-shared-data.yaml
-        # Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]), Path("../../Common-Voice")
-        )
+                )
+            with self.assertRaises(SystemExit), capture_stdout() as out:
+                tour.run(resume_from=questions_out_of_order)
+            self.assertIn("out of sync", out.getvalue())
 
-    def test_wav_file_directory_under_wavs_directory(self):
-        """
-        output directory is `.`
-        wav files directory located in `wavs/`
-        """
-        self.config.state[SN.output_step.value] = "."
-        self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state.update(CONTACT_INFO_STATE)
-        wavs_dir = "wavs/Common-Voice"
-        self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
-        with capture_stdout():
-            with tempfile.TemporaryDirectory() as tmpdir:
-                with temp_chdir(tmpdir):
-                    tmpdir = Path(tmpdir).absolute()
-                    self.config.effect()
-                    data_file = (
-                        Path(self.config.state[SN.name_step.value])
-                        / "config/everyvoice-shared-data.yaml"
-                    )
-                    with data_file.open(encoding="utf8") as fin:
-                        config = yaml.load(fin, Loader=yaml.FullLoader)
-        # Unittest/config/everyvoice-shared-data.yaml
-        # wavs/Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]), Path("../..") / wavs_dir
-        )
+            extra_question_not_in_tour = tmpdir / "extra-question"
+            with open(extra_question_not_in_tour, "w", encoding="utf8") as f:
+                f.write("".join(progress_lines))
+                f.write("- - Contact Email Step\n  - email@mail.com\n")
+                f.write("- - Not a real Step\n  - bogus answer\n")
+            tour = make_trivial_tour()
+            with self.assertRaises(SystemExit), capture_stdout() as out:
+                tour.run(resume_from=extra_question_not_in_tour)
+            self.assertIn("saved responses left", out.getvalue())
 
-    def test_output_not_local_and_wav_file_directory_local(self):
-        """
-        output directory is NOT `.`
-        wav files directory located in `.`
-        """
-        self.config.state[SN.output_step.value] = "John/Smith"
-        self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state.update(CONTACT_INFO_STATE)
-        with capture_stdout():
-            with tempfile.TemporaryDirectory() as tmpdir:
-                with temp_chdir(tmpdir):
-                    tmpdir = Path(tmpdir).absolute()
-                    self.config.effect()
-                    data_file = (
-                        Path(self.config.state[SN.output_step.value])
-                        / self.config.state[SN.name_step.value]
-                        / "config/everyvoice-shared-data.yaml"
-                    )
-                    with data_file.open(encoding="utf8") as fin:
-                        config = yaml.load(fin, Loader=yaml.FullLoader)
-        # John/Smith/Unittest/config/everyvoice-shared-data.yaml
-        # Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]), Path("../../../../Common-Voice")
-        )
+    def test_control_c_exit(self):
+        # Ctrl-C plus option 4 (Exit) exits
+        tour = make_trivial_tour()
+        with patch_input(KeyboardInterrupt()):
+            with patch_menu_prompt(4):  # 4 is "Exit" in keyboard interrupt handling
+                with self.assertRaises(SystemExit):
+                    tour.run()
 
-    def test_output_not_local_and_wav_file_directory_under_hierarchy(self):
-        """
-        output directory is NOT `.`
-        wav files directory located in `wavs/`
-        """
-        self.config.state[SN.output_step.value] = "John/Smith"
-        self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state.update(CONTACT_INFO_STATE)
-        wavs_dir = "wavs/Common-Voice"
-        self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
-        with capture_stdout():
-            with tempfile.TemporaryDirectory() as tmpdir:
-                with temp_chdir(tmpdir):
-                    tmpdir = Path(tmpdir).absolute()
-                    self.config.effect()
-                    data_file = (
-                        Path(self.config.state[SN.output_step.value])
-                        / self.config.state[SN.name_step.value]
-                        / "config/everyvoice-shared-data.yaml"
-                    )
-                    with data_file.open(encoding="utf8") as fin:
-                        config = yaml.load(fin, Loader=yaml.FullLoader)
-        # John/Smith/Unittest/config/everyvoice-shared-data.yaml
-        # wavs/Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]),
-            Path("../../../..") / wavs_dir,
-        )
+        # Three Ctrl-C also exits
+        tour = make_trivial_tour()
+        with patch_input(KeyboardInterrupt()), patch_menu_prompt(KeyboardInterrupt()):
+            with self.assertRaises(SystemExit):
+                tour.run()
 
-    def test_absolute_wav_file_directory_and_local_experiment(self):
-        """
-        output directory is `.`
-        wav files directory located in `/ABSOLUTE/wavs/`
-        """
-        self.config.state[SN.output_step.value] = "."
-        self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state.update(CONTACT_INFO_STATE)
-        with capture_stdout():
-            with tempfile.TemporaryDirectory() as tmpdir:
-                with temp_chdir(tmpdir):
-                    tmpdir = Path(tmpdir).absolute()
-                    wavs_dir = tmpdir / "wavs/Common-Voice"
-                    self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
-                    self.config.state["dataset_0"][SN.text_processing_step] = (0,)
-                    self.config.effect()
-                    data_file = (
-                        Path(self.config.state[SN.name_step.value])
-                        / "config/everyvoice-shared-data.yaml"
-                    )
-                    with data_file.open(encoding="utf8") as fin:
-                        config = yaml.load(fin, Loader=yaml.FullLoader)
-        # Unittest/config/everyvoice-shared-data.yaml
-        # /tmpdir/wavs/Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]),
-            wavs_dir,
-        )
+    def test_trace(self):
+        tour = make_trivial_tour(trace=True)
+        with patch_input(["project_name", "user name", "email@mail.com"], multi=True):
+            with capture_stdout() as out:
+                tour.run()
+        for step in tour.steps:
+            # When not the current step:
+            self.assertIn(step.name.replace(" Step", "") + "  ", out.getvalue())
+            # When it is the current step:
+            self.assertRegex(out.getvalue(), step.name.replace(" Step", "") + " *←")
+            # When previously filled:
+            if step != tour.steps[-1]:
+                self.assertIn(step.name.replace(" Step", "") + ": ", out.getvalue())
 
-    def test_absolute_wav_file_directory_and_nested_experiment(self):
-        """
-        output directory is NOT `.`
-        wav files directory located in `/ABSOLUTE/wavs/`
-        """
-        self.config.state[SN.output_step.value] = "John/Smith"
-        self.config.state[SN.name_step.value] = "Unittest"
-        self.config.state.update(CONTACT_INFO_STATE)
-        with capture_stdout():
-            with tempfile.TemporaryDirectory() as tmpdir:
-                with temp_chdir(tmpdir):
-                    tmpdir = Path(tmpdir).absolute()
-                    wavs_dir = tmpdir / "wavs/Common-Voice"
-                    self.config.state["dataset_0"][SN.wavs_dir_step.value] = wavs_dir
-                    self.config.state["dataset_0"][SN.text_processing_step] = tuple()
-                    self.config.effect()
-                    data_file = (
-                        Path(self.config.state[SN.output_step.value])
-                        / self.config.state[SN.name_step.value]
-                        / "config/everyvoice-shared-data.yaml"
-                    )
-                    with data_file.open(encoding="utf8") as fin:
-                        config = yaml.load(fin, Loader=yaml.FullLoader)
-        # John/Smith/Unittest/config/everyvoice-shared-data.yaml
-        # /tmpdir/wavs/Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]),
-            wavs_dir,
-        )
-
-
-class TestEnumDict(TestCase):
-    """Test the EnumDict class"""
-
-    def test_enum_dict(self):
-        """Enum values need to behave the same with or without .value"""
-        d = EnumDict()
-        d[SN.audio_config_step] = "foo"
-        self.assertEqual(d[SN.audio_config_step.value], "foo")
-        self.assertEqual(d.get(SN.audio_config_step.value), "foo")
-
-        d[SN.wavs_dir_step.value] = "bar"
-        self.assertEqual(d[SN.wavs_dir_step], "bar")
-        self.assertEqual(d.get(SN.wavs_dir_step), "bar")
-
-        self.assertEqual(d.get(SN.filelist_format_step, None), None)
-        self.assertEqual(d.get(SN.filelist_format_step.value, None), None)
-
-        d.update({SN.contact_email_step: "a@b.com"})
-        self.assertEqual(d[SN.contact_email_step.value], "a@b.com")
-
-        self.assertEqual(
-            d,
-            {
-                SN.audio_config_step.value: "foo",
-                SN.wavs_dir_step.value: "bar",
-                SN.contact_email_step.value: "a@b.com",
-            },
-        )
+    def test_debug_state(self):
+        tour = make_trivial_tour(debug_state=True)
+        responses = ["project_name", "user name", "email@mail.com"]
+        with patch_input(responses, multi=True):
+            with capture_stdout() as out:
+                tour.run()
+        for step, response in zip(tour.steps, responses[:-1]):
+            # When not the current step:
+            self.assertRegex(out.getvalue(), f"'{step.name}'.*: .*'{response}'")

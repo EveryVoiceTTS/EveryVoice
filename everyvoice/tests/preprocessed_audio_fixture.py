@@ -1,3 +1,4 @@
+import shutil
 import tempfile
 from pathlib import Path
 from string import ascii_lowercase
@@ -72,8 +73,16 @@ class PreprocessedAudioFixture:
                 to_process=("audio", "energy", "pitch", "text", "spec"),
             )
             PreprocessedAudioFixture.lj_preprocessed.mkdir(parents=True, exist_ok=True)
-            (PreprocessedAudioFixture.lj_preprocessed / "duration").symlink_to(
-                PreprocessedAudioFixture.data_dir / "lj" / "preprocessed" / "duration",
-            )
+            try:
+                (PreprocessedAudioFixture.lj_preprocessed / "duration").symlink_to(
+                    PreprocessedAudioFixture.data_dir / "lj/preprocessed/duration",
+                )
+            except OSError:  # pragma: no cover
+                # Windows work-around
+                shutil.copytree(
+                    PreprocessedAudioFixture.data_dir / "lj/preprocessed/duration",
+                    PreprocessedAudioFixture.lj_preprocessed / "duration",
+                    dirs_exist_ok=True,
+                )
 
             PreprocessedAudioFixture._preprocess_ran = True

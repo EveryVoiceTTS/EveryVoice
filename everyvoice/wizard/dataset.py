@@ -1,13 +1,13 @@
 import glob
 import os
 import random
-import re
 import sys
+from copy import copy, deepcopy
 from pathlib import Path
 from typing import Sequence
 
 import questionary
-import rich
+from rich import print as rich_print
 from rich.panel import Panel
 from rich.style import Style
 from tqdm import tqdm
@@ -22,8 +22,11 @@ from everyvoice.wizard.prompts import (
 )
 from everyvoice.wizard.utils import (
     apply_automatic_text_conversions,
+    get_iso_code,
+    has_columns_left,
     read_unknown_tabular_filelist,
     rename_unknown_headers,
+    sanitize_paths,
 )
 from everyvoice.wizard.validators import validate_path
 
@@ -32,6 +35,7 @@ from everyvoice.wizard.validators import validate_path
 
 class DatasetNameStep(Step):
     DEFAULT_NAME = StepNames.dataset_name_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input(
@@ -40,24 +44,25 @@ class DatasetNameStep(Step):
 
     def validate(self, response):
         if len(response) == 0:
-            print("Sorry, your dataset needs a name.")
+            rich_print("Sorry, your dataset needs a name.")
             return False
         slug = slugify(response)
         if not slug == response:
-            print(
+            rich_print(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."
             )
             return False
         return True
 
     def effect(self):
-        print(
+        rich_print(
             f"Great! The Configuration Wizard 🧙 finished the configuration for your dataset named '{self.response}'"
         )
 
 
 class DatasetPermissionStep(Step):
     DEFAULT_NAME = StepNames.dataset_permission_step
+    REVERSIBLE = True
     choices = (
         "No, I don't have permission to use this data.",
         "Yes, I do have permission to use this data.",
@@ -74,14 +79,25 @@ class DatasetPermissionStep(Step):
         return response in self.choices
 
     def effect(self):
-        if self.state[StepNames.dataset_permission_step.value].startswith("No"):
-            print("OK, we'll ask you to choose another dataset then!")
-            self.children = []
-            del self.root.state[self.state_subset]
+        if self.response.startswith("No"):
+            rich_print("OK, we'll ask you to choose another dataset then!")
+            self.children = ()
+            self.tour.remove_dataset(self.state_subset)
+
+            # Permission can be revoked, but if you said no you can't go back because
+            # we destroy too much of the state here. Just pick another data file.
+            self.REVERSIBLE = False
+
+    def undo(self):
+        # Do not call super().undo() here! We don't want to remove the dataset steps
+        self.response = None
+        self.completed = False
+        self.state.pop(self.name, None)
 
 
 class WavsDirStep(Step):
     DEFAULT_NAME = StepNames.wavs_dir_step
+    REVERSIBLE = True
 
     def prompt(self):
         return questionary.path(
@@ -91,7 +107,7 @@ class WavsDirStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        return self.sanitize_paths(response)
+        return sanitize_paths(response)
 
     def validate(self, response) -> bool:
         valid_path = validate_path(response, is_dir=True, exists=True)
@@ -101,7 +117,7 @@ class WavsDirStep(Step):
         glob_iter = glob.iglob(os.path.join(path_expanded, "**/*.wav"), recursive=True)
         contains_wavs = next(glob_iter, None) is not None
         if not contains_wavs:
-            print(
+            rich_print(
                 f"Sorry, no .wav files were found in '{path_expanded}'. Please choose a directory with audio files."
             )
         return valid_path and contains_wavs
@@ -109,6 +125,7 @@ class WavsDirStep(Step):
 
 class SampleRateConfigStep(Step):
     DEFAULT_NAME = StepNames.sample_rate_config_step
+    REVERSIBLE = True
 
     def prompt(self):
         return questionary.text(
@@ -120,13 +137,13 @@ class SampleRateConfigStep(Step):
         try:
             self.response = int(response)
             if self.response < 100 or float(response) != self.response:
-                print(
+                rich_print(
                     f"{response} is not a valid sample rate. Please enter an integer representing the sample rate in Hertz of your data."
                 )
                 return False
             return True
         except ValueError:
-            print(
+            rich_print(
                 f"{response} is not a valid sample rate. Please enter an integer representing the sample rate in Hertz of your data."
             )
             return False
@@ -134,6 +151,7 @@ class SampleRateConfigStep(Step):
 
 class FilelistStep(Step):
     DEFAULT_NAME = StepNames.filelist_step
+    REVERSIBLE = True
 
     def prompt(self):
         return questionary.path(
@@ -141,7 +159,7 @@ class FilelistStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        return self.sanitize_paths(response)
+        return sanitize_paths(response)
 
     def validate(self, response) -> bool:
         return validate_path(response, is_file=True, exists=True)
@@ -149,6 +167,7 @@ class FilelistStep(Step):
 
 class FilelistFormatStep(Step):
     DEFAULT_NAME = StepNames.filelist_format_step
+    REVERSIBLE = True
     separators = {"psv": "|", "tsv": "\t", "csv": ","}
 
     def prompt(self):
@@ -167,18 +186,18 @@ class FilelistFormatStep(Step):
         if len(initial_records) > 0:
             column_count = len(initial_records[0])
         else:
-            print(f"ERROR: File ({filelist_path} is empty. Please double check.")
+            rich_print(f"ERROR: File ({filelist_path} is empty. Please double check.")
             sys.exit(1)
 
         if column_count < 2:
-            print(
+            rich_print(
                 f"File '{filelist_path}' does not look like a '{file_type}' file: no record separator found on header line."
             )
             return False
 
         for i, record in enumerate(initial_records):
             if len(record) != column_count:
-                print(
+                rich_print(
                     f"File '{filelist_path}' does not look like a '{file_type}' file: the {i}th record has a different number of fields than the header row."
                 )
                 return False
@@ -192,7 +211,7 @@ class FilelistFormatStep(Step):
                 _ = read_festival(filelist_path, 10)
                 return True
             except ValueError:
-                print(f"File '{filelist_path}' is not in the festival format.")
+                rich_print(f"File '{filelist_path}' is not in the festival format.")
                 return False
 
         separator = self.separators.get(response, None)
@@ -208,6 +227,14 @@ class FilelistFormatStep(Step):
         the data to the tour state. We then inspect the headers for the data and add steps to
         select the basename and text if they are not already specified in the headers.
         """
+        self.saved_state = {
+            "filelist_delimiter": None,
+            "filelist_headers": None,
+            "filelist_data_list": None,
+            "filelist_data": None,
+            "selected_headers": None,
+        }
+
         file_type = self.state.get(StepNames.filelist_format_step)
         filelist_path = self.state.get(StepNames.filelist_step)
         if not isinstance(filelist_path, Path):
@@ -269,6 +296,8 @@ class FilelistFormatStep(Step):
 
 class ValidateWavsStep(Step):
     DEFAULT_NAME = StepNames.validate_wavs_step
+    AUTOMATIC = True
+    REVERSIBLE = True
 
     def wav_file_early_validation(self) -> int:
         """Look for missing wav files and return the error count"""
@@ -280,13 +309,13 @@ class ValidateWavsStep(Step):
         file_list_size = len(filelist_data)
         sample: Sequence[int]
         if file_list_size > MAX_SAMPLES:
-            print(
+            rich_print(
                 f"Checking a sample of {MAX_SAMPLES} of your audio files to make sure they are present."
             )
             sampled_text = " sampled"
             sample = sorted(random.sample(range(file_list_size), MAX_SAMPLES))
         else:
-            print("Checking if all your audio files are present.")
+            rich_print("Checking if all your audio files are present.")
             sampled_text = ""
             sample = range(file_list_size)
         for item in sample:
@@ -300,15 +329,17 @@ class ValidateWavsStep(Step):
         if files_not_found:
             n = len(files_not_found)
             if n == 1:
-                print(
+                rich_print(
                     f"Warning: wav file '{files_not_found[0]}' was not found, please check your filelist."
                 )
             else:
-                print(
+                rich_print(
                     f"Warning: {n}{sampled_text} wav files were not found, including '{files_not_found[0]}' and '{files_not_found[1]}'.\nPlease check your wavs directory '{wavs_dir}' and your filelist."
                 )
             return n
-        print(f"Great! All{sampled_text} audio files found in directory '{wavs_dir}'.")
+        rich_print(
+            f"Great! All{sampled_text} audio files found in directory '{wavs_dir}'."
+        )
         return 0
 
     def prompt(self):
@@ -337,7 +368,7 @@ class ValidateWavsStep(Step):
                 self,
             )
         elif self.response.startswith("No"):
-            rich.print(
+            rich_print(
                 Panel(
                     "Continuing despite missing audio files. Make sure you fix your filelist later or add missing audio files, otherwise entries in your filelist with missing audio files will be skipped during preprocessing and therefore be ignored during training.",
                     title="Missing audio files",
@@ -348,6 +379,7 @@ class ValidateWavsStep(Step):
 
 class FilelistTextRepresentationStep(Step):
     DEFAULT_NAME = StepNames.filelist_text_representation_step
+    REVERSIBLE = True
     text_representation_options = tuple(x.value for x in DatasetTextRepresentation)
 
     def prompt(self):
@@ -361,11 +393,15 @@ class FilelistTextRepresentationStep(Step):
 
     def effect(self):
         # Apply the text representation level as the new alias for text:
+        self.saved_state = {
+            "filelist_headers": copy(self.state["filelist_headers"]),
+        }
         for i, header in enumerate(self.state["filelist_headers"]):
             if header == "text":
                 self.state["filelist_headers"][i] = self.response
         # Rename the "text" key according to the new alias:
         if "filelist_data" in self.state:
+            self.saved_state["filelist_data"] = deepcopy(self.state["filelist_data"])
             for item in self.state["filelist_data"]:
                 filelist_format = self.state[
                     StepNames.filelist_text_representation_step
@@ -378,6 +414,7 @@ class FilelistTextRepresentationStep(Step):
 
 class HeaderStep(Step):
     DEFAULT_NAME = StepNames.text_header_step
+    REVERSIBLE = True
 
     def __init__(self, name: str, prompt_text: str, header_name: str, **kwargs):
         super(HeaderStep, self).__init__(name=name, **kwargs)
@@ -408,12 +445,24 @@ class HeaderStep(Step):
         # Rename the filelist header with the standard header name
         if "selected_headers" not in self.state:
             self.state["selected_headers"] = []
+        self.saved_state = {
+            "selected_headers": copy(self.state["selected_headers"]),
+            "filelist_headers": copy(self.state["filelist_headers"]),
+        }
         self.state["selected_headers"].append(self.response)
         self.state["filelist_headers"][self.response] = self.header_name
 
 
 class LanguageHeaderStep(HeaderStep):
+    REVERSIBLE = True
+
     def effect(self):
+        self.saved_state = {
+            "filelist_headers": copy(self.state["filelist_headers"]),
+            "selected_headers": copy(self.state.get("selected_headers", None)),
+            "filelist_data": deepcopy(self.state.get("filelist_data", None)),
+            "model_target_training_text_representation": None,
+        }
         # Rename the filelist header with the standard header name
         if "selected_headers" not in self.state:
             self.state["selected_headers"] = []
@@ -444,6 +493,7 @@ class HasHeaderLineStep(Step):
     is the header row."""
 
     DEFAULT_NAME = StepNames.data_has_header_line_step
+    REVERSIBLE = True
     choices = ("no", "yes")
 
     def prompt(self):
@@ -461,24 +511,26 @@ class HasHeaderLineStep(Step):
         return response in self.choices
 
     def effect(self):
-        if self.state[StepNames.data_has_header_line_step] == "no":
-            print("Reinterpreting your first row as a record, not headers.")
+        if self.response == "no":
+            rich_print("Reinterpreting your first row as a record, not headers.")
             self.state["filelist_data_list"].insert(
                 0, self.state["filelist_data_list"][0]
             )
 
+    def undo(self):
+        if self.response == "no":
+            self.state["filelist_data_list"].pop(0)
+        return super().undo()
+
 
 class HasSpeakerStep(Step):
     DEFAULT_NAME = StepNames.data_has_speaker_value_step
+    REVERSIBLE = True
     choices = ("no", "yes")
 
     def prompt(self):
-        if self.state[StepNames.filelist_format_step] == "festival":
-            return "no"
-        elif len(self.state.get("selected_headers", [])) >= len(
-            self.state["filelist_data_list"][0]
-        ):
-            print("No columns left, we will assume you have no speaker column.")
+        if not has_columns_left(self.state):
+            rich_print("No columns available to have a speaker column.")
             return "no"
         else:
             return get_response_from_menu_prompt(
@@ -490,7 +542,8 @@ class HasSpeakerStep(Step):
         return response in self.choices
 
     def effect(self):
-        print(
+        self.AUTOMATIC = not has_columns_left(self.state)
+        rich_print(
             "Note: if your dataset has speakers with names matching with speakers from other provided datasets, they will be considered the same. If this is not the desired behaviour, you will have to alter the speaker IDs in the relevant datasets to indicate that they are different."
         )
         if self.state[StepNames.data_has_speaker_value_step] == "yes":
@@ -509,10 +562,14 @@ class HasSpeakerStep(Step):
 
 class KnowSpeakerStep(Step):
     DEFAULT_NAME = StepNames.know_speaker_step
+    REVERSIBLE = True
     choices = ("no", "yes")
 
+    @property
+    def dataset_index(self) -> str:
+        return self.state_subset.split("_")[-1]
+
     def prompt(self):
-        self.dataset_index = self.state_subset.split("_")[-1]
         return get_response_from_menu_prompt(
             choices=self.choices,
             title=f"Since your data does not have a speaker column, we will use a default ID of 'speaker_{self.dataset_index}'. Would you like to specify an alternative speaker ID for this dataset instead?",
@@ -527,46 +584,44 @@ class KnowSpeakerStep(Step):
         else:
             # Even though AddSpeakerStep is not run, the speaker ID is assigned to its keyword
             self.state[StepNames.add_speaker_step] = f"speaker_{self.dataset_index}"
-            print(
+            rich_print(
                 f"OK, '{self.state[StepNames.add_speaker_step]}' will be used as a speaker ID in this dataset then."
             )
 
 
 class AddSpeakerStep(Step):
     DEFAULT_NAME = StepNames.add_speaker_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input("Please enter the desired speaker ID: ")
 
     def validate(self, response):
         if len(response) == 0:
-            print("Sorry, the speaker needs an ID.")
+            rich_print("Sorry, the speaker needs an ID.")
             return False
         slug = slugify(response)
         if not slug == response:
-            print(
+            rich_print(
                 f"Sorry, your ID: '{response}' is not valid. Please avoid using special characters in it and re-type something like {slug} instead."
             )
             return False
         return True
 
     def effect(self):
-        print(
+        rich_print(
             f"Great! '{self.response}' will be used as the speaker ID for this dataset."
         )
 
 
 class HasLanguageStep(Step):
     DEFAULT_NAME = StepNames.data_has_language_value_step
+    REVERSIBLE = True
     choices = ("no", "yes")
 
     def prompt(self):
-        if self.state[StepNames.filelist_format_step] == "festival":
-            return "no"
-        elif len(self.state.get("selected_headers", [])) >= len(
-            self.state["filelist_data_list"][0]
-        ):
-            print("No columns left, we will assume you have no language column.")
+        if not has_columns_left(self.state):
+            rich_print("No columns available to have a speaker column.")
             return "no"
         else:
             return get_response_from_menu_prompt(
@@ -578,6 +633,7 @@ class HasLanguageStep(Step):
         return response in self.choices
 
     def effect(self):
+        self.AUTOMATIC = not has_columns_left(self.state)
         if self.state[StepNames.data_has_language_value_step] == "yes":
             self.tour.add_step(
                 LanguageHeaderStep(
@@ -595,6 +651,7 @@ class HasLanguageStep(Step):
 
 class SelectLanguageStep(Step):
     DEFAULT_NAME = StepNames.select_language_step
+    REVERSIBLE = True
 
     def prompt(self):
         from g2p import get_arpabet_langs
@@ -602,7 +659,7 @@ class SelectLanguageStep(Step):
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 
         g2p_langs_full = get_arpabet_langs()[1]
-        print(
+        rich_print(
             "Note: if your dataset has more than one language in it, you will have to provide a 'language' column to indicate the language of each sample, because the configuration wizard can't guess!"
         )
         # TODO: currently we only support the languages from g2p, but we should add more
@@ -620,6 +677,11 @@ class SelectLanguageStep(Step):
         return isinstance(response, str)
 
     def effect(self):
+        self.saved_state = {
+            "filelist_headers": copy(self.state["filelist_headers"]),
+            "filelist_data": deepcopy(self.state.get("filelist_data", None)),
+            "model_target_training_text_representation": None,
+        }
         # Rename unselected headers to unknown:
         self.state["filelist_headers"] = rename_unknown_headers(
             self.state["filelist_headers"]
@@ -642,6 +704,7 @@ class SelectLanguageStep(Step):
 
 
 def add_missing_speaker(state):
+    """Set all speakers IDs to the default speaker ID."""
     for item in state["filelist_data"]:
         item["speaker"] = state[StepNames.add_speaker_step]
 
@@ -671,18 +734,9 @@ def reload_filelist_data_as_dict(state):
     assert isinstance(state["filelist_data"][0], dict)
 
 
-def get_iso_code(language):
-    if language is None:
-        return None
-    result = re.search(r"\[[\w-]*\]", language)
-    if result is None:
-        return language
-    else:
-        return result.group()[1:-1]
-
-
 class TextProcessingStep(Step):
     DEFAULT_NAME = StepNames.text_processing_step
+    REVERSIBLE = True
     process_lookup = {
         0: {"fn": lower, "desc": "Lowercase"},
         1: {"fn": nfc_normalize, "desc": "NFC Normalization"},
@@ -702,11 +756,12 @@ class TextProcessingStep(Step):
     def effect(self):
         from everyvoice.config.text_config import TextConfig
 
-        # Apply the selected text processing processes
-        if "symbols" not in self.state:
-            self.state["symbols"] = {}
+        self.saved_state = {}
         # Get Text Index
         if self.state.get("filelist_data_list", None):
+            self.saved_state["filelist_data_list"] = deepcopy(
+                self.state["filelist_data_list"]
+            )
             text_index = self.state["filelist_headers"].index(
                 self.state[StepNames.filelist_text_representation_step]
             )
@@ -731,6 +786,7 @@ class TextProcessingStep(Step):
                         self.state["filelist_data_list"][i][text_index]
                     )
         else:
+            self.saved_state["filelist_data"] = deepcopy(self.state["filelist_data"])
             # Process global cleaners
             global_cleaners = TextConfig().cleaners
             for cleaner in global_cleaners:
@@ -763,6 +819,7 @@ class TextProcessingStep(Step):
 
 class SoxEffectsStep(Step):
     DEFAULT_NAME = StepNames.sox_effects_step
+    REVERSIBLE = True
 
     def prompt(self):
         return get_response_from_menu_prompt(
@@ -802,15 +859,23 @@ class SoxEffectsStep(Step):
             for effect in self.response:
                 self.state["sox_effects"] += audio_effects[effect]
 
+    def undo(self):
+        del self.state["sox_effects"]
+        super().undo()
+
 
 class SymbolSetStep(Step):
     DEFAULT_NAME = StepNames.symbol_set_step
+    AUTOMATIC = True
+    REVERSIBLE = True
 
     def prompt(self):
-        # TODO: This is a bit of a weird step, since it doesn't really prompt anything, it just applies the effect of trying to find
-        #       character graphemes/phones. I'd still like to keep it here, since we might add more to this step in the future, and
-        #       I don't want to lump the grapheme clustering logic into the effect of another step.
-        print(
+        # TODO: This is a bit of a weird step, since it doesn't really prompt anything,
+        #       it just applies the effect of trying to find character graphemes/phones.
+        #       I'd still like to keep it here, since we might add more to this step in
+        #       the future, and I don't want to lump the grapheme clustering logic into
+        #       the effect of another step.
+        rich_print(
             f"We will now read your entire dataset and try to determine the characters and/or phones in your dataset according to Unicode Grapheme clustering rules. Please carefully check your {TEXT_CONFIG_FILENAME_PREFIX}.yaml file (which is created at the end of the wizard) and adjust the symbol set as appropriate. If your language uses standard punctuation symbols to represent sounds, it is extra important that you go remove any of these symbols from the punctuation categories."
         )
         return True

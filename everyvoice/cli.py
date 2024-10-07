@@ -2,6 +2,7 @@ import json
 import sys
 from enum import Enum
 from pathlib import Path
+from textwrap import dedent
 from typing import Any, List, Optional
 
 import typer
@@ -304,10 +305,43 @@ app.command(
 
 """,
 )
-def new_project():
+def new_project(
+    trace: bool = typer.Option(
+        False, help="Enable question tree trace mode.", hidden=True
+    ),
+    debug_state: bool = typer.Option(
+        False, help="Enable wizard state debug/trace mode.", hidden=True
+    ),
+    resume_from: Optional[Path] = typer.Option(
+        None,
+        "--resume-from",
+        "-r",
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="Resume from previously saved progress.",
+        autocompletion=complete_path,
+    ),
+):
     from everyvoice.wizard.main_tour import get_main_wizard_tour
 
-    get_main_wizard_tour().run()
+    rich_print(
+        Panel(
+            dedent(
+                """
+                    Welcome to the EveryVoice Wizard. We will guide you through the process of setting up the configuration for a new EveryVoice project.
+
+                    Navigation: as any point, you can hit Ctrl+C to: go back a step, view progress, save progress, or exit the wizard.
+
+                    From saved progress, you can resume at any time by running the same command with the --resume-from option.
+                """
+            ).strip()
+        )
+    )
+
+    get_main_wizard_tour(trace=trace, debug_state=debug_state).run(
+        resume_from=resume_from
+    )
 
 
 # Add preprocess to root

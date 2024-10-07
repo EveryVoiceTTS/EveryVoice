@@ -3,7 +3,7 @@ from pathlib import Path
 
 import questionary
 from email_validator import EmailNotValidError, validate_email
-from rich import print
+from rich import print as rich_print
 from rich.panel import Panel
 from rich.style import Style
 
@@ -38,11 +38,12 @@ from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
 )
-from everyvoice.wizard.utils import write_dict_to_config
+from everyvoice.wizard.utils import sanitize_paths, write_dict_to_config
 
 
 class NameStep(Step):
     DEFAULT_NAME = StepNames.name_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input(
@@ -51,24 +52,25 @@ class NameStep(Step):
 
     def validate(self, response):
         if len(response) == 0:
-            print("Sorry, your project needs a name. ")
+            rich_print("Sorry, your project needs a name. ")
             return False
         sanitized_path = slugify(response)
         if not sanitized_path == response:
-            print(
+            rich_print(
                 f"Sorry, the project name '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like '{sanitized_path}' instead."
             )
             return False
         return True
 
     def effect(self):
-        print(
+        rich_print(
             f"Great! Launching Configuration Wizard 🧙 for project named '{self.response}'."
         )
 
 
 class ContactNameStep(Step):
     DEFAULT_NAME = StepNames.contact_name_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input("What is your full name? ")
@@ -77,16 +79,17 @@ class ContactNameStep(Step):
         # Some languages don't use first and last names, so we can't necessarily check that response.split() > 1
         # It would be nice to have a better check here though.
         if len(response) < 3:
-            print("Sorry, EveryVoice requires a name to help prevent misuse.")
+            rich_print("Sorry, EveryVoice requires a name to help prevent misuse.")
             return False
         return True
 
     def effect(self):
-        print(f"Great! Nice to meet you, '{self.response}'.")
+        rich_print(f"Great! Nice to meet you, '{self.response}'.")
 
 
 class ContactEmailStep(Step):
     DEFAULT_NAME = StepNames.contact_email_step
+    REVERSIBLE = True
 
     def prompt(self):
         return input("Please provide a contact email address for your models. ")
@@ -112,8 +115,8 @@ class ContactEmailStep(Step):
         except EmailNotValidError as e:
             # The exception message is a human-readable explanation of why it's
             # not a valid (or deliverable) email address.
-            print("EveryVoice requires a valid email address to prevent misuse.")
-            print(str(e))
+            rich_print("EveryVoice requires a valid email address to prevent misuse.")
+            rich_print(str(e))
             return False
         return True
 
@@ -121,13 +124,14 @@ class ContactEmailStep(Step):
         emailinfo = validate_email(self.response, check_deliverability=False)
         email = emailinfo.normalized
         self.response = email
-        print(
+        rich_print(
             f"Great! Your contact email '{self.response}' will be saved to your models."
         )
 
 
 class OutputPathStep(Step):
     DEFAULT_NAME = StepNames.output_step
+    REVERSIBLE = True
 
     def prompt(self):
         return questionary.path(
@@ -138,7 +142,7 @@ class OutputPathStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        return self.sanitize_paths(response)
+        return sanitize_paths(response)
 
     def can_mkdir(self, path: Path) -> bool:
         """Make sure it's possible to create path, without leaving it behind."""
@@ -154,7 +158,7 @@ class OutputPathStep(Step):
                     d.mkdir()
                     dirs_made.append(d)
                 except OSError as e:
-                    print(f"Sorry, could not create '{d}': {e}.")
+                    rich_print(f"Sorry, could not create '{d}': {e}.")
                     return False
         finally:
             for d in reversed(dirs_made):
@@ -164,12 +168,12 @@ class OutputPathStep(Step):
     def validate(self, response) -> bool:
         path = Path(response)
         if path.is_file():
-            print(f"Sorry, '{path}' is a file. Please select a directory.")
+            rich_print(f"Sorry, '{path}' is a file. Please select a directory.")
             return False
         assert self.state is not None, "OutputPathStep requires NameStep"
         output_path = path / self.state.get(StepNames.name_step, "DEFAULT_NAME")
         if output_path.exists():
-            print(
+            rich_print(
                 f"Sorry, '{output_path}' already exists. "
                 "Please choose another output directory or start again and choose a different project name."
             )
@@ -178,20 +182,22 @@ class OutputPathStep(Step):
         # We create the output directory in validate() instead of effect() so that
         # failure can be reported to the user and the question asked again if necessary.
         if not self.can_mkdir(output_path):
-            print("Please choose another output directory.")
+            rich_print("Please choose another output directory.")
             return False
 
         self.output_path = output_path
         return True
 
     def effect(self):
-        print(
+        rich_print(
             f"The Configuration Wizard 🧙 will put your files here: '{self.output_path}'"
         )
 
 
 class ConfigFormatStep(Step):
     DEFAULT_NAME = StepNames.config_format_step
+    # ConfigFormatStep writes the results to disk and exits, so it's not reversible.
+    REVERSIBLE = False
 
     def prompt(self):
         return get_response_from_menu_prompt(
@@ -463,7 +469,7 @@ class ConfigFormatStep(Step):
                 (config_dir / e2e_config_path).absolute(),
             )
 
-        print(
+        rich_print(
             Panel(
                 f"You've finished configuring your dataset. Your files are located at {config_dir.absolute()}",
                 title="Congratulations 🎉",
@@ -475,6 +481,7 @@ class ConfigFormatStep(Step):
 
 class MoreDatasetsStep(Step):
     DEFAULT_NAME = StepNames.more_datasets_step
+    REVERSIBLE = True
 
     def prompt(self):
         return get_response_from_menu_prompt(
@@ -494,7 +501,7 @@ class MoreDatasetsStep(Step):
                         for key in self.state.keys()
                         if key.startswith("dataset_")
                     ],
-                    default=0,
+                    default=-1,
                 )
                 + 1
             )
@@ -505,8 +512,14 @@ class MoreDatasetsStep(Step):
                 self,
             )
         elif len([key for key in self.state.keys() if key.startswith("dataset_")]) == 0:
-            print("No dataset to save, exiting without saving any configuration.")
+            rich_print("No dataset to save, exiting without saving any configuration.")
         else:
             self.tour.add_step(
                 ConfigFormatStep(name=StepNames.config_format_step), self
             )
+
+    def undo(self):
+        if self.response == "yes":
+            # delete the dataset from the state
+            self.tour.remove_dataset(self.children[0].state_subset)
+        super().undo()

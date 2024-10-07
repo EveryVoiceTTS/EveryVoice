@@ -8,53 +8,63 @@ from typing import Any, Generator, Sequence, Union
 
 from loguru import logger
 
+from everyvoice import wizard
 from everyvoice.wizard import basic, dataset, prompts
 
-_NOTSET = object()  # Sentinel object for monkeypatch()
 
-
-@contextmanager
-def monkeypatch(obj, name, value) -> Generator:
+class monkeypatch:
     """Monkey patch obj.name to value for the duration of the context manager's life.
 
     Yields:
         value: the value monkey-patched, for use with "as v" notation"""
-    saved_value = getattr(obj, name, _NOTSET)
-    setattr(obj, name, value)
-    try:
-        yield value
-    finally:
-        if saved_value is _NOTSET:  # pragma: no cover
-            delattr(obj, name)
+
+    _NOTSET = object()  # Sentinel object for monkeypatch()
+
+    def __init__(self, obj, name, value):
+        self.obj = obj
+        self.name = name
+        self.value = value
+
+    def __enter__(self):
+        self.saved_value = getattr(self.obj, self.name, self._NOTSET)
+        setattr(self.obj, self.name, self.value)
+        return self.value
+
+    def __exit__(self, *_exc_info):
+        if self.saved_value is self._NOTSET:  # pragma: no cover
+            delattr(self.obj, self.name)
         else:
-            setattr(obj, name, saved_value)
+            setattr(self.obj, self.name, self.saved_value)
 
 
-QUIET = logging.CRITICAL + 100  # level high enough to disable all logging
-
-
-@contextmanager
-def patch_logger(
-    module, level: int = logging.INFO
-) -> Generator[logging.Logger, None, None]:
+class patch_logger:
     """Monkey patch the logger for a given module with a unit testing logger
-    of the given level. Use level=QUIET to just silence logging.
+    of the given level.
 
     Yields:
         logger (logging.Logger): patched logger, e.g., for use in self.assertLogs(logger)
     """
-    with monkeypatch(module, "logger", logging.getLogger("UnitTesting")) as logger:
-        logger.setLevel(level)
-        yield logger
+
+    def __init__(self, module, level: int = logging.INFO):
+        self.monkey = monkeypatch(module, "logger", logging.getLogger("UnitTesting"))
+        self.level = level
+
+    def __enter__(self):
+        logger = self.monkey.__enter__()
+        logger.setLevel(self.level)
+        return logger
+
+    def __exit__(self, *_exc_info):
+        self.monkey.__exit__(*_exc_info)
 
 
 @contextmanager
 def mute_logger(module: str) -> Generator[None, None, None]:
-    """
-    Temporarily mutes a module's `logger`.
+    """Temporarily mutes a module's `logger`.
 
-    with mute_logger("everyvoice.base_cli.helpers"):
-        config = FastSpeech2Config()
+    Usage:
+        with mute_logger("everyvoice.base_cli.helpers"):
+            config = FastSpeech2Config()
     """
     logger.disable(module)
     try:
@@ -77,8 +87,7 @@ def capture_logs():
         logger.remove(handler_id)
 
 
-@contextmanager
-def capture_stdout() -> Generator[io.StringIO, None, None]:
+class capture_stdout:
     """Context manager to capture what is printed to stdout.
 
     Usage:
@@ -92,9 +101,13 @@ def capture_stdout() -> Generator[io.StringIO, None, None]:
     Yields:
         stdout (io.StringIO): captured stdout
     """
-    f = io.StringIO()
-    with redirect_stdout(f):
-        yield f
+
+    def __enter__(self):
+        self.monkey = redirect_stdout(io.StringIO())
+        return self.monkey.__enter__()
+
+    def __exit__(self, *_exc_info):
+        self.monkey.__exit__(*_exc_info)
 
 
 @contextmanager
@@ -132,11 +145,7 @@ def temp_chdir(path: Path) -> Generator[None, None, None]:
         os.chdir(cwd)
 
 
-@contextmanager
-def patch_menu_prompt(
-    response_index: Union[int, list],
-    multi=False,
-) -> Generator[io.StringIO, None, None]:
+class patch_menu_prompt:
     """Context manager to simulate what option(s) the user selects in a simple_term_menu.
 
     Args:
@@ -149,26 +158,52 @@ def patch_menu_prompt(
     Yields:
         stdout (io.StringIO): captured stdout stream.
     """
-    with capture_stdout() as stdout:
-        with monkeypatch(
-            prompts, "simple_term_menu", SimpleTermMenuStub(response_index, multi)
-        ):
-            yield stdout
+
+    def __init__(self, response_index: Union[int, list], multi=False):
+        self.response_index = response_index
+        self.multi = multi
+
+    def __enter__(self):
+        self.monkey1 = monkeypatch(
+            prompts,
+            "simple_term_menu",
+            SimpleTermMenuStub(self.response_index, self.multi),
+        )
+        self.monkey2 = capture_stdout()
+
+        self.monkey1.__enter__()
+        return self.monkey2.__enter__()
+
+    def __exit__(self, *_exc_info):
+        self.monkey2.__exit__(*_exc_info)
+        self.monkey1.__exit__(*_exc_info)
 
 
-@contextmanager
-def patch_input(response: Any, multi=False) -> Generator[None, None, None]:
+class patch_input:
     """Shortcut for patching the builtin input() function, which we need often.
 
     Args: see class Say"""
-    with monkeypatch(builtins, "input", Say(response, multi)):
-        yield
+
+    def __init__(self, response: Any, multi=False):
+        self.response = response
+        self.multi = multi
+
+    def __enter__(self):
+        self.monkey = monkeypatch(builtins, "input", Say(self.response, self.multi))
+        return self.monkey.__enter__()
+
+    def __exit__(self, *_exc_info):
+        self.monkey.__exit__(*_exc_info)
 
 
-@contextmanager
-def null_patch() -> Generator[None, None, None]:
+class null_patch:
     """dummy context manager when we must pass a monkeypatch but have nothing to patch"""
-    yield
+
+    def __enter__(self):
+        return None
+
+    def __exit__(self, *_exc_info):
+        pass
 
 
 class Say:
@@ -226,14 +261,16 @@ class SimpleTermMenuStub:
 class QuestionaryStub:
     """Stub class for the questionary module"""
 
-    def __init__(self, responses: Path | str | Sequence) -> None:
+    def __init__(self, responses: Path | str | Sequence, ask_ok: bool = False) -> None:
         """Constructor
 
         Args:
             responses: the (sequence of) answers the user is simulated to provide
+            ask_ok: if True, allow calling .ask(), which is an error otherwise
         """
         self.last_index = -1
         self.responses: Sequence
+        self.ask_ok = ask_ok
         if isinstance(responses, (Path, str)):
             self.responses = [responses]
         else:
@@ -245,10 +282,13 @@ class QuestionaryStub:
     text = path
 
     def ask(self):  # pragma: no cover
-        # This will trigger a unit test failure if we use .ask()
-        raise Exception(
-            "Always use unsafe_ask() for questionary instances so that KeyboardInterrupt gets passed up to us."
-        )
+        if self.ask_ok:
+            return self.unsafe_ask()
+        else:
+            # This will trigger a unit test failure if we use .ask()
+            raise Exception(
+                "Always use unsafe_ask() for questionary instances so that KeyboardInterrupt gets passed up to us."
+            )
 
     def unsafe_ask(self):
         self.last_index += 1
@@ -260,12 +300,24 @@ class QuestionaryStub:
         return response
 
 
-@contextmanager
-def patch_questionary(responses: Path | str | Sequence) -> Generator[None, None, None]:
+class patch_questionary:
     """Shortcut for monkey patching questionary everywhere
 
     Args: See QuestionaryStub"""
-    stub = QuestionaryStub(responses)
-    module_name = "questionary"
-    with monkeypatch(basic, module_name, stub), monkeypatch(dataset, module_name, stub):
-        yield
+
+    def __init__(self, responses: Path | str | Sequence, ask_ok: bool = False):
+        self.responses = responses
+        self.ask_ok = ask_ok
+
+    def __enter__(self):
+        stub = QuestionaryStub(self.responses, self.ask_ok)
+        patch_name = "questionary"
+        self.monkeys = [
+            monkeypatch(module_to_patch, patch_name, stub)
+            for module_to_patch in [wizard, basic, dataset]
+        ]
+        return [monkey.__enter__() for monkey in self.monkeys]
+
+    def __exit__(self, *_exc_info):
+        for monkey in self.monkeys:
+            monkey.__exit__(*_exc_info)

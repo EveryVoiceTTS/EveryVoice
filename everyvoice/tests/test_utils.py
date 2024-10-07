@@ -109,7 +109,7 @@ class PathIsADirectoryTest(TestCase):
         file = Path(__file__)
         with self.assertRaisesRegex(
             ValueError,
-            re.escape(f"{file} is not a directory"),
+            re.escape(f"{file.name} is not a directory"),
         ):
             with init_context({"writing_config": file.parent.resolve()}):
                 PathIsADirectory(path=file.name)
