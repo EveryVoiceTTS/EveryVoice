@@ -416,3 +416,13 @@ def n_times(n: int) -> str:
     if n == 2:
         return "twice"
     return f"{n} times"
+
+
+def pydantic_validation_error_shortener(e) -> str:
+    """
+    Helper function to shorten pydantic's ValidationError message to only show the first and last extra inputs.
+    """
+    a = str(e).splitlines()
+    if len(a) > 7:
+        return "\n".join(a[:4] + ["..."] + a[-3:])
+    return str(e)

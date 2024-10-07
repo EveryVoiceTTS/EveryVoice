@@ -288,7 +288,13 @@ def train_base_command(
         tensorboard_logger.log_hyperparams(config.model_dump())
         trainer.fit(model_obj, data)
     else:
-        model_obj = model.load_from_checkpoint(last_ckpt)
+        try:
+            model_obj = model.load_from_checkpoint(last_ckpt)
+        except (TypeError, ValidationError) as e:
+            import sys
+
+            logger.error(f"Unable to load {last_ckpt}: {e}")
+            sys.exit(1)
         logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
         if isinstance(model_obj, EveryVoice) or isinstance(config, EveryVoiceConfig):
