@@ -194,7 +194,6 @@ def plot_spectrogram(spectrogram):
 
 
 def write_filelist(files, path):
-
     with open(path, "w", encoding="utf8") as f:
         if not files:
             logger.warning(f"Writing empty filelist file {path}")
@@ -426,3 +425,22 @@ def pydantic_validation_error_shortener(e) -> str:
     if len(a) > 7:
         return "\n".join(a[:4] + ["..."] + a[-3:])
     return str(e)
+
+
+@contextmanager
+def spinner():
+    """Spinner for slow imports or model loading operations.
+
+    Usage:
+        with spinner():
+            # do expensive imports and loads
+    """
+    from yaspin import yaspin
+    from yaspin.core import Spinner
+
+    interval = 111 if sys.stdout.isatty() else 2000
+    with yaspin(
+        spinner=Spinner("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏", interval), text="Loading...", timer=True
+    ) as spinner:
+        yield spinner
+        spinner.ok("Done")

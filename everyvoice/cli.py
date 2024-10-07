@@ -31,6 +31,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
+from everyvoice.utils import generic_psv_filelist_reader, spinner
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
@@ -377,10 +378,10 @@ def check_data(
     heavy_clip_detection: bool = typer.Option(False),
     heavy_objective_evaluation: bool = typer.Option(False),
 ):
-    from everyvoice.base_cli.helpers import MODEL_CONFIGS, load_unknown_config
-    from everyvoice.config.preprocessing_config import PreprocessingConfig
-    from everyvoice.preprocessor import Preprocessor
-    from everyvoice.utils import generic_psv_filelist_reader
+    with spinner():
+        from everyvoice.base_cli.helpers import MODEL_CONFIGS, load_unknown_config
+        from everyvoice.config.preprocessing_config import PreprocessingConfig
+        from everyvoice.preprocessor import Preprocessor
 
     config = load_unknown_config(config_file)
     if not any((isinstance(config, x) for x in MODEL_CONFIGS)):
@@ -545,16 +546,18 @@ def demo(
     ),
     accelerator: str = typer.Option("auto", "--accelerator", "-a"),
 ):
-    from everyvoice.demo.app import create_demo_app
+    with spinner():
+        from everyvoice.demo.app import create_demo_app
 
-    demo = create_demo_app(
-        text_to_spec_model_path=text_to_spec_model,
-        spec_to_wav_model_path=spec_to_wav_model,
-        languages=languages,
-        speakers=speakers,
-        output_dir=output_dir,
-        accelerator=accelerator,
-    )
+        demo = create_demo_app(
+            text_to_spec_model_path=text_to_spec_model,
+            spec_to_wav_model_path=spec_to_wav_model,
+            languages=languages,
+            speakers=speakers,
+            output_dir=output_dir,
+            accelerator=accelerator,
+        )
+
     demo.launch()
 
 
