@@ -15,6 +15,9 @@ from everyvoice.base_cli.interfaces import complete_path
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     align_single as ctc_segment,
 )
+from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
+    extract_segments_from_textgrid as create_intervals,
+)
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.preprocess import (
     preprocess as preprocess_fs2,
 )
@@ -270,16 +273,49 @@ app.add_typer(
     short_help="Export your EveryVoice models",
 )
 
-app.command(
-    short_help="Segment a long audio file",
-    name="segment",
+# Add the segment commands
+segment_group = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    context_settings={"help_option_names": ["-h", "--help"]},
+    rich_markup_mode="markdown",
+    cls=TyperGroupOrderAsDeclared,
+    help="""
+    # Segment Help
+
+        - **align** --- This command will align a long audio file with some text.
+
+        - **extract** --- This command will take the alignment from the `align` command and extract it into multiple utterances in the format required for training a TTS system
+    """,
+)
+
+
+segment_group.command(
+    short_help="Align a long audio file with some text",
+    name="align",
     help="""
     # Segmentation help
 
-    This command will segment a long audio file into multiple utterances which is required for training a TTS system.
+    This command will align a long audio file with some text.
     This command should work on most languages and you should run it before running the new project or preprocessing steps.
+    This command will create a Praat TextGrid file. You must install Praat (https://www.fon.hum.uva.nl/praat/) if you want to inspect the alignments.
     """,
 )(ctc_segment)
+
+segment_group.command(
+    short_help="Extract the intervals from a TextGrid",
+    name="extract",
+    help="""
+    # Segmentation help
+
+    This command will take the alignment from the `align` command and extract it into multiple utterances in the format required for training a TTS system.
+    """,
+)(create_intervals)
+
+app.add_typer(
+    segment_group,
+    name="segment",
+    short_help="Align and segment audio",
+)
 
 
 @app.command(
