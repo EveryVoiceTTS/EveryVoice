@@ -16,13 +16,13 @@ repos:
         entry: isort
         language: system
         types: [python]
-        stages: [commit]
+        stages: [pre-commit]
       - id: black
         name: black
         entry: black
         language: system
         types: [python]
-        stages: [commit]
+        stages: [pre-commit]
   # We do flake8 last since black fixes a lot of the stuff it complains about
   - repo: https://github.com/pycqa/flake8
     rev: 7.1.0
@@ -36,4 +36,4 @@ repos:
         entry: mypy
         language: system
         types: [python]
-        stages: [commit]
+        stages: [pre-commit]
