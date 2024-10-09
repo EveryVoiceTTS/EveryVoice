@@ -11,7 +11,8 @@ In addition, we invite you to check out our [short guide](./ethics.md) that cont
 ## Step 2: Gather Your Data
 
 The first thing to do is to get all the data you have (in this case audio with text transcripts) together in one place. Your audio should be in a lossless 'wav' format. Ideally it would be 16bit, mono (one channel) audio sampled somewhere between 22.05kHz and 48kHz. If that doesn't mean anything to you, don't worry, we can ensure the right format in later steps.
-It's best if your audio clips are somewhere between half a second and 10 seconds long. Any longer and it could be difficult to train. If your audio is longer than this, we suggest processing it into smaller chunks first.
+
+It's best if your audio clips are somewhere between half a second and 10 seconds long. Any longer and it could be difficult to train depending on the size of your GPU. If your audio is significantly longer than this, we suggest processing it into smaller chunks first. To do this, you can use the `everyvoice segment` command. For this to work you need a plain text transcript and some corresponding audio. You can then run the segmenter: `everyvoice segment align path_to_text.txt path_to_audio.wav`. You can then install [Praat](https://www.fon.hum.uva.nl/praat/) and use it to inspect the .TextGrid file that was generated, and adjust any alignments as necessary. Once you are happy with your alignments, you can use `everyvoice segment extract path_to_alignment.TextGrid path_to_audio.wav outdir` which will then create a folder called `outdir` with your audio, and a metadata file containing references to each of your audio files and the corresponding text.
 
 Your text should be consistently written and should be in a pipe-separated values spreadsheet, similar to [this file](https://github.com/EveryVoiceTTS/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv). It should have a column that contains text and a column that contains the `basename` of your associated audio file. So if you have a recording of somebody saying "hello how are you?" and the corresponding audio is called `mydata0001.wav`
 then you should have a psv file that looks like this:
@@ -130,24 +131,12 @@ everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoint
 
 And an interactive demo will be available at [http://localhost:7260](http://localhost:7260)
 
-<!-- % Step 10 (optional): Finetune your vocoder
 
-% ----------------------------------------
+## Optional: Evaluation
 
-% .. code-block:: bash
+If you want to evaluate the model you just built, you can make use of the `everyvoice evaluate` command. In order to use it, you have to first generate some audio (see step 9) and then you can evaluate either a single file with `everyvoice evaluate -f your_file.wav` or a directory of audio files with `everyvoice evaluate -d path_to_wavs/`. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in [this](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680) paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: `everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav`. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.
 
-% everyvoice train text-to-wav config/{{ config_filename('text-to-wav') }}
+Please refer to `everyvoice evaluate --help` for more information.
 
-% Step 11: Synthesize Speech
-
-% --------------------------
-
-% .. code-block:: bash
-
-% everyvoice synthesize from-text -t "hello world" -c config/{{ config_filename('text-to-wav') }}
-
-% .. warning::
-
-% TODO: this doesn't exist yet
-
-% TODO: e2e needs checkpoint paths -->
+!!! note
+    Automatic evaluation can be helpful, but please take the reported numbers with a grain of salt. They are not always reliable, and do not always correlate well with human judgements.
