@@ -13,10 +13,17 @@ from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
 from everyvoice.base_cli.interfaces import complete_path
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
-    align_single as ctc_segment,
+    ALIGN_SINGLE_LONG_HELP,
+    ALIGN_SINGLE_SHORT_HELP,
+    CLI_LONG_HELP,
+    EXTRACT_SEGMENTS_LONG_HELP,
+    EXTRACT_SEGMENTS_SHORT_HELP,
 )
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
-    extract_segments_from_textgrid as create_intervals,
+    align_single as ctc_segment_align_single,
+)
+from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
+    extract_segments_from_textgrid,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.preprocess import (
     preprocess as preprocess_fs2,
@@ -279,37 +286,21 @@ segment_group = typer.Typer(
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="markdown",
     cls=TyperGroupOrderAsDeclared,
-    help="""
-    # Segment Help
-
-        - **align** --- This command will align a long audio file with some text.
-
-        - **extract** --- This command will take the alignment from the `align` command and extract it into multiple utterances in the format required for training a TTS system
-    """,
+    help=CLI_LONG_HELP,
 )
 
 
 segment_group.command(
-    short_help="Align a long audio file with some text",
+    short_help=ALIGN_SINGLE_SHORT_HELP,
     name="align",
-    help="""
-    # Segmentation help
-
-    This command will align a long audio file with some text.
-    This command should work on most languages and you should run it before running the new project or preprocessing steps.
-    This command will create a Praat TextGrid file. You must install Praat (https://www.fon.hum.uva.nl/praat/) if you want to inspect the alignments.
-    """,
-)(ctc_segment)
+    help=ALIGN_SINGLE_LONG_HELP,
+)(ctc_segment_align_single)
 
 segment_group.command(
-    short_help="Extract the intervals from a TextGrid",
+    short_help=EXTRACT_SEGMENTS_SHORT_HELP,
     name="extract",
-    help="""
-    # Segmentation help
-
-    This command will take the alignment from the `align` command and extract it into multiple utterances in the format required for training a TTS system.
-    """,
-)(create_intervals)
+    help=EXTRACT_SEGMENTS_LONG_HELP,
+)(extract_segments_from_textgrid)
 
 app.add_typer(
     segment_group,
