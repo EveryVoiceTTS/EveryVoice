@@ -396,3 +396,42 @@ class TestLoadingModel(BasicTestCase):
                 r"Your model was created with a newer version of EveryVoice, please update your software.",
             ):
                 FastSpeech2.load_from_checkpoint(ckpt_fn)
+
+
+class TestLoadingConfig(BasicTestCase):
+    """Test loading configurations"""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.config_dir = self.data_dir / "relative" / "config"
+
+    def test_config_versionless(self):
+        """
+        Validate that we can load a config that doesn't have a `VERSION` as a version 1.0 config.
+        """
+
+        arguments = FastSpeech2Config.load_config_from_path(
+            self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+        ).model_dump()
+        del arguments["VERSION"]
+
+        self.assertNotIn("VERSION", arguments)
+        c = FastSpeech2Config(**arguments)
+        self.assertEqual(c.VERSION, "1.0")
+
+    def test_config_newer_version(self):
+        """
+        Validate that we are detecting that a config is newer.
+        """
+
+        reference = FastSpeech2Config.load_config_from_path(
+            self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+        )
+        NEWER_VERSION = "100.0"
+        reference.VERSION = NEWER_VERSION
+
+        with self.assertRaisesRegex(
+            ValueError,
+            r"Your config was created with a newer version of EveryVoice, please update your software.",
+        ):
+            FastSpeech2Config(**reference.model_dump())
