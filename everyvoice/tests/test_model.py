@@ -395,3 +395,51 @@ class TestLoadingModel(BasicTestCase):
                 r"Your model was created with a newer version of EveryVoice, please update your software.",
             ):
                 FastSpeech2.load_from_checkpoint(ckpt_fn)
+
+
+class TestLoadingConfig(BasicTestCase):
+    """Test loading configurations"""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.config_dir = self.data_dir / "relative" / "config"
+        self.configs = (
+            (FastSpeech2Config, TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX),
+            (DFAlignerConfig, ALIGNER_CONFIG_FILENAME_PREFIX),
+            (HiFiGANConfig, SPEC_TO_WAV_CONFIG_FILENAME_PREFIX),
+        )
+
+    def test_config_versionless(self):
+        """
+        Validate that we can load a config that doesn't have a `VERSION` as a version 1.0 config.
+        """
+
+        for ConfigType, filename in self.configs:
+            with self.subTest(ConfigType=ConfigType):
+                arguments = ConfigType.load_config_from_path(
+                    self.config_dir / f"{filename}.yaml"
+                ).model_dump()
+                del arguments["VERSION"]
+
+                self.assertNotIn("VERSION", arguments)
+                c = ConfigType(**arguments)
+                self.assertEqual(c.VERSION, "1.0")
+
+    def test_config_newer_version(self):
+        """
+        Validate that we are detecting that a config is newer.
+        """
+
+        for ConfigType, filename in self.configs:
+            with self.subTest(ConfigType=ConfigType):
+                reference = ConfigType.load_config_from_path(
+                    self.config_dir / f"{filename}.yaml"
+                )
+                NEWER_VERSION = "100.0"
+                reference.VERSION = NEWER_VERSION
+
+                with self.assertRaisesRegex(
+                    ValueError,
+                    r"Your config was created with a newer version of EveryVoice, please update your software.",
+                ):
+                    ConfigType(**reference.model_dump())
