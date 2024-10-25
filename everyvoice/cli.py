@@ -550,6 +550,22 @@ def demo(
         file_okay=True,
         autocompletion=complete_path,
     ),
+    allowlist: Path = typer.Option(
+        None,
+        "--allowlist",
+        file_okay=True,
+        dir_okay=False,
+        help="A plain text file containing a list of words or utterances to allow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are disallowed.",
+        autocompletion=complete_path,
+    ),
+    denylist: Path = typer.Option(
+        None,
+        "--denylist",
+        file_okay=True,
+        dir_okay=False,
+        help="A plain text file containing a list of words or utterances to disallow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are allowed.",
+        autocompletion=complete_path,
+    ),
     languages: List[str] = typer.Option(
         ["all"],
         "--language",
@@ -573,6 +589,23 @@ def demo(
     ),
     accelerator: str = typer.Option("auto", "--accelerator", "-a"),
 ):
+
+    if allowlist and denylist:
+        raise ValueError(
+            "You provided a value for both the allowlist and the denylist but you can only provide one."
+        )
+
+    allowlist_data = []
+    denylist_data = []
+
+    if allowlist:
+        with open(allowlist) as f:
+            allowlist_data = [x.strip() for x in f]
+
+    if denylist:
+        with open(denylist) as f:
+            denylist_data = [x.strip() for x in f]
+
     with spinner():
         from everyvoice.demo.app import create_demo_app
 
@@ -583,6 +616,8 @@ def demo(
             speakers=speakers,
             output_dir=output_dir,
             accelerator=accelerator,
+            allowlist=allowlist_data,
+            denylist=denylist_data,
         )
 
     demo.launch()
