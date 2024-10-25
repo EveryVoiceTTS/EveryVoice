@@ -13,7 +13,7 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
 
 ### Install conda
 
-First, you'll need to install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [conda](https://docs.conda.io/projects/conda/en/stable/).
+First, you'll need to install `conda`. [Miniforge3](https://github.com/conda-forge/miniforge) is a fully open-source option which is free for all users and works well. You can also use Anaconda3 or Miniconda3 if you have or can get a license.
 
 ### Clone the repo
 
