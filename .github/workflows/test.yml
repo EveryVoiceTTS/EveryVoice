@@ -27,6 +27,7 @@ jobs:
         uses: conda-incubator/setup-miniconda@v3
         with:
           python-version: "3.10"
+          miniforge-version: latest
       - name: Install sox and use conda to optimize other installs
         run: |
           conda install -y sox $(grep "pycountry\|pyworld" requirements.txt) -c conda-forge
