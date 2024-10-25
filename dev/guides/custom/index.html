@@ -584,6 +584,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#optional-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Optional: Evaluation
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -914,6 +923,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#optional-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Optional: Evaluation
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -938,8 +956,8 @@
 <p>Creating a text-to-speech model without permission is unethical, but even when you do have permission, you should take great care in how you distribute the model you have created. Increasingly, text-to-speech technology is used in fraud and unauthorized impersonation. The technology has also been used to disenfranchise voice actors and other professionals. When you create an EveryVoice model, you are responsible for ensuring the model is only used and distributed according to the permissions you have. To help with this accountability, you will be required by EveryVoice to attest that you have permission to use your data and to provide a full name and contact information that will also be distributed with the model.</p>
 <p>In addition, we invite you to check out our <a href="../ethics/">short guide</a> that contains prompts about ethical questions <em>before</em> starting on any of the next steps.</p>
 <h2 id="step-2-gather-your-data">Step 2: Gather Your Data<a class="headerlink" href="#step-2-gather-your-data" title="Permanent link">&para;</a></h2>
-<p>The first thing to do is to get all the data you have (in this case audio with text transcripts) together in one place. Your audio should be in a lossless 'wav' format. Ideally it would be 16bit, mono (one channel) audio sampled somewhere between 22.05kHz and 48kHz. If that doesn't mean anything to you, don't worry, we can ensure the right format in later steps.
-It's best if your audio clips are somewhere between half a second and 10 seconds long. Any longer and it could be difficult to train. If your audio is longer than this, we suggest processing it into smaller chunks first.</p>
+<p>The first thing to do is to get all the data you have (in this case audio with text transcripts) together in one place. Your audio should be in a lossless 'wav' format. Ideally it would be 16bit, mono (one channel) audio sampled somewhere between 22.05kHz and 48kHz. If that doesn't mean anything to you, don't worry, we can ensure the right format in later steps.</p>
+<p>It's best if your audio clips are somewhere between half a second and 10 seconds long. Any longer and it could be difficult to train depending on the size of your GPU. If your audio is significantly longer than this, we suggest processing it into smaller chunks first. To do this, you can use the <code>everyvoice segment</code> command. For this to work you need a plain text transcript and some corresponding audio. You can then run the segmenter: <code>everyvoice segment align path_to_text.txt path_to_audio.wav</code>. You can then install <a href="https://www.fon.hum.uva.nl/praat/">Praat</a> and use it to inspect the .TextGrid file that was generated, and adjust any alignments as necessary. Once you are happy with your alignments, you can use <code>everyvoice segment extract path_to_alignment.TextGrid path_to_audio.wav outdir</code> which will then create a folder called <code>outdir</code> with your audio, and a metadata file containing references to each of your audio files and the corresponding text.</p>
 <p>Your text should be consistently written and should be in a pipe-separated values spreadsheet, similar to <a href="https://github.com/EveryVoiceTTS/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv">this file</a>. It should have a column that contains text and a column that contains the <code>basename</code> of your associated audio file. So if you have a recording of somebody saying "hello how are you?" and the corresponding audio is called <code>mydata0001.wav</code>
 then you should have a psv file that looks like this:</p>
 <div class="highlight"><pre><span></span><code>basename|text
@@ -1007,27 +1025,13 @@ then you should have a psv file that looks like this:</p>
 <div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>demo<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
 </code></pre></div>
 <p>And an interactive demo will be available at <a href="http://localhost:7260">http://localhost:7260</a></p>
-<!-- % Step 10 (optional): Finetune your vocoder
-
-% ----------------------------------------
-
-% .. code-block:: bash
-
-% everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml
-
-% Step 11: Synthesize Speech
-
-% --------------------------
-
-% .. code-block:: bash
-
-% everyvoice synthesize from-text -t "hello world" -c config/everyvoice-text-to-wav.yaml
-
-% .. warning::
-
-% TODO: this doesn't exist yet
-
-% TODO: e2e needs checkpoint paths -->
+<h2 id="optional-evaluation">Optional: Evaluation<a class="headerlink" href="#optional-evaluation" title="Permanent link">&para;</a></h2>
+<p>If you want to evaluate the model you just built, you can make use of the <code>everyvoice evaluate</code> command. In order to use it, you have to first generate some audio (see step 9) and then you can evaluate either a single file with <code>everyvoice evaluate -f your_file.wav</code> or a directory of audio files with <code>everyvoice evaluate -d path_to_wavs/</code>. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in <a href="https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680">this</a> paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: <code>everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav</code>. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.</p>
+<p>Please refer to <code>everyvoice evaluate --help</code> for more information.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Automatic evaluation can be helpful, but please take the reported numbers with a grain of salt. They are not always reliable, and do not always correlate well with human judgements.</p>
+</div>
 
 
 

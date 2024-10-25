@@ -713,12 +713,13 @@
 <h1 id="how-to-fine-tune-the-existing-checkpoints">How to fine-tune the existing checkpoints<a class="headerlink" href="#how-to-fine-tune-the-existing-checkpoints" title="Permanent link">&para;</a></h1>
 <h3 id="vocoder-matching">Vocoder matching<a class="headerlink" href="#vocoder-matching" title="Permanent link">&para;</a></h3>
 <p>Vocoder (i.e. your spec-to-wav model) matching is an important part of the TTS pipeline. Because your spec-to-wav model is trained with the ground-truth Mel spectrograms from your audio, there is a mismatch between the Mel spectrograms created by your text-to-spec model and the ones that the pre-trained vocoders have seen during training. For that reason, it can be helpful to fine-tune your spec-to-wav model with the <em>generated</em> Mel spectrograms from your text-to-spec model.</p>
+<p>You can use a pre-trained EveryVoice spec-to-wav model for this process and do not have to train your own spec-to-wav model. You can find EveryVoice pre-trained checkpoints <a href="https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing">here</a></p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>Vocoder matching will only help with the metallic artefacts that sometimes occur when synthesizing speech. If your model is not intelligible, has other types of errors like mispronunciations - vocoder matching will not solve it. In these cases, the problem is likely with your text-to-spec model, and probably due to either noisy data (noisy recordings, mistranscriptions etc), too little data, or data that is too varied (many different speakers). Please refer to <em>TODO: troubleshooting</em> for more information.</p>
 </div>
 <p><TODO: insert graphic showing text-to-spec and spec-to-wav models></p>
-<p>To finetune your spec-to-wav model with Mel spectrograms from your text-to-spec model (also called 'vocoder matching'), you need to have a pre-trained text-to-spec and spec-to-wav model ready. You also need to have access to some parallel text/audio data (the same or similar data that you used to train your text-to-spec model).</p>
+<p>To finetune your spec-to-wav model (a.k.a 'Vocoder') with Mel spectrograms from your text-to-spec model, you need to have a pre-trained text-to-spec and spec-to-wav model ready. This process is also sometimes called 'vocoder matching'. You also need to have access to some parallel text/audio data (the same or similar data that you used to train your text-to-spec model).</p>
 <p>Then you:</p>
 <ol>
 <li>
@@ -735,13 +736,13 @@
 </div>
 </li>
 <li>
-<p>Set the finetune_ckpt value point to the vocoder checkpoint that you want to fine-tune.</p>
+<p>Set the <code>finetune_checkpoint</code> value in the <code>everyvoice-spec-to-wav.yaml</code> configuration file to the vocoder checkpoint that you want to fine-tune. This can be either a model you have trained yourself or a pre-trained checkpoint.</p>
 </li>
 <li>
 <p>Lower the learning rate (we suggest starting at 0.00001)</p>
 </li>
 <li>
-<p>Train the vocoder again with finetuning set to True (train for at least 25000 steps):</p>
+<p>Train the vocoder again with finetuning set to True (train for at least 25000 steps, but preferrably 100000 steps):</p>
 <div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>spec-to-wav<span class="w"> </span>config/everyvoice-spec-to-wav.yaml<span class="w"> </span>-c<span class="w"> </span>training.finetune<span class="o">=</span>True
 </code></pre></div>
 </li>
