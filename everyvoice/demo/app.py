@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 from functools import partial
+from unicodedata import normalize
 
 import gradio as gr
 import torch
@@ -35,11 +36,22 @@ def synthesize_audio(
     vocoder_config,
     accelerator,
     device,
+    allowlist,
+    denylist,
     output_dir=None,
 ):
     if text == "":
         raise gr.Error(
             "Text for synthesis was not provided. Please type the text you want to be synthesized into the textfield."
+        )
+    norm_text = normalize_word(text)
+    if allowlist and norm_text not in allowlist:
+        raise gr.Error(
+            f"Oops, the word {norm_text} is not allowed to be synthesized by this model. Please contact the model owner."
+        )
+    if denylist and norm_text in denylist:
+        raise gr.Error(
+            f"Oops, the word {norm_text} is not allowed to be synthesized by this model. Please contact the model owner."
         )
     if language is None:
         raise gr.Error("Language is not selected. Please select a language.")
@@ -96,6 +108,20 @@ def require_ffmpeg():
         sys.exit(1)
 
 
+def normalize_word(word: str) -> str:
+    """Normalize words in allowlist and denylist to prevent hacking.
+        this is extremely deficient in its current state and only
+        prevents Unicode homograph attacks.
+
+    Args:
+        word (str): an un-normalized word
+
+    Returns:
+        str: a normalized word
+    """
+    return normalize("NFC", word)
+
+
 def create_demo_app(
     text_to_spec_model_path,
     spec_to_wav_model_path,
@@ -103,16 +129,22 @@ def create_demo_app(
     speakers,
     output_dir,
     accelerator,
+    allowlist: list[str] = [],
+    denylist: list[str] = [],
 ) -> gr.Blocks:
     require_ffmpeg()
     device = get_device_from_accelerator(accelerator)
     vocoder_ckpt = torch.load(spec_to_wav_model_path, map_location=device)
     # TODO: Should we also wrap this load_hifigan_from_checkpoint in case the checkpoint is not a Vocoder?
     vocoder_model, vocoder_config = load_hifigan_from_checkpoint(vocoder_ckpt, device)
-    model: FastSpeech2 = FastSpeech2.load_from_checkpoint(text_to_spec_model_path).to(
+    model: FastSpeech2 = FastSpeech2.load_from_checkpoint(text_to_spec_model_path).to(  # type: ignore
         device
     )
     model.eval()
+    # normalize allowlist and denylist
+    allowlist = [normalize_word(w) for w in allowlist]
+    denylist = [normalize_word(w) for w in denylist]
+
     synthesize_audio_preset = partial(
         synthesize_audio,
         text_to_spec_model=model,
@@ -121,6 +153,8 @@ def create_demo_app(
         output_dir=output_dir,
         accelerator=accelerator,
         device=device,
+        allowlist=allowlist,
+        denylist=denylist,
     )
     model_languages = list(model.lang2id.keys())
     model_speakers = list(model.speaker2id.keys())
