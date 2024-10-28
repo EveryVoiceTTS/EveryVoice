@@ -325,27 +325,35 @@ class Preprocessor:
         seconds %= 60
         return f"{hours}h {minutes}m {seconds}s"
 
-    def report(self, tablefmt="simple"):
+    def report(self, tablefmt="simple", audio_only=False):
         """Print a report of the dataset processing"""
         headers = ["type", "quantity"]
-        table = [
+        audio_1 = [
             ["processed files", self.counters.value("processed_files")],
             [
                 "previously processed files",
                 self.counters.value("previously_processed_files"),
             ],
             ["missing files", self.counters.value("missing_files")],
+        ]
+        others = [
             [
                 "missing symbols",
                 len(self.text_processor.missing_symbols) if self.text_processor else 0,
             ],
             ["skipped processes", self.counters.value("skipped_processes")],
             ["nans", self.counters.value("nans")],
+        ]
+        audio_2 = [
             ["audio_empty", self.counters.value("audio_empty")],
             ["audio_too_short", self.counters.value("audio_too_short")],
             ["audio_too_long", self.counters.value("audio_too_long")],
             ["duration", self.print_duration()],
         ]
+        if audio_only:
+            table = audio_1 + audio_2
+        else:
+            table = audio_1 + others + audio_2
         return tabulate(table, headers, tablefmt=tablefmt)
 
     def get_speaker_and_language(self, item):
@@ -1139,9 +1147,11 @@ class Preprocessor:
             if process == "audio":
                 if filelist := self.process_all_audio():
                     write_filelist(filelist, processed_filelist)
-                    report = self.report()
+                    report = self.report(audio_only=True)
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
                         f.write(report)
+                        f.write("\n")
+                    rich_print("Partial report showing only audio statistics:")
                     rich_print(report)
                 else:
                     logger.error(
@@ -1213,7 +1223,7 @@ class Preprocessor:
             self.save_dir / f"validation_{output_path.name}",
         )
         if "audio" in to_process:
-            report = f"Here is a report:\n {self.report()}"
+            report = "Here is a report:\n" + self.report()
             if not self.counters.value("duration"):
                 report += "\n\nWARNING: No audio files were processed."
         else:
