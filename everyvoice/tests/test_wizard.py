@@ -731,8 +731,8 @@ class WizardTest(TestCase):
         with patch_menu_prompt((1, 2, 3, 0), multi=True) as stdout:
             format_step.run()
         output = re.sub(r" *\n", " ", stdout.getvalue())
-        self.assertRegex(output, "does not look like a .*'tsv'")
-        self.assertRegex(output, "does not look like a .*'csv'")
+        self.assertRegex(output, r"does not look like a .*'tsv'".replace(" ", r"\s"))
+        self.assertRegex(output, r"does not look like a .*'csv'".replace(" ", r"\s"))
         self.assertIn("is not in the festival format", output)
         self.assertTrue(format_step.completed)
         # print(format_step.state)
@@ -755,9 +755,9 @@ class WizardTest(TestCase):
         with patch_menu_prompt((0, 1, 2, 3), multi=True) as stdout:
             format_step.run()
         output = stdout.getvalue().replace(" \n", " ")
-        self.assertRegex(output, "does not look like a .*'psv'")
-        self.assertRegex(output, "does not look like a .*'tsv'")
-        self.assertRegex(output, "does not look like a .*'csv'")
+        self.assertRegex(output, r"does not look like a .*'psv'".replace(" ", r"\s"))
+        self.assertRegex(output, r"does not look like a .*'tsv'".replace(" ", r"\s"))
+        self.assertRegex(output, r"does not look like a .*'csv'".replace(" ", r"\s"))
         self.assertTrue(format_step.completed)
         # print(format_step.state)
 
