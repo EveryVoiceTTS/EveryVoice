@@ -1,4 +1,6 @@
 import json
+import platform
+import subprocess
 import sys
 from enum import Enum
 from pathlib import Path
@@ -104,6 +106,32 @@ app = typer.Typer(
 
 """,
 )
+
+
+@app.callback(invoke_without_command=True)
+def main(
+    version: Optional[bool] = typer.Option(
+        None, "--version", "-v", help="Print the version of EveryVoice and exit."
+    ),
+    diagnostic: Optional[bool] = typer.Option(
+        None, "--diagnostic", "-d", help="Print diagnostic information and exit."
+    ),
+):
+    """The top-level function that gets called first"""
+    if version:
+        print(VERSION)
+        sys.exit(0)
+    if diagnostic:
+        print("EveryVoice Diagnostic information")
+        print(f"EveryVoice version: {VERSION}")
+        print(f"Python version: {sys.version}")
+        uname = platform.uname()
+        print(f"System: {uname.system} {uname.release} {uname.version} {uname.machine}")
+        print("pip freeze:")
+        result = subprocess.run(["pip", "freeze"], capture_output=True, check=False)
+        print(result.stdout.decode(), end="")
+        print(result.stderr.decode(), end="")
+        sys.exit(0)
 
 
 @app.command(

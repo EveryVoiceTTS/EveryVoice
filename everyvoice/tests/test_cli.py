@@ -17,6 +17,7 @@ from yaml import CLoader as Loader
 # fails with an Intel MKL FATAL ERROR saying it cannot load libtorch_cpu.so
 import everyvoice.tests.test_model  # noqa
 from everyvoice import __file__ as EV_FILE
+from everyvoice._version import VERSION
 from everyvoice.base_cli.helpers import save_configuration_to_log_dir
 from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
 from everyvoice.config.shared_types import ContactInformation
@@ -32,7 +33,7 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
-from everyvoice.tests.stubs import capture_logs, mute_logger
+from everyvoice.tests.stubs import capture_logs, capture_stdout, mute_logger
 from everyvoice.wizard import (
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
@@ -56,6 +57,17 @@ class CLITest(TestCase):
             "inspect-checkpoint",
             "evaluate",
         ]
+
+    def test_version(self):
+        result = self.runner.invoke(app, ["--version"])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn(VERSION, result.stdout)
+
+    def test_diagnostic(self):
+        with capture_stdout():
+            result = self.runner.invoke(app, ["--diagnostic"])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("Python version", result.stdout)
 
     def wip_test_synthesize(self):
         # TODO: Here's a stub for getting synthesis unit tests working
