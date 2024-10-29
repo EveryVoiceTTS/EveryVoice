@@ -563,7 +563,7 @@ def demo(
         "--denylist",
         file_okay=True,
         dir_okay=False,
-        help="A plain text file containing a list of words or utterances to disallow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are allowed.",
+        help="A plain text file containing a list of words or utterances to disallow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are allowed. IMPORTANT: there are many ways to 'hack' the denylist that we do not protect against. We suggest using the 'allowlist' instead for maximum security if you know the full list of utterances you want to allow synthesis for.",
         autocompletion=complete_path,
     ),
     languages: List[str] = typer.Option(
