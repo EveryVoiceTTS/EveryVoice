@@ -1,4 +1,5 @@
 import os
+import string
 import subprocess
 import sys
 from functools import partial
@@ -44,15 +45,18 @@ def synthesize_audio(
         raise gr.Error(
             "Text for synthesis was not provided. Please type the text you want to be synthesized into the textfield."
         )
-    norm_text = normalize_word(text)
+    norm_text = normalize_text(text)
     if allowlist and norm_text not in allowlist:
         raise gr.Error(
             f"Oops, the word {norm_text} is not allowed to be synthesized by this model. Please contact the model owner."
         )
-    if denylist and norm_text in denylist:
-        raise gr.Error(
-            f"Oops, the word {norm_text} is not allowed to be synthesized by this model. Please contact the model owner."
-        )
+    if denylist:
+        norm_words = norm_text.split()
+        for word in norm_words:
+            if word in denylist:
+                raise gr.Error(
+                    f"Oops, the word {norm_text} is not allowed to be synthesized by this model. Please contact the model owner."
+                )
     if language is None:
         raise gr.Error("Language is not selected. Please select a language.")
     if speaker is None:
@@ -108,18 +112,47 @@ def require_ffmpeg():
         sys.exit(1)
 
 
-def normalize_word(word: str) -> str:
-    """Normalize words in allowlist and denylist to prevent hacking.
-        this is extremely deficient in its current state and only
-        prevents Unicode homograph attacks.
+def normalize_text(text: str) -> str:
+    """Normalize text in allowlist and denylist to prevent hacking.
+            this is extremely deficient in its current state and only
+            prevents:
 
-    Args:
-        word (str): an un-normalized word
+            - Unicode homograph attacks
+            - Case attacks
+            - extraneous punctuation
 
-    Returns:
-        str: a normalized word
+        Args:
+            text (str): an un-normalized word or utterance
+
+        Returns:
+            str: normalized text
+
+    >>> normalize_text('FoOBar')
+    'fobar'
+
+    >>> normalize_text('fo\u0301obar')
+    'f\u00F3obar'
+
+    >>> normalize_text('foobar.')
+    'fobar'
+
+    >>> normalize_text('ffoobbaaarr')
+    'fobar'
+
     """
-    return normalize("NFC", word)
+    # Unicode normalization
+    text = normalize("NFC", text)
+
+    # Case normalization
+    text = text.lower()
+
+    # Remove Punctuation
+    text = text.translate(str.maketrans("", "", string.punctuation))
+
+    # Remove duplicate characters
+    text = "".join(dict.fromkeys(text))
+
+    return text
 
 
 def create_demo_app(
@@ -142,8 +175,8 @@ def create_demo_app(
     )
     model.eval()
     # normalize allowlist and denylist
-    allowlist = [normalize_word(w) for w in allowlist]
-    denylist = [normalize_word(w) for w in denylist]
+    allowlist = [normalize_text(w) for w in allowlist]
+    denylist = [normalize_text(w) for w in denylist]
 
     synthesize_audio_preset = partial(
         synthesize_audio,
