@@ -189,38 +189,42 @@ class CLITest(TestCase):
             # Validate that schema generation works correctly.
             _ = self.runner.invoke(app, ["update-schemas", "-o", tmpdir])
             for filename, obj in SCHEMAS_TO_OUTPUT.items():
-                with open(Path(tmpdir) / filename, encoding="utf8") as f:
-                    schema = json.load(f)
-                # serialize the model to json and then validate against the schema
-                # Some objects will require a contact key
-                try:
-                    obj_instance = obj()
-                except ValidationError:
-                    obj_instance = obj(contact=dummy_contact)
-                self.assertIsNone(
-                    jsonschema.validate(
-                        json.loads(obj_instance.model_dump_json()),
-                        schema=schema,
+                with self.subTest(filename=filename, type=obj):
+                    with open(Path(tmpdir) / filename, encoding="utf8") as f:
+                        schema = json.load(f)
+                    # serialize the model to json and then validate against the schema
+                    # Some objects will require a contact key
+                    try:
+                        obj_instance = obj()
+                    except ValidationError:
+                        obj_instance = obj(contact=dummy_contact)
+                    self.assertIsNone(
+                        jsonschema.validate(
+                            json.loads(obj_instance.model_dump_json()),
+                            schema=schema,
+                        )
                     )
-                )
 
             # Make sure the generated schemas are identical to those saved in the repo,
             # i.e., that we didn't change the models but forget to update the schemas.
             for filename in SCHEMAS_TO_OUTPUT:
-                with open(Path(tmpdir) / filename, encoding="utf8") as f:
-                    new_schema = f.read().replace("\\\\", "/")  # force paths to posix
-                try:
-                    with open(EV_DIR / ".schema" / filename, encoding="utf8") as f:
-                        saved_schema = f.read()
-                except FileNotFoundError as e:
-                    raise AssertionError(
-                        f'Schema file {filename} is missing, please run "everyvoice update-schemas".'
-                    ) from e
-                self.assertEqual(
-                    saved_schema,
-                    new_schema,
-                    'Schemas are out of date, please run "everyvoice update-schemas".',
-                )
+                with self.subTest(filename=filename):
+                    with open(Path(tmpdir) / filename, encoding="utf8") as f:
+                        new_schema = f.read().replace(
+                            "\\\\", "/"
+                        )  # force paths to posix
+                    try:
+                        with open(EV_DIR / ".schema" / filename, encoding="utf8") as f:
+                            saved_schema = f.read()
+                    except FileNotFoundError as e:
+                        raise AssertionError(
+                            f'Schema file {filename} is missing, please run "everyvoice update-schemas".'
+                        ) from e
+                    self.assertEqual(
+                        saved_schema,
+                        new_schema,
+                        'Schemas are out of date, please run "everyvoice update-schemas".',
+                    )
 
         # Next, but only if everything above passed, we make sure we can't overwrite
         # existing schemas by accident.
