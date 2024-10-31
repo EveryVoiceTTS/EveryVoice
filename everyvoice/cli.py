@@ -127,10 +127,18 @@ def main(
         print(f"Python version: {sys.version}")
         uname = platform.uname()
         print(f"System: {uname.system} {uname.release} {uname.version} {uname.machine}")
-        print("pip freeze:")
+
         result = subprocess.run(["pip", "freeze"], capture_output=True, check=False)
-        print(result.stdout.decode(), end="")
-        print(result.stderr.decode(), end="")
+        if result.returncode != 0 or result.stderr:
+            print('Error running "pip freeze":')
+            print(result.stderr.decode(), end="", file=sys.stderr)
+        else:
+            pip_freeze = result.stdout.decode().splitlines()
+            print("\n*torch* modules installed using pip:")
+            print("\n".join(module for module in pip_freeze if "torch" in module))
+            print("\nOther modules installed using pip:")
+            print("\n".join(module for module in pip_freeze if "torch" not in module))
+
         sys.exit(0)
 
 
