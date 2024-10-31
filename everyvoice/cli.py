@@ -139,6 +139,21 @@ def main(
             print("\nOther modules installed using pip:")
             print("\n".join(module for module in pip_freeze if "torch" not in module))
 
+        result = subprocess.run(["conda", "list"], capture_output=True, check=False)
+        if result.returncode != 0 or result.stderr:
+            # the installation probably didn't use conda, so just ignore this error
+            pass
+        else:
+            print("\nModules installed using conda:")
+            conda_list = result.stdout.decode().splitlines()[2:]
+            print(
+                "\n".join(
+                    module
+                    for module in conda_list
+                    if "pypi" not in module and "<develop>" not in module
+                )
+            )
+
         sys.exit(0)
 
 
