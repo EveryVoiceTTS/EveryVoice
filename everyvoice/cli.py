@@ -1,4 +1,6 @@
 import json
+import platform
+import subprocess
 import sys
 from enum import Enum
 from pathlib import Path
@@ -104,6 +106,55 @@ app = typer.Typer(
 
 """,
 )
+
+
+@app.callback(invoke_without_command=True)
+def main(
+    version: Optional[bool] = typer.Option(
+        None, "--version", "-v", help="Print the version of EveryVoice and exit."
+    ),
+    diagnostic: Optional[bool] = typer.Option(
+        None, "--diagnostic", "-d", help="Print diagnostic information and exit."
+    ),
+):
+    """The top-level function that gets called first"""
+    if version:
+        print(VERSION)
+        sys.exit(0)
+    if diagnostic:
+        print("EveryVoice Diagnostic information")
+        print(f"EveryVoice version: {VERSION}")
+        print(f"Python version: {sys.version}")
+        uname = platform.uname()
+        print(f"System: {uname.system} {uname.release} {uname.version} {uname.machine}")
+
+        result = subprocess.run(["pip", "freeze"], capture_output=True, check=False)
+        if result.returncode != 0 or result.stderr:
+            print('Error running "pip freeze":')
+            print(result.stderr.decode(), end="", file=sys.stderr)
+        else:
+            pip_freeze = result.stdout.decode().splitlines()
+            print("\n*torch* modules installed using pip:")
+            print("\n".join(module for module in pip_freeze if "torch" in module))
+            print("\nOther modules installed using pip:")
+            print("\n".join(module for module in pip_freeze if "torch" not in module))
+
+        result = subprocess.run(["conda", "list"], capture_output=True, check=False)
+        if result.returncode != 0 or result.stderr:
+            # the installation probably didn't use conda, so just ignore this error
+            pass
+        else:
+            print("\nModules installed using conda:")
+            conda_list = result.stdout.decode().splitlines()[2:]
+            print(
+                "\n".join(
+                    module
+                    for module in conda_list
+                    if "pypi" not in module and "<develop>" not in module
+                )
+            )
+
+        sys.exit(0)
 
 
 @app.command(

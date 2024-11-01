@@ -1839,7 +1839,7 @@ class WizardTest(TestCase):
             tour = make_trivial_tour()
             with patch_input("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
-            self.assertIn("Proceeding anyway", out.getvalue())
+            self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
             self.assertIn("Applying saved response", out.getvalue())
             self.assertEqual(tour.state, self.trivial_tour_results)
 
