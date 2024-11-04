@@ -382,6 +382,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             mixed_representation_filelist = (
                 self.data_dir / "metadata_mixed_representation.psv"
             )
+            slash_pipe_filelist = self.data_dir / "metadata_slash_pipe.psv"
             fp_config = FeaturePredictionConfig(**self.fp_config.model_dump())
             filelists_to_test = [
                 {
@@ -409,6 +410,11 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     "contains_characters": True,
                     "contains_phones": True,
                 },  # will tokenize characters and tokenize phones
+                {
+                    "path": slash_pipe_filelist,
+                    "contains_characters": True,
+                    "contains_phones": False,
+                },
             ]
             for filelist_test_info in filelists_to_test:
                 with tempfile.TemporaryDirectory(prefix="inputs", dir=".") as tmpdir:

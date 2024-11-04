@@ -628,7 +628,7 @@ class Preprocessor:
         process_phones = False
         character_tokens = (
             self.text_processor.encode_string_tokens(
-                item["character_tokens"].split("/")
+                self.text_processor.split_tokens(item["character_tokens"])
             )
             if "character_tokens" in item
             and item[
@@ -637,7 +637,9 @@ class Preprocessor:
             else None
         )
         phone_tokens = (
-            self.text_processor.encode_string_tokens(item["phone_tokens"].split("/"))
+            self.text_processor.encode_string_tokens(
+                self.text_processor.split_tokens(item["phone_tokens"])
+            )
             if "phone_tokens" in item and item["phone_tokens"]
             else None
         )
@@ -792,11 +794,9 @@ class Preprocessor:
         # encode to string
         if encode_as_string:
             if phone_tokens is not None:
-                phones = text_processor.decode_tokens(phone_tokens, join_character="/")
+                phones = text_processor.decode_tokens(phone_tokens)
             if character_tokens is not None:
-                characters = text_processor.decode_tokens(
-                    character_tokens, join_character="/"
-                )
+                characters = text_processor.decode_tokens(character_tokens)
             return (characters, phones, pfs)
         else:
             return (character_tokens, phone_tokens, pfs)
@@ -883,7 +883,7 @@ class Preprocessor:
         self,
         filelist,
         word_seg_token=" ",
-        heavy_clip_detction=False,
+        heavy_clip_detection=False,
         heavy_objective_evaluation=False,
     ):
         data = []
@@ -943,7 +943,7 @@ class Preprocessor:
             ), f"Audio has {audio.size(0)} channels, but should be mono"
             audio = audio.squeeze()
 
-            if heavy_clip_detction:
+            if heavy_clip_detection:
                 _, total_clipping = detect_clipping(audio)
             else:
                 # this isn't a great way of detecting clipping,
