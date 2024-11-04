@@ -18,6 +18,8 @@ from everyvoice.text.utils import (
 )
 
 PAD_SYMBOL = "\x80"
+CHARACTER_JOINER = "/"
+JOINER_SUBSTITUTION = "<SLASH>"
 
 
 class TextProcessor:
@@ -402,35 +404,56 @@ class TextProcessor:
                 encoded_tokens.append(self._symbol_to_id[string_token])
             except KeyError as e:
                 raise OutOfVocabularySymbolError(
-                    f"Sequence {sequence} contains item {string_token}"
+                    f"Sequence {sequence} contains item '{string_token}'"
                 ) from e
         return encoded_tokens
 
     def encode_escaped_string_sequence(
-        self, string_of_tokens: str, split_character="/"
+        self,
+        string_of_tokens: str,
+        split_character=CHARACTER_JOINER,
+        joiner_substitution=JOINER_SUBSTITUTION,
     ):
         assert (
             len(split_character) >= 1
         ), "An escaped string sequence must have a character to split on (default is '/')"
         return self.encode_string_tokens(
-            [token for token in string_of_tokens.split(split_character) if token]
+            [
+                token
+                for token in self.split_tokens(
+                    string_of_tokens, split_character, joiner_substitution
+                )
+                if token
+            ]
         )
 
     @overload
-    def decode_tokens(  # noqa E704
-        self, sequence: list[int], join_character: None
+    def decode_tokens(  # noqa E704  # pragma: no cover
+        self, sequence: list[int], join_character: None, joiner_substitution: None
     ) -> list[str]: ...
 
     @overload
-    def decode_tokens(  # noqa E704
-        self, sequence: list[int], join_character: str
+    def decode_tokens(  # noqa E704  # pragma: no cover
+        self, sequence: list[int], join_character: str, joiner_substitution: str
     ) -> str: ...
 
-    def decode_tokens(self, sequence: list[int], join_character="/") -> str | list[str]:
+    @overload
+    def decode_tokens(  # noqa E704  # pragma: no cover
+        self, sequence: list[int]
+    ) -> str: ...
+
+    def decode_tokens(
+        self,
+        sequence: list[int],
+        join_character=CHARACTER_JOINER,
+        joiner_substitution=JOINER_SUBSTITUTION,
+    ) -> str | list[str]:
         """Decode a sequence of encoded phone or character tokens into a sequence of strings
 
         Args:
             sequence (List[int]): sequence of phone or character tokens
+            join_character: if given, join the sequence with it
+            joiner_substitution: if joining, sub any occurrence of join_character by joiner_substitution
 
         Returns:
             str: the string equivalent of the sequence
@@ -442,4 +465,21 @@ class TextProcessor:
         if join_character is None:
             return self.token_sequence_to_text_sequence(sequence)
         else:
-            return join_character.join(self.token_sequence_to_text_sequence(sequence))
+            assert joiner_substitution is not None
+            return join_character.join(
+                x.replace(join_character, joiner_substitution)
+                for x in self.token_sequence_to_text_sequence(sequence)
+            )
+
+    def split_tokens(
+        self,
+        joined_sequence: str,
+        join_character=CHARACTER_JOINER,
+        joiner_substitution=JOINER_SUBSTITUTION,
+    ) -> list[str]:
+        """Split a sequence of decoded phone or character tokens that was joined by decode_tokens(),
+        undoing any jointer substitutions."""
+        return [
+            x.replace(joiner_substitution, join_character)
+            for x in joined_sequence.split(join_character)
+        ]

@@ -9,13 +9,14 @@ from pydantic import ValidationError
 
 import everyvoice.demo.app
 import everyvoice.text.utils
+from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
-from everyvoice.text.text_processor import TextProcessor
+from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
 from everyvoice.utils import (
     collapse_whitespace,
     generic_psv_filelist_reader,
@@ -46,7 +47,7 @@ class TextTest(BasicTestCase):
     def test_text_to_sequence(self):
         text = "hello world"
         sequence = self.base_text_processor.encode_text(text)
-        self.assertEqual(self.base_text_processor.decode_tokens(sequence, ""), text)
+        self.assertEqual(self.base_text_processor.decode_tokens(sequence, "", ""), text)
 
     def test_token_sequence_to_text(self):
         sequence = [51, 48, 55, 55, 58, 1, 66, 58, 61, 55, 47]
@@ -69,7 +70,7 @@ class TextTest(BasicTestCase):
             ),
         )
         sequence = upper_text_processor.encode_text(text_upper)
-        self.assertEqual(upper_text_processor.decode_tokens(sequence, ""), text)
+        self.assertEqual(upper_text_processor.decode_tokens(sequence, "", ""), text)
 
     def test_no_duplicate_punctuation(self):
         with self.assertRaises(ValidationError):
@@ -198,7 +199,7 @@ class TextTest(BasicTestCase):
             apply_g2p=True,
             encode_as_phonological_features=True,
         )
-        self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens, ""), "séːɡũ")
+        self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens, "", ""), "séːɡũ")
         self.assertEqual(len(g2p_tokens), len(feats))
         self.assertNotEqual(len(g2p_tokens), len(one_hot_tokens))
         self.assertEqual(len(feats[0]), N_PHONOLOGICAL_FEATURES)
@@ -239,9 +240,11 @@ class TextTest(BasicTestCase):
         )
         text = "he\u0301llo world"
         sequence = accented_text_processor.encode_text(text)
-        self.assertNotEqual(accented_text_processor.decode_tokens(sequence, ""), text)
+        self.assertNotEqual(
+            accented_text_processor.decode_tokens(sequence, "", ""), text
+        )
         self.assertEqual(
-            accented_text_processor.decode_tokens(sequence, ""),
+            accented_text_processor.decode_tokens(sequence, "", ""),
             normalize("NFC", text),
         )
         self.assertNotEqual(
@@ -254,6 +257,31 @@ class TextTest(BasicTestCase):
         self.assertNotEqual(self.base_text_processor.decode_tokens(sequence), text)
         self.assertIn("3", self.base_text_processor.missing_symbols)
         self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
+
+    def test_use_slash(self):
+        text = "word/token"
+        text_processor = TextProcessor(
+            TextConfig(symbols=Symbols(letters=list(string.ascii_letters) + ["/"])),
+        )
+        sequence = text_processor.encode_text(text)
+        decoded = text_processor.decode_tokens(sequence)
+        self.assertEqual(decoded, "w/o/r/d/" + JOINER_SUBSTITUTION + "/t/o/k/e/n")
+        encoded = text_processor.encode_escaped_string_sequence(decoded)
+        self.assertEqual(encoded, sequence)
+
+        with self.assertRaises(exceptions.OutOfVocabularySymbolError):
+            # / is OOV, so JOINER_SUBSTITUTION will also be OOV
+            self.base_text_processor.encode_escaped_string_sequence(decoded)
+
+    def test_encode_string_tokens(self):
+        self.assertEqual(
+            self.base_text_processor.encode_string_tokens(["a", "b", ",", " ", "c"]),
+            self.base_text_processor.encode_escaped_string_sequence("a/b/,/ /c"),
+        )
+        with self.assertRaises(exceptions.OutOfVocabularySymbolError):
+            self.base_text_processor.encode_string_tokens(["oov"])
+        with self.assertRaises(exceptions.OutOfVocabularySymbolError):
+            self.base_text_processor.encode_string_tokens([JOINER_SUBSTITUTION])
 
 
 class LookupTableTest(TestCase):

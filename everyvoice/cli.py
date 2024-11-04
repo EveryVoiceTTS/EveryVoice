@@ -474,7 +474,7 @@ def check_data(
     preprocessor = Preprocessor(config)
     checked_data = preprocessor.check_data(
         filelist=combined_filelist_data,
-        heavy_clip_detction=heavy_clip_detection,
+        heavy_clip_detection=heavy_clip_detection,
         heavy_objective_evaluation=heavy_objective_evaluation,
     )
     if not combined_filelist_data:
