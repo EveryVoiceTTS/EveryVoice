@@ -3,6 +3,7 @@ import numbers
 import tempfile
 from enum import Enum
 from pathlib import Path
+from unittest import TestCase
 
 import torch
 from pytorch_lightning import Trainer
@@ -495,3 +496,14 @@ class TestLoadingConfig(BasicTestCase):
                     r"Your config was created with a newer version of EveryVoice, please update your software.",
                 ):
                     ConfigType(**reference.model_dump())
+
+
+class TestVersion(TestCase):
+    def test_newer_version(self):
+        """
+        Canary test.  We use packaging.version.Version to compare model's versions and config's versions.
+        """
+        from packaging.version import Version
+
+        self.assertFalse("10.0" > "9.0")
+        self.assertTrue(Version("10.0") > Version("9.0"))
