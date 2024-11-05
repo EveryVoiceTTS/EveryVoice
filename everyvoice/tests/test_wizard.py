@@ -434,6 +434,46 @@ class WizardTest(TestCase):
             self.assertTrue(step.completed)
             self.assertEqual(step.response, has_wavs_dir)
 
+            # No symlinks on Windows, so just skip those test case subitems
+            if os.name == "nt":
+                return
+
+            wavs_are_symlinks = os.path.join(tmpdirname, "wavs-are-links-here")
+            os.mkdir(wavs_are_symlinks)
+            os.symlink(
+                os.path.join(has_wavs_dir, "foo.wav"),
+                os.path.join(wavs_are_symlinks, "foo.wav"),
+            )
+            step = dataset.WavsDirStep("")
+            with patch_questionary(wavs_are_symlinks):
+                with capture_stdout():
+                    step.run()
+            self.assertTrue(step.completed)
+            self.assertEqual(step.response, wavs_are_symlinks)
+
+            wavs_dir_is_symlink = os.path.join(tmpdirname, "link-to-wavs-dir")
+            os.symlink(wavs_are_symlinks, wavs_dir_is_symlink)
+            step = dataset.WavsDirStep("")
+            with patch_questionary(wavs_dir_is_symlink):
+                with capture_stdout():
+                    step.run()
+            self.assertTrue(step.completed)
+            self.assertEqual(step.response, wavs_dir_is_symlink)
+
+            # wavs_are_symlinks and wavs_dir_is_symlink pass even if
+            # WavsDirStep.validate() were to use Path.glob(), but deeper_links
+            # fails in that case, passing only if it uses os.path.glob(), so
+            # this final test case is important.
+            deeper_links = os.path.join(tmpdirname, "deeper-links")
+            os.mkdir(deeper_links)
+            os.symlink(wavs_dir_is_symlink, os.path.join(deeper_links, "nested-link"))
+            step = dataset.WavsDirStep("")
+            with patch_questionary(deeper_links):
+                with capture_stdout():
+                    step.run()
+            self.assertTrue(step.completed)
+            self.assertEqual(step.response, deeper_links)
+
     def test_sample_rate_config(self):
         step = dataset.SampleRateConfigStep("")
         with patch_questionary(
