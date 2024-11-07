@@ -669,6 +669,35 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             config = PreprocessingConfig(train_split=1.1)
             self.assertIn("Input should be less than or equal to 1", cout.getvalue())
 
+    def test_no_speaker(self):
+        """Exercise getting the defalut speaker and languages during preprocessing"""
+        # This doesn't really happen anymore because the wizard inserts speaker_0 by
+        # default, or the user's selected default speaker name, and the wizard inserts
+        # the language selected, but since we still support missing those columns, we
+        # want to test that here.
+        self.assertEqual(
+            self.preprocessor.get_speaker_and_language({"item": "foo"}),
+            {"item": "foo", "speaker": "default", "language": "default"},
+        )
+        self.assertEqual(
+            self.preprocessor.get_speaker_and_language(
+                {"item": "foo", "language": "bar"}
+            ),
+            {"item": "foo", "speaker": "default", "language": "bar"},
+        )
+        self.assertEqual(
+            self.preprocessor.get_speaker_and_language(
+                {"item": "foo", "speaker": "baz"}
+            ),
+            {"item": "foo", "speaker": "baz", "language": "default"},
+        )
+        self.assertEqual(
+            self.preprocessor.get_speaker_and_language(
+                {"item": "foo", "language": "bar", "speaker": "baz"}
+            ),
+            {"item": "foo", "speaker": "baz", "language": "bar"},
+        )
+
 
 class PreprocessingHierarchyTest(BasicTestCase):
     def test_hierarchy(self):
