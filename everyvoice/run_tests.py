@@ -3,6 +3,7 @@
 """ Organize tests into Test Suites
 """
 
+import argparse
 import importlib
 import os
 import re
@@ -39,6 +40,7 @@ dev_suites = (
     "fs2",
     "wav2vec2aligner",
 )
+SUITE_NAMES = ["all", "dev"] + sorted(SUITES.keys())
 SUITES["dev"] = sum((SUITES[suite] for suite in dev_suites), start=())
 
 
@@ -86,7 +88,7 @@ def describe_suite(suite: TestSuite):
     )
 
 
-def run_tests(suite: str, describe: bool = False):
+def run_tests(suite: str, describe: bool = False, verbosity=3):
     """Decide which Test Suite to run"""
     logger.info(f"Loading test suite '{suite}'. This may take a while...")
     if suite == "all":
@@ -98,7 +100,7 @@ def run_tests(suite: str, describe: bool = False):
             tests = SUITES[suite]
         else:
             logger.error(
-                f"Please specify a test suite to run: one of '{['all'] + sorted(SUITES.keys())}'."
+                f"Please specify a test suite to run: one of '{['all'] + SUITE_NAMES}'."
             )
             return False
         tests = [
@@ -123,19 +125,27 @@ def run_tests(suite: str, describe: bool = False):
         return True
     else:
         logger.info("Running test suite")
-        return TextTestRunner(verbosity=3).run(test_suite).wasSuccessful()
+        return TextTestRunner(verbosity=verbosity).run(test_suite).wasSuccessful()
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Run EveryVoice test suites.")
+    parser.add_argument("--quiet", "-q", action="store_true", help="reduce output")
+    parser.add_argument(
+        "--describe", action="store_true", help="describe the selected test suite"
+    )
+    parser.add_argument(
+        "suite",
+        nargs="?",
+        default="dev",
+        help="the test suite to run [dev]",
+        choices=SUITE_NAMES,
+    )
+    args = parser.parse_args()
+    result = run_tests(args.suite, args.describe, 1 if args.quiet else 3)
+    if not result:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
-    describe = "--describe" in sys.argv
-    if describe:
-        sys.argv.remove("--describe")
-
-    try:
-        suite = sys.argv[1]
-    except IndexError:
-        logger.info('No test suite specified, defaulting to "dev"')
-        suite = "dev"
-    result = run_tests(suite, describe)
-    if not result:
-        sys.exit(1)
+    main()
