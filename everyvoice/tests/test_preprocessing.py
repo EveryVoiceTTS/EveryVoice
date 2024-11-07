@@ -494,7 +494,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         lj_preprocessed = tmpdir / "preprocessed"
         lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
 
-        fp_config = FeaturePredictionConfig(contact=self.contact)
+        fp_config = FeaturePredictionConfig(contact=self.contact)  # type: ignore
         fp_config.preprocessing.source_data[0].data_dir = self.data_dir / "lj" / "wavs"
 
         full_filelist = self.data_dir / "metadata.psv"
