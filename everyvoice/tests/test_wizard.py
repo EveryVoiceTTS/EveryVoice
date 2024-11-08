@@ -1453,6 +1453,8 @@ class WizardTest(TestCase):
 
     def test_multilingual_multispeaker_true_config(self):
         """
+        Test mismatched multi-monolingual and multi-monospeaker datasets.
+
         Makes sure that multilingual and multispeaker parameters of config are set to true when two monolingual and monospeaker datasets are provided with different specified languages and speakers.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1621,6 +1623,8 @@ class WizardTest(TestCase):
 
     def test_multilingual_multispeaker_false_config(self):
         """
+        Test matched multi-monospeaker and multi-monolingual datasets.
+
         Makes sure that multilingual and multispeaker parameters of config are set to false when two monolingual and monospeaker datasets are provided with the specified languages and speakers which are the same.
         """
         with tempfile.TemporaryDirectory() as tmpdir:

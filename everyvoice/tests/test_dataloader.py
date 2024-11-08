@@ -1,5 +1,3 @@
-from tqdm import tqdm
-
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
@@ -17,6 +15,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
 )
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
+from everyvoice.tests.stubs import mute_logger
 from everyvoice.utils import filter_dataset_based_on_target_text_representation_level
 
 
@@ -57,7 +56,7 @@ class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
             self.config.vocoder,
             use_segments=True,
         )
-        for sample in tqdm(dataset):
+        for sample in dataset:
             spec, audio, basename, spec_from_audio = sample
             self.assertTrue(isinstance(basename, str))
             self.assertEqual(spec.size(), spec_from_audio.size())
@@ -84,20 +83,22 @@ class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
     def test_filter_dataset(self):
         train_dataset = [{"character_tokens": "b", "phone_tokens": ""}] * 4
         with self.assertRaises(SystemExit) as cm:
-            filter_dataset_based_on_target_text_representation_level(
-                TargetTrainingTextRepresentationLevel.characters,
-                train_dataset,
-                "training",
-                6,
-            )
+            with mute_logger("everyvoice.utils"):
+                filter_dataset_based_on_target_text_representation_level(
+                    TargetTrainingTextRepresentationLevel.characters,
+                    train_dataset,
+                    "training",
+                    6,
+                )
         self.assertEqual(cm.exception.code, 1)
         with self.assertRaises(SystemExit) as cm:
-            filter_dataset_based_on_target_text_representation_level(
-                TargetTrainingTextRepresentationLevel.ipa_phones,
-                train_dataset,
-                "training",
-                4,
-            )
+            with mute_logger("everyvoice.utils"):
+                filter_dataset_based_on_target_text_representation_level(
+                    TargetTrainingTextRepresentationLevel.ipa_phones,
+                    train_dataset,
+                    "training",
+                    4,
+                )
         self.assertEqual(cm.exception.code, 1)
         train_ds = filter_dataset_based_on_target_text_representation_level(
             TargetTrainingTextRepresentationLevel.characters,
