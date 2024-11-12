@@ -35,9 +35,7 @@ jobs:
       - name: Install dependencies and package
         run: |
           CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -r requirements.dev.txt
-          pip install cython
-          pip install -e .
+          pip install -e .[dev]
           pip install coverage
       - run: pip freeze
       - run: pip list

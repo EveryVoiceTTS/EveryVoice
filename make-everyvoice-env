@@ -158,7 +158,7 @@ r pip install cython
 
 # pycountry and pyworld don't always compile cleanly, but we can fall back to
 # using conda-forge if necessary
-PY_COUNTRY_WORLD=$(grep "pycountry\|pyworld" requirements.txt)
+PY_COUNTRY_WORLD=$(grep -o "\(pycountry\|pyworld\)==[0-9.]\+" pyproject.toml)
 if ! r pip install $PY_COUNTRY_WORLD; then
     echo Falling back to installing pycountry and pyworld from conda-forge
     r conda install -y $PY_COUNTRY_WORLD -c conda-forge
@@ -166,7 +166,7 @@ fi
 
 r conda install -y sox -c conda-forge
 r pip install -e .
-r pip install -r requirements.dev.txt
+r pip install .[dev]
 echo ""
 echo "Environment creation completed with success"
 

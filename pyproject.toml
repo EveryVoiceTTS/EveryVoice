@@ -1,0 +1,141 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "EveryVoice"
+description = "Text-to-Speech Synthesis for the Speech Generation for Indigenous Language Education Small Teams Project"
+license = { file = "LICENSE" }
+authors = [
+  { name = "Aidan Pine", email = "Aidan.Pine@nrc-cnrc.gc.ca" },
+  { name = "Eric Joanis", email = "Eric.Joanis@nrc-cnrc.gc.ca" },
+  { name = "Marc Tessier", email = "Marc.Tessier@nrc-cnrc.gc.ca" },
+  { name = "Mengzhe Geng", email = "Mengzhe.Geng@nrc-cnrc.gc.ca" },
+  { name = "Samuel Larkin", email = "Samuel.Larkin@nrc-cnrc.gc.ca" },
+  { name = "Vladislav Govor" },
+  { name = "David Guzmán", email = "david.guzman@mail.utoronto.ca" },
+]
+maintainers = [
+  { name = "Aidan Pine", email = "Aidan.Pine@nrc-cnrc.gc.ca" },
+  { name = "Eric Joanis", email = "Eric.Joanis@nrc-cnrc.gc.ca" },
+  { name = "Samuel Larkin", email = "Samuel.Larkin@nrc-cnrc.gc.ca" },
+]
+readme = "README.md"
+requires-python = ">=3.10, <3.12"
+keywords = ["TTS", "CLI"]
+classifiers = [
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Other Audience",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation",
+  "Programming Language :: Python",
+  "Programming Language :: Unix Shell",
+  "Topic :: Multimedia :: Sound/Audio :: Speech",
+  "Typing :: Typed",
+]
+dependencies = [
+  "clipdetect>=0.1.4",
+  "deepdiff>=6.5.0",
+  "anytree>=2.12.1",
+  "einops==0.5.0",
+  "g2p~=2.0",
+  "gradio>=4.32.1",
+  "grapheme>=0.6.0",
+  "ipatok>=0.4.1",
+  "librosa==0.9.2",
+  "lightning>=2.0.0",
+  "loguru==0.6.0",
+  "matplotlib~=3.9.0",
+  "merge-args",
+  "nltk==3.9.1",
+  "numpy<2",                       # torch < 2.4.1 requires numpy < 2 but fails to declare it
+  "pandas~=2.0",
+  "panphon==0.20.0",
+  "protobuf~=4.25",                # https://github.com/EveryVoiceTTS/EveryVoice/issues/387
+  "pycountry==22.3.5",
+  "pydantic[email]>=2.4.2,<2.8.0",
+  "pympi-ling",
+  "pysdtw==0.0.5",
+  "pyworld==0.3.4",
+  "PyYAML>=5.1",
+  "questionary==1.10.0",
+  "simple-term-menu==1.5.2",
+  "setuptools==59.5.0",            # https://github.com/pytorch/pytorch/issues/69894
+  "tabulate==0.9.0",
+  "tensorboard>=2.14.1",
+  "torch==2.1.0",
+  "torchaudio==2.1.0",
+  "torchinfo==1.8.0",
+  "typer>=0.12.3",
+  "yaspin>=3.1.0",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+# [Specifying GPU version of pytorch for python package in pyproject.toml](https://discuss.pytorch.org/t/specifying-gpu-version-of-pytorch-for-python-package-in-pyproject-toml/209157)
+torch = [
+  # these requirements have to be installed ahead of time in your environment and from a different URL:
+  # CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+  'torch==2.1.0; sys_platform == "darwin"',
+  'torchaudio==2.1.0; sys_platform == "darwin"',
+]
+dev = [
+  "black~=24.3",
+  "flake8>=4.0.1",
+  "gitlint-core>=0.19.0",
+  "isort>=5.10.1",
+  "mypy>=1.8.0",
+  "pre-commit>=3.2.0",
+  "types-pyyaml>=6.0.5",
+  "types-requests>=2.27.11",
+  "types-setuptools>=57.4.9",
+  "types-tabulate==0.9.0",
+  "types-tqdm>=4.64,<5.0",
+  "everyvoice[test]",
+]
+test = ["jsonschema>=4.17.3", "pep440>=0.1.2"]
+
+[project.scripts]
+everyvoice = "everyvoice.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/EveryVoiceTTS/EveryVoice"
+Documentation = "https://docs.everyvoice.ca"
+Repository = "https://github.com/EveryVoiceTTS/EveryVoice"
+Issues = "https://github.com/EveryVoiceTTS/EveryVoice/issues"
+Changelog = "https://github.com/EveryVoiceTTS/EveryVoice/releases"
+
+[tool.flake8]
+ignore = ["E203", "E266", "E501", "W503"]
+max-line-length = 88
+max-complexity = 18
+select = ["B", "C", "E", "F", "W", "T4", "B9"]
+
+[tool.hatch.version]
+path = "everyvoice/_version.py"
+# pattern = "VERSION = 'b(?P<version>[^']+)'"
+
+[tool.isort]
+known_first_party = "everyvoice"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 88
+ensure_newline_before_comments = true
+
+[tool.mypy]
+files = "everyvoice"
+ignore_missing_imports = true
+plugins = ["pydantic.mypy", "numpy.typing.mypy_plugin"]
+check_untyped_defs = false
