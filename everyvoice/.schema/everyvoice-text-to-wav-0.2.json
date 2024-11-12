@@ -116,6 +116,7 @@
           "default": null
         },
         "VERSION": {
+          "default": "1.0",
           "title": "Version",
           "type": "string"
         },
@@ -400,6 +401,7 @@
           "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
         },
         "VERSION": {
+          "default": "1.0",
           "title": "Version",
           "type": "string"
         },
@@ -935,6 +937,7 @@
           "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
         },
         "VERSION": {
+          "default": "1.0",
           "title": "Version",
           "type": "string"
         },
@@ -1357,6 +1360,7 @@
           "default": null
         },
         "VERSION": {
+          "default": "1.0",
           "title": "Version",
           "type": "string"
         },
@@ -1465,6 +1469,7 @@
           "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
         },
         "VERSION": {
+          "default": "1.0",
           "title": "Version",
           "type": "string"
         },
@@ -2385,6 +2390,7 @@
           "default": null
         },
         "VERSION": {
+          "default": "1.0",
           "title": "Version",
           "type": "string"
         },
