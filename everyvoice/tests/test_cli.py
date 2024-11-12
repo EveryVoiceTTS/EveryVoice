@@ -322,8 +322,9 @@ class CLITest(TestCase):
 
 class TestBaseCLIHelper(TestCase):
     def test_save_configuration_to_log_dir(self):
-        with TemporaryDirectory(ignore_cleanup_errors=True) as tempdir, mute_logger(
-            "everyvoice.base_cli.helpers"
+        with (
+            TemporaryDirectory(ignore_cleanup_errors=True) as tempdir,
+            mute_logger("everyvoice.base_cli.helpers"),
         ):
             tempdir = Path(tempdir)
             config = FastSpeech2Config(

@@ -368,9 +368,10 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         pass
 
     def test_text_processing(self):
-        with tempfile.TemporaryDirectory(
-            prefix="test_text_processing"
-        ) as tempdir, init_context({"writing_config": Path(tempdir)}):
+        with (
+            tempfile.TemporaryDirectory(prefix="test_text_processing") as tempdir,
+            init_context({"writing_config": Path(tempdir)}),
+        ):
             characters_eng_filelist = (
                 self.data_dir / "metadata_characters_supported_lang.psv"
             )
@@ -428,8 +429,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     )
                     fp_config.preprocessing.save_dir = preprocessed_dir
                     preprocessor = Preprocessor(fp_config)
-                    with capture_stdout() as output, mute_logger(
-                        "everyvoice.preprocessor"
+                    with (
+                        capture_stdout() as output,
+                        mute_logger("everyvoice.preprocessor"),
                     ):
                         preprocessor.preprocess(
                             output_path=str(output_filelist),

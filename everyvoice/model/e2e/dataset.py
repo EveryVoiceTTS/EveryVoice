@@ -17,7 +17,6 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.dataset impor
 from everyvoice.text.lookups import LookupTables
 from everyvoice.text.text_processor import TextProcessor
 from everyvoice.utils import (
-    _flatten,
     check_dataset_size,
     filter_dataset_based_on_target_text_representation_level,
 )
@@ -111,7 +110,10 @@ class E2EDataset(Dataset):
                         "attn",
                         f"{DatasetTextRepresentation.characters.value}-attn-prior.pt",
                     )
-                case TargetTrainingTextRepresentationLevel.ipa_phones | TargetTrainingTextRepresentationLevel.phonological_features:
+                case (
+                    TargetTrainingTextRepresentationLevel.ipa_phones
+                    | TargetTrainingTextRepresentationLevel.phonological_features
+                ):
                     duration = self._load_file(
                         basename,
                         speaker,
@@ -134,7 +136,10 @@ class E2EDataset(Dataset):
                         item["character_tokens"]
                     )
                 )
-            case TargetTrainingTextRepresentationLevel.ipa_phones | TargetTrainingTextRepresentationLevel.phonological_features:
+            case (
+                TargetTrainingTextRepresentationLevel.ipa_phones
+                | TargetTrainingTextRepresentationLevel.phonological_features
+            ):
                 text = torch.IntTensor(
                     self.text_processor.encode_escaped_string_sequence(
                         item["phone_tokens"]

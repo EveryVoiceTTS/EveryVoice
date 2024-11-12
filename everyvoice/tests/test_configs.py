@@ -108,9 +108,10 @@ class ConfigTest(BasicTestCase):
             self.assertTrue((tempdir / preprocessing_config.save_dir).exists())
 
     def test_config_partial(self):
-        with TemporaryDirectory(
-            prefix="test_config_partial"
-        ) as tempdir_str, init_context({"writing_config": Path(tempdir_str)}):
+        with (
+            TemporaryDirectory(prefix="test_config_partial") as tempdir_str,
+            init_context({"writing_config": Path(tempdir_str)}),
+        ):
             # Preprocessing Config
             tempdir = Path(tempdir_str)
             _writer_helper(AudioConfig(), tempdir / "audio.json")
@@ -300,9 +301,10 @@ class ConfigTest(BasicTestCase):
 
     def test_change_with_indices(self):
         """Text the --config-args can also work with arrays"""
-        with TemporaryDirectory(
-            prefix="test_change_with_indices"
-        ) as tempdir, init_context({"writing_config": Path(tempdir)}):
+        with (
+            TemporaryDirectory(prefix="test_change_with_indices") as tempdir,
+            init_context({"writing_config": Path(tempdir)}),
+        ):
             config = FeaturePredictionConfig(contact=self.contact)
             config.update_config(
                 {
@@ -487,8 +489,9 @@ class LoadConfigTest(BasicTestCase):
 
     def test_absolute_path(self):
         """Load a config that has absolute paths."""
-        with TemporaryDirectory(prefix="test_absolute_path") as tempdir, init_context(
-            {"writing_config": Path(tempdir)}
+        with (
+            TemporaryDirectory(prefix="test_absolute_path") as tempdir,
+            init_context({"writing_config": Path(tempdir)}),
         ):
             tempdir = Path(tempdir).absolute()
             # Write preprocessing:
@@ -546,8 +549,9 @@ class LoadConfigTest(BasicTestCase):
 
     def test_missing_path(self):
         """Load a config that is missing a partial config file."""
-        with TemporaryDirectory(prefix="test_missing_path") as tempdir, init_context(
-            {"writing_config": Path(tempdir)}
+        with (
+            TemporaryDirectory(prefix="test_missing_path") as tempdir,
+            init_context({"writing_config": Path(tempdir)}),
         ):
             tempdir = Path(tempdir)
             _writer_helper(AudioConfig(), tempdir / "audio.json")

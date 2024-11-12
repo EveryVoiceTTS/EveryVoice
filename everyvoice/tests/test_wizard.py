@@ -1847,15 +1847,18 @@ class WizardTest(TestCase):
             tmpdir = Path(tmpdirname)
             tour = make_trivial_tour()
             progress_file = tmpdir / "saved-progress"
-            with patch_input(
-                [
-                    "project_name",
-                    "Jane Doe",
-                    KeyboardInterrupt(),
-                    "email@mail.com",
-                ],
-                multi=True,
-            ), patch_questionary(str(progress_file), ask_ok=True):
+            with (
+                patch_input(
+                    [
+                        "project_name",
+                        "Jane Doe",
+                        KeyboardInterrupt(),
+                        "email@mail.com",
+                    ],
+                    multi=True,
+                ),
+                patch_questionary(str(progress_file), ask_ok=True),
+            ):
                 with patch_menu_prompt(3):
                     tour.run()
                 self.assertTrue(progress_file.exists())

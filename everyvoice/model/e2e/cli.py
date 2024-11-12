@@ -23,5 +23,5 @@ def train(**kwargs):
         data_module=E2EDataModule,
         monitor="validation/mel_spec_error",
         gradient_clip_val=None,
-        **kwargs
+        **kwargs,
     )
