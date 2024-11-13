@@ -115,12 +115,6 @@ Repository = "https://github.com/EveryVoiceTTS/EveryVoice"
 Issues = "https://github.com/EveryVoiceTTS/EveryVoice/issues"
 Changelog = "https://github.com/EveryVoiceTTS/EveryVoice/releases"
 
-[tool.flake8]
-ignore = ["E203", "E266", "E501", "W503"]
-max-line-length = 88
-max-complexity = 18
-select = ["B", "C", "E", "F", "W", "T4", "B9"]
-
 [tool.hatch.version]
 path = "everyvoice/_version.py"
 # pattern = "VERSION = 'b(?P<version>[^']+)'"
