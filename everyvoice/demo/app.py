@@ -48,14 +48,14 @@ def synthesize_audio(
     norm_text = normalize_text(text)
     if allowlist and norm_text not in allowlist:
         raise gr.Error(
-            f"Oops, the word {norm_text} is not allowed to be synthesized by this model. Please contact the model owner."
+            f"Oops, the word {text} is not allowed to be synthesized by this model. Please contact the model owner."
         )
     if denylist:
         norm_words = norm_text.split()
         for word in norm_words:
             if word in denylist:
                 raise gr.Error(
-                    f"Oops, the word {norm_text} is not allowed to be synthesized by this model. Please contact the model owner."
+                    f"Oops, the word {text} is not allowed to be synthesized by this model. Please contact the model owner."
                 )
     if language is None:
         raise gr.Error("Language is not selected. Please select a language.")
