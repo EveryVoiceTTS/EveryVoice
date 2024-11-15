@@ -31,9 +31,9 @@ jobs:
         with:
           python-version: "3.10"
       - name: Install pypa/build
-        run: python3 -m pip install build
+        run: python3 -m pip install hatch
       - name: Build a binary wheel and a source tarball
-        run: python -m build --sdist --wheel
+        run: hatch build
       - name: Store the distribution packages
         uses: actions/upload-artifact@v4
         with:
