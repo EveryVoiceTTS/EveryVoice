@@ -81,13 +81,12 @@ dependencies = [
 dynamic = ["version"]
 
 [project.optional-dependencies]
-# [Specifying GPU version of pytorch for python package in pyproject.toml](https://discuss.pytorch.org/t/specifying-gpu-version-of-pytorch-for-python-package-in-pyproject-toml/209157)
-torch = [
-  # these requirements have to be installed ahead of time in your environment and from a different URL:
-  # CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-  'torch==2.1.0; sys_platform == "darwin"',
-  'torchaudio==2.1.0; sys_platform == "darwin"',
-]
+# torch = [
+#   # these requirements have to be installed ahead of time in your environment and from a different URL:
+#   # CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+#   'torch==2.1.0; sys_platform == "darwin"',
+#   'torchaudio==2.1.0; sys_platform == "darwin"',
+# ]
 dev = [
   "black~=24.3",
   "flake8>=4.0.1",
@@ -103,6 +102,23 @@ dev = [
   "everyvoice[test]",
 ]
 test = ["jsonschema>=4.17.3", "pep440>=0.1.2"]
+# [Specifying GPU version of pytorch for python package in pyproject.toml](https://discuss.pytorch.org/t/specifying-gpu-version-of-pytorch-for-python-package-in-pyproject-toml/209157)
+darwin = [
+  "torch==2.1.0; sys_platform == 'darwin'",
+  "torchaudio==2.1.0; sys_platform == 'darwin'",
+]
+cpu = [
+  "torch==2.1.0+cpu; sys_platform != 'darwin'",
+  "torchaudio==2.1.0+cpu; sys_platform != 'darwin'",
+]
+cu118 = [
+  "torch==2.1.0+cu118; sys_platform != 'darwin'",
+  "torchaudio==2.1.0+cu118; sys_platform != 'darwin'",
+]
+cu121 = [
+  "torch==2.1.0+cu121; sys_platform != 'darwin'",
+  "torchaudio==2.1.0+cu121; sys_platform != 'darwin'",
+]
 
 [project.scripts]
 everyvoice = "everyvoice.cli:app"

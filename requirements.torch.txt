@@ -1,6 +1,0 @@
-# these requirements have to be installed ahead of time in your environment and from a different URL:
-# CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-torch==2.1.0; sys_platform == "darwin"
-torchaudio==2.1.0; sys_platform == "darwin"
-torch==2.1.0+${CUDA_TAG}; sys_platform != "darwin"
-torchaudio==2.1.0+${CUDA_TAG}; sys_platform != "darwin"

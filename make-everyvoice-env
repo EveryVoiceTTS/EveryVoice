@@ -153,7 +153,8 @@ if ! r pip install lit --find-links https://download.pytorch.org/whl/torch_stabl
     r pip install lit==15.0.7 --find-links https://download.pytorch.org/whl/torch_stable.html
 fi
 
-r CUDA_TAG=$CUDA_TAG pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+# r CUDA_TAG=$CUDA_TAG pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+r pip install .["$CUDA_TAG"] --find-links https://download.pytorch.org/whl/torch_stable.html
 r pip install cython
 
 # pycountry and pyworld don't always compile cleanly, but we can fall back to
