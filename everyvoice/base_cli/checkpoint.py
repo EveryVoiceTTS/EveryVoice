@@ -93,7 +93,7 @@ def inspect(
         dir_okay=False,
         file_okay=True,
         help="The path to your model checkpoint file.",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
     show_config: Annotated[
         bool,

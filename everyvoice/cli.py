@@ -181,7 +181,7 @@ def evaluate(
         dir_okay=False,
         file_okay=True,
         help="The path to a single audio file for evaluation.",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
     audio_directory: Optional[Path] = typer.Option(
         None,
@@ -190,7 +190,7 @@ def evaluate(
         file_okay=False,
         dir_okay=True,
         help="The directory where multiple audio files are located for evaluation",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
     non_matching_reference: Optional[Path] = typer.Option(
         None,
@@ -200,7 +200,7 @@ def evaluate(
         dir_okay=False,
         file_okay=True,
         help="The path to a Non Mathing Reference audio file, required for MOS prediction.",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
 ):
     from tabulate import tabulate
@@ -399,7 +399,7 @@ def new_project(
         dir_okay=False,
         file_okay=True,
         help="Resume from previously saved progress.",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
 ):
     from everyvoice.wizard.main_tour import get_main_wizard_tour
@@ -451,7 +451,7 @@ def check_data(
         dir_okay=False,
         file_okay=True,
         help="The path to your model configuration file.",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
     heavy_clip_detection: bool = typer.Option(False),
     heavy_objective_evaluation: bool = typer.Option(False),
@@ -592,14 +592,14 @@ def demo(
         exists=True,
         dir_okay=False,
         help="The path to a trained text-to-spec (i.e., feature prediction) EveryVoice model.",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
     spec_to_wav_model: Path = typer.Argument(
         ...,
         help="The path to a trained vocoder.",
         dir_okay=False,
         file_okay=True,
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
     allowlist: Path = typer.Option(
         None,
@@ -607,7 +607,7 @@ def demo(
         file_okay=True,
         dir_okay=False,
         help="A plain text file containing a list of words or utterances to allow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are disallowed.",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
     denylist: Path = typer.Option(
         None,
@@ -615,7 +615,7 @@ def demo(
         file_okay=True,
         dir_okay=False,
         help="A plain text file containing a list of words or utterances to disallow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are allowed. IMPORTANT: there are many ways to 'hack' the denylist that we do not protect against. We suggest using the 'allowlist' instead for maximum security if you know the full list of utterances you want to allow synthesis for.",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
     languages: List[str] = typer.Option(
         ["all"],
@@ -636,7 +636,7 @@ def demo(
         file_okay=False,
         dir_okay=True,
         help="The directory where your synthesized audio should be written",
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
     accelerator: str = typer.Option("auto", "--accelerator", "-a"),
 ):
@@ -683,7 +683,7 @@ def update_schemas(
         file_okay=False,
         dir_okay=True,
         exists=True,
-        autocompletion=complete_path,
+        shell_complete=complete_path,
     ),
 ):
     """Update the JSON Schemas. This is hidden because you shouldn't be calling this unless you are
