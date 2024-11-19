@@ -9,7 +9,7 @@ PYTHON_VERSION=3.10
 
 usage() {
     for msg in "$@"; do
-        echo $msg >&2
+        echo "$msg" >&2
     done
     cat <<==EOF== >&2
 
@@ -40,7 +40,7 @@ Target Environment Sepcification:
 error_exit() {
    echo -n "ERROR: " >&2
    for msg in "$@"; do
-      echo $msg >&2
+      echo "$msg" >&2
    done
    echo "Use -h for help." >&2
    exit 1
@@ -125,7 +125,7 @@ fi
 echo "Creating EveryVoice conda environment $ENV_DESC for $CUDA_DESC using Python $PYTHON_VERSION."
 
 echo -n "Proceed (y/[n])? "
-read proceed
+read -r proceed
 if [[ "$proceed" =~ ^[y|Y] ]]; then
     echo Proceeding
 else
@@ -136,7 +136,7 @@ fi
 r() {
     cmd=$*
     echo "\$ $cmd"
-    eval $cmd
+    eval "$cmd"
     return $?
 }
 
@@ -159,9 +159,9 @@ r pip install cython
 # pycountry and pyworld don't always compile cleanly, but we can fall back to
 # using conda-forge if necessary
 PY_COUNTRY_WORLD=$(grep -o "\(pycountry\|pyworld\)==[0-9.]\+" pyproject.toml)
-if ! r pip install $PY_COUNTRY_WORLD; then
+if ! r pip install "$PY_COUNTRY_WORLD"; then
     echo Falling back to installing pycountry and pyworld from conda-forge
-    r conda install -y $PY_COUNTRY_WORLD -c conda-forge
+    r conda install -y "$PY_COUNTRY_WORLD" -c conda-forge
 fi
 
 r conda install -y sox -c conda-forge
