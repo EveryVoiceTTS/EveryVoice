@@ -16,6 +16,7 @@ from loguru import logger
 
 SUBMODULE_SUITES: dict[str, tuple[str, ...]] = {
     "fs2": ("/model/feature_prediction/FastSpeech2_lightning/fs2/tests",),
+    "wav2vec2aligner": ("/model/aligner/wav2vec2aligner/aligner/tests",),
 }
 SUITES: dict[str, tuple[str, ...]] = {
     "config": ("test_configs",),
@@ -34,8 +35,9 @@ dev_suites = (
     "preprocessing",
     "model",
     "cli",
-    "fs2",
     "evaluation",
+    "fs2",
+    "wav2vec2aligner",
 )
 SUITES["dev"] = sum((SUITES[suite] for suite in dev_suites), start=())
 
