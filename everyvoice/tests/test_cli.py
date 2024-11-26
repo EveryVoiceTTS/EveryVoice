@@ -360,7 +360,4 @@ class TestBaseCLIHelper(TestCase):
     def test_complete_path_hack(self):
         from everyvoice.base_cli.interfaces import complete_path
 
-        # When used with autocompletion=complete_path, it is called with no args
-        self.assertEqual(complete_path(), [])
-        # When used with shell_complete=complete_path, it is called with three args
         self.assertEqual(complete_path(None, None, None), [])

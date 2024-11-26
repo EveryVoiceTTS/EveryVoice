@@ -11,7 +11,7 @@ from typing import List, Optional
 import typer
 
 
-def complete_path(ctx=None, param=None, incomplete=None) -> list[str]:
+def complete_path(ctx, param, incomplete) -> list[str]:
     # https://github.com/tiangolo/typer/discussions/625
     # Work-around for path completion bug in CLI shell_complete
     return []
