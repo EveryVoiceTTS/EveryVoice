@@ -12,8 +12,6 @@ authors = [
   { name = "Marc Tessier", email = "Marc.Tessier@nrc-cnrc.gc.ca" },
   { name = "Mengzhe Geng", email = "Mengzhe.Geng@nrc-cnrc.gc.ca" },
   { name = "Samuel Larkin", email = "Samuel.Larkin@nrc-cnrc.gc.ca" },
-  { name = "Vladislav Govor" },
-  { name = "David Guzmán", email = "david.guzman@mail.utoronto.ca" },
 ]
 maintainers = [
   { name = "Aidan Pine", email = "Aidan.Pine@nrc-cnrc.gc.ca" },
