@@ -37,6 +37,10 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.train imp
     train as train_fs2,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
+    HFG_EXPORT_LONG_HELP,
+    HFG_EXPORT_SHORT_HELP,
+)
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     export as export_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
@@ -311,18 +315,9 @@ export_group = typer.Typer(
 )
 
 export_group.command(
-    short_help="Export and optimize a spec-to-wav model for inference",
+    short_help=HFG_EXPORT_SHORT_HELP,
     name="spec-to-wav",
-    help="""Export your spec-to-wav model.
-
-    # Important!
-
-    This will reduce the size of your checkpoint but it means that the exported checkpoint cannot be resumed for training, it can only be used for inference/synthesis.
-
-    For example:
-
-    **everyvoice export spec-to-wav <path_to_ckpt> <output_path>**
-    """,
+    help=HFG_EXPORT_LONG_HELP,
 )(export_hfg)
 
 app.add_typer(
@@ -514,7 +509,7 @@ train_group.command(
 train_group.command(
     name="spec-to-wav",
     short_help="Train your Spec-to-Wav model",
-    help=f"""Train your spec-to-wav model. For example:
+    help=f"""Train your spec-to-wav model.  For example:
 
     **everyvoice train spec-to-wav config/{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
     """,
