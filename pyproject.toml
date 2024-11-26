@@ -119,7 +119,7 @@ path = "everyvoice/_version.py"
 # pattern = "VERSION = 'b(?P<version>[^']+)'"
 
 [tool.hatch.build.targets.sdist]
-include = ["requirements.torch.txt", "/everyvoice"]
+include = ["/everyvoice"]
 exclude = [
   "*.coveragerc",
   "*.ipynb",
@@ -143,8 +143,7 @@ exclude = [
 ]
 
 [tool.hatch.build.targets.wheel]
-# sources = ["/everyvoice"]
-include = ["requirements.torch.txt", "/everyvoice"]
+include = ["/everyvoice"]
 exclude = [
   "*.coveragerc",
   "*.ipynb",
