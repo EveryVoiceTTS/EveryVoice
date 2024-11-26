@@ -438,7 +438,7 @@ def spinner():
     from yaspin import yaspin
     from yaspin.core import Spinner
 
-    interval = 111 if sys.stdout.isatty() else 2000
+    interval = 333 if sys.stdout.isatty() else 2000
     with yaspin(
         spinner=Spinner("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏", interval), text="Loading...", timer=True
     ) as spinner:
