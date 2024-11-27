@@ -294,8 +294,6 @@ def create_demo_app(
                 if model.config.model.use_global_style_token_module:
                     with gr.Row():
                         style_reference = gr.Audio(type="filepath")
-                else:
-                    style_reference = None
                 btn = gr.Button("Synthesize")
             with gr.Column():
                 out_audio = gr.Audio(format="wav")
@@ -305,9 +303,17 @@ def create_demo_app(
                 else:
                     out_file = gr.File(label="File Output")
                     outputs = [out_audio, out_file]
+        inputs = [inp_text, inp_slider, inp_lang, inp_speak, output_format]
+        # Only include the style reference input if the model supports it
+        if model.config.model.use_global_style_token_module:
+            inputs.append(style_reference)
+        else:
+            synthesize_audio_preset = partial(
+                synthesize_audio_preset, style_reference=None
+            )
         btn.click(
             synthesize_audio_preset,
-            inputs=[inp_text, inp_slider, inp_lang, inp_speak, output_format, style_reference],
+            inputs=inputs,
             outputs=[out_audio],
         )
     return demo
