@@ -1,4 +1,3 @@
-import doctest
 import string
 from pathlib import Path
 from typing import Dict, List
@@ -7,8 +6,6 @@ from unittest import TestCase
 
 from pydantic import ValidationError
 
-import everyvoice.demo.app
-import everyvoice.text.utils
 from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -34,16 +31,6 @@ class TextTest(BasicTestCase):
         self.base_text_processor = TextProcessor(
             TextConfig(symbols=Symbols(letters=list(string.ascii_letters))),
         )
-
-    def test_run_demo_doctest(self):
-        """Run doctests in everyvoice.demo"""
-        results = doctest.testmod(everyvoice.demo.app)
-        self.assertFalse(results.failed, results)
-
-    def test_run_doctest(self):
-        """Run doctests in everyvoice.utils"""
-        results = doctest.testmod(everyvoice.text)
-        self.assertFalse(results.failed, results)
 
     def test_text_to_sequence(self):
         text = "hello world"

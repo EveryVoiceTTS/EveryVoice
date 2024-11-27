@@ -22,7 +22,7 @@ SUBMODULE_SUITES: dict[str, tuple[str, ...]] = {
 SUITES: dict[str, tuple[str, ...]] = {
     "config": ("test_configs",),
     "loader": ("test_dataloader",),
-    "text": ("test_text", "test_utils"),
+    "text": ("test_text", "test_utils", "test_doctests"),
     "preprocessing": ("test_preprocessing",),
     "model": ("test_model",),
     "cli": ("test_wizard", "test_cli", "test_wizard_helpers"),

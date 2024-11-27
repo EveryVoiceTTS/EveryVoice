@@ -1,4 +1,3 @@
-import doctest
 import re
 import tempfile
 from pathlib import Path
@@ -30,11 +29,6 @@ class VersionTest(TestCase):
 
 
 class UtilsTest(TestCase):
-    def test_run_doctest(self):
-        """Run doctests in everyvoice.utils"""
-        results = doctest.testmod(everyvoice.utils, verbose=False)
-        self.assertFalse(results.failed, results)
-
     def test_write_filelist(self):
         """Filelist should write files with headers in order"""
         basic_files = [

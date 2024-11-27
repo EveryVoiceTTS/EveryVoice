@@ -1,4 +1,3 @@
-import doctest
 import os
 import shutil
 import tempfile
@@ -37,11 +36,6 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     """Unit tests for preprocessing steps"""
 
     filelist = generic_psv_filelist_reader(BasicTestCase.data_dir / "metadata.psv")
-
-    def test_run_doctest(self):
-        """Run doctests in everyvoice.text.text_processing"""
-        results = doctest.testmod(everyvoice.text.text_processor, verbose=False)
-        self.assertFalse(results.failed, results)
 
     # def test_compute_stats(self):
     #     feat_prediction_config = EveryVoiceConfig.load_config_from_path().feature_prediction
