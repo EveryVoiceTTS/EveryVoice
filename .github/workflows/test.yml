@@ -12,27 +12,17 @@ jobs:
     timeout-minutes: 15
     permissions:
       pull-requests: write
-    defaults:
-      run:
-        # Required for conda-incubator/setup-miniconda
-        # https://github.com/conda-incubator/setup-miniconda?tab=readme-ov-file#important
-        shell: bash -l {0}
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.SGILE_PAT }}
           submodules: recursive
-      - name: Set up Conda
-        uses: conda-incubator/setup-miniconda@v3
+      - run: sudo apt-get install sox libsox-dev ffmpeg
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-          miniforge-version: latest
-          conda-remove-defaults: true
-      - uses: FedericoCarboni/setup-ffmpeg@v2
-      - name: Install sox and use conda to optimize other installs
-        run: |
-          conda install -y sox $(grep "pycountry\|pyworld" requirements.txt) -c conda-forge
+          cache: "pip"
       - name: Install dependencies and package
         run: |
           CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
