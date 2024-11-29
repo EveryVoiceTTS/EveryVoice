@@ -165,8 +165,7 @@ if ! r pip install $PY_COUNTRY_WORLD; then
 fi
 
 r conda install -y sox -c conda-forge
-r pip install -e .
-r pip install .[dev]
+r pip install -e .[dev]
 echo ""
 echo "Environment creation completed with success"
 
