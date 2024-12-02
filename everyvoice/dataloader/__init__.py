@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 
 from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
+from everyvoice.dataloader.oversampler import BatchOversampler
 from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -49,20 +50,26 @@ class BaseDataModule(pl.LightningDataModule):
             self.predict_dataset = torch.load(self.predict_path)
 
     def train_dataloader(self):
-        sampler = (
-            ImbalancedDatasetSampler(self.train_dataset)
-            if self.use_weighted_sampler
-            else None
-        )
-        return DataLoader(
-            self.train_dataset,
-            batch_size=self.batch_size,
-            num_workers=self.config.training.train_data_workers,
-            pin_memory=False,
-            drop_last=True,
-            collate_fn=self.collate_fn,
-            sampler=sampler,
-        )
+        if self.use_weighted_sampler:
+            sampler = ImbalancedDatasetSampler(self.train_dataset)
+            return DataLoader(
+                self.train_dataset,
+                batch_size=self.batch_size,
+                num_workers=self.config.training.train_data_workers,
+                pin_memory=False,
+                drop_last=True,
+                collate_fn=self.collate_fn,
+                sampler=sampler,
+            )
+        else:
+            batch_sampler = BatchOversampler(self.train_dataset, self.batch_size)
+            return DataLoader(
+                self.train_dataset,
+                batch_sampler=batch_sampler,
+                num_workers=self.config.training.train_data_workers,
+                pin_memory=False,
+                collate_fn=self.collate_fn,
+            )
 
     def predict_dataloader(self):
         return DataLoader(
