@@ -1,3 +1,4 @@
+import enum
 import json
 import platform
 import subprocess
@@ -47,6 +48,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
+from everyvoice.run_tests import SUITE_NAMES, run_tests
 from everyvoice.utils import generic_psv_filelist_reader, spinner
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
@@ -556,23 +558,13 @@ app.command(
 )(inspect_checkpoint)
 
 
-class TestSuites(str, Enum):
-    all = "all"
-    cli = "cli"
-    config = "config"
-    dev = "dev"
-    model = "model"
-    preprocessing = "preprocessing"
-    text = "text"
-    fs2 = "fs2"
+TestSuites = enum.Enum("TestSuites", {name: name for name in SUITE_NAMES})  # type: ignore
 
 
 @app.command(hidden=True)
-def test(suite: TestSuites = typer.Argument(TestSuites.dev)):
+def test(suite: TestSuites = typer.Argument("dev")):
     """Run a test suite"""
-    from everyvoice.run_tests import run_tests
-
-    run_tests(suite)
+    run_tests(suite.value)
 
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
