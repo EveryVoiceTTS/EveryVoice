@@ -7,13 +7,9 @@ from unittest import TestCase
 
 import yaml
 from pydantic import ValidationError
-
-try:
-    from readalongs.portable_tempfile import (
-        PortableNamedTemporaryFile as NamedTemporaryFile,
-    )
-except ImportError:
-    from tempfile import NamedTemporaryFile
+from readalongs.portable_tempfile import (
+    PortableNamedTemporaryFile as NamedTemporaryFile,
+)
 
 from everyvoice import exceptions
 from everyvoice.config.preprocessing_config import (
