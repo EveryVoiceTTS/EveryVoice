@@ -32,6 +32,11 @@ jobs:
           python-version: "3.10"
       - name: Install pypa/build
         run: python3 -m pip install hatch
+      - name: Validate version consistency
+        run: |
+          echo github.ref_name="${{ github.ref_name }}"
+          echo EveryVoice version="$(hatch version)"
+          test "${{ github.ref_name }}" == "v$(hatch version)"
       - name: Build a binary wheel and a source tarball
         run: hatch build
       - name: Store the distribution packages
@@ -42,8 +47,7 @@ jobs:
 
   github-release:
     name: >-
-      Sign the EveryVoice distribution 📦 with Sigstore
-      and upload them to GitHub Release
+      Make a GitHub release, signed with Sigstore
     needs:
       - build
     runs-on: ubuntu-latest
