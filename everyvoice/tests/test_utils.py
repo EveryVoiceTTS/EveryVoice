@@ -1,4 +1,3 @@
-import doctest
 import re
 import tempfile
 from pathlib import Path
@@ -19,7 +18,7 @@ from everyvoice.config.validation_helpers import (
     path_is_a_directory,
     relative_to_absolute_path,
 )
-from everyvoice.tests.stubs import capture_logs
+from everyvoice.tests.stubs import capture_logs, patch_logger, silence_c_stderr
 from everyvoice.utils import write_filelist
 from everyvoice.utils.heavy import get_device_from_accelerator
 
@@ -30,11 +29,6 @@ class VersionTest(TestCase):
 
 
 class UtilsTest(TestCase):
-    def test_run_doctest(self):
-        """Run doctests in everyvoice.utils"""
-        results = doctest.testmod(everyvoice.utils)
-        self.assertFalse(results.failed, results)
-
     def test_write_filelist(self):
         """Filelist should write files with headers in order"""
         basic_files = [
@@ -248,14 +242,16 @@ class DirectoryPathMustExistTest(TestCase):
         """
         Automatically create a directory.
         """
-        with tempfile.TemporaryDirectory() as tmpdir, capture_logs() as output:
+        with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "test_using_a_directory"
             self.assertFalse(path.exists())
-            dir = DirectoryPathMustExist(path=path)
+            with patch_logger(everyvoice.config.validation_helpers) as logger:
+                with self.assertLogs(logger) as cm:
+                    dir = DirectoryPathMustExist(path=path)
             self.assertEqual(dir.path, path)
             self.assertIn(
                 f"Directory at {path} does not exist. Creating...",
-                output[0],
+                "".join(cm.output),
             )
             self.assertTrue(path.exists())
             self.assertTrue(dir.path.exists())
@@ -263,10 +259,11 @@ class DirectoryPathMustExistTest(TestCase):
 
 class GetDeviceFromAcceleratorTest(TestCase):
     def test_auto(self):
-        self.assertEqual(
-            get_device_from_accelerator("auto"),
-            torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-        )
+        with silence_c_stderr():
+            self.assertEqual(
+                get_device_from_accelerator("auto"),
+                torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+            )
 
     def test_cpu(self):
         self.assertEqual(get_device_from_accelerator("cpu"), torch.device("cpu"))

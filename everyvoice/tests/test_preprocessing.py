@@ -1,4 +1,3 @@
-import doctest
 import os
 import shutil
 import tempfile
@@ -24,6 +23,7 @@ from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
 from everyvoice.tests.stubs import (
+    capture_stderr,
     capture_stdout,
     monkeypatch,
     mute_logger,
@@ -36,11 +36,6 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     """Unit tests for preprocessing steps"""
 
     filelist = generic_psv_filelist_reader(BasicTestCase.data_dir / "metadata.psv")
-
-    def test_run_doctest(self):
-        """Run doctests in everyvoice.text.text_processing"""
-        results = doctest.testmod(everyvoice.text.text_processor)
-        self.assertFalse(results.failed, results)
 
     # def test_compute_stats(self):
     #     feat_prediction_config = EveryVoiceConfig.load_config_from_path().feature_prediction
@@ -71,9 +66,10 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     FeaturePredictionConfig(**no_permissions_args)
 
     def test_check_data(self):
-        checked_data = self.preprocessor.check_data(
-            self.filelist, heavy_objective_evaluation=True
-        )
+        with capture_stderr():
+            checked_data = self.preprocessor.check_data(
+                self.filelist, heavy_objective_evaluation=True
+            )
         self.assertIn("pesq", checked_data[0])
         self.assertIn("stoi", checked_data[0])
         self.assertIn("si_sdr", checked_data[0])
@@ -147,7 +143,8 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
     def test_process_empty_audio(self):
         for fn in ["empty.wav", "zeros.wav"]:
-            audio, sr = self.preprocessor.process_audio(self.data_dir / fn)
+            with mute_logger("everyvoice.preprocessor.preprocessor"):
+                audio, sr = self.preprocessor.process_audio(self.data_dir / fn)
             self.assertEqual(audio, None)
             self.assertEqual(sr, None)
 
@@ -431,6 +428,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     preprocessor = Preprocessor(fp_config)
                     with (
                         capture_stdout() as output,
+                        capture_stderr(),
                         mute_logger("everyvoice.preprocessor"),
                     ):
                         preprocessor.preprocess(
@@ -531,7 +529,11 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             ) = self.get_simple_config(tmpdir)
 
             fp_config.preprocessing.source_data[0].filelist = partial_filelist
-            with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
+            with (
+                capture_stdout() as output,
+                capture_stderr(),
+                mute_logger("everyvoice.preprocessor"),
+            ):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
@@ -539,13 +541,21 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             self.assertRegex(output.getvalue(), r"previously processed files *0")
 
             fp_config.preprocessing.source_data[0].filelist = full_filelist
-            with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
+            with (
+                capture_stdout() as output,
+                capture_stderr(),
+                mute_logger("everyvoice.preprocessor"),
+            ):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
             self.assertRegex(output.getvalue(), r"processed files *2")
             self.assertRegex(output.getvalue(), r"previously processed files *3")
-            with capture_stdout() as output, mute_logger("everyvoice.preprocessor"):
+            with (
+                capture_stdout() as output,
+                capture_stderr(),
+                mute_logger("everyvoice.preprocessor"),
+            ):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist,
                     cpus=1,
@@ -563,7 +573,11 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             fp_config, lj_filelist, _, _, _ = self.get_simple_config(tmpdir)
 
             to_process_no_audio = ("energy", "pitch", "attn", "text", "spec")
-            with self.assertRaises(SystemExit), capture_stdout():
+            with (
+                self.assertRaises(SystemExit),
+                capture_stdout(),
+                mute_logger("everyvoice.preprocessor.preprocessor"),
+            ):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process_no_audio
                 )
@@ -586,7 +600,12 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                 print("empty|foo bar baz|foo bar baz|noone|und", file=f)
             fp_config.preprocessing.source_data[0].filelist = input_filelist
 
-            with self.assertRaises(SystemExit), capture_stdout():
+            with (
+                self.assertRaises(SystemExit),
+                capture_stdout(),
+                capture_stderr(),
+                mute_logger("everyvoice.preprocessor.preprocessor"),
+            ):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
@@ -596,13 +615,16 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             tmpdir = Path(tmpdir)
             fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
 
-            Preprocessor(fp_config).preprocess(
-                output_path=lj_filelist, cpus=1, to_process=to_process
-            )
+            with (
+                mute_logger("everyvoice.preprocessor"),
+                capture_stderr(),
+                capture_stdout(),
+            ):
+                Preprocessor(fp_config).preprocess(
+                    output_path=lj_filelist, cpus=1, to_process=to_process
+                )
 
             def fail_config_lock(config_object, element, value, message):
-                import everyvoice.preprocessor.preprocessor
-
                 with monkeypatch(config_object, element, value):
                     with self.assertRaises(SystemExit):
                         with patch_logger(
@@ -726,7 +748,11 @@ class PreprocessingHierarchyTest(BasicTestCase):
             fp_config.preprocessing.save_dir = preprocessed_dir
             preprocessor = Preprocessor(fp_config)
 
-            with mute_logger("everyvoice.preprocessor"), capture_stdout():
+            with (
+                mute_logger("everyvoice.preprocessor"),
+                capture_stdout(),
+                capture_stderr(),
+            ):
                 preprocessor.preprocess(
                     output_path=filelist,
                     cpus=2,

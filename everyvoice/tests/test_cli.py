@@ -33,7 +33,7 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
-from everyvoice.tests.stubs import capture_logs, capture_stdout, mute_logger
+from everyvoice.tests.stubs import capture_logs, capture_stdout, silence_c_stderr
 from everyvoice.wizard import (
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
@@ -175,11 +175,12 @@ class CLITest(TestCase):
         self.assertIn("https://docs.everyvoice.ca", result.stdout)
 
     def test_command_help_messages(self):
-        for command in self.commands:
-            result = self.runner.invoke(app, [command, "--help"])
-            self.assertEqual(result.exit_code, 0)
-            result = self.runner.invoke(app, [command, "-h"])
-            self.assertEqual(result.exit_code, 0)
+        with silence_c_stderr():
+            for command in self.commands:
+                result = self.runner.invoke(app, [command, "--help"])
+                self.assertEqual(result.exit_code, 0)
+                result = self.runner.invoke(app, [command, "-h"])
+                self.assertEqual(result.exit_code, 0)
 
     def test_update_schema(self):
         dummy_contact = ContactInformation(
@@ -233,16 +234,17 @@ class CLITest(TestCase):
         self.assertIn("FileExistsError", str(result))
 
     def test_evaluate(self):
-        result = self.runner.invoke(
-            app,
-            [
-                "evaluate",
-                "-f",
-                self.data_dir / "LJ010-0008.wav",
-                "-r",
-                self.data_dir / "lj" / "wavs" / "LJ050-0269.wav",
-            ],
-        )
+        with silence_c_stderr():
+            result = self.runner.invoke(
+                app,
+                [
+                    "evaluate",
+                    "-f",
+                    self.data_dir / "LJ010-0008.wav",
+                    "-r",
+                    self.data_dir / "lj" / "wavs" / "LJ050-0269.wav",
+                ],
+            )
         self.assertEqual(result.exit_code, 0)
         self.assertIn("LJ010-0008", result.stdout)
         self.assertIn("STOI", result.stdout)
@@ -272,13 +274,15 @@ class CLITest(TestCase):
         )
 
     def test_inspect_checkpoint_help(self):
-        result = self.runner.invoke(app, ["inspect-checkpoint", "--help"])
+        with silence_c_stderr():
+            result = self.runner.invoke(app, ["inspect-checkpoint", "--help"])
         self.assertIn("inspect-checkpoint [OPTIONS] MODEL_PATH", result.stdout)
 
     def test_inspect_checkpoint(self):
-        result = self.runner.invoke(
-            app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
-        )
+        with silence_c_stderr():
+            result = self.runner.invoke(
+                app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
+            )
         self.assertIn('global_step": 52256', result.stdout)
         self.assertIn(
             "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version.",
@@ -291,7 +295,7 @@ class CLITest(TestCase):
         """
         The user should have a friendly message that informs them that they used the wrong config file type.
         """
-        with capture_logs() as output:
+        with silence_c_stderr(), capture_logs() as output:
             result = self.runner.invoke(
                 app,
                 [
@@ -324,7 +328,7 @@ class TestBaseCLIHelper(TestCase):
     def test_save_configuration_to_log_dir(self):
         with (
             TemporaryDirectory(ignore_cleanup_errors=True) as tempdir,
-            mute_logger("everyvoice.base_cli.helpers"),
+            silence_c_stderr(),
         ):
             tempdir = Path(tempdir)
             config = FastSpeech2Config(

@@ -39,6 +39,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
     HiFiGANTrainingConfig,
 )
 from everyvoice.tests.basic_test_case import BasicTestCase
+from everyvoice.tests.stubs import mute_logger, silence_c_stderr
 from everyvoice.utils import (
     expand_config_string_syntax,
     load_config_from_json_or_yaml_path,
@@ -183,13 +184,14 @@ class ConfigTest(BasicTestCase):
             _writer_helper(vocoder_config, tempdir / "vocoder.json")
             self.assertTrue(isinstance(vocoder_config, VocoderConfig))
             # E2E Config
-            e2e_config = EveryVoiceConfig(
-                contact=self.contact,
-                path_to_aligner_config_file=(tempdir / "aligner.json"),
-                path_to_feature_prediction_config_file=(tempdir / "fp.json"),
-                path_to_training_config_file=(tempdir / "training.json"),
-                path_to_vocoder_config_file=(tempdir / "vocoder.json"),
-            )
+            with mute_logger("everyvoice.config.utils"):
+                e2e_config = EveryVoiceConfig(
+                    contact=self.contact,
+                    path_to_aligner_config_file=(tempdir / "aligner.json"),
+                    path_to_feature_prediction_config_file=(tempdir / "fp.json"),
+                    path_to_training_config_file=(tempdir / "training.json"),
+                    path_to_vocoder_config_file=(tempdir / "vocoder.json"),
+                )
             self.assertTrue(isinstance(e2e_config, EveryVoiceConfig))
 
     def test_config_partial_override(self):
@@ -200,19 +202,22 @@ class ConfigTest(BasicTestCase):
             tf.write(AudioConfig().model_dump_json())
             tf.flush()
             # override with actual class
-            config = PreprocessingConfig(
-                path_to_audio_config_file=tf.name,
-                audio=AudioConfig(min_audio_length=1.0),
-            )
+            with mute_logger("everyvoice.config.utils"):
+                config = PreprocessingConfig(
+                    path_to_audio_config_file=tf.name,
+                    audio=AudioConfig(min_audio_length=1.0),
+                )
             self.assertEqual(config.audio.min_audio_length, 1.0)
             # override with dict
-            config = PreprocessingConfig(
-                path_to_audio_config_file=tf.name, audio={"max_audio_length": 1.0}
-            )
+            with mute_logger("everyvoice.config.utils"):
+                config = PreprocessingConfig(
+                    path_to_audio_config_file=tf.name, audio={"max_audio_length": 1.0}
+                )
             self.assertEqual(config.audio.max_audio_length, 1.0)
             # pass something invalid
-            with self.assertRaises(ValidationError):
-                PreprocessingConfig(path_to_audio_config_file=tf.name, audio=1.0)
+            with mute_logger("everyvoice.config.utils"):
+                with self.assertRaises(ValidationError):
+                    PreprocessingConfig(path_to_audio_config_file=tf.name, audio=1.0)
 
     def test_update_from_file(self):
         """Test that updating the config from yaml/json works"""
@@ -383,7 +388,8 @@ class LoadConfigTest(BasicTestCase):
             self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
             self.assertFalse(Path(training["training_filelist"]).is_absolute())
             self.assertFalse(Path(training["validation_filelist"]).is_absolute())
-        config = AlignerConfig.load_config_from_path(config_path)
+        with silence_c_stderr():
+            config = AlignerConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
         self.assertTrue(isinstance(config, AlignerConfig))
         self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
@@ -426,7 +432,8 @@ class LoadConfigTest(BasicTestCase):
             self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
             self.assertFalse(Path(training["training_filelist"]).is_absolute())
             self.assertFalse(Path(training["validation_filelist"]).is_absolute())
-        config = FeaturePredictionConfig.load_config_from_path(config_path)
+        with silence_c_stderr():
+            config = FeaturePredictionConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
         self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
         self.validate_config_path(config.path_to_text_config_file)
@@ -474,7 +481,8 @@ class LoadConfigTest(BasicTestCase):
             self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
             self.assertFalse(Path(training["training_filelist"]).is_absolute())
             self.assertFalse(Path(training["validation_filelist"]).is_absolute())
-        config = EveryVoiceConfig.load_config_from_path(config_path)
+        with silence_c_stderr():
+            config = EveryVoiceConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
         self.assertTrue(isinstance(config, EveryVoiceConfig))
         self.assertEqual(
@@ -512,7 +520,7 @@ class LoadConfigTest(BasicTestCase):
                 validation_filelist=tempdir / "validation_filelist.psv",
             )
             (tempdir / training.logger.save_dir).mkdir(parents=True, exist_ok=True)
-            print(tempdir, training.training_filelist)
+            # print(tempdir, training.training_filelist)
             (training.training_filelist).touch(exist_ok=True)
             (training.validation_filelist).touch(exist_ok=True)
             _writer_helper(training, aligner_training_path)
@@ -536,7 +544,8 @@ class LoadConfigTest(BasicTestCase):
             _writer_helper(aligner_config, aligner_config_path)
 
             # Reload and validate
-            config = AlignerConfig.load_config_from_path(aligner_config_path)
+            with mute_logger("everyvoice.config.utils"):
+                config = AlignerConfig.load_config_from_path(aligner_config_path)
             self.assertTrue(isinstance(config, AlignerConfig))
             self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
             self.validate_config_path(config.path_to_model_config_file)
@@ -587,8 +596,11 @@ class LoadConfigTest(BasicTestCase):
             # Create the missing partial config file by deleting.
             # NOTE, we need the file to exists if we want to write its parent config to disk.
             (tempdir / "preprocessing.json").unlink()
-            with self.assertRaises(ValidationError):
-                config = AlignerConfig.load_config_from_path(tempdir / "aligner.json")
+            with mute_logger("everyvoice.config.utils"):
+                with self.assertRaises(ValidationError):
+                    config = AlignerConfig.load_config_from_path(
+                        tempdir / "aligner.json"
+                    )
 
 
 class BaseTrainingConfigTest(TestCase):

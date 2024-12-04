@@ -25,7 +25,7 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.stubs import monkeypatch
+from everyvoice.tests.stubs import monkeypatch, mute_logger, silence_c_stderr
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
@@ -85,35 +85,37 @@ class ModelTest(BasicTestCase):
         we can help allow our models to be loaded by other versions of EveryVoice. This test ensures
         the hyperparameters only contain JSON serializable content
         """
-        SERIAL_SAFE_MODELS = [
-            HiFiGAN(
-                HiFiGANConfig.load_config_from_path(
-                    self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-                )
-            ),
-            FastSpeech2(
-                FastSpeech2Config.load_config_from_path(
-                    self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+        with silence_c_stderr():
+            SERIAL_SAFE_MODELS = [
+                HiFiGAN(
+                    HiFiGANConfig.load_config_from_path(
+                        self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+                    )
                 ),
-                stats=Stats(
-                    pitch=StatsInfo(
-                        min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+                FastSpeech2(
+                    FastSpeech2Config.load_config_from_path(
+                        self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
                     ),
-                    energy=StatsInfo(
-                        min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                    stats=Stats(
+                        pitch=StatsInfo(
+                            min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+                        ),
+                        energy=StatsInfo(
+                            min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                        ),
                     ),
+                    lang2id={"foo": 0, "bar": 1},
+                    speaker2id={"baz": 0, "qux": 1},
+                ),  # we should probably also test that the error about the variance adaptor is raised
+                Aligner(
+                    DFAlignerConfig.load_config_from_path(
+                        self.config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
+                    )
                 ),
-                lang2id={"foo": 0, "bar": 1},
-                speaker2id={"baz": 0, "qux": 1},
-            ),  # we should probably also test that the error about the variance adaptor is raised
-            Aligner(
-                DFAlignerConfig.load_config_from_path(
-                    self.config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
-                )
-            ),
-        ]
+            ]
         for model in SERIAL_SAFE_MODELS:
-            trainer = Trainer()
+            with silence_c_stderr():
+                trainer = Trainer()
             with tempfile.TemporaryDirectory() as tmpdir_str:
                 # Hacky way to connect the trainer with a model instead of trainer.fit(model) just for testing
                 # https://lightning.ai/forums/t/saving-a-lightningmodule-without-a-trainer/2217/2
@@ -183,20 +185,24 @@ class TestLoadingModel(BasicTestCase):
         from pytorch_lightning.callbacks import ModelCheckpoint
 
         with tempfile.TemporaryDirectory() as tmpdir_str:
-            model = HiFiGAN(
-                HiFiGANConfig.load_config_from_path(
-                    self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+            with silence_c_stderr():
+                model = HiFiGAN(
+                    HiFiGANConfig.load_config_from_path(
+                        self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+                    )
                 )
-            )
-            trainer = Trainer(
-                default_root_dir=tmpdir_str,
-                enable_progress_bar=False,
-                logger=False,
-                max_epochs=1,
-                limit_train_batches=1,
-                limit_val_batches=1,
-                callbacks=[ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)],
-            )
+            with silence_c_stderr():
+                trainer = Trainer(
+                    default_root_dir=tmpdir_str,
+                    enable_progress_bar=False,
+                    logger=False,
+                    max_epochs=1,
+                    limit_train_batches=1,
+                    limit_val_batches=1,
+                    callbacks=[
+                        ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
+                    ],
+                )
             trainer.strategy.connect(model)
             ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
             trainer.save_checkpoint(ckpt_fn)
@@ -208,7 +214,10 @@ class TestLoadingModel(BasicTestCase):
                     "Unable to load config.  Possible causes: is it really a FastSpeech2Config? or the correct version?"
                 ),
             ):
-                FastSpeech2.load_from_checkpoint(ckpt_fn)
+                with mute_logger(
+                    "everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model"
+                ):
+                    FastSpeech2.load_from_checkpoint(ckpt_fn)
 
     def test_model_is_not_a_vocoder(self):
         """
@@ -218,30 +227,34 @@ class TestLoadingModel(BasicTestCase):
         from pytorch_lightning.callbacks import ModelCheckpoint
 
         with tempfile.TemporaryDirectory() as tmpdir_str:
-            model = FastSpeech2(
-                FastSpeech2Config.load_config_from_path(
-                    self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
-                ),
-                stats=Stats(
-                    pitch=StatsInfo(
-                        min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+            with mute_logger("everyvoice.config.text_config"):
+                model = FastSpeech2(
+                    FastSpeech2Config.load_config_from_path(
+                        self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
                     ),
-                    energy=StatsInfo(
-                        min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                    stats=Stats(
+                        pitch=StatsInfo(
+                            min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+                        ),
+                        energy=StatsInfo(
+                            min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                        ),
                     ),
-                ),
-                lang2id={"foo": 0, "bar": 1},
-                speaker2id={"baz": 0, "qux": 1},
-            )
-            trainer = Trainer(
-                default_root_dir=tmpdir_str,
-                enable_progress_bar=False,
-                logger=False,
-                max_epochs=1,
-                limit_train_batches=1,
-                limit_val_batches=1,
-                callbacks=[ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)],
-            )
+                    lang2id={"foo": 0, "bar": 1},
+                    speaker2id={"baz": 0, "qux": 1},
+                )
+            with silence_c_stderr():
+                trainer = Trainer(
+                    default_root_dir=tmpdir_str,
+                    enable_progress_bar=False,
+                    logger=False,
+                    max_epochs=1,
+                    limit_train_batches=1,
+                    limit_val_batches=1,
+                    callbacks=[
+                        ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
+                    ],
+                )
             trainer.strategy.connect(model)
             ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
             trainer.save_checkpoint(ckpt_fn)
@@ -253,7 +266,10 @@ class TestLoadingModel(BasicTestCase):
                     "Unable to load config.  Possible causes: is it really a VocoderConfig? or the correct version?"
                 ),
             ):
-                HiFiGAN.load_from_checkpoint(ckpt_fn)
+                with mute_logger(
+                    "everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model"
+                ):
+                    HiFiGAN.load_from_checkpoint(ckpt_fn)
 
     def test_wrong_model_type(self):
         """
@@ -263,96 +279,25 @@ class TestLoadingModel(BasicTestCase):
         from pytorch_lightning.callbacks import ModelCheckpoint
 
         with tempfile.TemporaryDirectory() as tmpdir_str:
-            model = FastSpeech2(
-                FastSpeech2Config.load_config_from_path(
-                    self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
-                ),
-                stats=Stats(
-                    pitch=StatsInfo(
-                        min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
-                    ),
-                    energy=StatsInfo(
-                        min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
-                    ),
-                ),
-                lang2id={"foo": 0, "bar": 1},
-                speaker2id={"baz": 0, "qux": 1},
-            )
-            trainer = Trainer(
-                default_root_dir=tmpdir_str,
-                enable_progress_bar=False,
-                logger=False,
-                max_epochs=1,
-                limit_train_batches=1,
-                limit_val_batches=1,
-                callbacks=[ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)],
-            )
-            trainer.strategy.connect(model)
-            ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
-            trainer.save_checkpoint(ckpt_fn)
-            m = torch.load(ckpt_fn)
-            self.assertIn("model_info", m.keys())
-            m["model_info"]["name"] = "BAD_TYPE"
-            torch.save(m, ckpt_fn)
-            m = torch.load(ckpt_fn)
-            self.assertIn("model_info", m.keys())
-            self.assertEqual(m["model_info"]["name"], "BAD_TYPE")
-            # self.assertEqual(m["model_info"]["version"], "1.0")
-            with self.assertRaisesRegex(
-                TypeError,
-                r"Wrong model type \(BAD_TYPE\), we are expecting a 'FastSpeech2' model",
-            ):
-                FastSpeech2.load_from_checkpoint(ckpt_fn)
-
-    def test_missing_model_version(self):
-        """
-        Loading an old model that doesn't have a version.
-        """
-        from pytorch_lightning import Trainer
-        from pytorch_lightning.callbacks import ModelCheckpoint
-
-        tests = (
-            (
-                Aligner,
-                Aligner(
-                    DFAlignerConfig.load_config_from_path(
-                        self.config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
-                    )
-                ),
-            ),
-            (
-                FastSpeech2,
-                FastSpeech2(
-                    FastSpeech2Config.load_config_from_path(
-                        self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
-                    ),
-                    stats=Stats(
-                        pitch=StatsInfo(
-                            min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+            if True:
+                with mute_logger("everyvoice.config.text_config"):
+                    model = FastSpeech2(
+                        FastSpeech2Config.load_config_from_path(
+                            self.config_dir
+                            / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
                         ),
-                        energy=StatsInfo(
-                            min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                        stats=Stats(
+                            pitch=StatsInfo(
+                                min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+                            ),
+                            energy=StatsInfo(
+                                min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                            ),
                         ),
-                    ),
-                    lang2id={"foo": 0, "bar": 1},
-                    speaker2id={"baz": 0, "qux": 1},
-                ),
-            ),  # we should probably also test that the error about the variance adaptor is raised
-            (
-                HiFiGAN,
-                HiFiGAN(
-                    HiFiGANConfig.load_config_from_path(
-                        self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+                        lang2id={"foo": 0, "bar": 1},
+                        speaker2id={"baz": 0, "qux": 1},
                     )
-                ),
-            ),
-        )
-
-        CANARY_VERSION = "CANARY_VERSION"
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            for ModelType, model in tests:
-                with self.subTest(ModelType=ModelType):
-                    model._VERSION = CANARY_VERSION
+                with silence_c_stderr():
                     trainer = Trainer(
                         default_root_dir=tmpdir_str,
                         enable_progress_bar=False,
@@ -364,6 +309,90 @@ class TestLoadingModel(BasicTestCase):
                             ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
                         ],
                     )
+                trainer.strategy.connect(model)
+                ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
+                trainer.save_checkpoint(ckpt_fn)
+                m = torch.load(ckpt_fn)
+                self.assertIn("model_info", m.keys())
+                m["model_info"]["name"] = "BAD_TYPE"
+                torch.save(m, ckpt_fn)
+                m = torch.load(ckpt_fn)
+                self.assertIn("model_info", m.keys())
+                self.assertEqual(m["model_info"]["name"], "BAD_TYPE")
+                # self.assertEqual(m["model_info"]["version"], "1.0")
+                with self.assertRaisesRegex(
+                    TypeError,
+                    r"Wrong model type \(BAD_TYPE\), we are expecting a 'FastSpeech2' model",
+                ):
+                    with mute_logger("everyvoice.config.text_config"):
+                        FastSpeech2.load_from_checkpoint(ckpt_fn)
+
+    def test_missing_model_version(self):
+        """
+        Loading an old model that doesn't have a version.
+        """
+        from pytorch_lightning import Trainer
+        from pytorch_lightning.callbacks import ModelCheckpoint
+
+        with mute_logger("everyvoice.config.text_config"):
+            tests = (
+                (
+                    Aligner,
+                    Aligner(
+                        DFAlignerConfig.load_config_from_path(
+                            self.config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
+                        )
+                    ),
+                ),
+                (
+                    FastSpeech2,
+                    FastSpeech2(
+                        FastSpeech2Config.load_config_from_path(
+                            self.config_dir
+                            / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+                        ),
+                        stats=Stats(
+                            pitch=StatsInfo(
+                                min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+                            ),
+                            energy=StatsInfo(
+                                min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                            ),
+                        ),
+                        lang2id={"foo": 0, "bar": 1},
+                        speaker2id={"baz": 0, "qux": 1},
+                    ),
+                ),  # we should probably also test that the error about the variance adaptor is raised
+                (
+                    HiFiGAN,
+                    HiFiGAN(
+                        HiFiGANConfig.load_config_from_path(
+                            self.config_dir
+                            / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+                        )
+                    ),
+                ),
+            )
+
+        CANARY_VERSION = "CANARY_VERSION"
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            for ModelType, model in tests:
+                with self.subTest(ModelType=ModelType):
+                    model._VERSION = CANARY_VERSION
+                    with silence_c_stderr():
+                        trainer = Trainer(
+                            default_root_dir=tmpdir_str,
+                            enable_progress_bar=False,
+                            logger=False,
+                            max_epochs=1,
+                            limit_train_batches=1,
+                            limit_val_batches=1,
+                            callbacks=[
+                                ModelCheckpoint(
+                                    dirpath=tmpdir_str, every_n_train_steps=1
+                                )
+                            ],
+                        )
                     trainer.strategy.connect(model)
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
@@ -373,7 +402,8 @@ class TestLoadingModel(BasicTestCase):
                     self.assertEqual(m["model_info"]["version"], CANARY_VERSION)
                     del m["model_info"]["version"]
                     torch.save(m, ckpt_fn)
-                    model = ModelType.load_from_checkpoint(ckpt_fn)
+                    with mute_logger("everyvoice.config.text_config"):
+                        model = ModelType.load_from_checkpoint(ckpt_fn)
                     self.assertEqual(model._VERSION, "1.0")
 
     def test_newer_model_version(self):
@@ -383,59 +413,65 @@ class TestLoadingModel(BasicTestCase):
         from pytorch_lightning import Trainer
         from pytorch_lightning.callbacks import ModelCheckpoint
 
-        tests = (
-            (
-                Aligner,
-                Aligner(
-                    DFAlignerConfig.load_config_from_path(
-                        self.config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
-                    )
-                ),
-            ),
-            (
-                FastSpeech2,
-                FastSpeech2(
-                    FastSpeech2Config.load_config_from_path(
-                        self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+        with mute_logger("everyvoice.config.text_config"):
+            tests = (
+                (
+                    Aligner,
+                    Aligner(
+                        DFAlignerConfig.load_config_from_path(
+                            self.config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
+                        )
                     ),
-                    stats=Stats(
-                        pitch=StatsInfo(
-                            min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+                ),
+                (
+                    FastSpeech2,
+                    FastSpeech2(
+                        FastSpeech2Config.load_config_from_path(
+                            self.config_dir
+                            / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
                         ),
-                        energy=StatsInfo(
-                            min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                        stats=Stats(
+                            pitch=StatsInfo(
+                                min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+                            ),
+                            energy=StatsInfo(
+                                min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                            ),
                         ),
+                        lang2id={"foo": 0, "bar": 1},
+                        speaker2id={"baz": 0, "qux": 1},
                     ),
-                    lang2id={"foo": 0, "bar": 1},
-                    speaker2id={"baz": 0, "qux": 1},
+                ),  # we should probably also test that the error about the variance adaptor is raised
+                (
+                    HiFiGAN,
+                    HiFiGAN(
+                        HiFiGANConfig.load_config_from_path(
+                            self.config_dir
+                            / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+                        )
+                    ),
                 ),
-            ),  # we should probably also test that the error about the variance adaptor is raised
-            (
-                HiFiGAN,
-                HiFiGAN(
-                    HiFiGANConfig.load_config_from_path(
-                        self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-                    )
-                ),
-            ),
-        )
+            )
 
         NEWER_VERSION = "100.0"
         with tempfile.TemporaryDirectory() as tmpdir_str:
             for ModelType, model in tests:
                 with self.subTest(ModelType=ModelType):
                     model._VERSION = NEWER_VERSION
-                    trainer = Trainer(
-                        default_root_dir=tmpdir_str,
-                        enable_progress_bar=False,
-                        logger=False,
-                        max_epochs=1,
-                        limit_train_batches=1,
-                        limit_val_batches=1,
-                        callbacks=[
-                            ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
-                        ],
-                    )
+                    with silence_c_stderr():
+                        trainer = Trainer(
+                            default_root_dir=tmpdir_str,
+                            enable_progress_bar=False,
+                            logger=False,
+                            max_epochs=1,
+                            limit_train_batches=1,
+                            limit_val_batches=1,
+                            callbacks=[
+                                ModelCheckpoint(
+                                    dirpath=tmpdir_str, every_n_train_steps=1
+                                )
+                            ],
+                        )
                     trainer.strategy.connect(model)
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
@@ -447,7 +483,8 @@ class TestLoadingModel(BasicTestCase):
                         ValueError,
                         r"Your model was created with a newer version of EveryVoice, please update your software.",
                     ):
-                        ModelType.load_from_checkpoint(ckpt_fn)
+                        with mute_logger("everyvoice.config.text_config"):
+                            ModelType.load_from_checkpoint(ckpt_fn)
 
 
 class TestLoadingConfig(BasicTestCase):
@@ -469,13 +506,15 @@ class TestLoadingConfig(BasicTestCase):
 
         for ConfigType, filename in self.configs:
             with self.subTest(ConfigType=ConfigType):
-                arguments = ConfigType.load_config_from_path(
-                    self.config_dir / f"{filename}.yaml"
-                ).model_dump()
+                with silence_c_stderr():
+                    arguments = ConfigType.load_config_from_path(
+                        self.config_dir / f"{filename}.yaml"
+                    ).model_dump()
                 del arguments["VERSION"]
 
                 self.assertNotIn("VERSION", arguments)
-                c = ConfigType(**arguments)
+                with silence_c_stderr():
+                    c = ConfigType(**arguments)
                 self.assertEqual(c.VERSION, "1.0")
 
     def test_config_newer_version(self):
@@ -485,9 +524,10 @@ class TestLoadingConfig(BasicTestCase):
 
         for ConfigType, filename in self.configs:
             with self.subTest(ConfigType=ConfigType):
-                reference = ConfigType.load_config_from_path(
-                    self.config_dir / f"{filename}.yaml"
-                )
+                with silence_c_stderr():
+                    reference = ConfigType.load_config_from_path(
+                        self.config_dir / f"{filename}.yaml"
+                    )
                 NEWER_VERSION = "100.0"
                 reference.VERSION = NEWER_VERSION
 
