@@ -12,7 +12,7 @@ While there is no replacement for a speaker of an Indigenous language, there are
 
 The [National Research Council](https://nrc.canada.ca/en/research-development/research-collaboration/programs/canadian-indigenous-languages-technology-project) has partnered with the [Onkwawenna Kentyohkwa Kanyen’kéha immersion school](https://onkwawenna.info/), [W̱SÁNEĆ School Board](https://wsanecschoolboard.ca/), [University nuhelot’įne thaiyots’į nistameyimâkanak Blue Quills](https://www.bluequills.ca/), and the [University of Edinburgh](https://www.cstr.ed.ac.uk/) to research and develop state-of-the-art speech synthesis (text-to-speech) systems and techniques for Indigenous languages in Canada, with a focus on how to integrate text-to-speech technology into the classroom.
 
-The project is titled [Speech Generation for Indigenous Language Education](https://nrc.canada.ca/en/research-development/research-collaboration/programs/speech-generation-indigenous-language-education) (SGILE) and the EveryVoice TTS toolkit is one of the products of this collaboration. Detailed information about this project can be found in our [recent submission](assets/sgile_preprint.pdf) to Computer Speech & Language (Under Review).
+The project is titled [Speech Generation for Indigenous Language Education](https://nrc.canada.ca/en/research-development/research-collaboration/programs/speech-generation-indigenous-language-education) (SGILE) and the EveryVoice TTS toolkit is one of the products of this collaboration. Detailed information about this project can be found in our [recent article](https://doi.org/10.1016/j.csl.2024.101723) published in Computer Speech & Language.
 
 ### What is EveryVoice and this documentation about?
 
@@ -37,7 +37,7 @@ Our reasons for creating our own are multi-fold (some of the following features 
 - We use a custom, statically-typed configuration architecture between models written in [Pydantic](https://docs.pydantic.dev/) that allows for configuration validation and serialization/de-serialization to json and yaml. It also allows us to ensure the same configuration for text and audio processing is used between models.
 - We implement our models in [PyTorch Lightning](https://www.pytorchlightning.ai/)
 
-For a detailed comparison of selected features of EveryVoice and other toolkits please see Appendix B & C in our [recent paper submission](assets/sgile_preprint.pdf).
+For a detailed comparison of selected features of EveryVoice and other toolkits please see Appendix B & C in our [recent article](https://doi.org/10.1016/j.csl.2024.101723) published in Computer Speech & Language.
 
 !!! note
     These features do not necessarily mean that this is the right project for you. The other projects mentioned are of very high quality and might be a better fit for your project, particularly if you are lucky enough to have lots of data, or a language that is already supported.
