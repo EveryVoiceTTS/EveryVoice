@@ -7,7 +7,7 @@ from panphon import FeatureTable
 
 from everyvoice.config.text_config import TextConfig
 
-N_PHONOLOGICAL_FEATURES = 39
+N_PHONOLOGICAL_FEATURES = 46
 
 
 # TODO: support primary and secondary stress
@@ -16,6 +16,21 @@ class PhonologicalFeatureCalculator:
         self.config = text_config
         self.punctuation_hash = punctuation_hash
         self.feature_table = FeatureTable()
+
+    def mask_token(self):
+        return self.get_features(["[MASK]"])[0]
+
+    def pad_token(self):
+        return self.get_features(["[PAD]"])[0]
+
+    def cls_token(self):
+        return self.get_features(["[CLS]"])[0]
+
+    def sep_token(self):
+        return self.get_features(["[SEP]"])[0]
+
+    def unk_token(self):
+        return self.get_features(["[UNK]"])[0]
 
     def get_tone_features(self, text: List[str]) -> npt.NDArray[np.float32]:
         # TODO: sort out how to define encoding of tone features
@@ -107,6 +122,67 @@ class PhonologicalFeatureCalculator:
                 punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0])
         return np.array(punctuation_features, dtype=np.float32)
 
+    def get_stress_features(self, tokens: list[str]) -> npt.NDArray[np.float32]:
+        """Get stress features
+           Can be either primary ˈ or secondary stress ˌ
+
+        Args:
+            tokens (list[str]): a list of IPA and normalized punctuation tokens
+
+        Returns:
+            npt.NDArray[np.float32]: a two-dimensional one-hot encoding of primary and secondary stress
+
+        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>", "ellipsis": "<EPS>"}
+        >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
+        >>> pf.get_stress_features(['ˈ', 'ˌ' ])
+        array([[1., 0.],
+               [0., 1.]], dtype=float32)
+        """
+        stress_features = []
+        for char in tokens:
+            if char == "ˈ":
+                stress_features.append([1, 0])
+            elif char == "ˌ":
+                stress_features.append([0, 1])
+            else:
+                stress_features.append([0, 0])
+        return np.array(stress_features, dtype=np.float32)
+
+    def get_special_token_features(self, tokens: list[str]) -> npt.NDArray[np.float32]:
+        """Get special token features
+           Can be \x80 (PAD symbol), [UNK], [CLS], [SEP], or [MASK]
+
+        Args:
+            tokens (list[str]): a list of IPA and normalized punctuation tokens
+
+        Returns:
+            npt.NDArray[np.float32]: a five-dimensional one-hot encoding of special tokens
+
+        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>", "ellipsis": "<EPS>"}
+        >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
+        >>> pf.get_special_token_features(['\x80', '[UNK]', '[CLS]', '[SEP]', '[MASK]' ])
+        array([[1., 0., 0., 0., 0.],
+               [0., 1., 0., 0., 0.],
+               [0., 0., 1., 0., 0.],
+               [0., 0., 0., 1., 0.],
+               [0., 0., 0., 0., 1.]], dtype=float32)
+        """
+        special_token_features = []
+        for char in tokens:
+            if char in ["\x80", "[PAD]"]:
+                special_token_features.append([1, 0, 0, 0, 0])
+            elif char == "[MASK]":
+                special_token_features.append([0, 1, 0, 0, 0])
+            elif char == "[CLS]":
+                special_token_features.append([0, 0, 1, 0, 0])
+            elif char == "[SEP]":
+                special_token_features.append([0, 0, 0, 1, 0])
+            elif char == "[UNK]":
+                special_token_features.append([0, 0, 0, 0, 1])
+            else:
+                special_token_features.append([0, 0, 0, 0, 0])
+        return np.array(special_token_features, dtype=np.float32)
+
     def token_to_segmental_features(self, token: str) -> npt.NDArray[np.float32]:
         """Turn a token to a feature vector with panphon
 
@@ -163,13 +239,24 @@ class PhonologicalFeatureCalculator:
         if not tokens:
             return np.array([])
         punctuation_features = self.get_punctuation_features(tokens)
+        stress_features = self.get_stress_features(tokens)
+        special_token_features = self.get_special_token_features(tokens)
         tone_features = self.get_tone_features(tokens)
         seg_features = np.vstack([self.token_to_segmental_features(t) for t in tokens])
         assert (
-            len(punctuation_features) == len(tone_features) == len(seg_features)
-        ), "There should be the same number of segments among segmental, tone, and punctuation features"
+            len(punctuation_features)
+            == len(tone_features)
+            == len(seg_features)
+            == len(stress_features)
+        ), "There should be the same number of segments among segmental, tone, stress, punctuation features"
         return np.concatenate(
-            [seg_features, tone_features, punctuation_features],
+            [
+                seg_features,
+                tone_features,
+                stress_features,
+                punctuation_features,
+                special_token_features,
+            ],
             axis=1,
             dtype=np.float32,
         )

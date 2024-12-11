@@ -23,17 +23,45 @@ JOINER_SUBSTITUTION = "<SLASH>"
 
 
 class TextProcessor:
-    """Text is processed like:
+    """
+    A utility class for processing text through various stages including normalization,
+    tokenization, grapheme-to-phoneme (G2P) conversion, and phonological feature calculation.
 
-    InputText (str, either DatasetTextRepresentation.characters, DatasetTextRepresentation.ipa_phones, or DatasetTextRepresentation.arpabet)
-      -> to_replace operations
-        -> cleaner operations
-        = Cleaned Text (str)
-          -> Optional[grapheme-to-phoneme, outputs tokens] OR
-          -> tokenization
-          = Tokens (list[str])
-            -> Punctuation mapped to internal representation
-            = Tokens with internal punctuation representation (list[str])
+    This class supports the following:
+    - Input: Raw text, which can be in character, IPA phoneme, or ARPAbet formats.
+    - Preprocessing: Applies replacement and cleaning rules to normalize the text.
+    - Tokenization: Convert normalized text into tokens, handling punctuation via an
+      internal representation system.
+    - Optional G2P conversion: Map graphemes to phonemes to produce token sequences.
+    - Encoding: Convert tokens into integer IDs or phonological feature vectors.
+    - Decoding: Map sequences of integer IDs back to text or token representations.
+
+    Attributes:
+        config (TextConfig): Configuration settings, including replacement rules,
+            cleaners, and symbol definitions.
+        symbols (list[str]): A sorted list of all valid symbols, including punctuation
+            and internal representations.
+        missing_symbols (Counter[str]): Tracks occurrences of missing symbols in text.
+        phonological_feature_calculator (Optional[PhonologicalFeatureCalculator]):
+            Utility for generating phonological features.
+
+    Example Workflow:
+    1. Normalize text using `normalize_text`.
+    2. Tokenize the normalized text with `apply_tokenization`.
+    3. Optionally apply G2P conversion using `apply_g2p_and_tokenization`.
+    4. Encode tokens into integer IDs with `encode_text`.
+    5. Decode IDs back into text or tokens with `decode_tokens`.
+
+    Example Usage:
+    >>> tp = TextProcessor(TextConfig())
+    >>> normalized = tp.normalize_text('HELLO\u0301!')
+    'helló!'
+    >>> tokens = tp.apply_tokenization(normalized)
+    ['h', 'e', 'l', 'l', 'ó']
+    >>> encoded = tp.encode_text(normalized)
+    [19, 20, 21, 21, 22]
+    >>> decoded = tp.decode_tokens(encoded)
+    'h/e/l/l/ó'
     """
 
     def __init__(self, config: TextConfig):
