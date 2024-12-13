@@ -80,6 +80,7 @@ class TextProcessor:
             "big_breaks": "<BB>",
             "small_breaks": "<SB>",
             "ellipsis": "<EPS>",
+            "parentheses": "<PAREN>",
         }
         # Create a hash table from punctuation to the internal ID
         self.punctuation_to_internal_id = {

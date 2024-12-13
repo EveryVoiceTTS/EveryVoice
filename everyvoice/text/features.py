@@ -1,21 +1,43 @@
-from typing import List
-from unicodedata import normalize
-
 import numpy as np
 import numpy.typing as npt
 from panphon import FeatureTable
 
 from everyvoice.config.text_config import TextConfig
 
-N_PHONOLOGICAL_FEATURES = 46
+N_PHONOLOGICAL_FEATURES = 40
 
 
-# TODO: support primary and secondary stress
 class PhonologicalFeatureCalculator:
     def __init__(self, text_config: TextConfig, punctuation_hash: dict):
         self.config = text_config
         self.punctuation_hash = punctuation_hash
         self.feature_table = FeatureTable()
+
+    def normalize_features(
+        self, raw_phonological_features: npt.NDArray[np.float32]
+    ) -> npt.NDArray[np.float32]:
+        """Applies a (x + 1) / 2 scaling to all phonological features to transform from between -1 and 1 to between 0 and 1.
+
+        Args:
+            raw_phonological_features (npt.NDArray[np.float32]): phonological features valued between -1 and 1
+
+        Returns:
+            npt.NDArray[np.float32]: phonological features valued between 0 and 1.
+        """
+        return (raw_phonological_features + 1) / 2
+
+    def denormalize_features(
+        self, normalized_phonological_features: npt.NDArray[np.float32]
+    ) -> npt.NDArray[np.float32]:
+        """Applies a (x * 2) - 1 scaling to all phonological features to transform from between 0 and 1 to between -1 and 1.
+
+        Args:
+            raw_phonological_features (npt.NDArray[np.float32]): phonological features valued between 0 and 1
+
+        Returns:
+            npt.NDArray[np.float32]: phonological features valued between -1 and 1.
+        """
+        return (normalized_phonological_features * 2) - 1
 
     def mask_token(self):
         return self.get_features(["[MASK]"])[0]
@@ -32,54 +54,6 @@ class PhonologicalFeatureCalculator:
     def unk_token(self):
         return self.get_features(["[UNK]"])[0]
 
-    def get_tone_features(self, text: List[str]) -> npt.NDArray[np.float32]:
-        # TODO: sort out how to define encoding of tone features
-        """Return Wang (1967) style tone features.
-            - Contour
-            - High
-            - Central
-            - Mid
-            - Rising
-            - Falling
-            - Convex
-
-        *If your language uses phonemic tone you MUST amend this function to match your language
-        Panphon does not use these features.*
-
-        Args:
-            text (list(str)): segmented phones
-        """
-        tone_features = []
-        high_tone_chars = [
-            normalize("NFC", x)
-            for x in [
-                "áː",
-                "á",
-                "ʌ̃́ː",
-                "ʌ̃́",
-                "éː",
-                "é",
-                "íː",
-                "í",
-                "ṹː",
-                "ṹ",
-                "óː",
-                "ó",
-            ]
-        ]
-        low_tone_chars = [
-            normalize("NFC", x) for x in ["òː", "ũ̀ː", "ìː", "èː", "ʌ̃̀ː", "àː"]
-        ]
-        for char in text:
-            char = normalize("NFC", char)
-            if char in high_tone_chars:
-                tone_features.append([-1, 1, -1, -1, -1, -1, -1])
-            elif char in low_tone_chars:
-                tone_features.append([-1, -1, -1, -1, -1, -1, -1])
-            else:
-                tone_features.append([0, 0, 0, 0, 0, 0, 0])
-        return np.array(tone_features, dtype=np.float32)
-
     def get_punctuation_features(self, tokens: list[str]) -> npt.NDArray[np.float32]:
         """Get Punctuation features.
            One-hot encodes the allowable types of punctuation and returns zeros elsewhere
@@ -90,36 +64,38 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a seven-dimensional one-hot encoding of punctuation, white space and silence
 
-        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>", "ellipsis": "<EPS>"}
+        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>", "ellipsis": "<EPS>", "parentheses": "<PAREN>"}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
         >>> pf.get_punctuation_features(['h', 'ʌ', 'l', 'o', 'ʊ', '<EXCL>'])
-        array([[0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 1., 0.]], dtype=float32)
+        array([[0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 1., 0.]], dtype=float32)
         """
         punctuation_features = []
         for char in tokens:
             if char == " ":
-                punctuation_features.append([1, 0, 0, 0, 0, 0, 0, 0])
+                punctuation_features.append([1, 0, 0, 0, 0, 0, 0, 0, 0])
             elif char == self.punctuation_hash["question_symbols"]:
-                punctuation_features.append([0, 1, 0, 0, 0, 0, 0, 0])
+                punctuation_features.append([0, 1, 0, 0, 0, 0, 0, 0, 0])
             elif char == self.punctuation_hash["big_breaks"]:
-                punctuation_features.append([0, 0, 1, 0, 0, 0, 0, 0])
+                punctuation_features.append([0, 0, 1, 0, 0, 0, 0, 0, 0])
             elif char == self.punctuation_hash["small_breaks"]:
-                punctuation_features.append([0, 0, 0, 1, 0, 0, 0, 0])
+                punctuation_features.append([0, 0, 0, 1, 0, 0, 0, 0, 0])
             elif char == self.punctuation_hash["quotemarks"]:
-                punctuation_features.append([0, 0, 0, 0, 1, 0, 0, 0])
+                punctuation_features.append([0, 0, 0, 0, 1, 0, 0, 0, 0])
+            elif char == self.punctuation_hash["parentheses"]:
+                punctuation_features.append([0, 0, 0, 0, 0, 1, 0, 0, 0])
             elif char == self.punctuation_hash["ellipsis"]:
-                punctuation_features.append([0, 0, 0, 0, 0, 1, 0, 0])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 1, 0, 0])
             elif char == self.punctuation_hash["exclamations"]:
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 1, 0])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 1, 0])
             elif char in self.config.symbols.silence:
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 1])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0, 1])
             else:
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
         return np.array(punctuation_features, dtype=np.float32)
 
     def get_stress_features(self, tokens: list[str]) -> npt.NDArray[np.float32]:
@@ -160,7 +136,7 @@ class PhonologicalFeatureCalculator:
 
         >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>", "ellipsis": "<EPS>"}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
-        >>> pf.get_special_token_features(['\x80', '[UNK]', '[CLS]', '[SEP]', '[MASK]' ])
+        >>> pf.get_special_token_features(['\x80', '[MASK]', '[CLS]', '[SEP]', '[UNK]' ])
         array([[1., 0., 0., 0., 0.],
                [0., 1., 0., 0., 0.],
                [0., 0., 1., 0., 0.],
@@ -241,18 +217,13 @@ class PhonologicalFeatureCalculator:
         punctuation_features = self.get_punctuation_features(tokens)
         stress_features = self.get_stress_features(tokens)
         special_token_features = self.get_special_token_features(tokens)
-        tone_features = self.get_tone_features(tokens)
         seg_features = np.vstack([self.token_to_segmental_features(t) for t in tokens])
         assert (
-            len(punctuation_features)
-            == len(tone_features)
-            == len(seg_features)
-            == len(stress_features)
+            len(punctuation_features) == len(seg_features) == len(stress_features)
         ), "There should be the same number of segments among segmental, tone, stress, punctuation features"
         return np.concatenate(
             [
                 seg_features,
-                tone_features,
                 stress_features,
                 punctuation_features,
                 special_token_features,
