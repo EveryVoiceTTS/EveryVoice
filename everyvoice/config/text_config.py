@@ -22,6 +22,10 @@ class Punctuation(BaseModel):
         ['"', "'", "“", "”", "«", "»"],
         description="Quotemark punctuation symbols used in your datasets. Replaces these symbols with <QUOTE> internally.",
     )
+    parentheses: list[str] = Field(
+        ["(", ")", "[", "]", "{", "}"],
+        description="Punctuation symbols indicating parentheses, brackets, or braces. Replaces these symbols with <PAREN> internally.",
+    )
     big_breaks: list[str] = Field(
         [".", ":", ";"],
         description="Punctuation symbols indicating a 'big break' used in your datasets. Replaces these symbols with <BB> internally.",
@@ -44,6 +48,7 @@ class Punctuation(BaseModel):
             | set(self.quotemarks)
             | set(self.big_breaks)
             | set(self.small_breaks)
+            | set(self.parentheses)
             | set(self.ellipsis)
         )
 
