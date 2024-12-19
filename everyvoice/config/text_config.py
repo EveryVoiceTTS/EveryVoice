@@ -26,17 +26,29 @@ class Punctuation(BaseModel):
         ["(", ")", "[", "]", "{", "}"],
         description="Punctuation symbols indicating parentheses, brackets, or braces. Replaces these symbols with <PAREN> internally.",
     )
-    big_breaks: list[str] = Field(
-        [".", ":", ";"],
-        description="Punctuation symbols indicating a 'big break' used in your datasets. Replaces these symbols with <BB> internally.",
+    periods: list[str] = Field(
+        ["."],
+        description="Punctuation symbols indicating a 'period' used in your datasets. Replaces these symbols with <PERIOD> internally.",
     )
-    small_breaks: list[str] = Field(
-        [",", "-", "—"],
-        description="Punctuation symbols indicating a 'small break' used in your datasets. Replaces these symbols with <SB> internally.",
+    colons: list[str] = Field(
+        [":"],
+        description="Punctuation symbols indicating a 'colon' used in your datasets. Replaces these symbols with <COLON> internally.",
     )
-    ellipsis: list[str] = Field(
+    semi_colons: list[str] = Field(
+        [";"],
+        description="Punctuation symbols indicating a 'semi-colon' used in your datasets. Replaces these symbols with <SEMICOL> internally.",
+    )
+    hyphens: list[str] = Field(
+        ["-", "—", "*"],
+        description="Punctuation symbols indicating a 'hyphen' used in your datasets. * is a hyphen by default since unidecode decodes middle-dot punctuation as an asterisk. Replaces these symbols with <HYPHEN> internally.",
+    )
+    commas: list[str] = Field(
+        [","],
+        description="Punctuation symbols indicating a 'comma' used in your datasets. Replaces these symbols with <COMMA> internally.",
+    )
+    ellipses: list[str] = Field(
         ["…"],
-        description="Punctuation symbols indicating an ellipsis used in your datasets. Replaces these symbols with <EPS> internally.",
+        description="Punctuation symbols indicating an ellipses used in your datasets. Replaces these symbols with <EPS> internally.",
     )
 
     @property
@@ -46,10 +58,13 @@ class Punctuation(BaseModel):
             set(self.exclamations)
             | set(self.question_symbols)
             | set(self.quotemarks)
-            | set(self.big_breaks)
-            | set(self.small_breaks)
+            | set(self.periods)
+            | set(self.colons)
+            | set(self.semi_colons)
+            | set(self.hyphens)
+            | set(self.commas)
             | set(self.parentheses)
-            | set(self.ellipsis)
+            | set(self.ellipses)
         )
 
 

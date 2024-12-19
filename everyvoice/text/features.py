@@ -4,7 +4,7 @@ from panphon import FeatureTable
 
 from everyvoice.config.text_config import TextConfig
 
-N_PHONOLOGICAL_FEATURES = 40
+N_PHONOLOGICAL_FEATURES = 43
 
 
 class PhonologicalFeatureCalculator:
@@ -64,38 +64,44 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a seven-dimensional one-hot encoding of punctuation, white space and silence
 
-        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>", "ellipsis": "<EPS>", "parentheses": "<PAREN>"}
+        >>> punc_hash = punc_hash = {"exclamations": "<EXCL>", "ellipses": "<EPS>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "periods": "<PERIOD>", "commas": "<COMMA>", "colons": "<COLON>", "semi_colons": "<SEMICOL>", "hyphens": "<HYPHEN>", "parentheses": "<PAREN>"}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
         >>> pf.get_punctuation_features(['h', 'ʌ', 'l', 'o', 'ʊ', '<EXCL>'])
-        array([[0., 0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 0., 0., 0.],
-               [0., 0., 0., 0., 0., 0., 0., 1., 0.]], dtype=float32)
+        array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0.]], dtype=float32)
         """
         punctuation_features = []
         for char in tokens:
             if char == " ":
-                punctuation_features.append([1, 0, 0, 0, 0, 0, 0, 0, 0])
+                punctuation_features.append([1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
             elif char == self.punctuation_hash["question_symbols"]:
-                punctuation_features.append([0, 1, 0, 0, 0, 0, 0, 0, 0])
-            elif char == self.punctuation_hash["big_breaks"]:
-                punctuation_features.append([0, 0, 1, 0, 0, 0, 0, 0, 0])
-            elif char == self.punctuation_hash["small_breaks"]:
-                punctuation_features.append([0, 0, 0, 1, 0, 0, 0, 0, 0])
+                punctuation_features.append([0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            elif char == self.punctuation_hash["periods"]:
+                punctuation_features.append([0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+            elif char == self.punctuation_hash["colons"]:
+                punctuation_features.append([0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0])
+            elif char == self.punctuation_hash["semi_colons"]:
+                punctuation_features.append([0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0])
+            elif char == self.punctuation_hash["commas"]:
+                punctuation_features.append([0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0])
+            elif char == self.punctuation_hash["hyphens"]:
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0])
             elif char == self.punctuation_hash["quotemarks"]:
-                punctuation_features.append([0, 0, 0, 0, 1, 0, 0, 0, 0])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0])
             elif char == self.punctuation_hash["parentheses"]:
-                punctuation_features.append([0, 0, 0, 0, 0, 1, 0, 0, 0])
-            elif char == self.punctuation_hash["ellipsis"]:
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 1, 0, 0])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0])
+            elif char == self.punctuation_hash["ellipses"]:
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0])
             elif char == self.punctuation_hash["exclamations"]:
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 1, 0])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0])
             elif char in self.config.symbols.silence:
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0, 1])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1])
             else:
-                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0, 0])
+                punctuation_features.append([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
         return np.array(punctuation_features, dtype=np.float32)
 
     def get_stress_features(self, tokens: list[str]) -> npt.NDArray[np.float32]:
@@ -108,7 +114,7 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a two-dimensional one-hot encoding of primary and secondary stress
 
-        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>", "ellipsis": "<EPS>"}
+        >>> punc_hash = punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "periods": "<PERIOD>", "commas": "<COMMA>", "colons": "<COLON>", "semi_colons": "<SEMICOL>", "hyphens": "<HYPHEN>", "parentheses": "<PAREN>"}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
         >>> pf.get_stress_features(['ˈ', 'ˌ' ])
         array([[1., 0.],
@@ -134,7 +140,7 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a five-dimensional one-hot encoding of special tokens
 
-        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>", "ellipsis": "<EPS>"}
+        >>> punc_hash = punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "periods": "<PERIOD>", "commas": "<COMMA>", "colons": "<COLON>", "semi_colons": "<SEMICOL>", "hyphens": "<HYPHEN>", "parentheses": "<PAREN>"}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
         >>> pf.get_special_token_features(['\x80', '[MASK]', '[CLS]', '[SEP]', '[UNK]' ])
         array([[1., 0., 0., 0., 0.],
@@ -168,7 +174,7 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a list of place and manner of articulation feature values
 
-        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "big_breaks": "<BB>", "small_breaks": "<SB>",}
+        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "periods": "<PERIOD>", "commas": "<COMMA>", "colons": "<COLON>", "semi_colons": "<SEMICOL>", "hyphens": "<HYPHEN>", "parentheses": "<PAREN>"}
         >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
         >>> pf.token_to_segmental_features('\x80') # pad symbol is all zeros
         array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,

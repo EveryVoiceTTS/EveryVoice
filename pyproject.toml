@@ -19,7 +19,7 @@ maintainers = [
   { name = "Samuel Larkin", email = "Samuel.Larkin@nrc-cnrc.gc.ca" },
 ]
 readme = "README.md"
-requires-python = ">=3.10, <3.12"
+requires-python = ">=3.10, <3.13"
 keywords = ["TTS", "CLI"]
 classifiers = [
   "Intended Audience :: Developers",
@@ -58,7 +58,7 @@ dependencies = [
   "nltk==3.9.1",
   "numpy<2",                       # torch < 2.4.1 requires numpy < 2 but fails to declare it
   "pandas~=2.0",
-  "panphon==0.20.0",
+  "panphon>=0.20.0",
   "protobuf~=4.25",                # https://github.com/EveryVoiceTTS/EveryVoice/issues/387
   "pycountry==22.3.5",
   "pydantic[email]>=2.4.2,<2.8.0",
