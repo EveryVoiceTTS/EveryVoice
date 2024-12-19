@@ -7,6 +7,7 @@ from unicodedata import normalize
 
 import gradio as gr
 import torch
+from gradio.processing_utils import convert_to_16_bit_wav
 from loguru import logger
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
@@ -98,7 +99,8 @@ def synthesize_audio(
     # move to device because lightning accumulates predictions on cpu
     predictions[0][output_key] = predictions[0][output_key].to(device)
     wav, sr = wav_writer.synthesize_audio(predictions[0])
-    return sr, wav[0]
+
+    return sr, convert_to_16_bit_wav(wav.numpy())
 
 
 def require_ffmpeg():
