@@ -26,14 +26,9 @@ jobs:
       - name: Install dependencies and package
         run: |
           CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -e .[dev]
-          pip install coverage
+          pip install -e .[dev] coverage
       - run: pip freeze
       - run: pip list
-      - name: Check licenses
-        run: |
-          pip install pip-licenses
-          if pip-licenses | grep -E -v 'Artistic License|LGPL|Public Domain' | grep GNU; then echo 'Please avoid introducing *GPL dependencies'; false; fi
       - uses: tj-actions/changed-files@v45
         id: file_changes
         with:
@@ -86,3 +81,9 @@ jobs:
         with:
           preformatted: true
           message-path: import-message.txt
+      - name: Check licenses
+        run: |
+          pip install licensecheck --no-warn-conflicts
+          # Make sure we don't have or introduce dependencies with incompatible licenses.
+          # Ignore packages where auto analysis does not work but manual analysis says OK.
+          licensecheck --zero --ignore-packages text-unidecode pympi-ling pyworld pysdtw audioread
