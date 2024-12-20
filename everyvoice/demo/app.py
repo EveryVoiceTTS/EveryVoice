@@ -7,7 +7,7 @@ from unicodedata import normalize
 
 import gradio as gr
 import torch
-from gradio.processing_utils import convert_to_16_bit_wav
+import torchaudio
 from loguru import logger
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
@@ -18,11 +18,23 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import 
     FastSpeech2,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_writing_callback import (
+    PredictionWritingOfflineRASCallback,
+    PredictionWritingReadAlongCallback,
+    PredictionWritingSpecCallback,
+    PredictionWritingTextGridCallback,
     PredictionWritingWavCallback,
+    get_tokens_from_duration_and_labels,
+)
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
+    SynthesizeOutputFormats,
+)
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.utils import (
+    truncate_basename,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     load_hifigan_from_checkpoint,
 )
+from everyvoice.utils import slugify
 from everyvoice.utils.heavy import get_device_from_accelerator
 
 os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
@@ -33,6 +45,7 @@ def synthesize_audio(
     duration_control,
     language,
     speaker,
+    output_format,
     text_to_spec_model,
     vocoder_model,
     vocoder_config,
@@ -47,6 +60,7 @@ def synthesize_audio(
             "Text for synthesis was not provided. Please type the text you want to be synthesized into the textfield."
         )
     norm_text = normalize_text(text)
+    basename = truncate_basename(slugify(text))
     if allowlist and norm_text not in allowlist:
         raise gr.Error(
             f"Oops, the word {text} is not allowed to be synthesized by this model. Please contact the model owner."
@@ -62,6 +76,8 @@ def synthesize_audio(
         raise gr.Error("Language is not selected. Please select a language.")
     if speaker is None:
         raise gr.Error("Speaker is not selected. Please select a speaker.")
+    if output_format is None:
+        raise gr.Error("Speaker is not selected. Please select an output format.")
     config, device, predictions = synthesize_helper(
         model=text_to_spec_model,
         vocoder_model=vocoder_model,
@@ -71,9 +87,9 @@ def synthesize_audio(
         accelerator=accelerator,
         devices="1",
         device=device,
-        global_step=1,
-        vocoder_global_step=1,  # dummy value since the vocoder step is not used
-        output_type=[],
+        global_step=text_to_spec_model.config.training.max_steps,
+        vocoder_global_step=vocoder_model.config.training.max_steps,
+        output_type=[output_format],
         text_representation=TargetTrainingTextRepresentationLevel.characters,
         output_dir=output_dir,
         speaker=speaker,
@@ -91,16 +107,78 @@ def synthesize_audio(
         config=config,
         output_key=output_key,
         device=device,
-        global_step=1,
-        vocoder_global_step=1,  # dummy value since the vocoder step is not used
+        global_step=text_to_spec_model.config.training.max_steps,
+        vocoder_global_step=vocoder_model.config.training.max_steps,
         vocoder_model=vocoder_model,
         vocoder_config=vocoder_config,
     )
     # move to device because lightning accumulates predictions on cpu
     predictions[0][output_key] = predictions[0][output_key].to(device)
     wav, sr = wav_writer.synthesize_audio(predictions[0])
+    torchaudio.save(
+        wav_writer.get_filename(basename, speaker, language),
+        # the vocoder output includes padding so we have to remove that
+        wav[0],
+        sr,
+        format="wav",
+        encoding="PCM_S",
+        bits_per_sample=16,
+    )
+    wav_output = wav_writer.get_filename(basename, speaker, language)
+    file_writer = None
+    file_output = None
+    if output_format == SynthesizeOutputFormats.readalong_html.name:
+        file_writer = PredictionWritingOfflineRASCallback(
+            config=config,
+            global_step=text_to_spec_model.config.training.max_steps,
+            output_dir=output_dir,
+            output_key=output_key,
+            wav_callback=wav_writer,
+        )
 
-    return sr, convert_to_16_bit_wav(wav.numpy())
+    if output_format == SynthesizeOutputFormats.readalong_xml.name:
+        file_writer = PredictionWritingReadAlongCallback(
+            config=config,
+            global_step=text_to_spec_model.config.training.max_steps,
+            output_dir=output_dir,
+            output_key=output_key,
+        )
+
+    if output_format == SynthesizeOutputFormats.spec.name:
+        file_writer = PredictionWritingSpecCallback(
+            config=config,
+            global_step=text_to_spec_model.config.training.max_steps,
+            output_dir=output_dir,
+            output_key=output_key,
+        )
+
+    if output_format == SynthesizeOutputFormats.textgrid.name:
+        file_writer = PredictionWritingTextGridCallback(
+            config=config,
+            global_step=text_to_spec_model.config.training.max_steps,
+            output_dir=output_dir,
+            output_key=output_key,
+        )
+    if file_writer is not None:
+        max_seconds, phones, words = get_tokens_from_duration_and_labels(
+            predictions[0]["duration_prediction"][0],
+            predictions[0]["text_input"][0],
+            text,
+            text_to_spec_model.text_processor,
+            text_to_spec_model.config,
+        )
+
+        file_writer.save_aligned_text_to_file(
+            basename=basename,
+            speaker=speaker,
+            language=language,
+            max_seconds=max_seconds,
+            phones=phones,
+            words=words,
+        )
+        file_output = file_writer.get_filename(basename, speaker, language)
+
+    return wav_output, file_output
 
 
 def require_ffmpeg():
@@ -162,6 +240,7 @@ def create_demo_app(
     spec_to_wav_model_path,
     languages,
     speakers,
+    outputs,
     output_dir,
     accelerator,
     allowlist: list[str] = [],
@@ -193,8 +272,10 @@ def create_demo_app(
     )
     model_languages = list(model.lang2id.keys())
     model_speakers = list(model.speaker2id.keys())
+    possible_outputs = [x.name for x in SynthesizeOutputFormats]
     lang_list = []
     speak_list = []
+    output_list = []
     if languages == ["all"]:
         lang_list = model_languages
     else:
@@ -215,6 +296,16 @@ def create_demo_app(
                 print(
                     f"Attention: The model have not been trained for speech synthesis with '{speaker}' speaker. The '{speaker}' speaker option will not be available for selection."
                 )
+    if outputs == ["all"]:
+        output_list = possible_outputs
+    else:
+        for output in outputs:
+            if output in possible_outputs:
+                output_list.append(output)
+            else:
+                print(
+                    f"Attention: This model is not able to produce '{output}' as an output. The '{output}' option will not be available for selection. Please choose from the following possible outputs: {', '.join(possible_outputs)}"
+                )
     if lang_list == []:
         raise ValueError(
             f"Language option has been activated, but valid languages have not been provided. The model has been trained in {model_languages} languages. Please select either 'all' or at least some of them."
@@ -227,6 +318,8 @@ def create_demo_app(
     interactive_lang = len(lang_list) > 1
     default_speak = speak_list[0]
     interactive_speak = len(speak_list) > 1
+    default_output = output_list[0]
+    interactive_output = len(output_list) > 1
     with gr.Blocks() as demo:
         gr.Markdown(
             """
@@ -255,12 +348,20 @@ def create_demo_app(
                         interactive=interactive_speak,
                         label="Speaker",
                     )
+                with gr.Row():
+                    output_format = gr.Dropdown(
+                        choices=output_list,
+                        value=default_output,
+                        interactive=interactive_output,
+                        label="Output Format",
+                    )
                 btn = gr.Button("Synthesize")
             with gr.Column():
-                out_audio = gr.Audio(format="mp3")
+                out_audio = gr.Audio(format="wav")
+                out_file = gr.File(label="File Output")
         btn.click(
             synthesize_audio_preset,
-            inputs=[inp_text, inp_slider, inp_lang, inp_speak],
-            outputs=[out_audio],
+            inputs=[inp_text, inp_slider, inp_lang, inp_speak, output_format],
+            outputs=[out_audio, out_file],
         )
     return demo
