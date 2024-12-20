@@ -29,10 +29,10 @@ from everyvoice.tests.stubs import (
     patch_menu_prompt,
     patch_questionary,
 )
-from everyvoice.wizard import State, Step
 from everyvoice.wizard import StepNames as SN
-from everyvoice.wizard import Tour, basic, dataset, prompts, utils
+from everyvoice.wizard import basic, dataset, prompts, utils
 from everyvoice.wizard.main_tour import get_main_wizard_tour
+from everyvoice.wizard.tour import State, Step, Tour
 
 CONTACT_INFO_STATE = State()
 CONTACT_INFO_STATE[SN.contact_name_step.value] = "Test Name"

@@ -1,4 +1,4 @@
-from everyvoice.wizard import StepNames, Tour
+from everyvoice.wizard import StepNames
 from everyvoice.wizard.basic import (
     ContactEmailStep,
     ContactNameStep,
@@ -7,6 +7,7 @@ from everyvoice.wizard.basic import (
     OutputPathStep,
 )
 from everyvoice.wizard.dataset import get_dataset_steps
+from everyvoice.wizard.tour import Tour
 
 
 def get_main_wizard_tour(trace: bool = False, debug_state: bool = False) -> Tour:
