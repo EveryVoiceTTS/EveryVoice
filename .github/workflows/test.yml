@@ -89,6 +89,10 @@ jobs:
           # Ignore nvidia-*-cu12 packages used by the GPU back-end: OTHER/PROPRIETARY LICENSE
           licensecheck --zero \
               --ignore-packages text-unidecode pympi-ling pyworld pysdtw audioread \
-              --ignore-licenses OTHER/PROPRIETARY
+              --ignore-licenses OTHER/PROPRIETARY \
+          || echo "Package(s) listed with an X above is/are potentially a problem."
+
           # Only nvidia's and aiohappyeyeballs's proprietary licenses are OK.
-          ! licensecheck --format csv | grep -v -E 'nvidia-|aiohappyeyeballs' | grep PROPRIETARY
+          echo ""
+          ! licensecheck --format csv 2> /dev/null | grep -v -E 'nvidia-|aiohappyeyeballs' | grep PROPRIETARY \
+          || echo "The package(s) listed just above this line is/are potentially a problem."
