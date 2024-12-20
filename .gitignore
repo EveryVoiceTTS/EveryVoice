@@ -19,3 +19,5 @@ everyvoice/tests/data/lj/preprocessed/*
 site/
 *env*/
 !everyvoice/tests/data/test.ckpt
+everyvoice/tests/EV-regress.[eo]*
+everyvoice/tests/regress-[0-9]*/

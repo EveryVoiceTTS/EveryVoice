@@ -1,0 +1,52 @@
+- - EveryVoice Wizard
+  - 0.2.0a1
+- - Root
+  - null
+- - Name Step
+  - regress
+- - Contact Name Step
+  - EveryVoice Regressor
+- - Contact Email Step
+  - ev@nrc.ca
+- - Output Path Step
+  - .
+- - Filelist Step
+  - metadata.csv
+- - Dataset Permission Step
+  - Yes, I do have permission to use this data.
+- - Filelist Format Step
+  - psv
+- - Filelist Has Header Line Step
+  - 'no'
+- - Basename Header Step
+  - 0
+- - Text Header Step
+  - 1
+- - Filelist Text Representation Step
+  - characters
+- - Text Processing Step
+  - - 0
+    - 1
+- - Data Has Speaker Step
+  - 'no'
+- - Know Speaker Step
+  - 'no'
+- - Data Has Language Step
+  - 'no'
+- - Select Language Step
+  - '[eng]: English'
+- - Wavs Dir Step
+  - wavs
+- - Validate Wavs Step
+  - OK
+- - Symbol-Set Step
+  - true
+- - SoX Effects Step
+  - - 0
+    - 1
+- - Dataset Name Step
+  - lj2k
+- - More Datasets Step
+  - 'no'
+- - Config Format Step
+  - 'yaml'
