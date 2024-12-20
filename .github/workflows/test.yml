@@ -86,4 +86,10 @@ jobs:
           pip install licensecheck --no-warn-conflicts
           # Make sure we don't have or introduce dependencies with incompatible licenses.
           # Ignore packages where auto analysis does not work but manual analysis says OK.
-          licensecheck --zero --ignore-packages text-unidecode pympi-ling pyworld pysdtw audioread
+          # Ignore nvidia-*-cu12 packages used by the GPU back-end: OTHER/PROPRIETARY LICENSE
+          licensecheck --zero \
+              --ignore-packages text-unidecode pympi-ling pyworld pysdtw audioread \
+              --ignore-licenses OTHER/PROPRIETARY  \
+          | tee licensecheck.txt
+          # Only nvidia's and aiohappyeyeballs's proprietary licenses are OK.
+          ! grep -v -E 'nvidia-|aiohapyeyeballs' licensecheck.txt | grep PROPRIETARY
