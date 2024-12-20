@@ -20,6 +20,9 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import 
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_writing_callback import (
     PredictionWritingWavCallback,
 )
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
+    SynthesizeOutputFormats,
+)
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     load_hifigan_from_checkpoint,
 )
@@ -73,7 +76,7 @@ def synthesize_audio(
         device=device,
         global_step=1,
         vocoder_global_step=1,  # dummy value since the vocoder step is not used
-        output_type=[],
+        output_type=[SynthesizeOutputFormats.wav],
         text_representation=TargetTrainingTextRepresentationLevel.characters,
         output_dir=output_dir,
         speaker=speaker,
