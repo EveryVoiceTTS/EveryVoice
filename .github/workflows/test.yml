@@ -92,4 +92,4 @@ jobs:
               --ignore-licenses OTHER/PROPRIETARY  \
           | tee licensecheck.txt
           # Only nvidia's and aiohappyeyeballs's proprietary licenses are OK.
-          ! grep -v -E 'nvidia-|aiohapyeyeballs' licensecheck.txt | grep PROPRIETARY
+          ! grep -v -E 'nvidia-|aiohappyeyeballs' licensecheck.txt | grep PROPRIETARY
