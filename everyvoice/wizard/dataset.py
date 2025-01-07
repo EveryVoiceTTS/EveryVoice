@@ -15,11 +15,12 @@ from tqdm import tqdm
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.text.utils import guess_graphemes_in_text, guess_ipa_phones_in_text
 from everyvoice.utils import lower, nfc_normalize, read_festival, slugify
-from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, Step, StepNames, Tour
+from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, StepNames
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
 )
+from everyvoice.wizard.tour import Step, Tour
 from everyvoice.wizard.utils import (
     apply_automatic_text_conversions,
     get_iso_code,

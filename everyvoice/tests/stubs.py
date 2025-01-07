@@ -10,7 +10,7 @@ from typing import Any, Generator, Sequence, Union
 from loguru import logger
 
 from everyvoice import wizard
-from everyvoice.wizard import basic, dataset, prompts
+from everyvoice.wizard import basic, dataset, prompts, tour
 
 
 class monkeypatch:
@@ -315,7 +315,7 @@ class patch_questionary:
         patch_name = "questionary"
         self.monkeys = [
             monkeypatch(module_to_patch, patch_name, stub)
-            for module_to_patch in [wizard, basic, dataset]
+            for module_to_patch in [wizard, basic, dataset, tour]
         ]
         return [monkey.__enter__() for monkey in self.monkeys]
 

@@ -30,7 +30,6 @@ from everyvoice.wizard import (
     TEXT_CONFIG_FILENAME_PREFIX,
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
     TEXT_TO_WAV_CONFIG_FILENAME_PREFIX,
-    Step,
     StepNames,
 )
 from everyvoice.wizard.dataset import TextProcessingStep, get_dataset_steps
@@ -38,6 +37,7 @@ from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
 )
+from everyvoice.wizard.tour import Step
 from everyvoice.wizard.utils import sanitize_paths, write_dict_to_config
 
 
