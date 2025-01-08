@@ -1,4 +1,3 @@
-import enum
 import json
 import platform
 import subprocess
@@ -36,6 +35,9 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesiz
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.train import (
     train as train_fs2,
+)
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
+    SynthesizeOutputFormats,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     HFG_EXPORT_LONG_HELP,
@@ -558,7 +560,7 @@ app.command(
 )(inspect_checkpoint)
 
 
-TestSuites = enum.Enum("TestSuites", {name: name for name in SUITE_NAMES})  # type: ignore
+TestSuites = Enum("TestSuites", {name: name for name in SUITE_NAMES})  # type: ignore
 
 
 @app.command(hidden=True)
@@ -569,6 +571,12 @@ def test(suite: TestSuites = typer.Argument("dev")):
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
 SCHEMAS_TO_OUTPUT: dict[str, Any] = {}  # dict[str, type[BaseModel]]
+
+
+AllowedDemoOutputFormats = Enum(  # type: ignore
+    "AllowedDemoOutputFormats",
+    [("all", "all")] + [(i.name, i.value) for i in SynthesizeOutputFormats],
+)
 
 
 @app.command()
@@ -616,7 +624,7 @@ def demo(
         "-s",
         help="Specify speakers to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --speaker speaker_1 --speaker Sue",
     ),
-    outputs: List[str] = typer.Option(
+    outputs: list[AllowedDemoOutputFormats] = typer.Option(
         ["all"],
         "--output-format",
         "-O",
