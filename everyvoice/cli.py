@@ -616,19 +616,19 @@ def demo(
         ["all"],
         "--language",
         "-l",
-        help="Specify languages to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --language eng --language fin",
+        help="Specify languages to be included in the demo. Must be supported by your model. Example: everyvoice demo T2S_MODEL VOCODER --language eng --language fin",
     ),
     speakers: List[str] = typer.Option(
         ["all"],
         "--speaker",
         "-s",
-        help="Specify speakers to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --speaker speaker_1 --speaker Sue",
+        help="Specify speakers to be included in the demo. Must be supported by your model. Example: everyvoice demo T2S_MODEL VOCODER --speaker speaker_1 --speaker Sue",
     ),
     outputs: list[AllowedDemoOutputFormats] = typer.Option(
         ["all"],
         "--output-format",
         "-O",
-        help="Specify output formats to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --output-format wav",
+        help="Specify output formats to be included in the demo. Example: everyvoice demo T2S_MODEL VOCODER --output-format wav --output-format readalong-html",
     ),
     output_dir: Path = typer.Option(
         "synthesis_output",
@@ -639,9 +639,13 @@ def demo(
         help="The directory where your synthesized audio should be written",
         shell_complete=complete_path,
     ),
-    accelerator: str = typer.Option("auto", "--accelerator", "-a"),
+    accelerator: str = typer.Option(
+        "auto",
+        "--accelerator",
+        "-a",
+        help="Specify the Pytorch Lightning accelerator to use",
+    ),
 ):
-
     if allowlist and denylist:
         raise ValueError(
             "You provided a value for both the allowlist and the denylist but you can only provide one."
