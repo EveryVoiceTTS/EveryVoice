@@ -56,6 +56,7 @@ class CLITest(TestCase):
             "preprocess",
             "inspect-checkpoint",
             "evaluate",
+            "demo",
         ]
 
     def test_version(self):
@@ -322,6 +323,17 @@ class CLITest(TestCase):
         msg = '\n\nPlease avoid causing {} being imported from "everyvoice -h".\nIt is a relatively expensive import and slows down shell completion.\nRun "PYTHONPROFILEIMPORTTIME=1 everyvoice -h" and inspect the logs to see why it\'s being imported.'
         self.assertNotIn(b"shared_types", result.stderr, msg.format("shared_types.py"))
         self.assertNotIn(b"pydantic", result.stderr, msg.format("pydantic"))
+
+    def test_demo_with_bad_args(self):
+        result = self.runner.invoke(app, ["demo"])
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("Missing argument", result.output)
+
+        result = self.runner.invoke(
+            app, ["demo", os.devnull, os.devnull, "--output-format", "not-a-format"]
+        )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("Invalid value", result.output)
 
 
 class TestBaseCLIHelper(TestCase):
