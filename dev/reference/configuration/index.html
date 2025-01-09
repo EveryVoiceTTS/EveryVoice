@@ -856,7 +856,7 @@
 
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
 <p>Each model has a statically typed configuration model. Each configuration has default settings that will be instantiated when the model is instantiated. To create a default preprocessing configuration for example you would:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">everyvoice.config.preprocessing_config</span> <span class="kn">import</span> <span class="n">PreprocessingConfig</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">everyvoice.config.preprocessing_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">PreprocessingConfig</span>
 
 <span class="n">preprocessing_config</span> <span class="o">=</span> <span class="n">PreprocessingConfig</span><span class="p">()</span>
 </code></pre></div>
@@ -877,8 +877,8 @@ To achieve that, each model configuration can also be defined as a path to a con
 <h2 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h2>
 <p>By default configuration objects are serialized as dictionaries, which works as expected with integers, floats, lists, booleans, dicts etc. But there are some cases where you need to specify a Callable in your configuration. For example the {ref}<code>TextConfig</code> has a <code>cleaners</code> field that takes a list of Callables to apply in order to raw text.
 By default, these functions turn raw text to lowercase, collapse whitespace, and normalize using Unicode NFC normalization. In Python, we could instantiate this by passing the callables directly like so:</p>
-<div class="highlight"><pre><span></span><code><span class="kn">from</span> <span class="nn">everyvoice.config.text_config</span> <span class="kn">import</span> <span class="n">TextConfig</span>
-<span class="kn">from</span> <span class="nn">everyvoice.utils</span> <span class="kn">import</span> <span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">lower</span><span class="p">,</span> <span class="n">nfc_normalize</span>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">everyvoice.config.text_config</span><span class="w"> </span><span class="kn">import</span> <span class="n">TextConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">everyvoice.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">lower</span><span class="p">,</span> <span class="n">nfc_normalize</span>
 
 <span class="n">text_config</span> <span class="o">=</span> <span class="n">TextConfig</span><span class="p">(</span><span class="n">cleaners</span><span class="o">=</span><span class="p">[</span><span class="n">lower</span><span class="p">,</span> <span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">nfc_normalize</span><span class="p">])</span>
 </code></pre></div>
@@ -942,13 +942,13 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">119</span>
 <span class="normal">120</span>
 <span class="normal">121</span>
-<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">TextConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
+<span class="normal">122</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TextConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
     <span class="n">symbols</span><span class="p">:</span> <span class="n">Symbols</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Symbols</span><span class="p">)</span>
     <span class="n">to_replace</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Happens before cleaners</span>
     <span class="n">cleaners</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">strip_text</span><span class="p">]</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">clean_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TextConfig&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">clean_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TextConfig&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;We should apply all cleaners to the symbols</span>
 
 <span class="sd">        Returns:</span>
@@ -984,7 +984,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
 
 <h7 id="everyvoice.config.text_config.TextConfig.cleaners" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">cleaners</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">strip_text</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">cleaners</span> <span class="o">=</span> <span class="p">[</span><span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">strip_text</span><span class="p">]</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
@@ -1004,7 +1004,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
 
 <h7 id="everyvoice.config.text_config.TextConfig.symbols" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">symbols</span><span class="p">:</span> <span class="n">Symbols</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Symbols</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">symbols</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Symbols</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
@@ -1024,7 +1024,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
 
 <h7 id="everyvoice.config.text_config.TextConfig.to_replace" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">to_replace</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span></code>
+            <code class="highlight language-python"><span class="n">to_replace</span> <span class="o">=</span> <span class="p">{}</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
@@ -1128,7 +1128,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">93</span>
 <span class="normal">94</span>
 <span class="normal">95</span>
-<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">Symbols</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Symbols</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">silence</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="p">[</span><span class="s2">&quot;&lt;SIL&gt;&quot;</span><span class="p">],</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The symbol(s) used to indicate silence.&quot;</span>
     <span class="p">)</span>
@@ -1139,12 +1139,12 @@ for your data. You can share the TextConfig with any models that need it and onl
     <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">all_except_punctuation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">all_except_punctuation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the set containing all characters.&quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">w</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Punctuation</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;You cannot have the same symbol defined in punctuation as elsewhere.</span>
 
 <span class="sd">        Raises:</span>
@@ -1161,7 +1161,7 @@ for your data. You can share the TextConfig with any models that need it and onl
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-    <span class="k">def</span> <span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Except for `punctuation` &amp; `pad`, all user defined member variables</span>
 <span class="sd">        have to be a list of strings.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1192,7 +1192,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
 
 <h7 id="everyvoice.config.text_config.Symbols.all_except_punctuation" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">all_except_punctuation</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span></code>
+            <code class="highlight language-python"><span class="n">all_except_punctuation</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-property"><code>property</code></small>
@@ -1287,7 +1287,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">79</span>
 <span class="normal">80</span>
 <span class="normal">81</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;You cannot have the same symbol defined in punctuation as elsewhere.</span>
 
 <span class="sd">    Raises:</span>
@@ -1338,7 +1338,7 @@ have to be a list of strings.</p>
 <span class="normal">94</span>
 <span class="normal">95</span>
 <span class="normal">96</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<span class="k">def</span> <span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Except for `punctuation` &amp; `pad`, all user defined member variables</span>
 <span class="sd">    have to be a list of strings.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
