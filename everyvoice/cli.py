@@ -616,19 +616,19 @@ def demo(
         ["all"],
         "--language",
         "-l",
-        help="Specify languages to be included in the demo. Must be supported by your model. Example: everyvoice demo T2S_MODEL VOCODER --language eng --language fin",
+        help="Specify languages to be included in the demo. Must be supported by your model. Example: everyvoice demo TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --language eng --language fin",
     ),
     speakers: List[str] = typer.Option(
         ["all"],
         "--speaker",
         "-s",
-        help="Specify speakers to be included in the demo. Must be supported by your model. Example: everyvoice demo T2S_MODEL VOCODER --speaker speaker_1 --speaker Sue",
+        help="Specify speakers to be included in the demo. Must be supported by your model. Example: everyvoice demo TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --speaker speaker_1 --speaker Sue",
     ),
     outputs: list[AllowedDemoOutputFormats] = typer.Option(
         ["all"],
         "--output-format",
         "-O",
-        help="Specify output formats to be included in the demo. Example: everyvoice demo T2S_MODEL VOCODER --output-format wav --output-format readalong-html",
+        help="Specify output formats to be included in the demo. Example: everyvoice demo TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --output-format wav --output-format readalong-html",
     ),
     output_dir: Path = typer.Option(
         "synthesis_output",
