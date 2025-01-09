@@ -616,6 +616,12 @@ def demo(
         "-s",
         help="Specify speakers to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --speaker speaker_1 --speaker Sue",
     ),
+    outputs: List[str] = typer.Option(
+        ["all"],
+        "--output-format",
+        "-O",
+        help="Specify output formats to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --output-format wav",
+    ),
     output_dir: Path = typer.Option(
         "synthesis_output",
         "--output-dir",
@@ -652,6 +658,7 @@ def demo(
             spec_to_wav_model_path=spec_to_wav_model,
             languages=languages,
             speakers=speakers,
+            outputs=outputs,
             output_dir=output_dir,
             accelerator=accelerator,
             allowlist=allowlist_data,
