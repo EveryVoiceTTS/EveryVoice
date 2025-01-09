@@ -157,16 +157,38 @@ def normalize_text(text: str) -> str:
 
 
 def create_demo_app(
-    text_to_spec_model_path,
-    spec_to_wav_model_path,
-    languages,
-    speakers,
-    outputs,
-    output_dir,
-    accelerator,
+    text_to_spec_model_path: os.PathLike,
+    spec_to_wav_model_path: os.PathLike,
+    languages: list[str],
+    speakers: list[str],
+    outputs: list,  # list[str | AllowedDemoOutputFormats]
+    output_dir: os.PathLike,
+    accelerator: str,
     allowlist: list[str] = [],
     denylist: list[str] = [],
 ) -> gr.Blocks:
+    # Early argument validation where possible
+    possible_outputs = [x.value for x in SynthesizeOutputFormats]
+
+    # this used to be `if outputs == ["all"]:` but my Enum() constructor for
+    # AllowedDemoOutputFormats breaks that, unfortunately, and enum.StrEnum
+    # doesn't appear until Python 3.11 so I can't use it.
+    if len(outputs) == 1 and getattr(outputs[0], "value", outputs[0]) == "all":
+        output_list = possible_outputs
+    else:
+        if not outputs:
+            raise ValueError(
+                f"Empty outputs list. Please specify ['all'] or one or more of {possible_outputs}"
+            )
+        output_list = []
+        for output in outputs:
+            value = getattr(output, "value", output)  # Enum->value as str / str->str
+            if value not in possible_outputs:
+                raise ValueError(
+                    f"Unknown output format '{value}'. Valid outputs values are ['all'] or one or more of {possible_outputs}"
+                )
+            output_list.append(value)
+
     require_ffmpeg()
     device = get_device_from_accelerator(accelerator)
     vocoder_ckpt = torch.load(spec_to_wav_model_path, map_location=device)
@@ -193,10 +215,8 @@ def create_demo_app(
     )
     model_languages = list(model.lang2id.keys())
     model_speakers = list(model.speaker2id.keys())
-    possible_outputs = [x.value for x in SynthesizeOutputFormats]
     lang_list = []
     speak_list = []
-    output_list = []
     if languages == ["all"]:
         lang_list = model_languages
     else:
@@ -217,12 +237,6 @@ def create_demo_app(
                 print(
                     f"Attention: The model have not been trained for speech synthesis with '{speaker}' speaker. The '{speaker}' speaker option will not be available for selection."
                 )
-    if outputs == ["all"]:
-        output_list = possible_outputs
-    else:
-        for output in outputs:
-            assert output.value in possible_outputs
-            output_list.append(output.value)
 
     if lang_list == []:
         raise ValueError(
@@ -276,7 +290,7 @@ def create_demo_app(
                 btn = gr.Button("Synthesize")
             with gr.Column():
                 out_audio = gr.Audio(format="wav")
-                if output_list == ["wav"]:
+                if output_list == [SynthesizeOutputFormats.wav]:
                     # When the only output option is wav, don't show the File Output box
                     outputs = [out_audio]
                 else:

@@ -1,3 +1,4 @@
+import enum
 import json
 import os
 import subprocess
@@ -21,6 +22,7 @@ from everyvoice._version import VERSION
 from everyvoice.base_cli.helpers import save_configuration_to_log_dir
 from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
 from everyvoice.config.shared_types import ContactInformation
+from everyvoice.demo.app import create_demo_app
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
 )
@@ -334,6 +336,37 @@ class CLITest(TestCase):
         )
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("Invalid value", result.output)
+
+    def test_create_demo_app_with_errors(self):
+        # outputs is the first thing to get checked, because it's can be done as
+        # a quick check before loading any models.
+        with self.assertRaises(ValueError) as cm:
+            create_demo_app(
+                text_to_spec_model_path=None,
+                spec_to_wav_model_path=None,
+                languages=[],
+                speakers=[],
+                outputs=[],
+                output_dir=None,
+                accelerator=None,
+            )
+        self.assertIn("Empty outputs list", str(cm.exception))
+
+        class WrongEnum(str, enum.Enum):
+            foo = "foo"
+
+        for outputs in (["wav", WrongEnum.foo], ["textgrid", "foo"]):
+            with self.assertRaises(ValueError) as cm:
+                create_demo_app(
+                    text_to_spec_model_path=None,
+                    spec_to_wav_model_path=None,
+                    languages=[],
+                    speakers=[],
+                    outputs=outputs,
+                    output_dir=None,
+                    accelerator=None,
+                )
+            self.assertIn("Unknown output format 'foo'", str(cm.exception))
 
 
 class TestBaseCLIHelper(TestCase):
