@@ -51,25 +51,25 @@ head -$(("$LINES_TO_USE" + 1)) "$LJ_SPEECH_DATASET/metadata.csv" | tail -"$LINES
 ln -s "$LJ_SPEECH_DATASET/wavs" .
 
 # 2: run the new-project wizard
-r "everyvoice new-project --resume-from '$EVERYVOICE_ROOT/tests/regress-lj2k-resume'"
+r "coverage run -p -m everyvoice new-project --resume-from '$EVERYVOICE_ROOT/tests/regress-lj2k-resume'"
 
 # 3: preprocess
 
 cd regress
-r "everyvoice preprocess config/everyvoice-text-to-spec.yaml"
+r "coverage run -p -m everyvoice preprocess config/everyvoice-text-to-spec.yaml"
 
 # 4: train the fs2 model
-r "everyvoice train text-to-spec config/everyvoice-text-to-spec.yaml --config-args training.max_epochs=10"
+r "coverage run -p -m everyvoice train text-to-spec config/everyvoice-text-to-spec.yaml --config-args training.max_epochs=2"
 FS2=logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt
 ls $FS2
 
 # 5: train the vocoder
-r "everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml --config-args training.max_epochs=10"
+r "coverage run -p -m everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml --config-args training.max_epochs=2"
 VOCODER=logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
 ls $VOCODER
 
 # 6: synthesize some text
-r "everyvoice synthesize from-text \
+r "coverage run -p -m everyvoice synthesize from-text \
     --output-type wav --output-type spec --output-type textgrid --output-type readalong-xml --output-type readalong-html \
     --filelist '$EVERYVOICE_ROOT/tests/regress-text.txt' \
     --vocoder-path '$VOCODER' \
@@ -82,3 +82,13 @@ r "everyvoice synthesize from-text \
 
 # 8: use playwright to synthesize something using the demo
 # TODO...
+
+
+# Run the regular everyvoice test suite to complete coverage
+cd ..
+r "coverage run -p -m everyvoice test"
+
+# Collect coverage data
+coverage combine . regress
+coverage html --include='*/everyvoice/*'
+coverage report --include='*/everyvoice/*'
