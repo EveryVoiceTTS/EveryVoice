@@ -36,6 +36,7 @@ LJ_SPEECH_DATASET=$HOME/tts/corpora/Speech/LJ.Speech.Dataset/LJSpeech-1.1
 [[ -e "$ACTIVATE_SCRIPT" ]] && source "$ACTIVATE_SCRIPT"
 export TQDM_MININTERVAL=5
 LINES_TO_USE=2000
+EPOCHS=2
 EVERYVOICE_ROOT=$(python -c 'import everyvoice; print(everyvoice.__path__[0])')
 if [[ $SLURM_JOBID ]]; then
     WORKDIR_SUFFIX="$SLURM_JOBID"
@@ -47,7 +48,7 @@ mkdir "$WORKDIR"
 cd "$WORKDIR"
 
 # 1: create a small dataset with *no header line*
-head -$(("$LINES_TO_USE" + 1)) "$LJ_SPEECH_DATASET/metadata.csv" | tail -"$LINES_TO_USE" > metadata.csv
+grep -v '^basename|' "$LJ_SPEECH_DATASET/metadata.csv" | head -"$LINES_TO_USE" > metadata.csv
 ln -s "$LJ_SPEECH_DATASET/wavs" .
 
 # 2: run the new-project wizard
@@ -59,12 +60,12 @@ cd regress
 r "coverage run -p -m everyvoice preprocess config/everyvoice-text-to-spec.yaml"
 
 # 4: train the fs2 model
-r "coverage run -p -m everyvoice train text-to-spec config/everyvoice-text-to-spec.yaml --config-args training.max_epochs=2"
+r "coverage run -p -m everyvoice train text-to-spec config/everyvoice-text-to-spec.yaml --config-args training.max_epochs=$EPOCHS"
 FS2=logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt
 ls $FS2
 
 # 5: train the vocoder
-r "coverage run -p -m everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml --config-args training.max_epochs=2"
+r "coverage run -p -m everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml --config-args training.max_epochs=$EPOCHS"
 VOCODER=logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
 ls $VOCODER
 
