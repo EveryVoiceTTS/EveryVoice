@@ -1,0 +1,137 @@
+{
+  "$defs": {
+    "Punctuation": {
+      "properties": {
+        "exclamations": {
+          "default": [
+            "!",
+            "\u00a1"
+          ],
+          "description": "Exclamation punctuation symbols used in your datasets. Replaces these symbols with <EXCL> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclamations",
+          "type": "array"
+        },
+        "question_symbols": {
+          "default": [
+            "?",
+            "\u00bf"
+          ],
+          "description": "Question/interrogative punctuation symbols used in your datasets. Replaces these symbols with <QINT> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Question Symbols",
+          "type": "array"
+        },
+        "quotemarks": {
+          "default": [
+            "\"",
+            "'",
+            "\u201c",
+            "\u201d",
+            "\u00ab",
+            "\u00bb"
+          ],
+          "description": "Quotemark punctuation symbols used in your datasets. Replaces these symbols with <QUOTE> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Quotemarks",
+          "type": "array"
+        },
+        "big_breaks": {
+          "default": [
+            ".",
+            ":",
+            ";"
+          ],
+          "description": "Punctuation symbols indicating a 'big break' used in your datasets. Replaces these symbols with <BB> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Big Breaks",
+          "type": "array"
+        },
+        "small_breaks": {
+          "default": [
+            ",",
+            "-",
+            "\u2014"
+          ],
+          "description": "Punctuation symbols indicating a 'small break' used in your datasets. Replaces these symbols with <SB> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Small Breaks",
+          "type": "array"
+        },
+        "ellipsis": {
+          "default": [
+            "\u2026"
+          ],
+          "description": "Punctuation symbols indicating an ellipsis used in your datasets. Replaces these symbols with <EPS> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Ellipsis",
+          "type": "array"
+        }
+      },
+      "title": "Punctuation",
+      "type": "object"
+    },
+    "Symbols": {
+      "additionalProperties": true,
+      "properties": {
+        "silence": {
+          "default": [
+            "<SIL>"
+          ],
+          "description": "The symbol(s) used to indicate silence.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Silence",
+          "type": "array"
+        },
+        "punctuation": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Punctuation"
+            }
+          ],
+          "description": "EveryVoice will combine punctuation and normalize it into a set of five permissible types of punctuation to help tractable training."
+        }
+      },
+      "title": "Symbols",
+      "type": "object"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "symbols": {
+      "$ref": "#/$defs/Symbols"
+    },
+    "to_replace": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {},
+      "title": "To Replace",
+      "type": "object"
+    },
+    "cleaners": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Cleaners",
+      "type": "array"
+    }
+  },
+  "title": "TextConfig",
+  "type": "object"
+}
