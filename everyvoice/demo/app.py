@@ -306,7 +306,7 @@ def create_demo_app(
         inputs = [inp_text, inp_slider, inp_lang, inp_speak, output_format]
         # Only include the style reference input if the model supports it
         if model.config.model.use_global_style_token_module:
-            inputs.append(style_reference)
+            inputs.append(style_reference)  # type: ignore
         else:
             synthesize_audio_preset = partial(
                 synthesize_audio_preset, style_reference=None
