@@ -1,4 +1,3 @@
-import enum
 import json
 import platform
 import subprocess
@@ -36,6 +35,9 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesiz
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.train import (
     train as train_fs2,
+)
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
+    SynthesizeOutputFormats,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     HFG_EXPORT_LONG_HELP,
@@ -558,7 +560,7 @@ app.command(
 )(inspect_checkpoint)
 
 
-TestSuites = enum.Enum("TestSuites", {name: name for name in SUITE_NAMES})  # type: ignore
+TestSuites = Enum("TestSuites", {name: name for name in SUITE_NAMES})  # type: ignore
 
 
 @app.command(hidden=True)
@@ -569,6 +571,12 @@ def test(suite: TestSuites = typer.Argument("dev")):
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
 SCHEMAS_TO_OUTPUT: dict[str, Any] = {}  # dict[str, type[BaseModel]]
+
+
+AllowedDemoOutputFormats = Enum(  # type: ignore
+    "AllowedDemoOutputFormats",
+    [("all", "all")] + [(i.name, i.value) for i in SynthesizeOutputFormats],
+)
 
 
 @app.command()
@@ -608,13 +616,19 @@ def demo(
         ["all"],
         "--language",
         "-l",
-        help="Specify languages to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --language eng --language fin",
+        help="Specify languages to be included in the demo. Must be supported by your model. Example: everyvoice demo TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --language eng --language fin",
     ),
     speakers: List[str] = typer.Option(
         ["all"],
         "--speaker",
         "-s",
-        help="Specify speakers to be included in the demo. Example: everyvoice demo <path_to_text_to_spec_model> <path_to_spec_to_wav_model> --speaker speaker_1 --speaker Sue",
+        help="Specify speakers to be included in the demo. Must be supported by your model. Example: everyvoice demo TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --speaker speaker_1 --speaker Sue",
+    ),
+    outputs: list[AllowedDemoOutputFormats] = typer.Option(
+        ["all"],
+        "--output-format",
+        "-O",
+        help="Specify output formats to be included in the demo. Example: everyvoice demo TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --output-format wav --output-format readalong-html",
     ),
     output_dir: Path = typer.Option(
         "synthesis_output",
@@ -625,9 +639,13 @@ def demo(
         help="The directory where your synthesized audio should be written",
         shell_complete=complete_path,
     ),
-    accelerator: str = typer.Option("auto", "--accelerator", "-a"),
+    accelerator: str = typer.Option(
+        "auto",
+        "--accelerator",
+        "-a",
+        help="Specify the Pytorch Lightning accelerator to use",
+    ),
 ):
-
     if allowlist and denylist:
         raise ValueError(
             "You provided a value for both the allowlist and the denylist but you can only provide one."
@@ -652,6 +670,7 @@ def demo(
             spec_to_wav_model_path=spec_to_wav_model,
             languages=languages,
             speakers=speakers,
+            outputs=outputs,
             output_dir=output_dir,
             accelerator=accelerator,
             allowlist=allowlist_data,
