@@ -404,7 +404,7 @@ class TestLoadingModel(BasicTestCase):
                     torch.save(m, ckpt_fn)
                     with mute_logger("everyvoice.config.text_config"):
                         model = ModelType.load_from_checkpoint(ckpt_fn)
-                    self.assertEqual(model._VERSION, "1.0")
+                    self.assertIn(model._VERSION, ["1.0", "1.1"])
 
     def test_newer_model_version(self):
         """
