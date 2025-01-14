@@ -380,12 +380,12 @@ class Preprocessor:
                 logger.info("Gathering energy values")
                 with tqdm_joblib_context(tqdm(desc="Gathering energy values")):
                     for energy_data in parallel(
-                        delayed(torch.load)(path) for path in paths
+                        delayed(torch.load)(path, weights_only=True) for path in paths
                     ):
                         energy_scaler.data.append(energy_data)
             else:
                 for path in tqdm(paths, desc="Gathering energy values"):
-                    energy_data = torch.load(path)
+                    energy_data = torch.load(path, weights_only=True)
                     energy_scaler.data.append(energy_data)
         if pitch:
             pitch_scaler = Scaler()
@@ -398,12 +398,12 @@ class Preprocessor:
                 logger.info("Gathering pitch values")
                 with tqdm_joblib_context(tqdm(desc="Gathering pitch values")):
                     for pitch_data in parallel(
-                        delayed(torch.load)(path) for path in paths
+                        delayed(torch.load)(path, weights_only=True) for path in paths
                     ):
                         pitch_scaler.data.append(pitch_data)
             else:
                 for path in tqdm(paths, desc="Gathering pitch values"):
-                    pitch_data = torch.load(path)
+                    pitch_data = torch.load(path, weights_only=True)
                     pitch_scaler.data.append(pitch_data)
         return energy_scaler if energy else energy, pitch_scaler if pitch else pitch
 
@@ -423,7 +423,7 @@ class Preprocessor:
                 ),
                 desc="Normalizing energy values",
             ):
-                energy = torch.load(path)
+                energy = torch.load(path, weights_only=True)
                 energy = energy_scaler.normalize(energy)
                 save_tensor(energy, path)
             stats["energy"] = energy_stats
@@ -437,7 +437,7 @@ class Preprocessor:
                 ),
                 desc="Normalizing pitch values",
             ):
-                pitch = torch.load(path)
+                pitch = torch.load(path, weights_only=True)
                 pitch = pitch_scaler.normalize(pitch)
                 save_tensor(pitch, path)
             stats["pitch"] = pitch_stats
@@ -587,7 +587,7 @@ class Preprocessor:
             "spec",
             f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.pt",
         )
-        spec = torch.load(spec_path)
+        spec = torch.load(spec_path, weights_only=True)
         energy = self.extract_energy(spec)
         if (
             isinstance(self.config, FeaturePredictionConfig)
@@ -595,7 +595,7 @@ class Preprocessor:
             and not self.config.model.learn_alignment
         ):
             dur_path = self.create_path(item, "duration", "duration.pt")
-            durs = torch.load(dur_path)
+            durs = torch.load(dur_path, weights_only=True)
             energy = self.average_data_by_durations(energy, durs)
         save_tensor(energy, energy_path)
 
@@ -614,7 +614,7 @@ class Preprocessor:
             and not self.config.model.learn_alignment
         ):
             dur_path = self.create_path(item, "duration", "duration.pt")
-            durs = torch.load(dur_path)
+            durs = torch.load(dur_path, weights_only=True)
             pitch = self.average_data_by_durations(pitch, durs)
         save_tensor(pitch, pitch_path)
 
@@ -674,7 +674,7 @@ class Preprocessor:
             "spec",
             f"spec-{self.input_sampling_rate}-{self.audio_config.spec_type}.pt",
         )
-        input_spec = torch.load(input_spec_path)
+        input_spec = torch.load(input_spec_path, weights_only=True)
         if process_phones:
             phone_attn_prior = torch.from_numpy(
                 binomial_interpolator(input_spec.size(1), len(phone_tokens))
@@ -955,8 +955,12 @@ class Preprocessor:
                     + audio[audio <= audio_min].size(0)
                     - 2
                 )
-            pitch = torch.load(self.create_path(item, "pitch", "pitch.pt"))
-            energy = torch.load(self.create_path(item, "energy", "energy.pt"))
+            pitch = torch.load(
+                self.create_path(item, "pitch", "pitch.pt"), weights_only=True
+            )
+            energy = torch.load(
+                self.create_path(item, "energy", "energy.pt"), weights_only=True
+            )
             audio_length_s = len(audio) / self.input_sampling_rate
             data_point["total_clipped_samples"] = total_clipping
             data_point["pitch_min"] = float(pitch.min())

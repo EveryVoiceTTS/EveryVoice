@@ -266,7 +266,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     ]
                 )
             )
-            durs = torch.load(dur_path)
+            durs = torch.load(dur_path, weights_only=True)
             feats = self.preprocessor.extract_spectral_features(
                 audio, self.preprocessor.input_spectral_transform
             )
@@ -304,7 +304,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     ]
                 )
             )
-            durs = torch.load(dur_path)
+            durs = torch.load(dur_path, weights_only=True)
             feats = self.preprocessor.extract_spectral_features(
                 audio, self.preprocessor.input_spectral_transform
             )
@@ -341,7 +341,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     ]
                 )
             )
-            durs = torch.load(dur_path)
+            durs = torch.load(dur_path, weights_only=True)
             # ming024_energy = np.load(
             #     self.data_dir
             #     / "ming024"
@@ -451,7 +451,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                         if "phone_tokens" in x
                     ]
                     phonological_features = [
-                        torch.load(f)
+                        torch.load(f, weights_only=True)
                         for f in sorted(
                             list((output_filelist.parent / "pfs").glob("*.pt"))
                         )

@@ -56,7 +56,8 @@ class E2EDataset(Dataset):
 
     def _load_file(self, bn, spk, lang, dir, fn):
         return torch.load(
-            self.preprocessed_dir / dir / self.sep.join([bn, spk, lang, fn])
+            self.preprocessed_dir / dir / self.sep.join([bn, spk, lang, fn]),
+            weights_only=True,
         )
 
     def _load_audio(self, bn, spk, lang, dir, fn):

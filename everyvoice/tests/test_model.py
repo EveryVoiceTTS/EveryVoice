@@ -144,7 +144,7 @@ class ModelTest(BasicTestCase):
                 )
 
                 # We don't want just serializable, but actually serialized!
-                ckpt = torch.load(tmpdir / "model.ckpt")
+                ckpt = torch.load(tmpdir / "model.ckpt", weights_only=True)
                 try:
                     json.dumps(ckpt["hyper_parameters"])
                 except (TypeError, OverflowError):
@@ -312,11 +312,11 @@ class TestLoadingModel(BasicTestCase):
                 trainer.strategy.connect(model)
                 ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                 trainer.save_checkpoint(ckpt_fn)
-                m = torch.load(ckpt_fn)
+                m = torch.load(ckpt_fn, weights_only=True)
                 self.assertIn("model_info", m.keys())
                 m["model_info"]["name"] = "BAD_TYPE"
                 torch.save(m, ckpt_fn)
-                m = torch.load(ckpt_fn)
+                m = torch.load(ckpt_fn, weights_only=True)
                 self.assertIn("model_info", m.keys())
                 self.assertEqual(m["model_info"]["name"], "BAD_TYPE")
                 # self.assertEqual(m["model_info"]["version"], "1.0")
@@ -396,7 +396,7 @@ class TestLoadingModel(BasicTestCase):
                     trainer.strategy.connect(model)
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
-                    m = torch.load(ckpt_fn)
+                    m = torch.load(ckpt_fn, weights_only=True)
                     self.assertIn("model_info", m.keys())
                     self.assertEqual(m["model_info"]["name"], ModelType.__name__)
                     self.assertEqual(m["model_info"]["version"], CANARY_VERSION)
@@ -475,7 +475,7 @@ class TestLoadingModel(BasicTestCase):
                     trainer.strategy.connect(model)
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
-                    m = torch.load(ckpt_fn)
+                    m = torch.load(ckpt_fn, weights_only=True)
                     self.assertIn("model_info", m.keys())
                     self.assertEqual(m["model_info"]["name"], ModelType.__name__)
                     self.assertEqual(m["model_info"]["version"], NEWER_VERSION)

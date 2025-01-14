@@ -191,7 +191,9 @@ def create_demo_app(
 
     require_ffmpeg()
     device = get_device_from_accelerator(accelerator)
-    vocoder_ckpt = torch.load(spec_to_wav_model_path, map_location=device)
+    vocoder_ckpt = torch.load(
+        spec_to_wav_model_path, map_location=device, weights_only=True
+    )
     # TODO: Should we also wrap this load_hifigan_from_checkpoint in case the checkpoint is not a Vocoder?
     vocoder_model, vocoder_config = load_hifigan_from_checkpoint(vocoder_ckpt, device)
     model: FastSpeech2 = FastSpeech2.load_from_checkpoint(text_to_spec_model_path).to(  # type: ignore

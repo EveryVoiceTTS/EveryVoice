@@ -42,11 +42,16 @@ class BaseDataModule(pl.LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         # load it back here
+        # Here we consider it safe to use torch.load() with weights_only=False
+        # because the dataset files are prepared and saved by this software, and
+        # not shared.
+        # TODO: investigate the possibility of changing our prepared dataset
+        # formats not to need weights_only=False
         if stage == "fit":
-            self.train_dataset = torch.load(self.train_path)
-            self.val_dataset = torch.load(self.val_path)
+            self.train_dataset = torch.load(self.train_path, weights_only=False)
+            self.val_dataset = torch.load(self.val_path, weights_only=False)
         if stage == "predict":
-            self.predict_dataset = torch.load(self.predict_path)
+            self.predict_dataset = torch.load(self.predict_path, weights_only=False)
 
     def train_dataloader(self):
         sampler = (

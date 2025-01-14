@@ -59,7 +59,9 @@ def load_checkpoint(model_path: Path, minimal=True) -> Dict[str, Any]:
     """
     import torch
 
-    checkpoint = torch.load(str(model_path), map_location=torch.device("cpu"))
+    checkpoint = torch.load(
+        str(model_path), map_location=torch.device("cpu"), weights_only=True
+    )
 
     if minimal:
         # Some clean up of useless stuff.
