@@ -30,4 +30,12 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
       - name: Deploy docs with mike 🚀
         run: |
-          mike deploy --push --update-aliases dev latest
+          mike deploy --update-aliases dev latest
+      - name: Push only if there was a contentful change
+        run: |
+          if git diff --name-only origin/gh-pages gh-pages | grep -v dev/sitemap.xml; then
+            echo Pushing real changes
+            git push origin gh-pages
+          else
+            echo No contentful changes to push
+          fi
