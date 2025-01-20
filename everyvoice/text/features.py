@@ -13,32 +13,6 @@ class PhonologicalFeatureCalculator:
         self.punctuation_hash = punctuation_hash
         self.feature_table = FeatureTable()
 
-    def normalize_features(
-        self, raw_phonological_features: npt.NDArray[np.float32]
-    ) -> npt.NDArray[np.float32]:
-        """Applies a (x + 1) / 2 scaling to all phonological features to transform from between -1 and 1 to between 0 and 1.
-
-        Args:
-            raw_phonological_features (npt.NDArray[np.float32]): phonological features valued between -1 and 1
-
-        Returns:
-            npt.NDArray[np.float32]: phonological features valued between 0 and 1.
-        """
-        return (raw_phonological_features + 1) / 2
-
-    def denormalize_features(
-        self, normalized_phonological_features: npt.NDArray[np.float32]
-    ) -> npt.NDArray[np.float32]:
-        """Applies a (x * 2) - 1 scaling to all phonological features to transform from between 0 and 1 to between -1 and 1.
-
-        Args:
-            raw_phonological_features (npt.NDArray[np.float32]): phonological features valued between 0 and 1
-
-        Returns:
-            npt.NDArray[np.float32]: phonological features valued between -1 and 1.
-        """
-        return (normalized_phonological_features * 2) - 1
-
     def mask_token(self):
         return self.get_features(["[MASK]"])[0]
 
