@@ -205,11 +205,11 @@ class ConfigFormatStep(Step):
         """Validate the number of channels in WAV files."""
         wav_files = list(wavs_dir.rglob("*.wav"))  # Recursively find all WAV files.
 
-        if not wav_files:
-            rich_print(
-                f"[red]No WAV files found in the directory '{wavs_dir}'. Please check your files.[/red]"
-            )
-            sys.exit(1)  # Exit if no WAV files are found.
+        # if not wav_files:
+        #    rich_print(
+        #        f"[red]No WAV files found in the directory '{wavs_dir}'. Please check your files.[/red]"
+        #    )
+        #    sys.exit(1)  # Exit if no WAV files are found.
 
         rich_print(
             f"Validating the number of channels in WAV files located at '{wavs_dir}'..."
