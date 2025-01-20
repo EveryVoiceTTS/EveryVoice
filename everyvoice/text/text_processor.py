@@ -52,17 +52,29 @@ class TextProcessor:
     4. Encode tokens into integer IDs with `encode_text`.
     5. Decode IDs back into text or tokens with `decode_tokens`.
 
+    You can also just use the `encode_text` method to do all of it at once with the use of key word arguments.
+
     Example Usage:
     >>> from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
-    >>> tp = TextProcessor(TextConfig(cleaners=[collapse_whitespace, lower, nfc_normalize]))
-    >>> normalized = tp.normalize_text('HELLO\u0301!')
-    'helló!'
+    >>> from string import ascii_lowercase
+    >>> tp = TextProcessor(TextConfig(cleaners=[collapse_whitespace, lower, nfc_normalize], symbols={'ascii': list(ascii_lowercase)}))
+    >>> normalized = tp.normalize_text('HELLO\u0301O!')
+    >>> normalized
+    'hellóo!'
     >>> tokens = tp.apply_tokenization(normalized)
-    ['h', 'e', 'l', 'l', 'ó']
+    >>> tokens
+    ['h', 'e', 'l', 'l', 'o', '!']
     >>> encoded = tp.encode_text(normalized)
-    [19, 20, 21, 21, 22]
+    >>> encoded
+    [34, 31, 38, 38, 41, 13]
     >>> decoded = tp.decode_tokens(encoded)
-    'h/e/l/l/ó'
+    >>> decoded
+    'h/e/l/l/o/!'
+    >>> all_at_once_encoded = tp.encode_text('HELLO\u0301O!')
+    >>> all_at_once_encoded
+    [34, 31, 38, 38, 41, 13]
+    >>> tp.decode_tokens(all_at_once_encoded)
+    'h/e/l/l/o/!'
     """
 
     def __init__(self, config: TextConfig):
@@ -253,8 +265,8 @@ class TextProcessor:
         >>> tp.calculate_phonological_features(['aɪ'])
         array([[ 1.,  1., -1.,  1., -1., -1., -1.,  0.,  1., -1., -1.,  0., -1.,
                  0., -1.,  0.,  0., -1., -1., -1.,  0., -1.,  0.,  0.,  0.,  0.,
-                 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.]],
-              dtype=float32)
+                 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+                 0.,  0.,  0.,  0.]], dtype=float32)
         """
         if self.phonological_feature_calculator is None:
             self.phonological_feature_calculator = PhonologicalFeatureCalculator(
@@ -321,9 +333,9 @@ class TextProcessor:
             list[str]: List of symbols in the text without missing symbols
 
         >>> tp = TextProcessor(TextConfig())
-        >>> tp.apply_tokenization('\x80\x80 *', quiet=True)
+        >>> tp.apply_tokenization('\x80\x80 &', quiet=True)
         ['\x80', '\x80', ' ']
-        >>> tp.missing_symbols['*']
+        >>> tp.missing_symbols['&']
         1
         """
         if find_missing:
