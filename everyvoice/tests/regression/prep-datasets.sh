@@ -67,3 +67,7 @@ uqeqesho
 iimpumlo
 ==EOF==
 echo isiXhosa > "$dir"/test2.txt
+
+dir=regress-mix
+mkdir $dir
+cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-mix "$dir"/wizard-resume
