@@ -23,17 +23,58 @@ JOINER_SUBSTITUTION = "<SLASH>"
 
 
 class TextProcessor:
-    """Text is processed like:
+    """
+    A utility class for processing text through various stages including normalization,
+    tokenization, grapheme-to-phoneme (G2P) conversion, and phonological feature calculation.
 
-    InputText (str, either DatasetTextRepresentation.characters, DatasetTextRepresentation.ipa_phones, or DatasetTextRepresentation.arpabet)
-      -> to_replace operations
-        -> cleaner operations
-        = Cleaned Text (str)
-          -> Optional[grapheme-to-phoneme, outputs tokens] OR
-          -> tokenization
-          = Tokens (list[str])
-            -> Punctuation mapped to internal representation
-            = Tokens with internal punctuation representation (list[str])
+    This class supports the following:
+    - Input: Raw text, which can be in character, IPA phoneme, or ARPAbet formats.
+    - Preprocessing: Applies replacement and cleaning rules to normalize the text.
+    - Tokenization: Convert normalized text into tokens, handling punctuation via an
+      internal representation system.
+    - Optional G2P conversion: Map graphemes to phonemes to produce token sequences.
+    - Encoding: Convert tokens into integer IDs or phonological feature vectors.
+    - Decoding: Map sequences of integer IDs back to text or token representations.
+
+    Attributes:
+        config (TextConfig): Configuration settings, including replacement rules,
+            cleaners, and symbol definitions.
+        symbols (list[str]): A sorted list of all valid symbols, including punctuation
+            and internal representations.
+        missing_symbols (Counter[str]): Tracks occurrences of missing symbols in text.
+        phonological_feature_calculator (Optional[PhonologicalFeatureCalculator]):
+            Utility for generating phonological features.
+
+    Example Workflow:
+    1. Normalize text using `normalize_text`.
+    2. Tokenize the normalized text with `apply_tokenization`.
+    3. Optionally apply G2P conversion using `apply_g2p_and_tokenization`.
+    4. Encode tokens into integer IDs with `encode_text`.
+    5. Decode IDs back into text or tokens with `decode_tokens`.
+
+    You can also just use the `encode_text` method to do all of it at once with the use of key word arguments.
+
+    Example Usage:
+    >>> from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
+    >>> from string import ascii_lowercase
+    >>> tp = TextProcessor(TextConfig(cleaners=[collapse_whitespace, lower, nfc_normalize], symbols={'ascii': list(ascii_lowercase)}))
+    >>> normalized = tp.normalize_text('HELLO\u0301O!')
+    >>> normalized
+    'hellóo!'
+    >>> tokens = tp.apply_tokenization(normalized)
+    >>> tokens
+    ['h', 'e', 'l', 'l', 'o', '!']
+    >>> encoded = tp.encode_text(normalized)
+    >>> encoded
+    [34, 31, 38, 38, 41, 13]
+    >>> decoded = tp.decode_tokens(encoded)
+    >>> decoded
+    'h/e/l/l/o/!'
+    >>> all_at_once_encoded = tp.encode_text('HELLO\u0301O!')
+    >>> all_at_once_encoded
+    [34, 31, 38, 38, 41, 13]
+    >>> tp.decode_tokens(all_at_once_encoded)
+    'h/e/l/l/o/!'
     """
 
     def __init__(self, config: TextConfig):
@@ -49,9 +90,13 @@ class TextProcessor:
             "exclamations": "<EXCL>",
             "question_symbols": "<QINT>",
             "quotemarks": "<QUOTE>",
-            "big_breaks": "<BB>",
-            "small_breaks": "<SB>",
-            "ellipsis": "<EPS>",
+            "colons": "<COLON>",
+            "semi_colons": "<SEMICOL>",
+            "hyphens": "<HYPHEN>",
+            "commas": "<COMMA>",
+            "periods": "<PERIOD>",
+            "ellipses": "<EPS>",
+            "parentheses": "<PAREN>",
         }
         # Create a hash table from punctuation to the internal ID
         self.punctuation_to_internal_id = {
@@ -120,8 +165,8 @@ class TextProcessor:
             list[str]: a list of missing symbols in the text. globs all adjacent missing symbols together
 
         >>> tp = TextProcessor(TextConfig())
-        >>> tp.get_missing_symbols(' ç **', quiet=True)
-        ['ç', '**']
+        >>> tp.get_missing_symbols(' ç -- &', quiet=True)
+        ['ç', '&']
         """
         if normalize_text:
             text = self.normalize_text(text)
@@ -144,7 +189,7 @@ class TextProcessor:
 
         >>> tp = TextProcessor(TextConfig())
         >>> tp.apply_punctuation_rules(['h', 'e', 'l', 'l', 'o', '.'])
-        ['h', 'e', 'l', 'l', 'o', '<BB>']
+        ['h', 'e', 'l', 'l', 'o', '<PERIOD>']
         """
         return [
             self.punctuation_to_internal_id.get(token, token)
@@ -220,8 +265,8 @@ class TextProcessor:
         >>> tp.calculate_phonological_features(['aɪ'])
         array([[ 1.,  1., -1.,  1., -1., -1., -1.,  0.,  1., -1., -1.,  0., -1.,
                  0., -1.,  0.,  0., -1., -1., -1.,  0., -1.,  0.,  0.,  0.,  0.,
-                 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.]],
-              dtype=float32)
+                 0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,  0.,
+                 0.,  0.,  0.,  0.]], dtype=float32)
         """
         if self.phonological_feature_calculator is None:
             self.phonological_feature_calculator = PhonologicalFeatureCalculator(
@@ -288,9 +333,9 @@ class TextProcessor:
             list[str]: List of symbols in the text without missing symbols
 
         >>> tp = TextProcessor(TextConfig())
-        >>> tp.apply_tokenization('\x80\x80 *', quiet=True)
+        >>> tp.apply_tokenization('\x80\x80 &', quiet=True)
         ['\x80', '\x80', ' ']
-        >>> tp.missing_symbols['*']
+        >>> tp.missing_symbols['&']
         1
         """
         if find_missing:
@@ -320,7 +365,7 @@ class TextProcessor:
         >>> from everyvoice.config.text_config import Symbols
         >>> tp = TextProcessor(TextConfig(symbols=Symbols(ipa=['a', 'h', 'ʌ', 'l', 'o', 'ʊ'])))
         >>> tp.encode_text('hello \x80\x80', quiet=True) # e is not in the default symbols so it is ignored
-        [19, 20, 20, 21, 1, 0, 0]
+        [28, 29, 29, 30, 1, 0, 0]
         >>> tp.encode_text('hello \x80\x80', apply_g2p=True, lang_id='boop', quiet=True)
         Traceback (most recent call last):
         ...
@@ -330,7 +375,7 @@ class TextProcessor:
         ...
         ValueError: 'encode_as_phonological_features' was set to True but 'apply_g2p' was set to False. In order to calculate phonological features, you must first apply g2p to the text. Please set 'apply_g2p' to True.
         >>> tp.encode_text('hello \x80\x80', apply_g2p=True, lang_id='eng', quiet=True)
-        [19, 27, 20, 21, 26, 1, 0, 0]
+        [28, 38, 29, 30, 37, 1, 0, 0]
         """
         # Error states
         if encode_as_phonological_features and not apply_g2p:
@@ -380,7 +425,7 @@ class TextProcessor:
 
         >>> tp = TextProcessor(TextConfig())
         >>> tp.token_sequence_to_text_sequence([0, 6, 0, 0])
-        ['\x80', '<SIL>', '\x80', '\x80']
+        ['\x80', '<COMMA>', '\x80', '\x80']
         """
         return [self._id_to_symbol[symbol_id] for symbol_id in sequence]
 
@@ -394,7 +439,7 @@ class TextProcessor:
             list[int]: a list of token indices
 
         >>> tp = TextProcessor(TextConfig())
-        >>> tp.encode_string_tokens(['\x80', '<SIL>', '\x80', '\x80'])
+        >>> tp.encode_string_tokens(['\x80', '<COMMA>', '\x80', '\x80'])
         [0, 6, 0, 0]
         """
         # TODO: catch errors
@@ -460,7 +505,7 @@ class TextProcessor:
 
         >>> tp = TextProcessor(TextConfig())
         >>> tp.decode_tokens([0, 1, 2, 0, 0])
-        '\x80/ /<QUOTE>/\x80/\x80'
+        '\x80/ /<SEMICOL>/\x80/\x80'
         """
         if join_character is None:
             return self.token_sequence_to_text_sequence(sequence)
