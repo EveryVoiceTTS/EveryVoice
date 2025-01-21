@@ -1,0 +1,126 @@
+- - EveryVoice Wizard
+  - 0.2.0a1
+- - Root
+  - null
+- - Name Step
+  - regress
+- - Contact Name Step
+  - Regression Tester
+- - Contact Email Step
+  - Eric.Joanis@nrc-cnrc.gc.ca
+- - Output Path Step
+  - .
+- - Filelist Step
+  - ../regress-lj-600/metadata.csv
+- - Dataset Permission Step
+  - Yes, I do have permission to use this data.
+- - Filelist Format Step
+  - psv
+- - Filelist Has Header Line Step
+  - 'no'
+- - Basename Header Step
+  - 0
+- - Text Header Step
+  - 1
+- - Filelist Text Representation Step
+  - characters
+- - Text Processing Step
+  - - 0
+    - 1
+- - Data Has Speaker Step
+  - 'no'
+- - Know Speaker Step
+  - 'yes'
+- - Add Speaker Step
+  - english_speaker
+- - Data Has Language Step
+  - 'no'
+- - Select Language Step
+  - '[eng]: English'
+- - Wavs Dir Step
+  - ../regress-lj-600/wavs
+- - Validate Wavs Step
+  - OK
+- - Symbol-Set Step
+  - true
+- - SoX Effects Step
+  - []
+- - Dataset Name Step
+  - lj600
+- - More Datasets Step
+  - 'yes'
+- - Filelist Step
+  - ../regress-si/si_lk.lines.txt
+- - Dataset Permission Step
+  - Yes, I do have permission to use this data.
+- - Filelist Format Step
+  - festival
+- - Filelist Text Representation Step
+  - characters
+- - Text Processing Step
+  - - 1
+- - Data Has Speaker Step
+  - 'no'
+- - Know Speaker Step
+  - 'yes'
+- - Add Speaker Step
+  - sinhalese_speaker
+- - Data Has Language Step
+  - 'no'
+- - Select Language Step
+  - '[und]: my language isn''t here'
+- - Wavs Dir Step
+  - ../regress-si/wavs
+- - Validate Wavs Step
+  - OK
+- - Symbol-Set Step
+  - true
+- - SoX Effects Step
+  - - 0
+    - 1
+    - 2
+- - Dataset Name Step
+  - si
+- - More Datasets Step
+  - 'yes'
+- - Filelist Step
+  - ../regress-xh/line_index.tsv
+- - Dataset Permission Step
+  - Yes, I do have permission to use this data.
+- - Filelist Format Step
+  - tsv
+- - Filelist Has Header Line Step
+  - 'no'
+- - Basename Header Step
+  - 0
+- - Text Header Step
+  - 1
+- - Filelist Text Representation Step
+  - characters
+- - Text Processing Step
+  - - 0
+    - 1
+- - Data Has Speaker Step
+  - 'no'
+- - Know Speaker Step
+  - 'yes'
+- - Add Speaker Step
+  - isixhosa_speaker
+- - Data Has Language Step
+  - 'no'
+- - Select Language Step
+  - '[und]: my language isn''t here'
+- - Wavs Dir Step
+  - ../regress-xh/wavs
+- - Validate Wavs Step
+  - OK
+- - Symbol-Set Step
+  - true
+- - SoX Effects Step
+  - - 1
+- - Dataset Name Step
+  - xh
+- - More Datasets Step
+  - 'no'
+- - Config Format Step
+  - 'yaml'
