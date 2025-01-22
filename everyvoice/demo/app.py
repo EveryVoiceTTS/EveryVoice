@@ -73,6 +73,7 @@ def synthesize_audio(
         raise gr.Error("Output format is not selected. Please select an output format.")
     config, device, predictions, callbacks = synthesize_helper(
         model=text_to_spec_model,
+        preprocessor=None,
         style_reference=style_reference,
         vocoder_model=vocoder_model,
         vocoder_config=vocoder_config,
@@ -89,6 +90,7 @@ def synthesize_audio(
         speaker=speaker,
         duration_control=duration_control,
         filelist=None,
+        filelist_data=None,
         teacher_forcing_directory=None,
         batch_size=1,
         num_workers=1,
