@@ -394,9 +394,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                     preprocessed_dir.mkdir(parents=True, exist_ok=True)
                     output_filelist = preprocessed_dir / "preprocessed_filelist.psv"
                     shutil.copyfile(filelist_test_info["path"], output_filelist)
-                    fp_config.preprocessing.source_data[
-                        0
-                    ].filelist = filelist_test_info["path"]
+                    fp_config.preprocessing.source_data[0].filelist = (
+                        filelist_test_info["path"]
+                    )
                     fp_config.preprocessing.save_dir = preprocessed_dir
                     preprocessor = Preprocessor(fp_config)
                     with (
