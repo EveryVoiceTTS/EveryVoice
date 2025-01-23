@@ -1,0 +1,48 @@
+- - EveryVoice Wizard
+  - 0.2.0a1
+- - Root
+  - null
+- - Name Step
+  - regress
+- - Contact Name Step
+  - Regression Tester
+- - Contact Email Step
+  - Eric.Joanis@nrc-cnrc.gc.ca
+- - Output Path Step
+  - .
+- - Filelist Step
+  - si_lk.lines.txt
+- - Dataset Permission Step
+  - Yes, I do have permission to use this data.
+- - Filelist Format Step
+  - festival
+- - Filelist Text Representation Step
+  - characters
+- - Text Processing Step
+  - []
+- - Data Has Speaker Step
+  - 'no'
+- - Know Speaker Step
+  - 'yes'
+- - Add Speaker Step
+  - sinhala_speaker
+- - Data Has Language Step
+  - 'no'
+- - Select Language Step
+  - '[und]: my language isn''t here'
+- - Wavs Dir Step
+  - wavs
+- - Validate Wavs Step
+  - OK
+- - Symbol-Set Step
+  - true
+- - SoX Effects Step
+  - - 0
+    - 1
+    - 2
+- - Dataset Name Step
+  - sinhala-regress
+- - More Datasets Step
+  - 'no'
+- - Config Format Step
+  - 'yaml'
