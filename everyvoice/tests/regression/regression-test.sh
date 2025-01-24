@@ -14,7 +14,7 @@
 
 # User env config -- set ACTIVATE_SCRIPT to point to something that will activate the
 # right Python environment, or leave it empty if you don't need it.
-ACTIVATE_SCRIPT=$HOME/start_ev.sh
+ACTIVATE_SCRIPT=${ACTIVATE_SCRIPT:-$HOME/start_ev.sh}
 
 # Run a command, logging it first
 r() {

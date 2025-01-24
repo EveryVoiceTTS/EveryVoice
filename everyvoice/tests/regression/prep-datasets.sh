@@ -17,7 +17,9 @@ get_slice() {
 
 EVERYVOICE_REGRESS_ROOT=$(python -c 'import everyvoice; print(everyvoice.__path__[0])')/tests/regression
 
-LJ_SPEECH_DATASET=$HOME/sgile/data/LJSpeech-1.1
+SGILE_DATASET_ROOT=${SGILE_DATASET_ROOT:-$HOME/sgile/data}
+
+LJ_SPEECH_DATASET=$SGILE_DATASET_ROOT/LJSpeech-1.1
 LJSLICES="150 600 1600 full"
 for slice in $LJSLICES; do
     dir=regress-lj-$slice
@@ -34,7 +36,7 @@ Boo!
     echo spec > "$dir"/test2.txt
 done
 
-SinhalaTTS=$HOME/sgile/data/SinhalaTTS
+SinhalaTTS=$SGILE_DATASET_ROOT/SinhalaTTS
 dir=regress-si
 mkdir $dir
 ln -s "$SinhalaTTS/wavs" $dir/
@@ -51,7 +53,7 @@ cat <<'==EOF==' > "$dir"/test.txt
 ==EOF==
 echo "අක-ෂර" > "$dir"/test2.txt
 
-isiXhosa=$HOME/sgile/data/OpenSLR32-four-South-Afican-languages/xh_za/za/xho
+isiXhosa=$SGILE_DATASET_ROOT/OpenSLR32-four-South-Afican-languages/xh_za/za/xho
 dir=regress-xh
 mkdir $dir
 ln -s "$isiXhosa/wavs" $dir/
