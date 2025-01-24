@@ -103,6 +103,12 @@ dev = [
 ]
 test = ["jsonschema>=4.17.3", "pep440>=0.1.2"]
 # [Specifying GPU version of pytorch for python package in pyproject.toml](https://discuss.pytorch.org/t/specifying-gpu-version-of-pytorch-for-python-package-in-pyproject-toml/209157)
+# [--find-links equivalent](https://github.com/python-poetry/poetry/issues/1391#issue-495944185)
+# And adding https://download.pytorch.org/whl/torch_stable.html as a repository
+# to the pyproject.toml does not work, because it (the PyTorch wheel index
+# page) is not PEP conform.
+# NOTE: This seems to work?!
+# It seems to install the rocm version when we ask it to install cu118.
 darwin = [
   "torch==2.1.0; sys_platform == 'darwin'",
   "torchaudio==2.1.0; sys_platform == 'darwin'",
