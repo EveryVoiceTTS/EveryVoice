@@ -12,15 +12,15 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
 
 ## Quickstart from PyPI
 
- - Install Python 3.10 or 3.11 and create a venv or a conda env for EveryVoice.
+- Install Python 3.10 or 3.11 and create a venv or a conda env for EveryVoice.
 
- - Install `sox`. On Ubuntu, `sudo apt-get install sox libsox-dev` should work. If not, use Conda and run `conda install sox -c conda-forge` in your EveryVoice environment
+- Install `sox`. On Ubuntu, `sudo apt-get install sox libsox-dev` should work. If not, use Conda and run `conda install sox -c conda-forge` in your EveryVoice environment
 
- - Install `ffmpeg`. On Ubuntu, `sudo apt-get install ffmpeg` should work. If not, use Conda and run `conda install ffmpeg` in your EveryVoice environment.
+- Install `ffmpeg`. On Ubuntu, `sudo apt-get install ffmpeg` should work. If not, use Conda and run `conda install ffmpeg` in your EveryVoice environment.
 
- - Install `torch` and `torchaudio` version 2.1.0 for your platform and CUDA version: follow the instructions at https://pytorch.org/get-started/locally/ but specify `torch==2.1.0 torchaudio==2.1.0` in the install command and remove `torchvision`.
+- Install `torch` and `torchaudio` version 2.1.0 for your platform and CUDA version: follow the instructions at https://pytorch.org/get-started/locally/ but specify `torch==2.1.0 torchaudio==2.1.0` in the install command and remove `torchvision`.
 
- - Run `pip install everyvoice==0.2.0a1` (change the version to the current version if needed).
+- Run `pip install everyvoice==0.2.0a1` (change the version to the current version if needed).
 
 ## Quickstart from source
 
@@ -68,7 +68,7 @@ This repo follows the [Contributor Covenant](http://contributor-covenant.org/ver
 Please make sure our standard Git hooks are activated, by running these commands in your sandbox (if you used our `make-everyvoice-env` script then this step is already done for you):
 
 ```sh
-pip install -r requirements.dev.txt
+pip install -e .[dev]
 pre-commit install
 gitlint install-hook
 git submodule foreach 'pre-commit install'
