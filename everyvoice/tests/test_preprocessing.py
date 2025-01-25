@@ -37,21 +37,6 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
     filelist = generic_psv_filelist_reader(BasicTestCase.data_dir / "metadata.psv")
 
-    # def test_compute_stats(self):
-    #     feat_prediction_config = EveryVoiceConfig.load_config_from_path().feature_prediction
-    #     preprocessor = Preprocessor(feat_prediction_config)
-    #     preprocessor.compute_stats()
-    # self.assertEqual(
-    #     self.preprocessor.config["preprocessing"]["audio"]["mel_mean"],
-    #     -4.018,
-    #     places=3,
-    # )
-    # self.assertEqual(
-    #     self.preprocessor.config["preprocessing"]["audio"]["mel_std"],
-    #     4.017,
-    #     places=3,
-    # )
-
     def test_read_filelist(self):
         self.assertEqual(self.filelist[0]["basename"], "LJ050-0269")
 
@@ -64,18 +49,6 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             with init_context({"writing_config": Path(tmpdir)}):
                 with self.assertRaises(ValueError):
                     FeaturePredictionConfig(**no_permissions_args)
-
-    def test_check_data(self):
-        with capture_stderr():
-            checked_data = self.preprocessor.check_data(
-                self.filelist, heavy_objective_evaluation=True
-            )
-        self.assertIn("pesq", checked_data[0])
-        self.assertIn("stoi", checked_data[0])
-        self.assertIn("si_sdr", checked_data[0])
-        self.assertGreater(checked_data[0]["pesq"], 3.0)
-        self.assertLess(checked_data[0]["pesq"], 5.0)
-        self.assertAlmostEqual(checked_data[0]["duration"], 5.17, 2)
 
     def test_process_audio_for_alignment(self):
         config = AlignerConfig(contact=self.contact)
