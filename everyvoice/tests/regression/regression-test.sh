@@ -37,33 +37,34 @@ r() {
 echo "Start at $(date)"
 date > START
 
-trap 'echo "Failed or killed at $(date)"; date > FAILED' 0
+trap 'echo "Failed or killed at $(date)"; date | tee FAILED > DONE' 0
 
 # Regression config
 [[ -e "$ACTIVATE_SCRIPT" ]] && source "$ACTIVATE_SCRIPT"
 export TQDM_MININTERVAL=5
 MAX_STEPS=1000
-# For a production config, use MAX_STEPS=100000 and increase the SBATCH --time above
+MAX_EPOCHS=10
+# For a production config, use MAX_STEPS=100000, MAX_EPOCHS=1000, and increase the SBATCH --time above
 
 # Run the new-project wizard
 r "coverage run -p -m everyvoice new-project --resume-from wizard-resume"
 
 # Enter the directory created by the wizard
-cd regress || { echo "Cannot cd into regress directory, aborting."; date > DONE ; exit 1; }
-trap 'echo "Failed or killed at $(date)"; date > ../FAILED' 0
+cd regress || { echo "ERROR: Cannot cd into regress directory, aborting."; exit 1; }
+trap 'echo "Failed or killed at $(date)"; date | tee ../FAILED > ../DONE' 0
 
 # Preprocess
 r "coverage run -p -m everyvoice preprocess config/everyvoice-text-to-spec.yaml"
 
 # Train the fs2 model
-r "coverage run -p -m everyvoice train text-to-spec config/everyvoice-text-to-spec.yaml --config-args training.max_steps=$MAX_STEPS"
+r "coverage run -p -m everyvoice train text-to-spec config/everyvoice-text-to-spec.yaml --config-args training.max_steps=$MAX_STEPS --config-args training.max_epochs=$MAX_EPOCHS"
 FS2=logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt
-ls $FS2
+ls $FS2 || { echo ERROR: Training the text-to-spec model failed, aborting.; exit 1; }
 
 # Train the vocoder
-r "coverage run -p -m everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml --config-args training.max_steps=$MAX_STEPS"
+r "coverage run -p -m everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml --config-args training.max_steps=$MAX_STEPS --config-args training.max_epochs=$MAX_EPOCHS"
 VOCODER=logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
-ls $VOCODER
+ls $VOCODER || { echo ERROR: Training the Vocoder failed, aborting.; exit 1; }
 
 # Synthesize some text
 r "coverage run -p -m everyvoice synthesize from-text \
@@ -82,7 +83,7 @@ r "coverage run -p -m everyvoice synthesize from-spec \
 
 # Exercise DeepForceAligner
 # Meh, this appears to be broken...
-#r "coverage run -p -m dfaligner train config/everyvoice-aligner.yaml --config-args training.max_steps=$MAX_STEPS"
+#r "coverage run -p -m dfaligner train config/everyvoice-aligner.yaml --config-args training.max_steps=$MAX_STEPS --config-args training.max_epochs=$MAX_EPOCHS"
 #r "coverage run -p -m dfaligner extract-alignments"
 
 

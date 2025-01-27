@@ -18,10 +18,16 @@ set -o errexit
 TOP_LEVEL_DIR=$(mktemp --directory regress-$(date +'%Y%m%d')-XXX)
 cd "$TOP_LEVEL_DIR"
 
+if sbatch -h >& /dev/null; then
+    SUBMIT_COMMAND=sbatch
+else
+    SUBMIT_COMMAND=bash
+fi
+
 ../prep-datasets.sh
 for DIR in regress-*; do
     pushd "$DIR"
-    sbatch ../../regression-test.sh
+    $SUBMIT_COMMAND ../../regression-test.sh
     popd
 done
 

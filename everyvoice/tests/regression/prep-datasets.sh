@@ -20,7 +20,7 @@ EVERYVOICE_REGRESS_ROOT=$(python -c 'import everyvoice; print(everyvoice.__path_
 SGILE_DATASET_ROOT=${SGILE_DATASET_ROOT:-$HOME/sgile/data}
 
 LJ_SPEECH_DATASET=$SGILE_DATASET_ROOT/LJSpeech-1.1
-LJSLICES="150 600 1600 full"
+LJSLICES="160 600 1600 full"
 for slice in $LJSLICES; do
     dir=regress-lj-$slice
     mkdir "$dir"

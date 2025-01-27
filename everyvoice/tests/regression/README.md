@@ -31,3 +31,13 @@ done
 ```
 
 Or just use `../../regression-test.sh` directly in the loop if you're not on a cluster.
+
+## One script to run them all
+
+All the above can be accomplished by running `go.sh`.
+
+## Cluster parameters
+
+The scripts hardcode NRC's default Slurm cluster parameters. Add `--partition=... --account=...`
+the the `sbatch` commands to override, or edit `go.sh` and `regression-test.sh` to use
+your partition and account settings to request nodes with GPUs available.
