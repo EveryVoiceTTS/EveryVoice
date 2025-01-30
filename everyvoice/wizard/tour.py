@@ -6,6 +6,7 @@ from typing import Optional, Sequence
 import questionary
 import yaml
 from anytree import PreOrderIter, RenderTree
+from packaging.version import Version
 from rich import print as rich_print
 from rich.panel import Panel
 
@@ -170,6 +171,9 @@ class RootStep(Step):
         return response is None
 
 
+SOFTWARE_NAME = "EveryVoice Wizard"
+
+
 class Tour:
     def __init__(
         self,
@@ -305,12 +309,41 @@ class Tour:
 
         q_and_a_iter = iter(q_and_a_list)
         software, version = next(q_and_a_iter)
-        if software != "EveryVoice Wizard" or version != VERSION:
+        if software != SOFTWARE_NAME:
             rich_print(
-                f"[yellow]Warning: saved progress file is for {software} version '{version}', "
-                f"but this is version '{VERSION}'. Proceeding anyway, but be aware that "
-                "the saved responses may not be compatible.[/yellow]"
+                f"Error loading progress from {resume_from}: it is for software "
+                f"{software}, but this is {SOFTWARE_NAME}."
             )
+            sys.exit(1)
+
+        # When we introduce breaking changes to the wizard question sequence, code
+        # is to be added here to automatically fix resume-from files, adding defaults
+        # for new questions if possible, or else giving a warning explaining what needs
+        # to be changed if auto upgrade is not possible.
+        # Regression testing should warn us when such auto-upgrade code is required here.
+        compatible_since = Version("0.2.0a0")
+        if version != VERSION:
+            if Version(version) >= Version(VERSION):
+                rich_print(
+                    "[red]Warning: saved progress file is from the future, for "
+                    f"{software} version '{version}', but this is version '{VERSION}'. "
+                    "Proceeding anyway, but we can't tell if they'll be compatible. "
+                    "Please consider updating your software.[/red]"
+                )
+            elif Version(version) >= compatible_since:
+                rich_print(
+                    f"[yellow]Warning: saved progress file is for {software} version '{version}', "
+                    f"but this is version '{VERSION}', which is expected to be compatible. "
+                    "Proceeding anyway, but be aware that some things may have changed "
+                    "between versions.[/yellow]"
+                )
+            else:
+                rich_print(
+                    f"[yellow]Warning: saved progress file is for {software} version '{version}', "
+                    f"but this is version '{VERSION}', which is not fully compatible. "
+                    "Proceeding anyway, but be aware that some saved responses may no "
+                    "longer be compatible.[/yellow]"
+                )
         q_and_a = next(q_and_a_iter, None)
         node = self.root
         while node is not None and q_and_a is not None:
@@ -426,7 +459,7 @@ class Tour:
         try:
             with open(filename, "w", encoding="utf8") as f:
                 yaml.dump(
-                    [["EveryVoice Wizard", VERSION]] + self.get_progress(current_node),
+                    [[SOFTWARE_NAME, VERSION]] + self.get_progress(current_node),
                     f,
                     allow_unicode=True,
                 )
