@@ -8,17 +8,20 @@ import tempfile
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
+from textwrap import dedent
 from types import MethodType
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence
 from unittest import TestCase
 
 from anytree import PreOrderIter, RenderTree
+from packaging.version import Version
 
 # [Unit testing questionary](https://github.com/prompt-toolkit/python-prompt-toolkit/blob/master/docs/pages/advanced_topics/unit_testing.rst)
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 
+from everyvoice._version import VERSION
 from everyvoice.tests.stubs import (
     Say,
     capture_stderr,
@@ -1845,6 +1848,19 @@ class WizardTest(TestCase):
             self.assertRegex(output.getvalue(), r"Contact Name: *Jane Doe")
         self.assertEqual(tour.state, self.trivial_tour_results)
 
+    progress_template = dedent(
+        """\
+        - - EveryVoice Wizard
+          - {version}
+        - - Root
+          - null
+        - - Name Step
+          - project_name
+        - - Contact Name Step
+          - Jane Doe
+        """
+    )
+
     def test_control_c_save_progress(self):
         # Ctrl-C plus option 3 saves progress to file
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -1865,8 +1881,20 @@ class WizardTest(TestCase):
             ):
                 with patch_menu_prompt(3):
                     tour.run()
-                self.assertTrue(progress_file.exists())
+            self.assertTrue(progress_file.exists())
+            with open(progress_file, encoding="utf8") as f:
+                progress_contents = f.read()
+                # print(progress_contents)
+                self.assertEqual(
+                    progress_contents, self.progress_template.format(version=VERSION)
+                )
 
+    def test_resume_from(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdir = Path(tmpdirname)
+            progress_file = tmpdir / "saved-progress"
+            with open(progress_file, "w") as f:
+                f.write(self.progress_template.format(version=VERSION))
             # resume works
             tour = make_trivial_tour()
             with patch_input("email@mail.com"), capture_stdout() as out:
@@ -1874,26 +1902,66 @@ class WizardTest(TestCase):
             self.assertIn("Applying saved response", out.getvalue())
             self.assertEqual(tour.state, self.trivial_tour_results)
 
-            with open(progress_file, encoding="utf8") as f:
-                progress_lines = f.readlines()
-
-            # resume from a changed version works with a warning
+    def test_resume_from_the_future(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdir = Path(tmpdirname)
+            # resume from a future version works with a warning
             changed_version = tmpdir / "changed-version"
             with open(changed_version, "w", encoding="utf8") as f:
-                f.write(progress_lines[0])
-                f.write(progress_lines[1].replace("\n", "changed\n"))
-                f.write("".join(progress_lines[2:]))
+                v = Version(VERSION)
+                f.write(
+                    self.progress_template.format(
+                        version=f"{v.major + 1}.{v.minor}.{v.micro}"
+                    )
+                )
+
             tour = make_trivial_tour()
             with patch_input("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
             self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
+            self.assertRegex(out.getvalue(), r"(?s)consider.*updating.*your.*software")
             self.assertIn("Applying saved response", out.getvalue())
             self.assertEqual(tour.state, self.trivial_tour_results)
+
+    def test_resume_from_near_past(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdir = Path(tmpdirname)
+            # resume from a changed version works with a warning
+            changed_version = tmpdir / "changed-version"
+            with open(changed_version, "w", encoding="utf8") as f:
+                f.write(self.progress_template.format(version=VERSION + ".dev0"))
+
+            tour = make_trivial_tour()
+            with patch_input("email@mail.com"), capture_stdout() as out:
+                tour.run(resume_from=changed_version)
+            self.assertRegex(out.getvalue(), r"(?s)expected.*to.*be.*compatible")
+            self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
+            self.assertIn("Applying saved response", out.getvalue())
+            self.assertEqual(tour.state, self.trivial_tour_results)
+
+    def test_resume_from_far_past(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdir = Path(tmpdirname)
+            # resume from a potentially incompatible older version
+            changed_version = tmpdir / "changed-version"
+            with open(changed_version, "w", encoding="utf8") as f:
+                f.write(self.progress_template.format(version="0.1.2"))
+            tour = make_trivial_tour()
+            with patch_input("email@mail.com"), capture_stdout() as out:
+                tour.run(resume_from=changed_version)
+            self.assertRegex(out.getvalue(), r"(?s)not.*fully.*compatible")
+            self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
+            self.assertIn("Applying saved response", out.getvalue())
+            self.assertEqual(tour.state, self.trivial_tour_results)
+
+    def test_resume_with_invalid_progress_files(self):
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            tmpdir = Path(tmpdirname)
 
             # This one has an invalid response but lets the user recover
             invalid_response = tmpdir / "invalid-response"
             with open(invalid_response, "w", encoding="utf8") as f:
-                f.write("".join(progress_lines))
+                f.write(self.progress_template.format(version=VERSION))
                 f.write("- - Contact Email Step\n  - invalid email\n")
             tour = make_trivial_tour()
             with patch_input("email@mail.com"), capture_stdout() as out:
@@ -1915,6 +1983,10 @@ class WizardTest(TestCase):
             with self.assertRaises(SystemExit), capture_stdout():
                 tour.run(resume_from=bad_progress_file2)
 
+            progress_lines = self.progress_template.format(version=VERSION).splitlines(
+                keepends=True
+            )
+
             truncated_progress_file = tmpdir / "truncated-progress"
             with open(truncated_progress_file, "w", encoding="utf8") as f:
                 f.write("".join(progress_lines[:-1]))
@@ -1932,15 +2004,9 @@ class WizardTest(TestCase):
 
             questions_out_of_order = tmpdir / "questions-out-of-order"
             with open(questions_out_of_order, "w", encoding="utf8") as f:
-                f.write(
-                    "".join(
-                        [
-                            *progress_lines[:-4],
-                            *progress_lines[-2:],
-                            *progress_lines[-4:-2],
-                        ]
-                    )
-                )
+                f.write("".join(progress_lines[:-4]))
+                f.write("".join(progress_lines[-2:]))
+                f.write("".join(progress_lines[-4:-2]))
             with self.assertRaises(SystemExit), capture_stdout() as out:
                 tour.run(resume_from=questions_out_of_order)
             self.assertIn("out of sync", out.getvalue())
@@ -1954,6 +2020,14 @@ class WizardTest(TestCase):
             with self.assertRaises(SystemExit), capture_stdout() as out:
                 tour.run(resume_from=extra_question_not_in_tour)
             self.assertIn("saved responses left", out.getvalue())
+
+            wrong_software_name = tmpdir / "wrong-software-name"
+            with open(wrong_software_name, "w", encoding="utf8") as f:
+                f.write("- - Wrong Software\n")
+                f.write("".join(progress_lines[1:]))
+            with self.assertRaises(SystemExit), capture_stdout() as out:
+                tour.run(resume_from=wrong_software_name)
+            self.assertRegex(out.getvalue(), r"(?s)it.*is.*for.*software")
 
     def test_control_c_exit(self):
         # Ctrl-C plus option 4 (Exit) exits
