@@ -1881,11 +1881,28 @@ class WizardTest(TestCase):
             changed_version = tmpdir / "changed-version"
             with open(changed_version, "w", encoding="utf8") as f:
                 f.write(progress_lines[0])
-                f.write(progress_lines[1].replace("\n", "changed\n"))
+                incremented_version = progress_lines[1][:-2] + str(
+                    int(progress_lines[1][-2:-1]) + 1
+                )
+                f.write(incremented_version + "\n")
                 f.write("".join(progress_lines[2:]))
             tour = make_trivial_tour()
             with patch_input("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
+            self.assertRegex(out.getvalue(), r"(?s)expected.*to.*be.*compatible")
+            self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
+            self.assertIn("Applying saved response", out.getvalue())
+            self.assertEqual(tour.state, self.trivial_tour_results)
+
+            # resume from a potentially incompatible older version
+            with open(changed_version, "w", encoding="utf8") as f:
+                f.write(progress_lines[0])
+                f.write("  - 0.1.2\n")
+                f.write("".join(progress_lines[2:]))
+            tour = make_trivial_tour()
+            with patch_input("email@mail.com"), capture_stdout() as out:
+                tour.run(resume_from=changed_version)
+            self.assertRegex(out.getvalue(), r"(?s)not.*fully.*compatible")
             self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
             self.assertIn("Applying saved response", out.getvalue())
             self.assertEqual(tour.state, self.trivial_tour_results)
