@@ -58,6 +58,7 @@ dependencies = [
   "merge-args",
   "nltk==3.9.1",
   "numpy<2",                       # torch < 2.4.1 requires numpy < 2 but fails to declare it
+  "packaging>=20.9",
   "pandas~=2.0",
   "panphon==0.20.0",
   "protobuf~=4.25",                # https://github.com/EveryVoiceTTS/EveryVoice/issues/387
