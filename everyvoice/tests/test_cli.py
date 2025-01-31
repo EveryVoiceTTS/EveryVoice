@@ -271,10 +271,9 @@ class CLITest(TestCase):
             dir_result.stdout,
             "should report metrics in terms of averages",
         )
-        self.assertTrue(
-            (self.data_dir / "lj" / "wavs" / "evaluation.json").exists(),
-            "should print out results to a file",
-        )
+        evaluation_output = self.data_dir / "lj" / "wavs" / "evaluation.json"
+        self.assertTrue(evaluation_output.exists(), "should print results to a file")
+        evaluation_output.unlink()
 
     def test_inspect_checkpoint_help(self):
         with silence_c_stderr():
