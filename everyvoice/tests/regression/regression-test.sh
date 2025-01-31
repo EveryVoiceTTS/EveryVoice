@@ -81,18 +81,21 @@ r "coverage run -p -m everyvoice synthesize from-spec \
     --input synthesis_output/synthesized_spec/'$ONE_WORD'-*.pt \
     --model '$VOCODER'"
 
-# Exercise DeepForceAligner
-# Meh, this appears to be broken...
+# TODO: Exercise DeepForceAligner
+# Meh, this appears to be broken... train passes on lj-full, not on lj-160 or lj-600
 #r "coverage run -p -m dfaligner train config/everyvoice-aligner.yaml --config-args training.max_steps=$MAX_STEPS --config-args training.max_epochs=$MAX_EPOCHS"
-#r "coverage run -p -m dfaligner extract-alignments"
+#ALIGNER=logs_and_checkpoints/AlignerExperiment/base/checkpoints/last.ckpt
+# Even on lj-full, this eventually fails with a stack trace dump with a `KeyError: 'character_tokens'` at `dfaligner/dataset.py:165`
+#r "coverage run -p -m dfaligner extract-alignments config/everyvoice-aligner.yaml --model '$ALIGNER'"
 
 
-# 7: spin up the demo
+# Spin up the demo
 # everyvoice demo $FS2 $VOCODER &
+# TODO: use playwright to synthesize something using the demo
 
 
-# 8: use playwright to synthesize something using the demo
-# TODO...
+# TODO: use coverage analysis to flag the next priority things to add here
+
 
 echo "Done at $(date)"
 date > ../DONE
