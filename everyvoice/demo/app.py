@@ -46,6 +46,7 @@ def synthesize_audio(
     allowlist,
     denylist,
     output_dir=None,
+    include_file_output=True,
 ):
     if text == "":
         raise gr.Error(
@@ -69,7 +70,7 @@ def synthesize_audio(
     if speaker is None:
         raise gr.Error("Speaker is not selected. Please select a speaker.")
     if output_format is None:
-        raise gr.Error("Speaker is not selected. Please select an output format.")
+        raise gr.Error("Output format is not selected. Please select an output format.")
     config, device, predictions, callbacks = synthesize_helper(
         model=text_to_spec_model,
         style_reference=style_reference,
@@ -101,7 +102,10 @@ def synthesize_audio(
         file_writer = callbacks[output_format]
         file_output = file_writer.get_filename(basename, speaker, language)
 
-    return wav_output, file_output
+    if include_file_output:
+        return wav_output, file_output
+    else:
+        return wav_output
 
 
 def require_ffmpeg():
@@ -284,12 +288,21 @@ def create_demo_app(
                         interactive=interactive_speak,
                         label="Speaker",
                     )
-                with gr.Row():
-                    output_format = gr.Dropdown(
-                        choices=output_list,
-                        value=default_output,
-                        interactive=interactive_output,
-                        label="Output Format",
+                inputs = [inp_text, inp_slider, inp_lang, inp_speak]
+                if output_list != [SynthesizeOutputFormats.wav]:
+                    with gr.Row():
+                        output_format = gr.Dropdown(
+                            choices=output_list,
+                            value=default_output,
+                            interactive=interactive_output,
+                            label="Output Format",
+                        )
+                    inputs.append(output_format)
+                else:
+                    synthesize_audio_preset = partial(
+                        synthesize_audio_preset,
+                        output_format=SynthesizeOutputFormats.wav,
+                        include_file_output=False,
                     )
                 if model.config.model.use_global_style_token_module:
                     with gr.Row():
@@ -303,7 +316,6 @@ def create_demo_app(
                 else:
                     out_file = gr.File(label="File Output")
                     outputs = [out_audio, out_file]
-        inputs = [inp_text, inp_slider, inp_lang, inp_speak, output_format]
         # Only include the style reference input if the model supports it
         if model.config.model.use_global_style_token_module:
             inputs.append(style_reference)  # type: ignore
@@ -314,6 +326,6 @@ def create_demo_app(
         btn.click(
             synthesize_audio_preset,
             inputs=inputs,
-            outputs=[out_audio],
+            outputs=outputs,
         )
     return demo
