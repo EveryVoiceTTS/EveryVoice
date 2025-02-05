@@ -6,6 +6,7 @@ from typing import Optional, Sequence
 import questionary
 import yaml
 from anytree import PreOrderIter, RenderTree
+from packaging.version import Version
 from rich import print as rich_print
 from rich.panel import Panel
 
@@ -305,12 +306,27 @@ class Tour:
 
         q_and_a_iter = iter(q_and_a_list)
         software, version = next(q_and_a_iter)
+        # When we introduce breaking changes to the wizard question sequence, code
+        # is to be added here to automatically fix resume-from files, adding defaults
+        # for new questions if possible, or else giving a warning explaining what needs
+        # to be changed if auto upgrade is not possible.
+        # Regression testing should warn us when such auto-upgrade code is required here.
+        compatible_since = Version("0.2.0a0")
         if software != "EveryVoice Wizard" or version != VERSION:
-            rich_print(
-                f"[yellow]Warning: saved progress file is for {software} version '{version}', "
-                f"but this is version '{VERSION}'. Proceeding anyway, but be aware that "
-                "the saved responses may not be compatible.[/yellow]"
-            )
+            if Version(version) >= compatible_since:
+                rich_print(
+                    f"[yellow]Warning: saved progress file is for {software} version '{version}', "
+                    f"but this is version '{VERSION}', which is expected to be compatible. "
+                    "Proceeding anyway, but be aware that some things may have changed "
+                    "between versions.[/yellow]"
+                )
+            else:
+                rich_print(
+                    f"[yellow]Warning: saved progress file is for {software} version '{version}', "
+                    f"but this is version '{VERSION}', which is not fully compatible. "
+                    "Proceeding anyway, but be aware that some saved responses may no "
+                    "longer be compatible.[/yellow]"
+                )
         q_and_a = next(q_and_a_iter, None)
         node = self.root
         while node is not None and q_and_a is not None:
