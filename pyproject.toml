@@ -19,7 +19,7 @@ maintainers = [
   { name = "Samuel Larkin", email = "Samuel.Larkin@nrc-cnrc.gc.ca" },
 ]
 readme = "README.md"
-requires-python = ">=3.10, <3.12"
+requires-python = ">=3.10, <3.13"
 keywords = ["TTS", "CLI"]
 classifiers = [
   "Intended Audience :: Developers",
