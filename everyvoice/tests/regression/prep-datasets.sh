@@ -71,3 +71,9 @@ echo isiXhosa > "$dir"/test2.txt
 dir=regress-mix
 mkdir $dir
 cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-mix "$dir"/wizard-resume
+cat <<'==EOF==' > "$dir"/test.txt
+This is a test.
+සිංහල අක්ෂර මාලාව
+ukukrwentshwa isiXhosa
+==EOF==
+echo test > "$dir"/test2.txt
