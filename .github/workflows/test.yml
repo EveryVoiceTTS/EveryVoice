@@ -26,7 +26,7 @@ jobs:
       - name: Install dependencies and package
         run: |
           CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -e .[dev] coverage
+          pip install -e .[dev]
       - run: pip freeze
       - run: pip list
       - uses: tj-actions/changed-files@v45
@@ -96,3 +96,27 @@ jobs:
           echo ""
           ! licensecheck --format csv 2> /dev/null | grep -v -E 'nvidia-|aiohappyeyeballs' | grep PROPRIETARY \
           || echo "The package(s) listed just above this line is/are potentially a problem."
+
+  matrix:
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - run: sudo apt-get update
+      - run: sudo apt-get install --fix-missing sox libsox-dev ffmpeg
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+      - name: Install dependencies and package
+        run: |
+          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+          pip install -e .[dev]
+      - run: pip freeze
+      - run: pip list
+      - run: cd everyvoice && coverage run run_tests.py dev
