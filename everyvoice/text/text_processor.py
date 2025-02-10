@@ -9,7 +9,10 @@ from nltk.tokenize import RegexpTokenizer
 
 from everyvoice.config.text_config import TextConfig
 from everyvoice.exceptions import OutOfVocabularySymbolError
-from everyvoice.text.features import PhonologicalFeatureCalculator
+from everyvoice.text.features import (
+    DEFAULT_PUNCTUATION_HASH,
+    PhonologicalFeatureCalculator,
+)
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
 from everyvoice.text.utils import (
     apply_cleaners_helper,
@@ -77,7 +80,7 @@ class TextProcessor:
     'h/e/l/l/o/!'
     """
 
-    def __init__(self, config: TextConfig):
+    def __init__(self, config: TextConfig, punctuation_hash=DEFAULT_PUNCTUATION_HASH):
         self.config = config
         self.phonological_feature_calculator: Optional[
             PhonologicalFeatureCalculator
@@ -86,18 +89,7 @@ class TextProcessor:
 
         # Add punctuation
         # Add an internal hash to convert from the type of Punctuation to the internal representation
-        self.punctuation_internal_hash = {
-            "exclamations": "<EXCL>",
-            "question_symbols": "<QINT>",
-            "quotemarks": "<QUOTE>",
-            "colons": "<COLON>",
-            "semi_colons": "<SEMICOL>",
-            "hyphens": "<HYPHEN>",
-            "commas": "<COMMA>",
-            "periods": "<PERIOD>",
-            "ellipses": "<EPS>",
-            "parentheses": "<PAREN>",
-        }
+        self.punctuation_internal_hash = punctuation_hash
         # Create a hash table from punctuation to the internal ID
         self.punctuation_to_internal_id = {
             v: self.punctuation_internal_hash[punctuation_type]
