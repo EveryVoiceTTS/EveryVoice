@@ -5,10 +5,24 @@ from panphon import FeatureTable
 from everyvoice.config.text_config import TextConfig
 
 N_PHONOLOGICAL_FEATURES = 43
+DEFAULT_PUNCTUATION_HASH = {
+    "exclamations": "<EXCL>",
+    "ellipses": "<EPS>",
+    "question_symbols": "<QINT>",
+    "quotemarks": "<QUOTE>",
+    "periods": "<PERIOD>",
+    "commas": "<COMMA>",
+    "colons": "<COLON>",
+    "semi_colons": "<SEMICOL>",
+    "hyphens": "<HYPHEN>",
+    "parentheses": "<PAREN>",
+}
 
 
 class PhonologicalFeatureCalculator:
-    def __init__(self, text_config: TextConfig, punctuation_hash: dict):
+    def __init__(
+        self, text_config: TextConfig, punctuation_hash: dict = DEFAULT_PUNCTUATION_HASH
+    ):
         self.config = text_config
         self.punctuation_hash = punctuation_hash
         self.feature_table = FeatureTable()
@@ -38,8 +52,7 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a seven-dimensional one-hot encoding of punctuation, white space and silence
 
-        >>> punc_hash = punc_hash = {"exclamations": "<EXCL>", "ellipses": "<EPS>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "periods": "<PERIOD>", "commas": "<COMMA>", "colons": "<COLON>", "semi_colons": "<SEMICOL>", "hyphens": "<HYPHEN>", "parentheses": "<PAREN>"}
-        >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
+        >>> pf = PhonologicalFeatureCalculator(TextConfig())
         >>> pf.get_punctuation_features(['h', 'ʌ', 'l', 'o', 'ʊ', '<EXCL>'])
         array([[0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
                [0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
@@ -88,8 +101,7 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a two-dimensional one-hot encoding of primary and secondary stress
 
-        >>> punc_hash = punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "periods": "<PERIOD>", "commas": "<COMMA>", "colons": "<COLON>", "semi_colons": "<SEMICOL>", "hyphens": "<HYPHEN>", "parentheses": "<PAREN>"}
-        >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
+        >>> pf = PhonologicalFeatureCalculator(TextConfig())
         >>> pf.get_stress_features(['ˈ', 'ˌ' ])
         array([[1., 0.],
                [0., 1.]], dtype=float32)
@@ -114,8 +126,7 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a five-dimensional one-hot encoding of special tokens
 
-        >>> punc_hash = punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "periods": "<PERIOD>", "commas": "<COMMA>", "colons": "<COLON>", "semi_colons": "<SEMICOL>", "hyphens": "<HYPHEN>", "parentheses": "<PAREN>"}
-        >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
+        >>> pf = PhonologicalFeatureCalculator(TextConfig())
         >>> pf.get_special_token_features(['\x80', '[MASK]', '[CLS]', '[SEP]', '[UNK]' ])
         array([[1., 0., 0., 0., 0.],
                [0., 1., 0., 0., 0.],
@@ -148,8 +159,7 @@ class PhonologicalFeatureCalculator:
         Returns:
             npt.NDArray[np.float32]: a list of place and manner of articulation feature values
 
-        >>> punc_hash = {"exclamations": "<EXCL>", "question_symbols": "<QINT>", "quotemarks": "<QUOTE>", "periods": "<PERIOD>", "commas": "<COMMA>", "colons": "<COLON>", "semi_colons": "<SEMICOL>", "hyphens": "<HYPHEN>", "parentheses": "<PAREN>"}
-        >>> pf = PhonologicalFeatureCalculator(TextConfig(), punc_hash)
+        >>> pf = PhonologicalFeatureCalculator(TextConfig())
         >>> pf.token_to_segmental_features('\x80') # pad symbol is all zeros
         array([0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
                0., 0., 0., 0., 0., 0., 0.], dtype=float32)
