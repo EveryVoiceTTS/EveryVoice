@@ -99,7 +99,6 @@ jobs:
 
   matrix:
     strategy:
-      fail-fast: false
       matrix:
         python-version: ["3.11", "3.12"]
     runs-on: ubuntu-latest
