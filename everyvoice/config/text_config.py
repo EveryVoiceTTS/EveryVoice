@@ -48,7 +48,7 @@ class Punctuation(BaseModel):
     )
     ellipses: list[str] = Field(
         ["…"],
-        description="Punctuation symbols indicating an ellipses used in your datasets. Replaces these symbols with <EPS> internally.",
+        description="Punctuation symbols indicating ellipses used in your datasets. Replaces these symbols with <EPS> internally.",
     )
 
     @property
