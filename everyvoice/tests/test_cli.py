@@ -9,6 +9,7 @@ from unittest import TestCase
 
 import jsonschema
 import yaml
+from packaging.version import Version
 from pydantic import ValidationError
 from pytorch_lightning import Trainer
 from typer.testing import CliRunner
@@ -44,6 +45,11 @@ from everyvoice.wizard import (
 EV_DIR = Path(EV_FILE).parent
 
 
+def major_minor(version):
+    v = Version(version)
+    return f"{v.major}.{v.minor}"
+
+
 class CLITest(TestCase):
     data_dir = Path(__file__).parent / "data"
 
@@ -65,6 +71,36 @@ class CLITest(TestCase):
         result = self.runner.invoke(app, ["--version"])
         self.assertEqual(result.exit_code, 0)
         self.assertIn(VERSION, result.stdout)
+
+    def test_submodule_versions(self):
+        # Team decision 2025-02-10: we won't keep submodule versions in complete lockstep,
+        # but we'll match major.minor.
+        # But don't check wav2vec2aligner at all, it's much more independent.
+        from everyvoice.model.aligner.DeepForcedAligner.dfaligner._version import (
+            VERSION as DFA_VERSION,
+        )
+        from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2._version import (
+            VERSION as FS2_VERSION,
+        )
+        from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl._version import (
+            VERSION as HFGL_VERSION,
+        )
+
+        self.assertEqual(
+            major_minor(VERSION),
+            major_minor(DFA_VERSION),
+            "please keep DeepForceAligner and EveryVoice major.minor version in sync",
+        )
+        self.assertEqual(
+            major_minor(VERSION),
+            major_minor(FS2_VERSION),
+            "please keep FastSpeech2_lightning and EveryVoice major.minor verion in sync",
+        )
+        self.assertEqual(
+            major_minor(VERSION),
+            major_minor(HFGL_VERSION),
+            "please keep HiFiGAN_iSTFT_lightning and EveryVoice major.minor version in sync",
+        )
 
     def test_diagnostic(self):
         with capture_stdout():
