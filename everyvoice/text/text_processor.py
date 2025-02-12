@@ -18,6 +18,7 @@ from everyvoice.text.utils import (
     apply_cleaners_helper,
     apply_to_replace_helper,
     normalize_text_helper,
+    symbol_sorter,
 )
 
 PAD_SYMBOL = "\x80"
@@ -109,16 +110,9 @@ class TextProcessor:
         # TODO: do I need to clean the symbols? How to do this if datasets have
         #       their own cleaners?
         _hardcoded_internal_symbols = [self._pad_symbol, " "]
-        self.symbols = _hardcoded_internal_symbols + list(
-            sorted(
-                # Remove duplicates from symbol list, and apply longest
-                # characters first to apply multigraph symbols first
-                symbols - set(_hardcoded_internal_symbols),
-                key=lambda symbol: (
-                    -len(symbol),
-                    symbol,
-                ),  # reverse-length sort, then sort alphabetically
-            )
+        self.symbols = symbol_sorter(
+            list(symbols - set(_hardcoded_internal_symbols)),
+            hardcoded_initial_symbols=_hardcoded_internal_symbols,
         )
         self.to_replace = config.to_replace
         self.missing_symbols: Counter[str] = Counter()
