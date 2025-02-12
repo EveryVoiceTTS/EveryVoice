@@ -402,9 +402,21 @@ class TestLoadingModel(BasicTestCase):
                     self.assertEqual(m["model_info"]["version"], CANARY_VERSION)
                     del m["model_info"]["version"]
                     torch.save(m, ckpt_fn)
-                    with mute_logger("everyvoice.config.text_config"):
-                        model = ModelType.load_from_checkpoint(ckpt_fn)
-                    self.assertIn(model._VERSION, ["1.0", "1.1"])
+                    if isinstance(model, Aligner):
+                        # As of everyvoice==0.3.0 Aligner models trained using everyvoice<0.3.0 cannot be loaded
+                        with mute_logger("everyvoice.config.text_config"):
+                            with self.assertRaises(ValueError):
+                                model = ModelType.load_from_checkpoint(ckpt_fn)
+                    elif isinstance(model, FastSpeech2):
+                        # As of everyvoice==0.3.0 FastSpeech2 models are loaded by translating the embedding tables
+                        # but our mock here doesn't create a valid pre Version 1.2 FastSpeech2 checkpoint
+                        with mute_logger("everyvoice.config.text_config"):
+                            with self.assertRaises(AssertionError):
+                                model = ModelType.load_from_checkpoint(ckpt_fn)
+                    else:
+                        with mute_logger("everyvoice.config.text_config"):
+                            model = ModelType.load_from_checkpoint(ckpt_fn)
+                        self.assertIn(model._VERSION, ["1.0", "1.1"])
 
     def test_newer_model_version(self):
         """
