@@ -1,10 +1,34 @@
 import re
+from typing import Optional
 
 import grapheme
 from ipatok import tokenise
 
 from everyvoice.config.utils import PossiblySerializedCallable
 from everyvoice.exceptions import ConfigError
+
+
+def get_symbols_from_checkpoint_symbol_dict(symbols: dict) -> list[str]:
+    punctuation = list(symbols.get("punctuation", {}).values())
+    other_symbols = [v for k, v in symbols.items() if k != "punctuation"]
+    nested_symbols = punctuation + other_symbols
+    return [item for sublist in nested_symbols for item in sublist]
+
+
+def symbol_sorter(
+    symbols_for_sorting: list[str],
+    hardcoded_initial_symbols: Optional[list[str]] = None,
+    hardcoded_final_symbols: Optional[list[str]] = None,
+) -> list[str]:
+    if hardcoded_initial_symbols is None:
+        hardcoded_initial_symbols = []
+    if hardcoded_final_symbols is None:
+        hardcoded_final_symbols = []
+    return (
+        hardcoded_initial_symbols
+        + sorted(symbols_for_sorting, key=lambda symbol: (-len(symbol), symbol))
+        + hardcoded_final_symbols
+    )
 
 
 def normalize_text_helper(
