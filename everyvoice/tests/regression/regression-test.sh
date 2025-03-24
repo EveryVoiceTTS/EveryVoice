@@ -1,9 +1,6 @@
 #!/bin/bash
 
 #SBATCH --job-name=EV-regress
-#SBATCH --partition=gpu_a100
-#SBATCH --account=nrc_ict__gpu_a100
-#SBATCH --qos=low
 #SBATCH --time=180
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
