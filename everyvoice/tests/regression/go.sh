@@ -1,16 +1,5 @@
 #!/bin/bash
 
-#SBATCH --job-name=EV-r-main
-#SBATCH --partition=standard
-#SBATCH --account=nrc_ict
-#SBATCH --qos=low
-#SBATCH --time=10080
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=8000M
-#SBATCH --output=./%x.o%j
-#SBATCH --error=./%x.e%j
-
 # Automated application of the instructions in README.md
 
 set -o errexit
@@ -18,9 +7,10 @@ set -o errexit
 TOP_LEVEL_DIR=$(mktemp --directory regress-$(date +'%Y%m%d')-XXX)
 cd "$TOP_LEVEL_DIR"
 
-if sbatch -h >& /dev/null; then
-    SUBMIT_COMMAND=sbatch
-else
+# Cluster-specific calling script should set SUBMIT_COMMAND appropriately
+# to request a partition where GPU jobs can run.
+# For non-cluster contexts, default to running subjobs sequentially with bash.
+if [[ ! $SUBMIT_COMMAND ]]; then
     SUBMIT_COMMAND=bash
 fi
 
