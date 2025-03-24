@@ -14,6 +14,13 @@ if [[ ! $SUBMIT_COMMAND ]]; then
     SUBMIT_COMMAND=bash
 fi
 
+# Save some version info so we know what this was run on
+(
+    echo git describe: "$(git describe)"
+    echo git status:
+    git status
+) | tee version.txt
+
 ../prep-datasets.sh
 for DIR in regress-*; do
     pushd "$DIR"
@@ -52,3 +59,12 @@ echo "All $DONE_COUNT regression jobs done. Calculating final coverage."
 rm .coverage
 ../combine-coverage.sh
 cat coverage.txt
+
+# Calculate some helpful coverage diffs: from origin/main and from the last published version.
+(
+    REGRESS_DIR=$(pwd)
+    cd ../../../..
+    diff-cover --compare-branch origin/main "$REGRESS_DIR"/coverage.xml --html-report "$REGRESS_DIR"/coverage-diff-main.html
+    LAST_VERSION=$(git describe | sed 's/-.*//')
+    diff-cover --compare-branch "$LAST_VERSION" "$REGRESS_DIR"/coverage.xml --html-report "$REGRESS_DIR"/coverage-diff-v0.2.0a1.html
+)
