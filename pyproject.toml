@@ -93,6 +93,7 @@ torch = [
 dev = [
   "black~=24.3",
   "coverage",
+  "diff-cover",
   "flake8>=4.0.1",
   "gitlint-core>=0.19.0",
   "isort>=5.10.1",
