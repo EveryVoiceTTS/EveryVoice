@@ -28,23 +28,9 @@ for DIR in regress-*; do
     popd
 done
 
-coverage run -p -m everyvoice test
+coverage run -p -m everyvoice test 2>&1
 
 JOB_COUNT=$(find . -maxdepth 1 -name regress-\* | wc -l)
-while true; do
-    DONE_COUNT=$(find . -maxdepth 2 -name DONE | wc -l)
-    if (( DONE_COUNT + 2 >= JOB_COUNT )); then
-        break
-    fi
-    echo "$DONE_COUNT/$JOB_COUNT regression job(s) done. Still waiting."
-    date
-    sleep $(( 60 * 5 ))
-done
-
-echo "$DONE_COUNT regression jobs done. Calculating coverage now, but some jobs may still be running."
-../combine-coverage.sh
-cat coverage.txt
-
 while true; do
     DONE_COUNT=$(find . -maxdepth 2 -name DONE | wc -l)
     if (( DONE_COUNT >= JOB_COUNT )); then
@@ -52,11 +38,15 @@ while true; do
     fi
     echo "$DONE_COUNT/$JOB_COUNT regression job(s) done. Still waiting."
     date
-    sleep $(( 60 * 5 ))
+    # Update coverage reports every polling period in case we want to follow it.
+    rm -f .coverage
+    ../combine-coverage.sh > /dev/null
+    sleep 60
 done
 
 echo "All $DONE_COUNT regression jobs done. Calculating final coverage."
-rm .coverage
+# Calculate coverage
+rm -f .coverage
 ../combine-coverage.sh
 cat coverage.txt
 
@@ -67,4 +57,4 @@ cat coverage.txt
     diff-cover --compare-branch origin/main "$REGRESS_DIR"/coverage.xml --html-report "$REGRESS_DIR"/coverage-diff-main.html
     LAST_VERSION=$(git describe | sed 's/-.*//')
     diff-cover --compare-branch "$LAST_VERSION" "$REGRESS_DIR"/coverage.xml --html-report "$REGRESS_DIR"/coverage-diff-v0.2.0a1.html
-)
+) | tee coverage-diff.txt
