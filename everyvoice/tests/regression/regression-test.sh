@@ -91,7 +91,7 @@ r "coverage run -p -m everyvoice synthesize from-spec \
 # TODO: use playwright to synthesize something using the demo
 
 
-# TODO: use coverage analysis to flag the next priority things to add here
+# TODO: use coverage analysis to find the next priority things to add here
 
 
 echo "Done at $(date)"

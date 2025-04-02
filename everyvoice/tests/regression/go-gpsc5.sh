@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=EV-r-main
+#SBATCH --job-name=EVr-main
 #SBATCH --partition=standard
 #SBATCH --account=nrc_ict
 #SBATCH --qos=low
@@ -11,5 +11,6 @@
 #SBATCH --output=./%x.o%j
 #SBATCH --error=./%x.e%j
 
+# Command to submit a GPU job:
 export SUBMIT_COMMAND="sbatch --qos=low --partition=gpu_v100 --account=nrc_ict__gpu_v100"
 bash go.sh
