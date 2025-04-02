@@ -22,9 +22,14 @@ fi
 ) | tee version.txt
 
 ../prep-datasets.sh
+SUBMIT_OPTIONS=""
 for DIR in regress-*; do
     pushd "$DIR"
-    $SUBMIT_COMMAND ../../regression-test.sh
+    if [[ $SUBMIT_COMMAND =~ sbatch ]]; then
+        SHORT_DIR=EVr-${DIR#regress-}
+        SUBMIT_OPTIONS="--job-name $SHORT_DIR"
+    fi
+    $SUBMIT_COMMAND $SUBMIT_OPTIONS ../../regression-test.sh
     popd
 done
 
