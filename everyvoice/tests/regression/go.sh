@@ -14,6 +14,16 @@ if [[ ! $SUBMIT_COMMAND ]]; then
     SUBMIT_COMMAND=bash
 fi
 
+if ! python -c $'from playwright.sync_api import sync_playwright\nwith sync_playwright() as playwright: playwright.chromium.launch(headless=True)'; then
+    echo '
+ERROR: playwright headless chromium browser not found.
+Please install playwright by installing test dependencies with
+    pip install -e .[test]
+and then the headless chromium brownser with:
+    playwright install --only-shell chromium'
+    exit 1
+fi
+
 # Save some version info so we know what this was run on
 (
     echo git describe: "$(git describe)"
