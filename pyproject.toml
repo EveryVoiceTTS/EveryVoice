@@ -107,7 +107,7 @@ dev = [
   "types-tqdm>=4.64,<5.0",
   "everyvoice[test]",
 ]
-test = ["jsonschema>=4.17.3", "pep440>=0.1.2"]
+test = ["jsonschema>=4.17.3", "pep440>=0.1.2", "playwright>=1.52.0"]
 docs = [
   "mkdocs>=1.5.2",
   "mkdocs-click>=0.8.0",

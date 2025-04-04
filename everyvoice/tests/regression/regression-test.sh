@@ -86,9 +86,16 @@ r "coverage run -p -m everyvoice synthesize from-spec \
 #r "coverage run -p -m dfaligner extract-alignments config/everyvoice-aligner.yaml --model '$ALIGNER'"
 
 
-# Spin up the demo
-# everyvoice demo $FS2 $VOCODER &
-# TODO: use playwright to synthesize something using the demo
+# Spin up the demo and exercise it with Playwright in headless mode
+if [[ -f ../run-demo-app.sh && -f ../test-demo-app.py ]]; then
+    bash ../run-demo-app.sh &
+    DEMO_PID=$!
+    sleep 10
+    python ../wait-for-demo-app.py
+    coverage run -p ../test-demo-app.py
+    kill $DEMO_PID
+    sleep 5
+fi
 
 
 # TODO: use coverage analysis to find the next priority things to add here
