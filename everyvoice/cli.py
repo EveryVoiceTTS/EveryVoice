@@ -5,7 +5,7 @@ import sys
 from enum import Enum
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, List, Optional
+from typing import Annotated, Any, List, Optional
 
 import typer
 from rich import print as rich_print
@@ -733,6 +733,23 @@ def update_schemas(
         with open(schema_dir_path / filename, "w", encoding="utf8") as f:
             json.dump(schema.model_json_schema(), f, indent=2)
             f.write("\n")
+
+
+@app.command()
+def g2p(
+    lang_id: Annotated[str, typer.Argument(help="lang id")],
+):
+    """
+    Apply G2P to stdin.
+    Great for testing your EveryVoice g2p plugin.
+    """
+    from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES as G2Ps
+    from everyvoice.text.phonemizer import get_g2p_engine
+
+    print("g2p available languages:", G2Ps.keys(), file=sys.stderr)
+    g2p = get_g2p_engine(lang_id)
+    for line in map(str.strip, sys.stdin):
+        print(g2p(line))
 
 
 CLICK_APP = typer.main.get_group(app)
