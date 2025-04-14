@@ -81,7 +81,7 @@ r "coverage run -p -m everyvoice synthesize from-spec \
     --input synthesis_output/synthesized_spec/'$ONE_WORD'-*.pt \
     --model '$VOCODER'"
 
-# TODO: Exercise DeepForceAligner
+# TODO: Exercise DeepForcedAligner
 # Meh, this appears to be broken... train passes on lj-full, not on lj-160 or lj-600
 #r "coverage run -p -m dfaligner train config/everyvoice-aligner.yaml --config-args training.max_steps=$MAX_STEPS --config-args training.max_epochs=$MAX_EPOCHS"
 #ALIGNER=logs_and_checkpoints/AlignerExperiment/base/checkpoints/last.ckpt

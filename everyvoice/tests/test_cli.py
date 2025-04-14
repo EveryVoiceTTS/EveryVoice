@@ -89,7 +89,7 @@ class CLITest(TestCase):
         self.assertEqual(
             major_minor(VERSION),
             major_minor(DFA_VERSION),
-            "please keep DeepForceAligner and EveryVoice major.minor version in sync",
+            "please keep DeepForcedAligner and EveryVoice major.minor version in sync",
         )
         self.assertEqual(
             major_minor(VERSION),
