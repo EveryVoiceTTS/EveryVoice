@@ -1,14 +1,23 @@
-# How to Setup Code Completion for Schemas in vim
+# Code Completion for EveryVoice config files
 
 When manually editing EveryVoice's configuration files, it is convenient to have the file checked/validated and to have documentation about each field.
-The following setup will work for json and yaml configuration files.
+Each EveryVoice config file format is defined by a schema that enables code completion and access to documentation right in the editor, for both json and yaml configuration files.
 
-## Install `nodejs`
+## Code completion in VSCode and other IDEs
+
+We publish the code completion schemas to https://www.schemastore.org/ and VSCode automatically uses these, so it should just work.
+The same will be true of several other IDEs.
+
+## How to Setup Code Completion for Schemas in vim
+
+In Vim, it's not automatic, but the following recipe will let you enable code completion.
+
+### Install `nodejs`
 
 You will need to have a functional `npm` which is part of `nodejs`.
 The schemas will be verified using a node process.
 
-## Install vim-plug
+### Install vim-plug
 
 [vim-plug](https://github.com/junegunn/vim-plug):  Minimalist Vim Plugin Manager
 This will take care of install vim's extensions for us.
@@ -20,7 +29,7 @@ curl \
   https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim
 ```
 
-## Augment your `.vimrc`
+### Augment your `.vimrc`
 
 We want to install [Conquer of Completion aka coc](https://github.com/neoclide/coc.nvim)
 We will add a plugins for [coc-json](https://github.com/neoclide/coc-json) and [coc-yaml](https://github.com/neoclide/coc-yaml) which will be used to handle json and yaml files.
@@ -182,7 +191,7 @@ nnoremap <silent><nowait> <space>p  :<C-u>CocListResume<CR>
 call plug#end()
 ```
 
-## Install the New Plugins
+### Install the New Plugins
 
 Plugins don't automatically install themself thus you have to run the following command to install them.
 Start `vim` then do
@@ -191,7 +200,7 @@ Start `vim` then do
 vim +PlugInstall "+:CocInstall coc-json" "+:CocInstall coc-yaml" +:qall
 ```
 
-## Compile coc.nvim
+### Compile coc.nvim
 
 Once your plugins are installed, you will need to compile coc.
 
@@ -200,7 +209,7 @@ cd ~/.vim/plugged/coc.nvim
 npm ci
 ```
 
-## Create Coc-settings.json
+### Create Coc-settings.json
 
 Start `vim` and run the command `:CocConfig` to edit where your everyvoice schemas are located.
 The following example assumes that you have clone EveryVoice into `~/git/EveryVoice`.
@@ -270,7 +279,7 @@ Also note that you have to change `/home/username` with your own username in the
 }
 ```
 
-## Usage
+### Usage
 
 Once everything is installed, start editing a new or existing EveryVoice configuration.
 
