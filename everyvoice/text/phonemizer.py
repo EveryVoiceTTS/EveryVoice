@@ -110,7 +110,7 @@ class CachingG2PEngine:
         return output_tokens
 
 
-def get_g2p_engine(lang_id: str) -> str | G2PCallable:
+def get_g2p_engine(lang_id: str) -> G2PCallable:
 
     if lang_id not in AVAILABLE_G2P_ENGINES:
         raise NotImplementedError(
@@ -122,4 +122,9 @@ def get_g2p_engine(lang_id: str) -> str | G2PCallable:
         # Register the engine so we don't have to build it next time
         AVAILABLE_G2P_ENGINES[lang_id] = CachingG2PEngine(lang_id)
 
-    return AVAILABLE_G2P_ENGINES[lang_id]
+    engine = AVAILABLE_G2P_ENGINES[lang_id]
+    assert not isinstance(
+        engine, str
+    ), "Internal error: the only str value allowed in AVAILABLE_G2P_ENGINES is 'DEFAULT_G2P'."
+
+    return engine
