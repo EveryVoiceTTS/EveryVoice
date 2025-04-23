@@ -25,6 +25,8 @@ theme:
     - content.code.select
     - announce.dismiss
     - content.footnote.tooltips
+    - navigation.instant
+    - navigation.footer
 plugins:
   - search
   - macros
