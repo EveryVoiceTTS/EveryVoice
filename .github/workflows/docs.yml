@@ -22,7 +22,7 @@ jobs:
       - name: Install dependencies and package
         run: |
           CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -e . -r docs/requirements.txt
+          pip install -e .[docs]
       - name: Setup doc deploy
         run: |
           git config user.name 'github-actions[bot]'
