@@ -422,6 +422,8 @@ class WizardTest(TestCase):
 
     def test_wavs_dir(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
+            # our symlinks below aren't robust to relative paths...
+            tmpdirname = os.path.abspath(tmpdirname)
             no_wavs_dir = os.path.join(tmpdirname, "no-wavs-here")
             os.mkdir(no_wavs_dir)
 
