@@ -12,11 +12,18 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
 
 ## Quickstart from PyPI
 
-- Install Python 3.10 or 3.11 and create a venv or a conda env for EveryVoice.
+- Install Python 3.10, 3.11, or 3.12 and create a venv or a conda env for EveryVoice.
 
-- Install `sox`. On Ubuntu, `sudo apt-get install sox libsox-dev` should work. If not, use Conda and run `conda install sox -c conda-forge` in your EveryVoice environment
+- Install `sox`.
+  - On Ubuntu, `sudo apt-get install sox libsox-dev` should work.
+  - Other Linux distros should have equivalent packages.
+  - With Conda, `conda install sox -c conda-forge` is reliable.
 
-- Install `ffmpeg`. On Ubuntu, `sudo apt-get install ffmpeg` should work. If not, use Conda and run `conda install ffmpeg` in your EveryVoice environment.
+- Install `ffmpeg`:
+  - On Ubuntu, `sudo apt-get install ffmpeg` should work.
+  - Other Linux distros should have an equivalent package.
+  - With Conda, `conda install ffmpeg` is reliable.
+  - Or, use the official bundles from https://www.ffmpeg.org/download.html
 
 - Install `torch` and `torchaudio` version 2.1.0 for your platform and CUDA version: follow the instructions at https://pytorch.org/get-started/locally/ but specify `torch==2.1.0 torchaudio==2.1.0` in the install command and remove `torchvision`.
 
