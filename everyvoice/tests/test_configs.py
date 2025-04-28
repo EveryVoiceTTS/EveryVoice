@@ -36,6 +36,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
 )
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.stubs import mute_logger, silence_c_stderr
+from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.utils import (
     expand_config_string_syntax,
     load_config_from_json_or_yaml_path,
@@ -699,3 +700,90 @@ class HiFiGANTrainingConfigTest(TestCase):
             r"Input should be 'original' or 'wgan' \[type=enum, input_value='BAD', input_type=str\]",
         ):
             HiFiGANTrainingConfig(gan_type="BAD")
+
+
+class TextConfigTest(TestCase):
+    """ """
+
+    # TODO: Make a temp copy of AVAILABLE_G2P_ENGINES
+
+    # def setUp(self) -> None:
+    #     # self.AVAILABLE_G2P_ENGINES = dict(AVAILABLE_G2P_ENGINES)
+    #     self.AVAILABLE_G2P_ENGINES = dict(AVAILABLE_G2P_ENGINES)
+    #     AVAILABLE_G2P_ENGINES = {
+    #         "fra": "DEFAULT_G2P",
+    #     }
+    #     return super().setUp()
+
+    # def tearDown(self) -> None:
+    #     AVAILABLE_G2P_ENGINES = self.AVAILABLE_G2P_ENGINES
+    #     return super().tearDown()
+
+    def test_loading_g2p_engines(self):
+        """
+        Simulate user provided G2P engines.
+        """
+
+        lang_id = "unittest"
+        TextConfig(g2p_engines={lang_id: "everyvoice_plugin_g2p4sl"})
+        self.assertIn(lang_id, AVAILABLE_G2P_ENGINES)
+
+    def test_loading_with_invalid_g2p_engines(self):
+        """
+        Simulate user provided invalid G2P engines.
+        """
+
+        lang_id = "unittest_BAD"
+        with self.assertRaisesRegex(
+            ValueError,
+            rf".*Invalid G2P engine module `unknown_module` for `{lang_id}`.*",
+        ):
+            TextConfig(g2p_engines={lang_id: "unknown_module"})
+        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+
+    def test_g2p_engine_signature_multiple_arguments(self):
+        """
+        User provided a G2P function that doesn't have the same signature as what is required.
+        """
+
+        lang_id = "unittest_signature_multiple_arguments"
+        with self.assertRaisesRegex(
+            ValidationError,
+            r".*G2P engine's signature should take a single argument.*",
+        ):
+            TextConfig(
+                g2p_engines={lang_id: "everyvoice.tests.g2p_engines.multiple_arguments"}
+            )
+        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+
+    def test_g2p_engine_signature_not_a_string(self):
+        """
+        User provided a G2P engine that doesn't take a string as input.
+        """
+        lang_id = "unittest_signature_input_not_a_string"
+        with self.assertRaisesRegex(
+            ValidationError,
+            r".*G2P Engine's signature should take a string.*",
+        ):
+            TextConfig(
+                g2p_engines={lang_id: "everyvoice.tests.g2p_engines.not_a_string"}
+            )
+        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+
+    def test_g2p_engine_signature_not_a_list(self):
+        """
+        User provided a G2P engine that doesn't return a list of strings.
+        """
+        lang_id = "unittest_signature_input_not_a_list"
+        with self.assertRaisesRegex(
+            ValidationError,
+            r".*G2P Engine's signature should return a list of strings.*",
+        ):
+            TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.not_a_list"})
+        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+
+    def test_overriding_default_g2p_engine(self):
+        """
+        User provided a G2P engine that overrides a default G2P engine.
+        """
+        self.assertTrue(False)

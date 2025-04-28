@@ -2,6 +2,7 @@ from typing import Dict
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing_extensions import Self
 
 from everyvoice.config.shared_types import ConfigModel
 from everyvoice.config.utils import PossiblySerializedCallable
@@ -108,7 +109,7 @@ class TextConfig(ConfigModel):
     g2p_engines: G2P_Engines = {}
 
     @model_validator(mode="after")
-    def clean_symbols(self) -> "TextConfig":
+    def clean_symbols(self) -> Self:
         """We should apply all cleaners to the symbols
 
         Returns:
@@ -125,4 +126,48 @@ class TextConfig(ConfigModel):
                         "Please check your shared-text config for problems."
                     )
                 setattr(self.symbols, k, normalized)
+        return self
+
+    @model_validator(mode="after")
+    def load_g2p_engines(self) -> Self:
+        """
+        Given `g2p_engines`, populate `AVAILABLE_G2P_ENGINES`.
+        """
+        import importlib
+        import typing
+        from inspect import signature
+
+        from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
+
+        for lang_id, name in self.g2p_engines.items():
+            # Load the user provided G2P Engine.
+            try:
+                module = importlib.import_module(name)
+            except ModuleNotFoundError:
+                error_message = f"Invalid G2P engine module `{name}` for `{lang_id}`"
+                logger.error(error_message)
+                raise ValueError(error_message)
+            g2p_func = module.g2p
+
+            # Validate the signature
+            sig = signature(g2p_func)
+            assert (
+                len(sig.parameters) == 1
+            ), "G2P engine's signature should take a single argument"
+            arg_names = list(sig.parameters)
+            assert (
+                sig.parameters[arg_names[0]].annotation is str
+            ), "G2P Engine's signature should take a string"
+            assert (
+                sig.return_annotation is typing.List[str]
+            ), "G2P Engine's signature should return a list of strings"
+
+            if lang_id in AVAILABLE_G2P_ENGINES:
+                logger.warning(
+                    f"Overriding g2p for `{lang_id}` with user provided g2p plugin `{name}`"
+                )
+
+            AVAILABLE_G2P_ENGINES[lang_id] = g2p_func
+            logger.info(f"Adding G2P engine from `{name}` for `{lang_id}`")
+
         return self

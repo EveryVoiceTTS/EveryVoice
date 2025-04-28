@@ -15,7 +15,7 @@ from rich.panel import Panel
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
 from everyvoice.base_cli.interfaces import complete_path
-from everyvoice.config.text_config import G2P_Engines, TextConfig
+from everyvoice.config.text_config import TextConfig
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
     ALIGN_SINGLE_SHORT_HELP,
@@ -786,20 +786,16 @@ def g2p(
     from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES as G2Ps
     from everyvoice.text.phonemizer import get_g2p_engine
 
-    g2p_enginges: G2P_Engines = {}
     if config:
-        text_config: TextConfig = TextConfig(
-            **load_config_from_json_or_yaml_path(config)
+        kwargs = load_config_from_json_or_yaml_path(config)
+        text_config: TextConfig = TextConfig(**kwargs)
+        print(
+            f"Config contains custon G2P Engines: {text_config.g2p_engines}",
+            file=sys.stderr,
         )
-        g2p_enginges = text_config.g2p_engines
-        print(f"Config contains custon G2P Engines: {g2p_enginges}", file=sys.stderr)
 
-    print(
-        "g2p available languages:",
-        G2Ps.keys() | g2p_enginges,
-        file=sys.stderr,
-    )
-    g2p = get_g2p_engine(lang_id, g2p_enginges)
+    print("g2p available languages:", G2Ps.keys(), file=sys.stderr)
+    g2p = get_g2p_engine(lang_id)
     for line in map(str.strip, input_file):
         print(g2p(line))
 

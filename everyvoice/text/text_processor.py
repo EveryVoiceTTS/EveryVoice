@@ -251,7 +251,7 @@ class TextProcessor:
         """
         g2p_engine = get_g2p_engine(lang_id)
         try:
-            tokens = g2p_engine(normalized_text, self.config.g2p_engines)
+            tokens = g2p_engine(normalized_text)
         except Exception:
             tokens = None
             # TODO: do something here

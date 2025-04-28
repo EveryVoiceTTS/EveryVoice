@@ -3,14 +3,11 @@ All g2p engines must return tokenized characters.
 """
 
 import re
-from typing import Callable, Optional
+from typing import Callable
 from unicodedata import normalize
 
 from g2p import get_arpabet_langs, make_g2p
 from ipatok import tokenise
-from loguru import logger
-
-from everyvoice.config.text_config import G2P_Engines
 
 G2PCallable = Callable[[str], list[str]]
 AVAILABLE_G2P_ENGINES: dict[str, str | G2PCallable] = {
@@ -23,51 +20,7 @@ AVAILABLE_G2P_ENGINES: dict[str, str | G2PCallable] = {
 # from some_cool_library import some_cool_g2p_method
 # AVAILABLE_G2P_ENGINES['YOUR_LANGUAGE_CODE'] = some_cool_g2p_method
 #
-# IMPORTANT: Your g2p engine must return a list of tokenized symbols, and all of the returned symbols must be defined in your everyvoice-shared-text-config.yaml file.
-
-
-def add_g2p_plugins():
-    """
-    Finds the user defined G2P modules and adds them to AVAILABLE_G2P_ENGINES.
-
-    NOTE: To create a g2p plugin start here https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin
-
-    LANG_ID: str = "lang_id"
-
-    def g2p(normalized_input_text: str) -> list[str]:
-    │   return normalized_input_text.split()
-    """
-    import importlib
-    import pkgutil
-    import typing
-    from inspect import signature
-
-    for _finder, name, _ispkg in pkgutil.iter_modules():
-        if name.startswith("everyvoice_plugin"):
-            module = importlib.import_module(name)
-            # TODO: Should we do some validation on the language id?
-            lang_id = module.LANG_ID
-            # TODO: Should we have the user defined module have a function that return the g2p callable.  That would allow the user to do some initialization if needed.
-            # TODO: Should we validate g2p()'s signature?
-            g2p_func = module.g2p
-
-            # Validate the signature
-            sig = signature(g2p_func)
-            assert len(sig.parameters) == 1
-            arg_names = list(sig.parameters)
-            assert sig.parameters[arg_names[0]].annotation is str
-            assert sig.return_annotation is typing.List[str]
-
-            if lang_id in AVAILABLE_G2P_ENGINES:
-                logger.warning(
-                    f"Overriding g2p for {lang_id} with user provided g2p plugin {name}"
-                )
-
-            AVAILABLE_G2P_ENGINES[lang_id] = g2p_func
-            logger.info(f"Added g2p engine {name} for {lang_id}")
-
-
-add_g2p_plugins()
+# IMPORTANT: Your g2p engine must return a list of tokenized symbols, and all of the returned symbols must be defined in your everyvoice-shared-text.yaml file.
 
 
 class CachingG2PEngine:
@@ -113,43 +66,12 @@ class CachingG2PEngine:
         return output_tokens
 
 
-def get_g2p_engine(
-    lang_id: str,
-    g2p_engines: Optional[G2P_Engines] = None,
-) -> G2PCallable:
+def get_g2p_engine(lang_id: str) -> G2PCallable:
     """
     Return the G2P engine for a given language id.
 
-    This will look up the language id in the config to prioritize user defined G2P engines.
-
-    NOTE: To create a g2p plugin start here https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin
+    NOTE: To create a custom g2p plugin start here https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin
     """
-    if g2p_engines and lang_id in g2p_engines:
-        # Load the user provided G2P Engine.
-        import importlib
-        import typing
-        from inspect import signature
-
-        name = g2p_engines[lang_id]
-        module = importlib.import_module(name)
-        g2p_func = module.g2p
-
-        # Validate the signature
-        sig = signature(g2p_func)
-        assert len(sig.parameters) == 1
-        arg_names = list(sig.parameters)
-        assert sig.parameters[arg_names[0]].annotation is str
-        assert sig.return_annotation is typing.List[str]
-
-        if lang_id in AVAILABLE_G2P_ENGINES:
-            logger.warning(
-                f"Overriding g2p for {lang_id} with user provided g2p plugin {name}"
-            )
-
-        logger.info(f"Using G2P engine from {name} for {lang_id}")
-
-        return g2p_func
-
     if lang_id not in AVAILABLE_G2P_ENGINES:
         raise NotImplementedError(
             f"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}."
