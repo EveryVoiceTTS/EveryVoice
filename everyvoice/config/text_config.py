@@ -96,10 +96,16 @@ class Symbols(BaseModel):
         return self
 
 
+G2P_lang = str
+G2P_py_module = str
+G2P_Engines = dict[G2P_lang, G2P_py_module]
+
+
 class TextConfig(ConfigModel):
     symbols: Symbols = Field(default_factory=Symbols)
     to_replace: Dict[str, str] = {}  # Happens before cleaners
     cleaners: list[PossiblySerializedCallable] = [collapse_whitespace, strip_text]
+    g2p_engines: G2P_Engines = {}
 
     @model_validator(mode="after")
     def clean_symbols(self) -> "TextConfig":

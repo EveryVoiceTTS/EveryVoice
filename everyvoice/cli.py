@@ -3,6 +3,7 @@ import platform
 import subprocess
 import sys
 from enum import Enum
+from io import TextIOWrapper
 from pathlib import Path
 from textwrap import dedent
 from typing import Annotated, Any, List, Optional
@@ -14,6 +15,7 @@ from rich.panel import Panel
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
 from everyvoice.base_cli.interfaces import complete_path
+from everyvoice.config.text_config import G2P_Engines, TextConfig
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
     ALIGN_SINGLE_SHORT_HELP,
@@ -51,7 +53,11 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
 from everyvoice.run_tests import SUITE_NAMES, run_tests
-from everyvoice.utils import generic_psv_filelist_reader, spinner
+from everyvoice.utils import (
+    generic_psv_filelist_reader,
+    load_config_from_json_or_yaml_path,
+    spinner,
+)
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
@@ -729,7 +735,6 @@ def update_schemas(
 
     # Defer somewhat slow imports to optimize CLI
     from everyvoice.config.preprocessing_config import PreprocessingConfig
-    from everyvoice.config.text_config import TextConfig
     from everyvoice.model.aligner.config import AlignerConfig
     from everyvoice.model.e2e.config import EveryVoiceConfig
     from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -764,6 +769,15 @@ def update_schemas(
 @app.command()
 def g2p(
     lang_id: Annotated[str, typer.Argument(help="lang id")],
+    # Ignoring mypy since class FileText(io.TextIOWrapper)
+    input_file: Annotated[typer.FileText, typer.Argument()] = TextIOWrapper(
+        sys.stdin.buffer,
+        encoding="utf-8",
+    ),  # type: ignore[assignment]
+    config: Annotated[
+        Optional[Path],
+        typer.Option(help="full to path to everyvoice-shared-text.yaml"),
+    ] = None,
 ):
     """
     Apply G2P to stdin.
@@ -772,9 +786,21 @@ def g2p(
     from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES as G2Ps
     from everyvoice.text.phonemizer import get_g2p_engine
 
-    print("g2p available languages:", G2Ps.keys(), file=sys.stderr)
-    g2p = get_g2p_engine(lang_id)
-    for line in map(str.strip, sys.stdin):
+    g2p_enginges: G2P_Engines = {}
+    if config:
+        text_config: TextConfig = TextConfig(
+            **load_config_from_json_or_yaml_path(config)
+        )
+        g2p_enginges = text_config.g2p_engines
+        print(f"Config contains custon G2P Engines: {g2p_enginges}", file=sys.stderr)
+
+    print(
+        "g2p available languages:",
+        G2Ps.keys() | g2p_enginges,
+        file=sys.stderr,
+    )
+    g2p = get_g2p_engine(lang_id, g2p_enginges)
+    for line in map(str.strip, input_file):
         print(g2p(line))
 
 
