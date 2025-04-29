@@ -16,6 +16,7 @@ from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.phonemizer import (
     AVAILABLE_G2P_ENGINES,
+    DEFAULT_G2P,
     CachingG2PEngine,
     get_g2p_engine,
 )
@@ -489,7 +490,7 @@ class TestG2p(TestCase):
         AVAILABLE_G2P_ENGINES[lang_id] = "WRONG"
         with self.assertRaisesRegex(
             AssertionError,
-            "Internal error: the only str value allowed in AVAILABLE_G2P_ENGINES is 'DEFAULT_G2P'.",
+            f"Internal error: the only str value allowed in AVAILABLE_G2P_ENGINES is '{DEFAULT_G2P}'.",
         ):
             get_g2p_engine(lang_id)
 
@@ -499,7 +500,7 @@ class TestG2p(TestCase):
         """
         lang_id = "eng"
         self.assertIn(lang_id, AVAILABLE_G2P_ENGINES)
-        self.assertEqual(AVAILABLE_G2P_ENGINES[lang_id], "DEFAULT_G2P")
+        self.assertEqual(AVAILABLE_G2P_ENGINES[lang_id], DEFAULT_G2P)
 
         g2p_engine = get_g2p_engine(lang_id)
         self.assertFalse(isinstance(g2p_engine, str))
