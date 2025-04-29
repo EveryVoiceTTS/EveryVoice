@@ -4,7 +4,8 @@ In order to use EveryVoice on GPUs, you must install PyTorch and Cuda, Python 3.
 
 ## Scripted installation -- recommended
 
-The EveryVoice installation process can be somewhat involved, so we have automated it as much as we could.
+While the EveryVoice installation process has gotten simpler as the project matures,
+we maintain a script to automate the process and keep it reliable.
 
  - Install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [conda](https://docs.conda.io/projects/conda/en/stable/).
  - Clone the EveryVoice repo and its submodules:
@@ -20,24 +21,34 @@ The EveryVoice installation process can be somewhat involved, so we have automat
 	```
 	Add the option `--cuda CUDA_VERSION` if you need to override the default CUDA version, or `--cpu` to use Torch compiled for CPU use only.
 
-## Using Pip
+## Install from PyPI
 
-We hope direct installation from PyPI will work:
+Direct installation from PyPI has become fairly reliable:
 
- - Follow the [PyTorch installation instructions](https://pytorch.org/get-started/locally/) relevant to your hardware, but specify version 2.1.0: `torch==2.1.0`, and `torchaudio==2.1.0`.
+ - Follow the instructions in [README.md](https://github.com/EveryVoiceTTS/EveryVoice?tab=readme-ov-file) to install sox, ffmpeg, torch and torchaudio.
 
  - Install EveryVoice:
 
        pip install everyvoice==0.1.0a
 
-## Manual installation
+## Manual installation using Conda
 
-If you prefer to do the complete installation process manually, or if the automated process does not work for you, follow these steps:
+If you prefer to do the complete installation process manually, or if the automated process does not work for you, follow these steps.
+
+### TL;DR
+
+```
+conda create --name EveryVoice python=3.10
+conda activate EveryVoice
+conda install sox -c conda-forge
+conda install ffmpeg
+CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+pip install -e .
+```
 
 ### Install Conda
 
 Install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [conda](https://docs.conda.io/projects/conda/en/stable/).
-
 
 ### Create the environment
 
@@ -57,14 +68,15 @@ CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://downlo
 ```
 
 Alternatively, you can follow the [PyTorch installation instructions](https://pytorch.org/get-started/locally/) relevant to your hardware.
-Make sure you specify the version declared in `requirements.torch.txt`, which is 2.1.0 at the moment.
+Make sure you specify the version declared in `requirements.torch.txt`, which is 2.3.1 at the moment
+if you install EveryVoice from GitHub, but 2.1.0 if you install it from PyPI.
 
-### Other potentially tricky dependencies
+### Non-Python dependencies
 
-These requirements sometimes require being run separately:
+Install sox and ffmpeg if you didn't install them using OS packages:
 ```sh
-pip install cython
 conda install sox -c conda-forge
+conda install ffmpeg
 ```
 
 ### Handling running out of temp disk space
@@ -89,7 +101,7 @@ pip install -e .
 Before you can run the test suites, you'll also need to install the dev dependencies:
 
 ```sh
-pip install -r requirements.dev.txt
+pip install -e .[dev]
 ```
 
 ### Git hooks
@@ -102,3 +114,18 @@ gitlint install-hook
 git submodule foreach 'pre-commit install'
 git submodule foreach 'gitlint install-hook'
 ```
+
+## Installation using `uv`
+
+If you can install sox, libsox-dev and ffmpeg using your OS packages or by other means (see [README.md](https://github.com/EveryVoiceTTS/EveryVoice?tab=readme-ov-file#quickstart-from-pypi)),
+you can now install EveryVoice in a [`uv`](https://docs.astral.sh/uv/) venv, which is much faster to create and activate.
+
+```
+uv venv -p 3.10 .venv-EveryVoice
+source .venv-EveryVoice/bin/activate
+uv pip install torch==2.3.1+cu118 torchaudio==2.3.1+cu118 --find-links https://download.pytorch.org/whl/torch_stable.html
+uv pip install -e .[dev]
+```
+
+(If needed, change the `+cu118` qualifier on torch\* to your actual version of CUDA, or to `+cpu`.
+See [Pytorch dependencies](#pytorch-dependencies) above.)
