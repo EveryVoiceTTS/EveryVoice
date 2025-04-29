@@ -6,6 +6,7 @@ from typing_extensions import Self
 
 from everyvoice.config.shared_types import ConfigModel
 from everyvoice.config.utils import PossiblySerializedCallable
+from everyvoice.text.phonemizer import G2PCallable
 from everyvoice.text.utils import normalize_text_helper
 from everyvoice.utils import collapse_whitespace, strip_text
 
@@ -102,6 +103,32 @@ G2P_py_module = str
 G2P_Engines = dict[G2P_lang, G2P_py_module]
 
 
+def _validate_g2p_engine_signature(g2p_func: G2PCallable) -> G2PCallable:
+    """
+    A G2P engine's signature should be:
+
+    Callable[[str], List[str]]
+
+    Note that we have to use `List` and not `list`.
+    """
+    import typing
+    from inspect import signature
+
+    sig = signature(g2p_func)
+    assert (
+        len(sig.parameters) == 1
+    ), "G2P engine's signature should take a single argument"
+    arg_names = list(sig.parameters)
+    assert (
+        sig.parameters[arg_names[0]].annotation is str
+    ), "G2P Engine's signature should take a string"
+    assert (
+        sig.return_annotation is typing.List[str]
+    ), "G2P Engine's signature should return a list of strings"
+
+    return g2p_func
+
+
 class TextConfig(ConfigModel):
     symbols: Symbols = Field(default_factory=Symbols)
     to_replace: Dict[str, str] = {}  # Happens before cleaners
@@ -131,11 +158,9 @@ class TextConfig(ConfigModel):
     @model_validator(mode="after")
     def load_g2p_engines(self) -> Self:
         """
-        Given `g2p_engines`, populate `AVAILABLE_G2P_ENGINES`.
+        Given `g2p_engines`, populate the global list `AVAILABLE_G2P_ENGINES`.
         """
         import importlib
-        import typing
-        from inspect import signature
 
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 
@@ -147,20 +172,8 @@ class TextConfig(ConfigModel):
                 error_message = f"Invalid G2P engine module `{name}` for `{lang_id}`"
                 logger.error(error_message)
                 raise ValueError(error_message)
-            g2p_func = module.g2p
 
-            # Validate the signature
-            sig = signature(g2p_func)
-            assert (
-                len(sig.parameters) == 1
-            ), "G2P engine's signature should take a single argument"
-            arg_names = list(sig.parameters)
-            assert (
-                sig.parameters[arg_names[0]].annotation is str
-            ), "G2P Engine's signature should take a string"
-            assert (
-                sig.return_annotation is typing.List[str]
-            ), "G2P Engine's signature should return a list of strings"
+            g2p_func = _validate_g2p_engine_signature(module.g2p)
 
             if lang_id in AVAILABLE_G2P_ENGINES:
                 logger.warning(
