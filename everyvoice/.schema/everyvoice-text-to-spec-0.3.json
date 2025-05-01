@@ -840,6 +840,14 @@
           },
           "title": "Cleaners",
           "type": "array"
+        },
+        "g2p_engines": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "title": "G2P Engines",
+          "type": "object"
         }
       },
       "title": "TextConfig",
