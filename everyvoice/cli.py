@@ -116,6 +116,53 @@ app = typer.Typer(
 )
 
 
+def _diagnostic_pip(use_uv: bool) -> bool:
+    """
+    Try to list installed packages using `uv` or `pip`.
+    """
+    try:
+        result = subprocess.run(
+            (["uv"] if use_uv else ["python", "-m"]) + ["pip", "freeze"],
+            capture_output=True,
+            check=False,
+        )
+        # if "EveryVoice" not in result.stdout.decode():
+        #     return False
+        if result.returncode == 0 and (use_uv or not result.stderr):
+            # result.stderr contains: "Using Python 3.11.10 environment at venv"
+            pip_freeze = result.stdout.decode().splitlines()
+            print("\n*torch* modules installed using pip:")
+            print("\n".join(module for module in pip_freeze if "torch" in module))
+            print("\nOther modules installed using pip:")
+            print("\n".join(module for module in pip_freeze if "torch" not in module))
+
+        return True
+    except FileNotFoundError:
+        return False
+
+
+def _diagnostic_conda() -> None:
+    """
+    Try to list installed packages using `conda`.
+    """
+    try:
+        result = subprocess.run(["conda", "list"], capture_output=True, check=False)
+        print("Environment type: conda")
+        if result.returncode == 0 and not result.stderr:
+            print("\nModules installed using conda:")
+            conda_list = result.stdout.decode().splitlines()
+            print(
+                "\n".join(
+                    module
+                    for module in conda_list
+                    if "pypi" not in module and "<develop>" not in module
+                )
+            )
+    except FileNotFoundError:
+        # the installation probably didn't use conda, so just ignore this error
+        pass
+
+
 @app.callback(invoke_without_command=True)
 def main(
     version: Optional[bool] = typer.Option(
@@ -136,31 +183,10 @@ def main(
         uname = platform.uname()
         print(f"System: {uname.system} {uname.release} {uname.version} {uname.machine}")
 
-        result = subprocess.run(["pip", "freeze"], capture_output=True, check=False)
-        if result.returncode != 0 or result.stderr:
-            print('Error running "pip freeze":')
-            print(result.stderr.decode(), end="", file=sys.stderr)
-        else:
-            pip_freeze = result.stdout.decode().splitlines()
-            print("\n*torch* modules installed using pip:")
-            print("\n".join(module for module in pip_freeze if "torch" in module))
-            print("\nOther modules installed using pip:")
-            print("\n".join(module for module in pip_freeze if "torch" not in module))
-
-        result = subprocess.run(["conda", "list"], capture_output=True, check=False)
-        if result.returncode != 0 or result.stderr:
-            # the installation probably didn't use conda, so just ignore this error
-            pass
-        else:
-            print("\nModules installed using conda:")
-            conda_list = result.stdout.decode().splitlines()[2:]
-            print(
-                "\n".join(
-                    module
-                    for module in conda_list
-                    if "pypi" not in module and "<develop>" not in module
-                )
-            )
+        # Do `uv` first then use `pip` which covers both `pip` and `conda` envs.
+        _diagnostic_conda()
+        if not (_diagnostic_pip(use_uv=True) or _diagnostic_pip(use_uv=False)):
+            print("Unable to get installed package versions")
 
         sys.exit(0)
 
