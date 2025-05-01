@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Dict, Iterator, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Tuple, Union
 
 from pydantic import (
     BaseModel,
@@ -303,3 +303,6 @@ class NoamOptimizer(AdamOptimizer):
         description="The number of steps to increase the learning rate before starting to decrease it.",
     )
     name: str = Field("noam", description="The name of the optimizer to use.")
+
+
+G2PCallable = Callable[[str], list[str]]

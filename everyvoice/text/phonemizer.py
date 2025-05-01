@@ -3,14 +3,14 @@ All g2p engines must return tokenized characters.
 """
 
 import re
-from typing import Callable
 from unicodedata import normalize
 
 from g2p import get_arpabet_langs, make_g2p
 from ipatok import tokenise
 
+from everyvoice.config.shared_types import G2PCallable
+
 DEFAULT_G2P = "DEFAULT_G2P"
-G2PCallable = Callable[[str], list[str]]
 AVAILABLE_G2P_ENGINES: dict[str, str | G2PCallable] = {
     k: DEFAULT_G2P for k in get_arpabet_langs()[0]
 }

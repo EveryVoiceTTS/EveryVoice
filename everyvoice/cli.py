@@ -15,7 +15,6 @@ from rich.panel import Panel
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
 from everyvoice.base_cli.interfaces import complete_path
-from everyvoice.config.text_config import TextConfig
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
     ALIGN_SINGLE_SHORT_HELP,
@@ -735,6 +734,7 @@ def update_schemas(
 
     # Defer somewhat slow imports to optimize CLI
     from everyvoice.config.preprocessing_config import PreprocessingConfig
+    from everyvoice.config.text_config import TextConfig
     from everyvoice.model.aligner.config import AlignerConfig
     from everyvoice.model.e2e.config import EveryVoiceConfig
     from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -783,6 +783,7 @@ def g2p(
     Apply G2P to stdin.
     Great for testing your EveryVoice g2p plugin.
     """
+    from everyvoice.config.text_config import TextConfig
     from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES as G2Ps
     from everyvoice.text.phonemizer import get_g2p_engine
 
