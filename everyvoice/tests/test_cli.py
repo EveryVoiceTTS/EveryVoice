@@ -106,7 +106,11 @@ class CLITest(TestCase):
         with capture_stdout():
             result = self.runner.invoke(app, ["--diagnostic"])
         self.assertEqual(result.exit_code, 0)
+        self.assertIn("EveryVoice version", result.stdout)
         self.assertIn("Python version", result.stdout)
+        # Check in the dependency list if we can find EveryVoice
+        # Start by removing `--diagnostic`'s header whic doesn't contain dependencies.
+        self.assertIn("everyvoice", "".join(result.stdout.lower().splitlines()[5:]))
 
     def wip_test_synthesize(self):
         # TODO: Here's a stub for getting synthesis unit tests working
