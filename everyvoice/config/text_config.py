@@ -167,13 +167,16 @@ class TextConfig(ConfigModel):
         for lang_id, name in self.g2p_engines.items():
             # Load the user provided G2P Engine.
             try:
-                module = importlib.import_module(name)
+                module_name, _, function_name = name.rpartition(".")
+                module = importlib.import_module(module_name)
             except ModuleNotFoundError:
-                error_message = f"Invalid G2P engine module `{name}` for `{lang_id}`"
+                error_message = (
+                    f"Invalid G2P engine module `{module_name}` for `{lang_id}`"
+                )
                 logger.error(error_message)
                 raise ValueError(error_message)
 
-            g2p_func = _validate_g2p_engine_signature(module.g2p)
+            g2p_func = _validate_g2p_engine_signature(getattr(module, function_name))
 
             if lang_id in AVAILABLE_G2P_ENGINES:
                 logger.warning(

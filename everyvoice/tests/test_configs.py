@@ -741,11 +741,11 @@ class TextConfigTest(TestCase):
         self.assertIn(lang_id_2, AVAILABLE_G2P_ENGINES)
         self.assertIs(
             AVAILABLE_G2P_ENGINES[lang_id_1],
-            everyvoice.tests.g2p_engines.valid.g2p,
+            everyvoice.tests.g2p_engines.valid,
         )
         self.assertIs(
             AVAILABLE_G2P_ENGINES[lang_id_2],
-            everyvoice.tests.g2p_engines.valid.g2p,
+            everyvoice.tests.g2p_engines.valid,
         )
 
     def test_loading_g2p_engines_with_invalid_module(self):
@@ -758,7 +758,7 @@ class TextConfigTest(TestCase):
             ValueError,
             rf".*Invalid G2P engine module `unknown_module` for `{lang_id}`.*",
         ):
-            TextConfig(g2p_engines={lang_id: "unknown_module"})
+            TextConfig(g2p_engines={lang_id: "unknown_module.g2p"})
         self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
 
     def test_g2p_engine_signature_multiple_arguments(self):
@@ -818,7 +818,7 @@ class TextConfigTest(TestCase):
         )
         self.assertIs(
             AVAILABLE_G2P_ENGINES[lang_id],
-            everyvoice.tests.g2p_engines.valid.g2p,
+            everyvoice.tests.g2p_engines.valid,
         )
         self.assertIsNot(
             old_g2p_engine,

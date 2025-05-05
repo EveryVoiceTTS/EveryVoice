@@ -478,7 +478,7 @@ class TestG2p(TestCase):
         self.assertIn(lang_id, AVAILABLE_G2P_ENGINES)
         self.assertIs(
             AVAILABLE_G2P_ENGINES[lang_id],
-            everyvoice.tests.g2p_engines.valid.g2p,
+            everyvoice.tests.g2p_engines.valid,
         )
 
     def test_invalid_g2p_engine(self):
