@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Annotated, Dict
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -98,9 +98,24 @@ class Symbols(BaseModel):
         return self
 
 
-G2P_lang = str
-G2P_py_module = str
-G2P_Engines = dict[G2P_lang, G2P_py_module]
+G2P_lang = Annotated[
+    str,
+    Field(
+        title="Language ID",
+        examples=["fr"],
+    ),
+]
+G2P_py_module = Annotated[
+    str,
+    Field(
+        title="Module path",
+        examples=["everyvoice_plugin_g2p4example.g2p"],
+    ),
+]
+G2P_Engines = Annotated[
+    dict[G2P_lang, G2P_py_module],
+    Field(description="Mapping from language id to g2p module"),
+]
 
 
 def _validate_g2p_engine_signature(g2p_func: G2PCallable) -> G2PCallable:
@@ -133,7 +148,12 @@ class TextConfig(ConfigModel):
     symbols: Symbols = Field(default_factory=Symbols)
     to_replace: Dict[str, str] = {}  # Happens before cleaners
     cleaners: list[PossiblySerializedCallable] = [collapse_whitespace, strip_text]
-    g2p_engines: G2P_Engines = {}
+    g2p_engines: G2P_Engines = Field(
+        {},
+        title="External G2P",
+        description="User defined or external G2P engines.\nSee https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P.",
+        examples=["""{"fr": "everyvoice_plugin_g2p4example.g2p"}"""],
+    )
 
     @model_validator(mode="after")
     def clean_symbols(self) -> Self:
