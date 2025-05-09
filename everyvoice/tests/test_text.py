@@ -6,6 +6,7 @@ from unittest import TestCase
 
 from pydantic import ValidationError
 
+import everyvoice
 from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -13,7 +14,12 @@ from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.stubs import silence_c_stderr
 from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
-from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
+from everyvoice.text.phonemizer import (
+    AVAILABLE_G2P_ENGINES,
+    DEFAULT_G2P,
+    CachingG2PEngine,
+    get_g2p_engine,
+)
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
 from everyvoice.utils import (
     collapse_whitespace,
@@ -383,6 +389,15 @@ class LookupTablesTest(TestCase):
 class TestG2p(TestCase):
     """Test G2P"""
 
+    def setUp(self) -> None:
+        super().setUp()
+        self.AVAILABLE_G2P_ENGINES = dict(AVAILABLE_G2P_ENGINES)
+
+    def tearDown(self) -> None:
+        super().setUp()
+        AVAILABLE_G2P_ENGINES.clear()
+        AVAILABLE_G2P_ENGINES.update(self.AVAILABLE_G2P_ENGINES)
+
     def test_many_available_langs(self):
         self.assertGreaterEqual(len(AVAILABLE_G2P_ENGINES), 20)
 
@@ -433,7 +448,63 @@ class TestG2p(TestCase):
 
     def test_phonemizer_normalization(self):
         moh_g2p = get_g2p_engine("moh")
-        self.assertEqual(moh_g2p("\u00E9"), ["\u00E9"])
+        self.assertEqual(moh_g2p("\u00e9"), ["\u00e9"])
+
+    def test_invalid_lang_id(self):
+        """
+        User asked for a language that is not supported by AVAILABLE_G2P_ENGINES.
+        """
+        lang_id = "unittest"
+        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+        with self.assertRaisesRegex(
+            NotImplementedError,
+            rf"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}.*",
+            msg="The user provided G2P engine shouldn't be available before loading a TextConfig.",
+        ):
+            get_g2p_engine(lang_id)
+
+    def test_custom_g2p_engine(self):
+        """
+        Use a user provided G2P engine.
+        """
+        lang_id = "unittest"
+        with self.assertRaisesRegex(
+            NotImplementedError,
+            rf"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}.*",
+            msg="The user provided G2P engine shouldn't be available before loading a TextConfig.",
+        ):
+            get_g2p_engine(lang_id)
+        TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.valid"})
+        self.assertIn(lang_id, AVAILABLE_G2P_ENGINES)
+        self.assertIs(
+            AVAILABLE_G2P_ENGINES[lang_id],
+            everyvoice.tests.g2p_engines.valid,
+        )
+
+    def test_invalid_g2p_engine(self):
+        """
+        The only string value allowed in AVAILABLE_G2P_ENGINES is 'DEFAULT_G2P'.
+        """
+
+        lang_id = "unittest"
+        AVAILABLE_G2P_ENGINES[lang_id] = "WRONG"
+        with self.assertRaisesRegex(
+            AssertionError,
+            f"Internal error: the only str value allowed in AVAILABLE_G2P_ENGINES is '{DEFAULT_G2P}'.",
+        ):
+            get_g2p_engine(lang_id)
+
+    def test_autoload(self):
+        """
+        Default G2PEngine should autoload a CachingG2PEngine(lang_id).
+        """
+        lang_id = "eng"
+        self.assertIn(lang_id, AVAILABLE_G2P_ENGINES)
+        self.assertEqual(AVAILABLE_G2P_ENGINES[lang_id], DEFAULT_G2P)
+
+        g2p_engine = get_g2p_engine(lang_id)
+        self.assertFalse(isinstance(g2p_engine, str))
+        self.assertTrue(isinstance(g2p_engine, CachingG2PEngine))
 
 
 class PunctuationTest(TestCase):

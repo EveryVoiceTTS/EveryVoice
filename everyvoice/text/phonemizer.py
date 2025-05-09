@@ -1,16 +1,18 @@
-""" EveryVoice performs grapheme-to-phoneme conversion based on language IDs
-    All g2p engines must return tokenized characters.
+"""EveryVoice performs grapheme-to-phoneme conversion based on language IDs
+All g2p engines must return tokenized characters.
 """
 
 import re
-from typing import Callable
 from unicodedata import normalize
 
 from g2p import get_arpabet_langs, make_g2p
 from ipatok import tokenise
 
-AVAILABLE_G2P_ENGINES: dict[str, str | Callable] = {
-    k: "DEFAULT_G2P" for k in get_arpabet_langs()[0]
+from everyvoice.config.shared_types import G2PCallable
+
+DEFAULT_G2P = "DEFAULT_G2P"
+AVAILABLE_G2P_ENGINES: dict[str, str | G2PCallable] = {
+    k: DEFAULT_G2P for k in get_arpabet_langs()[0]
 }
 
 # TODO: Add documentation for this
@@ -19,7 +21,7 @@ AVAILABLE_G2P_ENGINES: dict[str, str | Callable] = {
 # from some_cool_library import some_cool_g2p_method
 # AVAILABLE_G2P_ENGINES['YOUR_LANGUAGE_CODE'] = some_cool_g2p_method
 #
-# IMPORTANT: Your g2p engine must return a list of tokenized symbols, and all of the returned symbols must be defined in your everyvoice-shared-text-config.yaml file.
+# IMPORTANT: Your g2p engine must return a list of tokenized symbols, and all of the returned symbols must be defined in your everyvoice-shared-text.yaml file.
 
 
 class CachingG2PEngine:
@@ -65,16 +67,25 @@ class CachingG2PEngine:
         return output_tokens
 
 
-def get_g2p_engine(lang_id: str):
+def get_g2p_engine(lang_id: str) -> G2PCallable:
+    """
+    Return the G2P engine for a given language id.
 
+    NOTE: To create a custom g2p plugin start here https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin
+    """
     if lang_id not in AVAILABLE_G2P_ENGINES:
         raise NotImplementedError(
             f"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}."
             " Please follow the docs to implement one yourself, or try training a character-based model instead."
         )
 
-    if AVAILABLE_G2P_ENGINES[lang_id] == "DEFAULT_G2P":
+    if AVAILABLE_G2P_ENGINES[lang_id] == DEFAULT_G2P:
         # Register the engine so we don't have to build it next time
         AVAILABLE_G2P_ENGINES[lang_id] = CachingG2PEngine(lang_id)
 
-    return AVAILABLE_G2P_ENGINES[lang_id]
+    engine = AVAILABLE_G2P_ENGINES[lang_id]
+    assert not isinstance(
+        engine, str
+    ), f"Internal error: the only str value allowed in AVAILABLE_G2P_ENGINES is '{DEFAULT_G2P}'."
+
+    return engine

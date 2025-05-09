@@ -42,9 +42,13 @@ def apply_automatic_text_conversions(
         target_training_representation (str): the target training representation level. returns 'phones' unless there is more data available from using 'characters'.
     """
     from everyvoice.text.arpabet import ARPABET_TO_IPA_TRANSDUCER
-    from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
+    from everyvoice.text.phonemizer import (
+        AVAILABLE_G2P_ENGINES,
+        G2PCallable,
+        get_g2p_engine,
+    )
 
-    g2p_engines = {}
+    g2p_engines: dict[str, None | G2PCallable] = {}
     character_counter = 0
     phone_counter = 0
     for item in tqdm(filelist_data, desc=f"Processing your {text_representation}"):

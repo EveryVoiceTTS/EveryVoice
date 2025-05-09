@@ -3,9 +3,10 @@ import platform
 import subprocess
 import sys
 from enum import Enum
+from io import TextIOWrapper
 from pathlib import Path
 from textwrap import dedent
-from typing import Any, List, Optional
+from typing import Annotated, Any, List, Optional
 
 import typer
 from rich import print as rich_print
@@ -51,7 +52,11 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
 from everyvoice.run_tests import SUITE_NAMES, run_tests
-from everyvoice.utils import generic_psv_filelist_reader, spinner
+from everyvoice.utils import (
+    generic_psv_filelist_reader,
+    load_config_from_json_or_yaml_path,
+    spinner,
+)
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
@@ -759,6 +764,41 @@ def update_schemas(
         with open(schema_dir_path / filename, "w", encoding="utf8") as f:
             json.dump(schema.model_json_schema(), f, indent=2)
             f.write("\n")
+
+
+@app.command()
+def g2p(
+    lang_id: Annotated[str, typer.Argument(help="lang id")],
+    # Ignoring mypy since class FileText(io.TextIOWrapper)
+    input_file: Annotated[typer.FileText, typer.Argument()] = TextIOWrapper(
+        sys.stdin.buffer,
+        encoding="utf-8",
+    ),  # type: ignore[assignment]
+    config: Annotated[
+        Optional[Path],
+        typer.Option(help="full to path to everyvoice-shared-text.yaml"),
+    ] = None,
+):
+    """
+    Apply G2P to stdin.
+    Great for testing your EveryVoice g2p plugin.
+    """
+    from everyvoice.config.text_config import TextConfig
+    from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES as G2Ps
+    from everyvoice.text.phonemizer import get_g2p_engine
+
+    if config:
+        kwargs = load_config_from_json_or_yaml_path(config)
+        text_config: TextConfig = TextConfig(**kwargs)
+        print(
+            f"Config contains custon G2P Engines: {text_config.g2p_engines}",
+            file=sys.stderr,
+        )
+
+    print("g2p available languages:", G2Ps.keys(), file=sys.stderr)
+    g2p = get_g2p_engine(lang_id)
+    for line in map(str.strip, input_file):
+        print(g2p(line))
 
 
 CLICK_APP = typer.main.get_group(app)
