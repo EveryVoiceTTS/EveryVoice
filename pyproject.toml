@@ -46,6 +46,7 @@ dependencies = [
   "clipdetect>=0.1.4",
   "deepdiff>=6.5.0",
   "anytree>=2.12.1",
+  "click<8.2.0",
   "einops==0.5.0",
   "g2p~=2.0",
   "gradio>=5.9.1",
