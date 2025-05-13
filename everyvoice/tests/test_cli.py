@@ -377,7 +377,7 @@ class CLITest(TestCase):
         self.assertIn("Invalid value", result.output)
 
     def test_create_demo_app_with_errors(self):
-        # outputs is the first thing to get checked, because it's can be done as
+        # outputs is the first thing to get checked, because it can be done as
         # a quick check before loading any models.
         with self.assertRaises(ValueError) as cm:
             create_demo_app(

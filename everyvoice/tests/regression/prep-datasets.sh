@@ -35,6 +35,9 @@ Boo!
 ==EOF==
     echo spec > "$dir"/test2.txt
 done
+cp "$EVERYVOICE_REGRESS_ROOT"/run-demo-app-lj-full.sh regress-lj-full/run-demo-app.sh
+cp "$EVERYVOICE_REGRESS_ROOT"/test-demo-app-lj-full.py regress-lj-full/test-demo-app.py
+cp "$EVERYVOICE_REGRESS_ROOT"/wait-for-demo-app.py "$dir"/wait-for-demo-app.py
 
 SinhalaTTS=$SGILE_DATASET_ROOT/SinhalaTTS
 dir=regress-si
@@ -67,3 +70,16 @@ uqeqesho
 iimpumlo
 ==EOF==
 echo isiXhosa > "$dir"/test2.txt
+
+dir=regress-mix
+mkdir $dir
+cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-mix "$dir"/wizard-resume
+cat <<'==EOF==' > "$dir"/test.txt
+This is a test.
+සිංහල අක්ෂර මාලාව
+ukukrwentshwa isiXhosa
+==EOF==
+echo test > "$dir"/test2.txt
+cp "$EVERYVOICE_REGRESS_ROOT"/run-demo-app-mix.sh "$dir"/run-demo-app.sh
+cp "$EVERYVOICE_REGRESS_ROOT"/test-demo-app-mix.py "$dir"/test-demo-app.py
+cp "$EVERYVOICE_REGRESS_ROOT"/wait-for-demo-app.py "$dir"/wait-for-demo-app.py
