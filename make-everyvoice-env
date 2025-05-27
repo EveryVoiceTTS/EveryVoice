@@ -8,14 +8,11 @@ CUDA_VERSION=11.8
 PYTHON_VERSION=3.10
 
 usage() {
-    for msg in "$@"; do
-        echo $msg >&2
-    done
     cat <<==EOF== >&2
 
 Usage: ./make-everyvoice-env [options]
 
-  Create a conda environment for EveryVoice, automating all the instructions in
+  Create an environment for EveryVoice, automating all the instructions in
   README.md
 
 Options:
@@ -28,10 +25,18 @@ Torch pre-compilation options:
   --python PYTHON_VERSION Specify the Python version to use
                           Default: --python $PYTHON_VERSION
 
-Target Environment Sepcification:
+Target Environment Specification:
+  -p, --prefix, --path ENV_PATH   Path of the environment to create
+                          Default with --uv: --path ./.venv
   -n, --name ENV_NAME     Name of the conda environment to create
-                          Default: --name EveryVoice
-  -p, --prefix ENV_PATH   Path of the conda environment to create
+                          Not compatible with --uv
+                          Default with --conda: --name EveryVoice
+
+Venv manager options:
+  --uv                    Use uv to create a virtual environment
+                          Default if uv, sox and ffmpeg are found in PATH.
+  --conda                 Use conda to create a conda environment
+                          Default if any of uv, sox or ffmpeg are not found.
 
 ==EOF==
     exit
@@ -40,28 +45,32 @@ Target Environment Sepcification:
 error_exit() {
    echo -n "ERROR: " >&2
    for msg in "$@"; do
-      echo $msg >&2
+      echo "$msg" >&2
    done
    echo "Use -h for help." >&2
    exit 1
 }
 
 arg_check() {
-   if [ $2 -le $1 ]; then
+   if [[ $2 -le $1 ]]; then
       error_exit "Missing argument to $3 option."
    fi
 }
 
 ENV_PREFIX=
 ENV_NAME=
+USE_UV=
+USE_CONDA=
 while [[ $# -gt 0 ]]; do
     case "$1" in
     -h|--help)   usage;;
-    --cuda)      arg_check 1 $# $!; CUDA_VERSION=$2; shift;;
+    --cuda)      arg_check 1 $# "$1"; CUDA_VERSION=$2; shift;;
     --cpu)       CUDA_VERSION=cpu;;
-    --python)    arg_check 1 $# $!; PYTHON_VERSION=$2; shift;;
-    -n|--name)   arg_check 1 $# $!; ENV_NAME=$2; shift;;
-    -p|--prefix) arg_check 1 $# $!; ENV_PREFIX=$2; shift;;
+    --python)    arg_check 1 $# "$1"; PYTHON_VERSION=$2; shift;;
+    --uv)        USE_UV=1;;
+    --conda)     USE_CONDA=1;;
+    -n|--name)   arg_check 1 $# "$1"; ENV_NAME=$2; shift;;
+    -p|--prefix|--path) arg_check 1 $# "$1"; ENV_PREFIX=$2; shift;;
     -*)          error_exit "Unknown option $1.";;
     *)           break;;
     esac
@@ -78,30 +87,80 @@ if git submodule status | grep -q "^-"; then
     error_exit "Please init the submodules with \"git submodule update --init\"."
 fi
 
+# Decide if we should use uv or conda
+if [[ ! $USE_UV && ! $USE_CONDA ]]; then
+    if which uv >& /dev/null && which ffmpeg >& /dev/null && which sox >& /dev/null; then
+        echo "Using uv to create the environment, since uv, sox and ffmpeg are all available on your PATH."
+        USE_UV=1
+    else
+        USE_CONDA=1
+    fi
+fi
+
 # Interpret the (mutually exclusive) env name or prefix
-if [[ ! $ENV_PREFIX ]]; then
+if [[ $ENV_PREFIX ]]; then
+    if [[ $ENV_PREFIX =~ ^\/ || $ENV_PREFIX =~ ^\.\/ || $ENV_PREFIX =~ ^[A-Z]:\\ ]]; then
+        :
+    else
+        ENV_PREFIX="./$ENV_PREFIX"
+    fi
+fi
+if [[ $USE_UV ]]; then
+    if [[ $ENV_NAME ]]; then
+        error_exit "--name is not compatible with --uv: please use --path <env_path> instead."
+    fi
+    if [[ ! $ENV_PREFIX ]]; then
+        ENV_PREFIX=./.venv
+    fi
+    ENV_DESC="at path \"$ENV_PREFIX\""
+    ENV2ACTIVATE=$ENV_PREFIX
+elif [[ ! $ENV_PREFIX ]]; then
     [[ $ENV_NAME ]] || ENV_NAME=EveryVoice
-    ENV_OPTION="--name \"$ENV_NAME\""
+    ENV_OPTION=(--name "$ENV_NAME")
     ENV_DESC="called \"$ENV_NAME\""
     ENV2ACTIVATE=$ENV_NAME
 else
     [[ $ENV_NAME ]] && error_exit "Please specify only one of --name and --prefix."
-    ENV_OPTION="--prefix \"$ENV_PREFIX\""
+    ENV_OPTION=(--prefix "$ENV_PREFIX")
     ENV_DESC="at path \"$ENV_PREFIX\""
     ENV2ACTIVATE=$ENV_PREFIX
 fi
 
-# Setup conda aliases
-if __conda_setup="$(conda shell.bash hook)"; then
-    eval "$__conda_setup"
-else
-    error_exit "Cannot initialize conda."
+if [[ $USE_UV && $USE_CONDA ]]; then
+    error_exit "Please specify only one of --uv and --conda."
 fi
-unset __conda_setup
+if [[ $USE_UV ]]; then
+    if ! which uv >& /dev/null; then
+        error_exit "Please install uv first, see https://docs.astral.sh/uv/getting-started/installation/"
+    fi
 
-# Don't overwrite an existing env
-if conda activate "$ENV2ACTIVATE" >& /dev/null; then
-    error_exit "Environment \"$ENV2ACTIVATE\" already exists, please use a different name or path."
+    # Don't overwrite an existing env
+    if source "$ENV_PREFIX"/*/activate >& /dev/null; then
+        error_exit "Environment \"$ENV_PREFIX\" already exists, please remove it or use a different path."
+    fi
+
+    # Check for ffmpeg since uv cannot install it
+    if ! which ffmpeg >& /dev/null; then
+        echo "Warning: ffmpeg not found in PATH. Make sure to install it before running EveryVoice. Use --conda if you want make-everyvoice-env to install it for you."
+    fi
+    if ! which sox >& /dev/null; then
+        echo "Warning: sox not found in PATH. Make sure to install it before running EveryVoice. Use --conda if you want make-everyvoice-env to install it for you."
+    fi
+    ENV_MAKER="uv"
+else
+    # Setup conda aliases
+    if __conda_setup="$(conda shell.bash hook)"; then
+        eval "$__conda_setup"
+    else
+        error_exit "Cannot initialize conda."
+    fi
+    unset __conda_setup
+
+    # Don't overwrite an existing env
+    if conda activate "$ENV2ACTIVATE" >& /dev/null; then
+        error_exit "Environment \"$ENV2ACTIVATE\" already exists, please use a different name or path."
+    fi
+    ENV_MAKER="conda"
 fi
 
 if [[ $CUDA_VERSION == CPU || $CUDA_VERSION == cpu ]]; then
@@ -119,13 +178,13 @@ else
     else
         echo "Please make sure the CUDA version installed on your system matches CUDA_VERSION=$CUDA_VERSION."
     fi
-    CUDA_TAG=cu$(echo $CUDA_VERSION | sed 's/\.//g')
+    CUDA_TAG=cu${CUDA_VERSION//./}
     CUDA_DESC="CUDA $CUDA_VERSION"
 fi
-echo "Creating EveryVoice conda environment $ENV_DESC for $CUDA_DESC using Python $PYTHON_VERSION."
+echo "Creating EveryVoice environment $ENV_DESC for $CUDA_DESC using Python $PYTHON_VERSION with $ENV_MAKER."
 
 echo -n "Proceed (y/[n])? "
-read proceed
+read -r proceed
 if [[ "$proceed" =~ ^[y|Y] ]]; then
     echo Proceeding
 else
@@ -142,14 +201,34 @@ r() {
 
 set -o errexit
 
-r conda create -y $ENV_OPTION python=$PYTHON_VERSION ffmpeg
-eval "$(conda shell.bash hook)"
-r conda activate "$ENV2ACTIVATE"
+if [[ $USE_UV ]]; then
+    r uv venv --managed-python --python="$PYTHON_VERSION" "$ENV_PREFIX"
+    r source "$ENV_PREFIX"/*/activate
 
-r CUDA_TAG=$CUDA_TAG pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+    TEMP_REQS_DIR=$(mktemp -d ./torch-reqs.XXXXXX)
+    sed 's/\${CUDA_TAG}/'"$CUDA_TAG/" requirements.torch.txt > "$TEMP_REQS_DIR/requirements.torch.txt"
+    r uv pip install -r "$TEMP_REQS_DIR/requirements.torch.txt" --find-links https://download.pytorch.org/whl/torch_stable.html
+    rm -rf "$TEMP_REQS_DIR"
 
-r conda install -y sox -c conda-forge
-r pip install -e .[dev]
+    # Validation for libsox-dev
+    if python -c 'from torchaudio.sox_effects import apply_effects_tensor; apply_effects_tensor(None, 172, [])' 2>&1 | grep 'OSError: libsox'; then
+        error_exit "libsox.so not found. This will cause issues with audio pre-processing." \
+                   "Please install sox and its Python bindings, e.g., via libsox-dev, before running EveryVoice." \
+                   "See README.md for instructions, or else use make-everyvoice-env --conda instead of --uv."
+    fi
+
+    r uv pip install -e .[dev]
+else
+    r conda create -y "${ENV_OPTION[@]}" python="$PYTHON_VERSION" ffmpeg
+    eval "$(conda shell.bash hook)"
+    r conda activate "$ENV2ACTIVATE"
+
+    r CUDA_TAG="$CUDA_TAG" pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+
+    r conda install -y sox -c conda-forge
+    r pip install -e .[dev]
+fi
+
 echo ""
 echo "Environment creation completed with success"
 
@@ -169,5 +248,9 @@ git submodule foreach 'gitlint install-hook || true' || true
 echo ""
 echo "SUCCESS!"
 echo "EveryVoice environment \"$ENV2ACTIVATE\" successfully created."
-echo "Run \"conda activate $ENV2ACTIVATE\" to activate it."
+if [[ $USE_UV ]]; then
+    echo 'Run "source' "$ENV2ACTIVATE"/*/activate '" to activate it.'
+else
+    echo "Run \"conda activate $ENV2ACTIVATE\" to activate it."
+fi
 echo "Run \"everyvoice/run_tests.py all\" to validate it."
