@@ -5,7 +5,7 @@
 
 # Default versions:
 CUDA_VERSION=11.8
-PYTHON_VERSION=3.10
+PYTHON_VERSION=3.12
 
 usage() {
     cat <<==EOF== >&2
