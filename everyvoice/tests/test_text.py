@@ -19,6 +19,7 @@ from everyvoice.text.phonemizer import (
     DEFAULT_G2P,
     CachingG2PEngine,
     get_g2p_engine,
+    make_default_g2p_engines,
 )
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
 from everyvoice.utils import (
@@ -391,12 +392,17 @@ class TestG2p(TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.AVAILABLE_G2P_ENGINES = dict(AVAILABLE_G2P_ENGINES)
+        # Each test in this suite needs to start with a fresh, empty
+        # AVAILABLE_G2P_ENGINES cache, otherwise caching due to previous calls
+        # get get_g2p_engine() in other suites could invalidate some tests here.
+        self.SAVED_AVAILABLE_G2P_ENGINES = dict(AVAILABLE_G2P_ENGINES)
+        AVAILABLE_G2P_ENGINES.clear()
+        AVAILABLE_G2P_ENGINES.update(make_default_g2p_engines())
 
     def tearDown(self) -> None:
         super().setUp()
         AVAILABLE_G2P_ENGINES.clear()
-        AVAILABLE_G2P_ENGINES.update(self.AVAILABLE_G2P_ENGINES)
+        AVAILABLE_G2P_ENGINES.update(self.SAVED_AVAILABLE_G2P_ENGINES)
 
     def test_many_available_langs(self):
         self.assertGreaterEqual(len(AVAILABLE_G2P_ENGINES), 20)

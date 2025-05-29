@@ -69,6 +69,7 @@ def all_test_suites() -> TestSuite:
     for submodule_testsuite in SUBMODULE_SUITES.values():
         suite = loader.discover(
             os.path.dirname(__file__) + submodule_testsuite[0],
+            top_level_dir=os.path.dirname(__file__),  # MANDATORY
         )
         test_suite.addTests(suite)
 

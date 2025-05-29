@@ -11,9 +11,14 @@ from ipatok import tokenise
 from everyvoice.config.shared_types import G2PCallable
 
 DEFAULT_G2P = "DEFAULT_G2P"
-AVAILABLE_G2P_ENGINES: dict[str, str | G2PCallable] = {
-    k: DEFAULT_G2P for k in get_arpabet_langs()[0]
-}
+
+
+def make_default_g2p_engines():
+    return {k: DEFAULT_G2P for k in get_arpabet_langs()[0]}
+
+
+AVAILABLE_G2P_ENGINES: dict[str, str | G2PCallable] = make_default_g2p_engines()
+
 
 # TODO: Add documentation for this
 # If you want to override the default g2p engines, do so by the following:
