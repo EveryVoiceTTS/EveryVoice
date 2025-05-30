@@ -314,7 +314,7 @@ def create_demo_app(
                     # When the only output option is wav, don't show the File Output box
                     outputs = [out_audio]
                 else:
-                    out_file = gr.File(label="File Output")
+                    out_file = gr.File(label="File Output", elem_id="file_output")
                     outputs = [out_audio, out_file]
         # Only include the style reference input if the model supports it
         if model.config.model.use_global_style_token_module:
