@@ -21,6 +21,8 @@ Options:
 Torch pre-compilation options:
   --cuda CUDA_VERSION     Install torch compiled for CUDA_VERSION
                           Default: --cuda $CUDA_VERSION
+                          Special value: "--cuda system" compiles torch
+                          against what is available on the system.
   --cpu                   Install torch for use on CPU only
   --python PYTHON_VERSION Specify the Python version to use
                           Default: --python $PYTHON_VERSION
@@ -166,6 +168,9 @@ fi
 if [[ $CUDA_VERSION == CPU || $CUDA_VERSION == cpu ]]; then
     CUDA_TAG=cpu
     CUDA_DESC="use on CPU only"
+elif [[ $CUDA_VERSION == system ]]; then
+    CUDA_DESC="the system CUDA version"
+    CUDA_TAG=
 else
     if which nvidia-smi >& /dev/null && nvidia-smi | grep -q CUDA; then
         if nvidia-smi | grep -q "CUDA Version: $CUDA_VERSION "; then
@@ -205,10 +210,14 @@ if [[ $USE_UV ]]; then
     r uv venv --managed-python --python="$PYTHON_VERSION" "$ENV_PREFIX"
     r source "$ENV_PREFIX"/*/activate
 
-    TEMP_REQS_DIR=$(mktemp -d ./torch-reqs.XXXXXX)
-    sed 's/\${CUDA_TAG}/'"$CUDA_TAG/" requirements.torch.txt > "$TEMP_REQS_DIR/requirements.torch.txt"
-    r uv pip install -r "$TEMP_REQS_DIR/requirements.torch.txt" --find-links https://download.pytorch.org/whl/torch_stable.html
-    rm -rf "$TEMP_REQS_DIR"
+    if [[ $CUDA_TAG ]]; then
+        TEMP_REQS_DIR=$(mktemp -d ./torch-reqs.XXXXXX)
+        sed 's/\${CUDA_TAG}/'"$CUDA_TAG/" requirements.torch.txt > "$TEMP_REQS_DIR/requirements.torch.txt"
+        r uv pip install -r "$TEMP_REQS_DIR/requirements.torch.txt" --find-links https://download.pytorch.org/whl/torch_stable.html
+        rm -rf "$TEMP_REQS_DIR"
+    fi
+
+    r uv pip install -e .[dev]
 
     # Validation for libsox-dev
     if python -c 'from torchaudio.sox_effects import apply_effects_tensor; apply_effects_tensor(None, 172, [])' 2>&1 | grep 'OSError: libsox'; then
@@ -216,14 +225,14 @@ if [[ $USE_UV ]]; then
                    "Please install sox and its Python bindings, e.g., via libsox-dev, before running EveryVoice." \
                    "See README.md for instructions, or else use make-everyvoice-env --conda instead of --uv."
     fi
-
-    r uv pip install -e .[dev]
 else
     r conda create -y "${ENV_OPTION[@]}" python="$PYTHON_VERSION" ffmpeg
     eval "$(conda shell.bash hook)"
     r conda activate "$ENV2ACTIVATE"
 
-    r CUDA_TAG="$CUDA_TAG" pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+    if [[ $CUDA_TAG ]]; then
+        r CUDA_TAG="$CUDA_TAG" pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+    fi
 
     r conda install -y sox -c conda-forge
     r pip install -e .[dev]
