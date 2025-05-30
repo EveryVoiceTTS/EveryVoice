@@ -38,7 +38,7 @@ If you prefer to do the complete installation process manually, or if the automa
 ### TL;DR
 
 ```
-conda create --name EveryVoice python=3.10
+conda create --name EveryVoice python=3.12
 conda activate EveryVoice
 conda install sox -c conda-forge
 conda install ffmpeg
@@ -52,9 +52,9 @@ Install [miniconda](https://docs.conda.io/en/latest/miniconda.html) or [conda](h
 
 ### Create the environment
 
-Use conda to create a new environment based on Python 3.10:
+Use conda to create a new environment based on Python 3.12:
 ```sh
-conda create --name EveryVoice python=3.10
+conda create --name EveryVoice python=3.12
 conda activate EveryVoice
 ```
 
@@ -121,7 +121,7 @@ If you can install sox, libsox-dev and ffmpeg using your OS packages or by other
 you can now install EveryVoice in a [`uv`](https://docs.astral.sh/uv/) venv, which is much faster to create and activate.
 
 ```
-uv venv -p 3.10 .venv-EveryVoice
+uv venv -p 3.12 .venv-EveryVoice
 source .venv-EveryVoice/bin/activate
 uv pip install torch==2.3.1+cu118 torchaudio==2.3.1+cu118 --find-links https://download.pytorch.org/whl/torch_stable.html
 uv pip install -e .[dev]
