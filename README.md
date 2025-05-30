@@ -50,8 +50,8 @@ To run EveryVoice, you need to create a new environment using Conda and Python 3
 We have automated the procedure required to do all this in the script `make-everyvoice-env`, which you can run like this:
 
 ```sh
-./make-everyvoice-env --name <env-name-of-your-choice>
-conda activate <env-name-of-your-choice>
+./make-everyvoice-env --path <env-path-of-your-choice>
+conda activate <env-path-of-your-choice>
 ```
 
 Add the option `--cuda CUDA_VERSION` if you need to override the default CUDA version, or `--cpu` to use Torch compiled for CPU use only.
