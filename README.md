@@ -45,7 +45,7 @@ git submodule update --init
 
 ### Environment and installation – automated
 
-To run EveryVoice, you need to create a new environment using Conda and Python 3.10, install all our dependencies and EveryVoice itself.
+To run EveryVoice, you need to create a new environment using Conda and Python 3.12, install all our dependencies and EveryVoice itself.
 
 We have automated the procedure required to do all this in the script `make-everyvoice-env`, which you can run like this:
 
