@@ -25,7 +25,7 @@ SUITES: dict[str, tuple[str, ...]] = {
     "text": ("test_text", "test_utils", "test_doctests"),
     "preprocessing": ("test_preprocessing",),
     "model": ("test_model",),
-    "cli": ("test_wizard", "test_cli", "test_wizard_helpers"),
+    "cli": ("test_wizard", "test_cli", "test_wizard_helpers", "test_subsample"),
     "evaluation": ("test_evaluation",),
     **SUBMODULE_SUITES,
 }
