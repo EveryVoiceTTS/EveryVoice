@@ -1003,7 +1003,7 @@ conda<span class="w"> </span>activate<span class="w"> </span>EveryVoice
 <h2 id="manual-installation-using-conda">Manual installation using Conda<a class="headerlink" href="#manual-installation-using-conda" title="Permanent link">&para;</a></h2>
 <p>If you prefer to do the complete installation process manually, or if the automated process does not work for you, follow these steps.</p>
 <h3 id="tldr">TL;DR<a class="headerlink" href="#tldr" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code>conda create --name EveryVoice python=3.10
+<div class="highlight"><pre><span></span><code>conda create --name EveryVoice python=3.12
 conda activate EveryVoice
 conda install sox -c conda-forge
 conda install ffmpeg
@@ -1013,8 +1013,8 @@ pip install -e .
 <h3 id="install-conda">Install Conda<a class="headerlink" href="#install-conda" title="Permanent link">&para;</a></h3>
 <p>Install <a href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a> or <a href="https://docs.conda.io/projects/conda/en/stable/">conda</a>.</p>
 <h3 id="create-the-environment">Create the environment<a class="headerlink" href="#create-the-environment" title="Permanent link">&para;</a></h3>
-<p>Use conda to create a new environment based on Python 3.10:
-<div class="highlight"><pre><span></span><code>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>EveryVoice<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.10
+<p>Use conda to create a new environment based on Python 3.12:
+<div class="highlight"><pre><span></span><code>conda<span class="w"> </span>create<span class="w"> </span>--name<span class="w"> </span>EveryVoice<span class="w"> </span><span class="nv">python</span><span class="o">=</span><span class="m">3</span>.12
 conda<span class="w"> </span>activate<span class="w"> </span>EveryVoice
 </code></pre></div></p>
 <h3 id="pytorch-dependencies">Pytorch dependencies<a class="headerlink" href="#pytorch-dependencies" title="Permanent link">&para;</a></h3>
@@ -1055,7 +1055,7 @@ git<span class="w"> </span>submodule<span class="w"> </span>foreach<span class="
 <h2 id="installation-using-uv">Installation using <code>uv</code><a class="headerlink" href="#installation-using-uv" title="Permanent link">&para;</a></h2>
 <p>If you can install sox, libsox-dev and ffmpeg using your OS packages or by other means (see <a href="https://github.com/EveryVoiceTTS/EveryVoice?tab=readme-ov-file#quickstart-from-pypi">README.md</a>),
 you can now install EveryVoice in a <a href="https://docs.astral.sh/uv/"><code>uv</code></a> venv, which is much faster to create and activate.</p>
-<div class="highlight"><pre><span></span><code>uv venv -p 3.10 .venv-EveryVoice
+<div class="highlight"><pre><span></span><code>uv venv -p 3.12 .venv-EveryVoice
 source .venv-EveryVoice/bin/activate
 uv pip install torch==2.3.1+cu118 torchaudio==2.3.1+cu118 --find-links https://download.pytorch.org/whl/torch_stable.html
 uv pip install -e .[dev]
