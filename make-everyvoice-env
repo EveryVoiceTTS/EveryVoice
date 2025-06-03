@@ -4,7 +4,7 @@
 # manual instructions in README.md
 
 # Default versions:
-CUDA_VERSION=11.8
+CUDA_VERSION=12.1
 PYTHON_VERSION=3.12
 
 usage() {
