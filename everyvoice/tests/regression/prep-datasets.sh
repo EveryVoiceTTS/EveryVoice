@@ -4,28 +4,24 @@
 
 set -o errexit
 
-# Usage: cat my_file | get_slice lines_to_keep > out
-# Use a number of lines or full to get all lines
-get_slice() {
-    lines=$1
-    if [[ $lines == full ]]; then
-        cat
-    else
-        head -"$lines"
-    fi
-}
-
 EVERYVOICE_REGRESS_ROOT=$(python -c 'import everyvoice; print(everyvoice.__path__[0])')/tests/regression
 
 SGILE_DATASET_ROOT=${SGILE_DATASET_ROOT:-$HOME/sgile/data}
 
+DURATIONS="20 60 180 full"
+
 LJ_SPEECH_DATASET=$SGILE_DATASET_ROOT/LJSpeech-1.1
-LJSLICES="160 600 1600 full"
-for slice in $LJSLICES; do
-    dir=regress-lj-$slice
+
+for duration in $DURATIONS; do
+    dir=regress-lj-$duration
     mkdir "$dir"
     ln -s "$LJ_SPEECH_DATASET/wavs" "$dir"/
-    get_slice "$slice" < "$LJ_SPEECH_DATASET/metadata.csv" > "$dir"/metadata.csv
+    if [ $duration == 'full' ]; then
+        cat "$LJ_SPEECH_DATASET/metadata.csv" > "$dir"/metadata.csv
+    else
+        duration_seconds=$(( $duration * 60 )) # Convert the duration from minutes to seconds
+        python ../subsample.py "$LJ_SPEECH_DATASET/metadata.csv" "$LJ_SPEECH_DATASET/wavs" -d $duration_seconds -f psv > "$dir"/metadata.csv
+    fi
     cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-lj "$dir"/wizard-resume
     cat <<'==EOF==' > "$dir"/test.txt
 This is a test.
@@ -40,36 +36,50 @@ cp "$EVERYVOICE_REGRESS_ROOT"/test-demo-app-lj-full.py regress-lj-full/test-demo
 cp "$EVERYVOICE_REGRESS_ROOT"/wait-for-demo-app.py "$dir"/wait-for-demo-app.py
 
 SinhalaTTS=$SGILE_DATASET_ROOT/SinhalaTTS
-dir=regress-si
-mkdir $dir
-ln -s "$SinhalaTTS/wavs" $dir/
-cp "$SinhalaTTS/si_lk.lines.txt" $dir/
-cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-si "$dir"/wizard-resume
-# Source of this sample text: https://en.wikipedia.org/wiki/Sinhala_script CC BY-SA-4.0
-#  - the first line means Sinhala script, found at the top of the page
-#  - the rest is the first verse from the Pali Dhammapada lower on the same page
-cat <<'==EOF==' > "$dir"/test.txt
+for duration in $DURATIONS; do
+    dir=regress-si-$duration
+    mkdir $dir
+    ln -s "$SinhalaTTS/wavs" $dir/
+    if [ $duration == 'full' ]; then
+        cat "$SinhalaTTS/si_lk.lines.txt" > "$dir"/si_lk.lines.txt
+    else
+        duration_seconds=$(( $duration * 60 )) # Convert the duration from minutes to seconds
+        python ../subsample.py "$SinhalaTTS/si_lk.lines.txt" "$SinhalaTTS/wavs" -d "$duration_seconds" -f festival > "$dir"/si_lk.lines.txt
+    fi
+    cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-si "$dir"/wizard-resume
+    # Source of this sample text: https://en.wikipedia.org/wiki/Sinhala_script CC BY-SA-4.0
+    #  - the first line means Sinhala script, found at the top of the page
+    #  - the rest is the first verse from the Pali Dhammapada lower on the same page
+    cat <<'==EOF==' > "$dir"/test.txt
 සිංහල අක්ෂර මාලාව
 මනොපුබ්‌බඞ්‌ගමා ධම්‌මා, මනොසෙට්‌ඨා මනොමයා;
 මනසා චෙ පදුට්‌ඨෙන, භාසති වා කරොති වා;
 තතො නං දුක්‌ඛමන්‌වෙති, චක්‌කංව වහතො පදං.
 ==EOF==
-echo "අක-ෂර" > "$dir"/test2.txt
+    echo "අක-ෂර" > "$dir"/test2.txt
+done
 
 isiXhosa=$SGILE_DATASET_ROOT/OpenSLR32-four-South-Afican-languages/xh_za/za/xho
-dir=regress-xh
-mkdir $dir
-ln -s "$isiXhosa/wavs" $dir/
-cp "$isiXhosa/line_index.tsv" $dir/
-cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-xh "$dir"/wizard-resume
-# Source of this sample text: individual words copied from
-# https://en.wikipedia.org/wiki/Xhosa_language CC BY-SA-4.0
-cat <<'==EOF==' > "$dir"/test.txt
+for duration in $DURATIONS; do
+    dir=regress-xh-$duration
+    mkdir $dir
+    ln -s "$isiXhosa/wavs" $dir/
+    if [ $duration == 'full' ]; then
+        cat "$isiXhosa/line_index.tsv" > "$dir"/line_index.tsv
+    else
+        duration_seconds=$(( $duration * 60 )) # Convert the duration from minutes to seconds
+        python ../subsample.py "$isiXhosa/line_index.tsv" "$isiXhosa/wavs" -d "$duration_seconds" -f tsv > "$dir"/line_index.tsv
+    fi
+    cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-xh "$dir"/wizard-resume
+    # Source of this sample text: individual words copied from
+    # https://en.wikipedia.org/wiki/Xhosa_language CC BY-SA-4.0
+    cat <<'==EOF==' > "$dir"/test.txt
 ukukrwentshwa
 uqeqesho
 iimpumlo
 ==EOF==
-echo isiXhosa > "$dir"/test2.txt
+    echo isiXhosa > "$dir"/test2.txt
+done
 
 dir=regress-mix
 mkdir $dir
