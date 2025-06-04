@@ -55,11 +55,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
 from everyvoice.run_tests import SUITE_NAMES, run_tests
-from everyvoice.utils import (
-    generic_psv_filelist_reader,
-    load_config_from_json_or_yaml_path,
-    spinner,
-)
+from everyvoice.utils import load_config_from_json_or_yaml_path, spinner
 from everyvoice.wizard import (
     ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
@@ -478,11 +474,11 @@ app.command(
 # Add check_data to root
 app.command(
     "check-data",
-    short_help="Check your data for outliers or any anomolies",
+    short_help="Check your data for outliers or any anomalies",
     help="""
     # Check Data Help
 
-    This command will check all of your data to help you find anomolies and outliers.
+    This command will check all of your data to help you find anomalies and outliers.
 
     To check your data, make sure you've run preprocessing first (everyvoice preprocess --help).
     Then you need to briefly and partially train a text-to-spec model. We recommend 100-1000 steps to start.
