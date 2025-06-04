@@ -45,7 +45,7 @@ class TextTest(BasicTestCase):
         self.assertEqual(self.base_text_processor.decode_tokens(sequence, "", ""), text)
 
     def test_token_sequence_to_text(self):
-        sequence = [51, 48, 55, 55, 58, 1, 66, 58, 61, 55, 47]
+        sequence = [60, 57, 64, 64, 67, 1, 75, 67, 70, 64, 56]
         self.assertEqual(self.base_text_processor.encode_text("hello world"), sequence)
 
     def test_hardcoded_symbols(self):
@@ -116,13 +116,13 @@ class TextTest(BasicTestCase):
                 "e",
                 "<QUOTE>",
                 "s",
-                "<BB>",
+                "<COLON>",
                 " ",
                 "f",
                 "o",
                 "o",
-                "<BB>",
-                "<BB>",
+                "<SEMICOL>",
+                "<PERIOD>",
             ],
         )
 
@@ -537,6 +537,13 @@ class PunctuationTest(TestCase):
                 ".",
                 "“",
                 "…",
+                "]",
+                "}",
+                "[",
+                ")",
+                "*",
+                "{",
+                "(",
             },
         )
 

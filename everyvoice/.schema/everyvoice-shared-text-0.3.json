@@ -42,41 +42,88 @@
           "title": "Quotemarks",
           "type": "array"
         },
-        "big_breaks": {
+        "parentheses": {
           "default": [
-            ".",
-            ":",
+            "(",
+            ")",
+            "[",
+            "]",
+            "{",
+            "}"
+          ],
+          "description": "Punctuation symbols indicating parentheses, brackets, or braces. Replaces these symbols with <PAREN> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Parentheses",
+          "type": "array"
+        },
+        "periods": {
+          "default": [
+            "."
+          ],
+          "description": "Punctuation symbols indicating a 'period' used in your datasets. Replaces these symbols with <PERIOD> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Periods",
+          "type": "array"
+        },
+        "colons": {
+          "default": [
+            ":"
+          ],
+          "description": "Punctuation symbols indicating a 'colon' used in your datasets. Replaces these symbols with <COLON> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Colons",
+          "type": "array"
+        },
+        "semi_colons": {
+          "default": [
             ";"
           ],
-          "description": "Punctuation symbols indicating a 'big break' used in your datasets. Replaces these symbols with <BB> internally.",
+          "description": "Punctuation symbols indicating a 'semi-colon' used in your datasets. Replaces these symbols with <SEMICOL> internally.",
           "items": {
             "type": "string"
           },
-          "title": "Big Breaks",
+          "title": "Semi Colons",
           "type": "array"
         },
-        "small_breaks": {
+        "hyphens": {
           "default": [
-            ",",
             "-",
-            "\u2014"
+            "\u2014",
+            "*"
           ],
-          "description": "Punctuation symbols indicating a 'small break' used in your datasets. Replaces these symbols with <SB> internally.",
+          "description": "Punctuation symbols indicating a 'hyphen' used in your datasets. * is a hyphen by default since unidecode decodes middle-dot punctuation as an asterisk. Replaces these symbols with <HYPHEN> internally.",
           "items": {
             "type": "string"
           },
-          "title": "Small Breaks",
+          "title": "Hyphens",
           "type": "array"
         },
-        "ellipsis": {
+        "commas": {
+          "default": [
+            ","
+          ],
+          "description": "Punctuation symbols indicating a 'comma' used in your datasets. Replaces these symbols with <COMMA> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Commas",
+          "type": "array"
+        },
+        "ellipses": {
           "default": [
             "\u2026"
           ],
-          "description": "Punctuation symbols indicating an ellipsis used in your datasets. Replaces these symbols with <EPS> internally.",
+          "description": "Punctuation symbols indicating ellipses used in your datasets. Replaces these symbols with <EPS> internally.",
           "items": {
             "type": "string"
           },
-          "title": "Ellipsis",
+          "title": "Ellipses",
           "type": "array"
         }
       },
