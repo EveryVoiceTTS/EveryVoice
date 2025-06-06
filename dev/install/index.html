@@ -1007,7 +1007,7 @@ conda<span class="w"> </span>activate<span class="w"> </span>EveryVoice
 conda activate EveryVoice
 conda install sox -c conda-forge
 conda install ffmpeg
-CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+CUDA_TAG=cu121 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
 pip install -e .
 </code></pre></div>
 <h3 id="install-conda">Install Conda<a class="headerlink" href="#install-conda" title="Permanent link">&para;</a></h3>
@@ -1018,9 +1018,9 @@ pip install -e .
 conda<span class="w"> </span>activate<span class="w"> </span>EveryVoice
 </code></pre></div></p>
 <h3 id="pytorch-dependencies">Pytorch dependencies<a class="headerlink" href="#pytorch-dependencies" title="Permanent link">&para;</a></h3>
-<p>Install our pytorch requirements from <code>requirements.torch.txt</code>, replacing <code>cu118</code> below (for
-CUDA 11.8) by your actual CUDA version tag (118 or higher), or by <code>cpu</code> for a CPU-only installation:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">CUDA_TAG</span><span class="o">=</span>cu118<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.torch.txt<span class="w"> </span>--find-links<span class="w"> </span>https://download.pytorch.org/whl/torch_stable.html
+<p>Install our pytorch requirements from <code>requirements.torch.txt</code>, replacing <code>cu121</code> below (for
+CUDA 12.1) by your actual CUDA version tag (cu118 or higher), or by <code>cpu</code> for a CPU-only installation:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">CUDA_TAG</span><span class="o">=</span>cu121<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-r<span class="w"> </span>requirements.torch.txt<span class="w"> </span>--find-links<span class="w"> </span>https://download.pytorch.org/whl/torch_stable.html
 </code></pre></div>
 <p>Alternatively, you can follow the <a href="https://pytorch.org/get-started/locally/">PyTorch installation instructions</a> relevant to your hardware.
 Make sure you specify the version declared in <code>requirements.torch.txt</code>, which is 2.3.1 at the moment
@@ -1057,10 +1057,10 @@ git<span class="w"> </span>submodule<span class="w"> </span>foreach<span class="
 you can now install EveryVoice in a <a href="https://docs.astral.sh/uv/"><code>uv</code></a> venv, which is much faster to create and activate.</p>
 <div class="highlight"><pre><span></span><code>uv venv -p 3.12 .venv-EveryVoice
 source .venv-EveryVoice/bin/activate
-uv pip install torch==2.3.1+cu118 torchaudio==2.3.1+cu118 --find-links https://download.pytorch.org/whl/torch_stable.html
+uv pip install torch==2.3.1+cu121 torchaudio==2.3.1+cu121 --find-links https://download.pytorch.org/whl/torch_stable.html
 uv pip install -e .[dev]
 </code></pre></div>
-<p>(If needed, change the <code>+cu118</code> qualifier on torch* to your actual version of CUDA, or to <code>+cpu</code>.
+<p>(If needed, change the <code>+cu121</code> qualifier on torch* to your actual version of CUDA, or to <code>+cpu</code>.
 See <a href="#pytorch-dependencies">Pytorch dependencies</a> above.)</p>
 
 
