@@ -8,6 +8,9 @@ def txtsplit(text, desired_length=100, max_length=200):  # noqa: C901
     Split text into chunks of approximately `desired_length`,
     trying to preserve sentence boundaries (!?.), with commas as lower-priority fallbacks.
     """
+    # Validate arguments
+    assert desired_length < max_length
+
     # Normalize input
     text = re.sub(r"\n\n+", "\n", text)
     text = re.sub(r"\s+", " ", text)
