@@ -35,8 +35,6 @@ By default configuration objects are serialized as dictionaries, which works as 
 By default, these functions turn raw text to lowercase, collapse whitespace, and normalize using Unicode NFC normalization. In Python, we could instantiate this by passing the callables directly like so:
 
 ```python
-
-
 from everyvoice.config.text_config import TextConfig
 from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 

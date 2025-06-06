@@ -3,6 +3,10 @@ on:
   push:
     branches:
       - main
+    paths:
+      - docs/**
+      - .github/workflows/docs.yml
+      - everyvoice/config/text_config.py
 concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
