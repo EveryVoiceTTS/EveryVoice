@@ -165,7 +165,13 @@ else
     ENV_MAKER="conda"
 fi
 
-if [[ $CUDA_VERSION == CPU || $CUDA_VERSION == cpu ]]; then
+if [[ $(uname -s) == "Darwin" ]]; then
+    # On macOS, CUDA is not available, https://pytorch.org/get-started/locally/
+    # says just pip install torch and friends. "system" triggers that install path.
+    CUDA_VERSION=system
+    CUDA_DESC="MacOS (no CUDA support)"
+    CUDA_TAG=
+elif [[ $CUDA_VERSION == CPU || $CUDA_VERSION == cpu ]]; then
     CUDA_TAG=cpu
     CUDA_DESC="use on CPU only"
 elif [[ $CUDA_VERSION == system ]]; then
