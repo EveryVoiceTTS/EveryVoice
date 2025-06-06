@@ -42,7 +42,7 @@ conda create --name EveryVoice python=3.12
 conda activate EveryVoice
 conda install sox -c conda-forge
 conda install ffmpeg
-CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+CUDA_TAG=cu121 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
 pip install -e .
 ```
 
@@ -60,11 +60,11 @@ conda activate EveryVoice
 
 ### Pytorch dependencies
 
-Install our pytorch requirements from `requirements.torch.txt`, replacing `cu118` below (for
-CUDA 11.8) by your actual CUDA version tag (118 or higher), or by `cpu` for a CPU-only installation:
+Install our pytorch requirements from `requirements.torch.txt`, replacing `cu121` below (for
+CUDA 12.1) by your actual CUDA version tag (cu118 or higher), or by `cpu` for a CPU-only installation:
 
 ```sh
-CUDA_TAG=cu118 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+CUDA_TAG=cu121 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
 ```
 
 Alternatively, you can follow the [PyTorch installation instructions](https://pytorch.org/get-started/locally/) relevant to your hardware.
@@ -123,9 +123,9 @@ you can now install EveryVoice in a [`uv`](https://docs.astral.sh/uv/) venv, whi
 ```
 uv venv -p 3.12 .venv-EveryVoice
 source .venv-EveryVoice/bin/activate
-uv pip install torch==2.3.1+cu118 torchaudio==2.3.1+cu118 --find-links https://download.pytorch.org/whl/torch_stable.html
+uv pip install torch==2.3.1+cu121 torchaudio==2.3.1+cu121 --find-links https://download.pytorch.org/whl/torch_stable.html
 uv pip install -e .[dev]
 ```
 
-(If needed, change the `+cu118` qualifier on torch\* to your actual version of CUDA, or to `+cpu`.
+(If needed, change the `+cu121` qualifier on torch\* to your actual version of CUDA, or to `+cpu`.
 See [Pytorch dependencies](#pytorch-dependencies) above.)
