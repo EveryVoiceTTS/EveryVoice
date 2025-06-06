@@ -89,6 +89,7 @@ def synthesize_audio(
         speaker=speaker,
         duration_control=duration_control,
         filelist=None,
+        filelist_data=None,
         teacher_forcing_directory=None,
         batch_size=1,
         num_workers=1,
