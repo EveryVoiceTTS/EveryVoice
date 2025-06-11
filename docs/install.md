@@ -90,7 +90,7 @@ we maintain a script to automate the process and keep it reliable.
     conda activate EveryVoice
     conda install sox -c conda-forge
     CUDA_TAG=cu121 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-    pip install -e .[dev]
+    pip install -e '.[dev]'
     ```
 
 === "Using uv"
@@ -100,7 +100,7 @@ we maintain a script to automate the process and keep it reliable.
     uv venv -p 3.12 .venv
     source .venv/bin/activate
     uv pip install torch==2.3.1+cu121 torchaudio==2.3.1+cu121 --find-links https://download.pytorch.org/whl/torch_stable.html
-    uv pip install -e .[dev]
+    uv pip install -e '.[dev]'
     ```
 
 ### Option 2-b &mdash; Manual installation &mdash; Detailed
@@ -203,13 +203,13 @@ Before you can run the test suites, you'll also need to install the dev dependen
 === "Using conda"
 
     ```sh
-    pip install -e .[dev]
+    pip install -e '.[dev]'
     ```
 
 === "Using uv"
 
     ```sh
-    uv pip install -e .[dev]
+    uv pip install -e '.[dev]'
     ```
 
 #### Git hooks
