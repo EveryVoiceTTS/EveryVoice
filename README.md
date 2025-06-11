@@ -66,6 +66,13 @@ Read the full [EveryVoice documentation](https://docs.everyvoice.ca/).
 
 In particular, read the [Guides](https://docs.everyvoice.ca/latest/guides/) to get familiar with the whole process.
 
+To build and view the documentation locally:
+```
+pip install -e .[docs]
+mkdocs serve
+```
+and browse to http://127.0.0.1:8000/.
+
 ## Contributing
 
 Feel free to dive in! [Open an issue](https://github.com/EveryVoiceTTS/EveryVoice/issues/new) or submit PRs.
