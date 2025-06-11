@@ -68,7 +68,7 @@ In particular, read the [Guides](https://docs.everyvoice.ca/latest/guides/) to g
 
 To build and view the documentation locally:
 ```
-pip install -e .[docs]
+pip install -e '.[docs]'
 mkdocs serve
 ```
 and browse to http://127.0.0.1:8000/.
@@ -82,7 +82,7 @@ This repo follows the [Contributor Covenant](http://contributor-covenant.org/ver
 Please make sure our standard Git hooks are activated, by running these commands in your sandbox (if you used our `make-everyvoice-env` script then this step is already done for you):
 
 ```sh
-pip install -e .[dev]
+pip install -e '.[dev]'
 pre-commit install
 gitlint install-hook
 git submodule foreach 'pre-commit install'
