@@ -4,7 +4,6 @@ repo_url: https://github.com/EveryVoiceTTS/EveryVoice
 repo_name: EveryVoiceTTS/EveryVoice
 theme:
   name: material
-  favicon: favicon-32x32.png
   custom_dir: docs/overrides
   palette:
     # Palette toggle for light mode
