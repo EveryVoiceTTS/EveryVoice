@@ -17,7 +17,7 @@
         <link rel="next" href="../guides/">
       
       
-      <link rel="icon" href="../favicon-32x32.png">
+      <link rel="icon" href="../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.14">
     
     
@@ -1109,7 +1109,7 @@ conda<span class="w"> </span>activate<span class="w"> </span>EveryVoice
 conda activate EveryVoice
 conda install sox -c conda-forge
 CUDA_TAG=cu121 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-pip install -e .[dev]
+pip install -e &#39;.[dev]&#39;
 </code></pre></div>
 </div>
 <div class="tabbed-block">
@@ -1117,7 +1117,7 @@ pip install -e .[dev]
 <div class="highlight"><pre><span></span><code>uv venv -p 3.12 .venv
 source .venv/bin/activate
 uv pip install torch==2.3.1+cu121 torchaudio==2.3.1+cu121 --find-links https://download.pytorch.org/whl/torch_stable.html
-uv pip install -e .[dev]
+uv pip install -e &#39;.[dev]&#39;
 </code></pre></div></p>
 </div>
 </div>
@@ -1208,11 +1208,11 @@ to do one or more of these operations:</p>
 <div class="tabbed-set tabbed-alternate" data-tabs="8:2"><input checked="checked" id="__tabbed_8_1" name="__tabbed_8" type="radio" /><input id="__tabbed_8_2" name="__tabbed_8" type="radio" /><div class="tabbed-labels"><label for="__tabbed_8_1">Using conda</label><label for="__tabbed_8_2">Using uv</label></div>
 <div class="tabbed-content">
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>dev<span class="o">]</span>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;.[dev]&#39;</span>
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="o">[</span>dev<span class="o">]</span>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s1">&#39;.[dev]&#39;</span>
 </code></pre></div>
 </div>
 </div>
