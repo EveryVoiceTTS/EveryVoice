@@ -130,6 +130,21 @@
       },
       "title": "Cleaners",
       "type": "array"
+    },
+    "g2p_engines": {
+      "additionalProperties": {
+        "examples": [
+          "everyvoice_plugin_g2p4example.g2p"
+        ],
+        "type": "string"
+      },
+      "default": {},
+      "description": "User defined or external G2P engines.\nSee https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P.",
+      "examples": [
+        "{\"fr\": \"everyvoice_plugin_g2p4example.g2p\"}"
+      ],
+      "title": "External G2P",
+      "type": "object"
     }
   },
   "title": "TextConfig",
