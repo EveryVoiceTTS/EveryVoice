@@ -93,6 +93,44 @@ Have a look at [Contributing.md](Contributing.md) for the full details on the
 Conventional Commit messages we prefer, our code formatting conventions, our Git
 hooks, and recommendations on how to make effective pull requests.
 
+## Publishing Instructions
+
+To publish a new version of the project, follow these steps:
+
+1. **Determine the Version Bump**
+   Decide whether your changes constitute a:
+   - **Major** version bump (breaking changes),
+   - **Minor** version bump (new features, backward-compatible, any change to the schema), or
+   - **Patch** version bump (bug fixes, small changes).
+
+2. **Update Version Files**
+   - Update the `everyvoice._version` file to reflect the new version.
+   - Keep all `submodule._version` files in sync with this version, **except** for the `wav2vec2` aligner submodule (which can be installed separately).
+   - Commit the resulting changes, including all submodules.
+
+3. **Update Schema (for Major/Minor bumps)**
+   If you bumped a **major** or **minor** version:
+   - Run `everyvoice update-schema`.
+   - Commit the resulting changes.
+
+4. **Open a Pull Request**
+   - Create a PR with your changes.
+   - Wait for tests to pass and for the PR to be merged into `main`.
+
+5. **Tag the Release**
+   After merging:
+   ```bash
+   git tag 'v0.X.X'
+   git push --tags
+   ```
+
+6. **Update SchemaStore (for Major/Minor bumps)**
+    Once the CI has built and released your version, if you bumped a major or minor version:
+
+    Submit a PR to [SchemaStore](https://github.com/SchemaStore/schemastore) to update the schema reference.
+
+    The only file you need to change is: `src/api/json/catalog.json`
+
 ## Acknowledgements
 
 This repository draws on many other wonderful code bases.
