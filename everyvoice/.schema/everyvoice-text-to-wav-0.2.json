@@ -937,7 +937,7 @@
           "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
         },
         "VERSION": {
-          "default": "1.0",
+          "default": "1.1",
           "title": "Version",
           "type": "string"
         },
@@ -1076,6 +1076,12 @@
           "default": true,
           "description": "Whether to jointly learn alignments using monotonic alignment search module (See Badlani et. al. 2021: https://arxiv.org/abs/2108.10447). If set to False, you will have to provide text/audio alignments separately before training a text-to-spec (feature prediction) model.",
           "title": "Learn Alignment",
+          "type": "boolean"
+        },
+        "use_global_style_token_module": {
+          "default": false,
+          "description": "Whether to use the Global Style Token (GST) module from Style Tokens: Unsupervised Style Modeling, Control and Transfer in End-to-End Speech Synthesis (https://arxiv.org/abs/1803.09017)",
+          "title": "Use Global Style Token Module",
           "type": "boolean"
         },
         "max_length": {
@@ -1360,7 +1366,7 @@
           "default": null
         },
         "VERSION": {
-          "default": "1.0",
+          "default": "1.1",
           "title": "Version",
           "type": "string"
         },
@@ -2206,6 +2212,21 @@
           },
           "title": "Cleaners",
           "type": "array"
+        },
+        "g2p_engines": {
+          "additionalProperties": {
+            "examples": [
+              "everyvoice_plugin_g2p4example.g2p"
+            ],
+            "type": "string"
+          },
+          "default": {},
+          "description": "User defined or external G2P engines.\nSee https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P.",
+          "examples": [
+            "{\"fr\": \"everyvoice_plugin_g2p4example.g2p\"}"
+          ],
+          "title": "External G2P",
+          "type": "object"
         }
       },
       "title": "TextConfig",
