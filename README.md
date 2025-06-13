@@ -25,7 +25,7 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
 
 - Install `torch` and `torchaudio` version 2.1.0 for your platform and CUDA version: follow the instructions at https://pytorch.org/get-started/locally/ but specify `torch==2.1.0 torchaudio==2.1.0` in the install command and remove `torchvision`.
 
-- Run `pip install everyvoice==0.2.0a1` (change the version to the current version if needed).
+- Run `pip install everyvoice` (change the version to the current version if needed).
 
 ## Quickstart from source
 
