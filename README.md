@@ -1,5 +1,3 @@
-:construction: :construction: Warning! This repository is not quite ready yet. We're releasing it publicly in alpha, but it should be expected to change drastically over the coming months. :construction: :construction:
-
 # EveryVoice TTS Toolkit 💬
 
 [![codecov](https://codecov.io/gh/EveryVoiceTTS/EveryVoice/branch/main/graph/badge.svg?token=yErCxf64IU)](https://codecov.io/gh/EveryVoiceTTS/EveryVoice)
