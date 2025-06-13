@@ -1931,7 +1931,8 @@ class WizardTest(TestCase):
             # resume from a changed version works with a warning
             changed_version = tmpdir / "changed-version"
             with open(changed_version, "w", encoding="utf8") as f:
-                f.write(self.progress_template.format(version=VERSION + ".dev0"))
+                recent_past = VERSION + ".dev0" if "a" in VERSION else VERSION + ".pre0"
+                f.write(self.progress_template.format(version=recent_past))
 
             tour = make_trivial_tour()
             with patch_input("email@mail.com"), capture_stdout() as out:
