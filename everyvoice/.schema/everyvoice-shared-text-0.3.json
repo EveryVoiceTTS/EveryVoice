@@ -1,0 +1,199 @@
+{
+  "$defs": {
+    "Punctuation": {
+      "properties": {
+        "exclamations": {
+          "default": [
+            "!",
+            "\u00a1"
+          ],
+          "description": "Exclamation punctuation symbols used in your datasets. Replaces these symbols with <EXCL> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclamations",
+          "type": "array"
+        },
+        "question_symbols": {
+          "default": [
+            "?",
+            "\u00bf"
+          ],
+          "description": "Question/interrogative punctuation symbols used in your datasets. Replaces these symbols with <QINT> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Question Symbols",
+          "type": "array"
+        },
+        "quotemarks": {
+          "default": [
+            "\"",
+            "'",
+            "\u201c",
+            "\u201d",
+            "\u00ab",
+            "\u00bb"
+          ],
+          "description": "Quotemark punctuation symbols used in your datasets. Replaces these symbols with <QUOTE> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Quotemarks",
+          "type": "array"
+        },
+        "parentheses": {
+          "default": [
+            "(",
+            ")",
+            "[",
+            "]",
+            "{",
+            "}"
+          ],
+          "description": "Punctuation symbols indicating parentheses, brackets, or braces. Replaces these symbols with <PAREN> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Parentheses",
+          "type": "array"
+        },
+        "periods": {
+          "default": [
+            "."
+          ],
+          "description": "Punctuation symbols indicating a 'period' used in your datasets. Replaces these symbols with <PERIOD> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Periods",
+          "type": "array"
+        },
+        "colons": {
+          "default": [
+            ":"
+          ],
+          "description": "Punctuation symbols indicating a 'colon' used in your datasets. Replaces these symbols with <COLON> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Colons",
+          "type": "array"
+        },
+        "semi_colons": {
+          "default": [
+            ";"
+          ],
+          "description": "Punctuation symbols indicating a 'semi-colon' used in your datasets. Replaces these symbols with <SEMICOL> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Semi Colons",
+          "type": "array"
+        },
+        "hyphens": {
+          "default": [
+            "-",
+            "\u2014",
+            "*"
+          ],
+          "description": "Punctuation symbols indicating a 'hyphen' used in your datasets. * is a hyphen by default since unidecode decodes middle-dot punctuation as an asterisk. Replaces these symbols with <HYPHEN> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Hyphens",
+          "type": "array"
+        },
+        "commas": {
+          "default": [
+            ","
+          ],
+          "description": "Punctuation symbols indicating a 'comma' used in your datasets. Replaces these symbols with <COMMA> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Commas",
+          "type": "array"
+        },
+        "ellipses": {
+          "default": [
+            "\u2026"
+          ],
+          "description": "Punctuation symbols indicating ellipses used in your datasets. Replaces these symbols with <EPS> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Ellipses",
+          "type": "array"
+        }
+      },
+      "title": "Punctuation",
+      "type": "object"
+    },
+    "Symbols": {
+      "additionalProperties": true,
+      "properties": {
+        "silence": {
+          "default": [
+            "<SIL>"
+          ],
+          "description": "The symbol(s) used to indicate silence.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Silence",
+          "type": "array"
+        },
+        "punctuation": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Punctuation"
+            }
+          ],
+          "description": "EveryVoice will combine punctuation and normalize it into a set of five permissible types of punctuation to help tractable training."
+        }
+      },
+      "title": "Symbols",
+      "type": "object"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "symbols": {
+      "$ref": "#/$defs/Symbols"
+    },
+    "to_replace": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "default": {},
+      "title": "To Replace",
+      "type": "object"
+    },
+    "cleaners": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Cleaners",
+      "type": "array"
+    },
+    "g2p_engines": {
+      "additionalProperties": {
+        "examples": [
+          "everyvoice_plugin_g2p4example.g2p"
+        ],
+        "type": "string"
+      },
+      "default": {},
+      "description": "User defined or external G2P engines.\nSee https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P.",
+      "examples": [
+        "{\"fr\": \"everyvoice_plugin_g2p4example.g2p\"}"
+      ],
+      "title": "External G2P",
+      "type": "object"
+    }
+  },
+  "title": "TextConfig",
+  "type": "object"
+}

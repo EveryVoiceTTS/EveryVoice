@@ -1,0 +1,2641 @@
+{
+  "$defs": {
+    "AdamOptimizer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "learning_rate": {
+          "default": 0.0001,
+          "description": "The initial learning rate to use",
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "eps": {
+          "default": 1e-08,
+          "description": "Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
+          "title": "Eps",
+          "type": "number"
+        },
+        "weight_decay": {
+          "default": 0.01,
+          "title": "Weight Decay",
+          "type": "number"
+        },
+        "betas": {
+          "default": [
+            0.9,
+            0.98
+          ],
+          "description": "Advanced. The values of the Adam Optimizer beta coefficients.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Betas",
+          "type": "array"
+        },
+        "name": {
+          "default": "adam",
+          "description": "The name of the optimizer to use.",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "title": "AdamOptimizer",
+      "type": "object"
+    },
+    "AdamWOptimizer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "learning_rate": {
+          "default": 0.0001,
+          "description": "The initial learning rate to use",
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "eps": {
+          "default": 1e-08,
+          "description": "Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
+          "title": "Eps",
+          "type": "number"
+        },
+        "weight_decay": {
+          "default": 0.01,
+          "title": "Weight Decay",
+          "type": "number"
+        },
+        "betas": {
+          "default": [
+            0.9,
+            0.98
+          ],
+          "description": "Advanced. The values of the AdamW Optimizer beta coefficients.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Betas",
+          "type": "array"
+        },
+        "name": {
+          "default": "adamw",
+          "description": "The name of the optimizer to use.",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "title": "AdamWOptimizer",
+      "type": "object"
+    },
+    "AlignerConfigNoContact": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "VERSION": {
+          "default": "1.0",
+          "title": "Version",
+          "type": "string"
+        },
+        "model": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DFAlignerModelConfig"
+            }
+          ],
+          "description": "The model configuration settings."
+        },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Model Config File"
+        },
+        "training": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DFAlignerTrainingConfig"
+            }
+          ],
+          "description": "The training configuration hyperparameters."
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Training Config File"
+        },
+        "preprocessing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/PreprocessingConfig"
+            }
+          ],
+          "description": "The preprocessing configuration, including information about audio settings."
+        },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Preprocessing Config File"
+        },
+        "text": {
+          "$ref": "#/$defs/TextConfig"
+        },
+        "path_to_text_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Text Config File"
+        }
+      },
+      "title": "AlignerConfigNoContact",
+      "type": "object"
+    },
+    "AudioConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "min_audio_length": {
+          "default": 0.4,
+          "description": "The minimum length of an audio sample in seconds. Audio shorter than this will be ignored during preprocessing.",
+          "title": "Min Audio Length",
+          "type": "number"
+        },
+        "max_audio_length": {
+          "default": 11.0,
+          "description": "The maximum length of an audio sample in seconds. Audio longer than this will be ignored during preprocessing. Increasing the max_audio_length will result in larger memory usage. If you are running out of memory, consider lowering the max_audio_length.",
+          "title": "Max Audio Length",
+          "type": "number"
+        },
+        "max_wav_value": {
+          "default": 32767.0,
+          "description": "Advanced. The maximum value allowed to be in your wav files. For 16-bit audio, this should be (2**16)/2 - 1.",
+          "title": "Max Wav Value",
+          "type": "number"
+        },
+        "input_sampling_rate": {
+          "default": 22050,
+          "description": "The sampling rate describes the number of samples per second of audio. The 'input_sampling_rate' is with respect to your vocoder, or spec-to-wav model. This means that the spectrograms predicted by your text-to-spec model will also be calculated from audio at this sampling rate. If you change this value, your audio will automatically be re-sampled during preprocessing.",
+          "title": "Input Sampling Rate",
+          "type": "integer"
+        },
+        "output_sampling_rate": {
+          "default": 22050,
+          "description": "Advanced. The sampling rate describes the number of samples per second of audio. The 'output_sampling_rate' is with respect to your vocoder, or spec-to-wav model. This means that the wav files generated by your vocoder or spec-to-wav model will be at this sampling rate. If you change this value, you will also need to change the upsample rates in your vocoder. Your audio will automatically be re-sampled during preprocessing.",
+          "title": "Output Sampling Rate",
+          "type": "integer"
+        },
+        "alignment_sampling_rate": {
+          "default": 22050,
+          "description": "Advanced. The sampling rate describes the number of samples per second of audio. The 'alignment_sampling_rate' describes the sampling rate used when training an alignment model. If you change this value, your audio will automatically be re-sampled during preprocessing.",
+          "title": "Alignment Sampling Rate",
+          "type": "integer"
+        },
+        "target_bit_depth": {
+          "default": 16,
+          "description": "Advanced. This is the bit depth of each sample in your audio files.",
+          "title": "Target Bit Depth",
+          "type": "integer"
+        },
+        "n_fft": {
+          "default": 1024,
+          "description": "Advanced. This is the number of bins used by the Fast Fourier Transform (FFT).",
+          "title": "FFT Size",
+          "type": "integer"
+        },
+        "fft_window_size": {
+          "default": 1024,
+          "description": "Advanced. This is the window size used by the Fast Fourier Transform (FFT).",
+          "title": "FFT Window Size",
+          "type": "integer"
+        },
+        "fft_hop_size": {
+          "default": 256,
+          "description": "Advanced. This is the hop size for calculating the Short-Time Fourier Transform (STFT) which calculates a sequence of spectrograms from a single audio file. Another way of putting it is that the hop size is equal to the amount of non-intersecting samples from the audio in each spectrogram.",
+          "title": "FFT Hop Size",
+          "type": "integer"
+        },
+        "f_min": {
+          "default": 0,
+          "description": "Advanced. This is the minimum frequency for the lowest frequency bin when calculating the spectrogram.",
+          "title": "Minimum Frequency",
+          "type": "integer"
+        },
+        "f_max": {
+          "default": 8000,
+          "description": "Advanced. This is the maximum frequency for the highest frequency bin when calculating the spectrogram.",
+          "title": "Maximum Frequency",
+          "type": "integer"
+        },
+        "n_mels": {
+          "default": 80,
+          "description": "Advanced. This is the number of filters in the Mel-scale spaced filterbank.",
+          "title": "Number of Mel bins",
+          "type": "integer"
+        },
+        "spec_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AudioSpecTypeEnum"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": "mel-librosa",
+          "description": "Advanced. Defines how to calculate the spectrogram. 'mel' uses the TorchAudio implementation for a Mel spectrogram. 'mel-librosa' uses Librosa's implementation. 'linear' calculates a non-Mel linear spectrogram and 'raw' calculates a complex-valued spectrogram. 'linear' and 'raw' are not currently supported by EveryVoice. We recommend using 'mel-librosa'.",
+          "title": "Spec Type"
+        },
+        "vocoder_segment_size": {
+          "default": 8192,
+          "description": "Advanced. The vocoder, or spec-to-wav model is trained by sampling random fixed-size sections of the audio. This value specifies the number of samples in those sections.",
+          "title": "Vocoder Segment Size",
+          "type": "integer"
+        }
+      },
+      "title": "AudioConfig",
+      "type": "object"
+    },
+    "AudioSpecTypeEnum": {
+      "enum": [
+        "mel",
+        "mel-librosa",
+        "linear",
+        "raw"
+      ],
+      "title": "AudioSpecTypeEnum",
+      "type": "string"
+    },
+    "ConformerConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "layers": {
+          "default": 4,
+          "description": "The number of layers in the Conformer.",
+          "title": "Layers",
+          "type": "integer"
+        },
+        "heads": {
+          "default": 2,
+          "description": "The number of heads in the multi-headed attention modules.",
+          "title": "Heads",
+          "type": "integer"
+        },
+        "input_dim": {
+          "default": 256,
+          "description": "The number of hidden dimensions in the input. The input_dim value declared in the encoder and decoder modules must match the input_dim value declared in each variance predictor module.",
+          "title": "Input Dim",
+          "type": "integer"
+        },
+        "feedforward_dim": {
+          "default": 1024,
+          "description": "The number of dimensions in the feedforward layers.",
+          "title": "Feedforward Dim",
+          "type": "integer"
+        },
+        "conv_kernel_size": {
+          "default": 9,
+          "description": "The size of the kernel in each convoluational layer of the Conformer.",
+          "title": "Conv Kernel Size",
+          "type": "integer"
+        },
+        "dropout": {
+          "default": 0.2,
+          "description": "The amount of dropout to apply.",
+          "title": "Dropout",
+          "type": "number"
+        }
+      },
+      "title": "ConformerConfig",
+      "type": "object"
+    },
+    "ContactInformation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact_name": {
+          "description": "The name of the contact person or organization responsible for answering questions related to this model.",
+          "title": "Contact Name",
+          "type": "string"
+        },
+        "contact_email": {
+          "description": "The email address of the contact person or organization responsible for answering questions related to this model.",
+          "format": "email",
+          "title": "Contact Email",
+          "type": "string"
+        }
+      },
+      "required": [
+        "contact_name",
+        "contact_email"
+      ],
+      "title": "ContactInformation",
+      "type": "object"
+    },
+    "DFAlignerConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            }
+          ],
+          "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+        },
+        "VERSION": {
+          "default": "1.0",
+          "title": "Version",
+          "type": "string"
+        },
+        "model": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DFAlignerModelConfig"
+            }
+          ],
+          "description": "The model configuration settings."
+        },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Model Config File"
+        },
+        "training": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DFAlignerTrainingConfig"
+            }
+          ],
+          "description": "The training configuration hyperparameters."
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Training Config File"
+        },
+        "preprocessing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/PreprocessingConfig"
+            }
+          ],
+          "description": "The preprocessing configuration, including information about audio settings."
+        },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Preprocessing Config File"
+        },
+        "text": {
+          "$ref": "#/$defs/TextConfig"
+        },
+        "path_to_text_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path To Text Config File"
+        }
+      },
+      "required": [
+        "contact"
+      ],
+      "title": "DFAlignerConfig",
+      "type": "object"
+    },
+    "DFAlignerExtractionMethod": {
+      "enum": [
+        "beam",
+        "dijkstra"
+      ],
+      "title": "DFAlignerExtractionMethod",
+      "type": "string"
+    },
+    "DFAlignerModelConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "target_text_representation_level": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/TargetTrainingTextRepresentationLevel"
+            }
+          ],
+          "default": "characters"
+        },
+        "lstm_dim": {
+          "default": 512,
+          "description": "The number of dimensions in the LSTM layers.",
+          "title": "Lstm Dim",
+          "type": "integer"
+        },
+        "conv_dim": {
+          "default": 512,
+          "description": "The number of dimensions in the convolutional layers.",
+          "title": "Conv Dim",
+          "type": "integer"
+        }
+      },
+      "title": "DFAlignerModelConfig",
+      "type": "object"
+    },
+    "DFAlignerTrainingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "batch_size": {
+          "default": 16,
+          "description": "The number of samples to include in each batch when training. If you are running out of memory, consider lowering your batch_size.",
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "save_top_k_ckpts": {
+          "default": 5,
+          "description": "The number of checkpoints to save.",
+          "title": "Save Top K Ckpts",
+          "type": "integer"
+        },
+        "ckpt_steps": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The interval (in steps) for saving a checkpoint. By default checkpoints are saved every epoch using the 'ckpt_epochs' hyperparameter",
+          "title": "Ckpt Steps"
+        },
+        "ckpt_epochs": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1,
+          "description": "The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
+          "title": "Ckpt Epochs"
+        },
+        "val_check_interval": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 500,
+          "description": "How often to check the validation set. Pass a float in the range [0.0, 1.0] to check after a fraction of the training epoch. Pass an int to check after a fixed number of training batches.",
+          "title": "Val Check Interval"
+        },
+        "check_val_every_n_epoch": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
+          "title": "Check Val Every N Epoch"
+        },
+        "max_epochs": {
+          "default": 1000,
+          "description": "Stop training after this many epochs",
+          "title": "Max Epochs",
+          "type": "integer"
+        },
+        "max_steps": {
+          "default": 100000,
+          "description": "Stop training after this many steps",
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "finetune_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Automatically resume training from a checkpoint loaded from this path.",
+          "title": "Finetune Checkpoint"
+        },
+        "training_filelist": {
+          "default": "path/to/your/preprocessed/training_filelist.psv",
+          "description": "The path to a filelist containing samples belonging to your training set.",
+          "format": "path",
+          "title": "Training Filelist",
+          "type": "string"
+        },
+        "validation_filelist": {
+          "default": "path/to/your/preprocessed/validation_filelist.psv",
+          "description": "The path to a filelist containing samples belonging to your validation set.",
+          "format": "path",
+          "title": "Validation Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "description": "Advanced. The function to use to load the filelist.",
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "logger": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/LoggerConfig"
+            }
+          ],
+          "description": "The configuration for the logger."
+        },
+        "val_data_workers": {
+          "default": 0,
+          "description": "The number of CPU workers to use when loading data during validation.",
+          "title": "Val Data Workers",
+          "type": "integer"
+        },
+        "train_data_workers": {
+          "default": 4,
+          "description": "The number of CPU workers to use when loading data during training.",
+          "title": "Train Data Workers",
+          "type": "integer"
+        },
+        "optimizer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AdamOptimizer"
+            },
+            {
+              "$ref": "#/$defs/AdamWOptimizer"
+            }
+          ],
+          "description": "Optimizer configuration settings.",
+          "title": "Optimizer"
+        },
+        "binned_sampler": {
+          "default": true,
+          "description": "Use a binned length sampler",
+          "title": "Binned Sampler",
+          "type": "boolean"
+        },
+        "plot_steps": {
+          "default": 1000,
+          "description": "The maximum number of steps to plot",
+          "title": "Plot Steps",
+          "type": "integer"
+        },
+        "extraction_method": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DFAlignerExtractionMethod"
+            }
+          ],
+          "default": "dijkstra",
+          "description": "The alignment extraction algorithm to use. 'beam' will be quicker but possibly less accurate than 'dijkstra'"
+        }
+      },
+      "title": "DFAlignerTrainingConfig",
+      "type": "object"
+    },
+    "Dataset": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "default": "YourDataSet",
+          "description": "A label for the source of data",
+          "title": "Label",
+          "type": "string"
+        },
+        "permissions_obtained": {
+          "default": false,
+          "description": "An attestation that permission has been obtained to use this data. You may not use EveryVoice to build a TTS system with data that you do not have permission to use and there are serious possible consequences for doing so. Finding data online does not constitute permission. The speaker should be aware and consent to their data being used in this way.",
+          "title": "Permissions Obtained",
+          "type": "boolean"
+        },
+        "data_dir": {
+          "default": "/please/create/a/path/to/your/dataset/data",
+          "description": "The path to the directory with your audio files.",
+          "format": "path",
+          "title": "Data Dir",
+          "type": "string"
+        },
+        "filelist": {
+          "default": "/please/create/a/path/to/your/dataset/filelist",
+          "description": "The path to your dataset's filelist.",
+          "format": "path",
+          "title": "Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "description": "Advanced. The file-loader function to use to load your dataset's filelist.",
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "sox_effects": {
+          "default": [
+            [
+              "channels",
+              "1"
+            ]
+          ],
+          "description": "Advanced. A list of SoX effects to apply to your audio prior to preprocessing. Run python -c 'import torchaudio; print(torchaudio.sox_effects.effect_names())' to see a list of supported effects.",
+          "items": {},
+          "title": "Sox Effects",
+          "type": "array"
+        }
+      },
+      "title": "Dataset",
+      "type": "object"
+    },
+    "E2ETrainingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "batch_size": {
+          "default": 16,
+          "description": "The number of samples to include in each batch when training. If you are running out of memory, consider lowering your batch_size.",
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "save_top_k_ckpts": {
+          "default": 5,
+          "description": "The number of checkpoints to save.",
+          "title": "Save Top K Ckpts",
+          "type": "integer"
+        },
+        "ckpt_steps": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The interval (in steps) for saving a checkpoint. By default checkpoints are saved every epoch using the 'ckpt_epochs' hyperparameter",
+          "title": "Ckpt Steps"
+        },
+        "ckpt_epochs": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1,
+          "description": "The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
+          "title": "Ckpt Epochs"
+        },
+        "val_check_interval": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 500,
+          "description": "How often to check the validation set. Pass a float in the range [0.0, 1.0] to check after a fraction of the training epoch. Pass an int to check after a fixed number of training batches.",
+          "title": "Val Check Interval"
+        },
+        "check_val_every_n_epoch": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
+          "title": "Check Val Every N Epoch"
+        },
+        "max_epochs": {
+          "default": 1000,
+          "description": "Stop training after this many epochs",
+          "title": "Max Epochs",
+          "type": "integer"
+        },
+        "max_steps": {
+          "default": 100000,
+          "description": "Stop training after this many steps",
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "finetune_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Automatically resume training from a checkpoint loaded from this path.",
+          "title": "Finetune Checkpoint"
+        },
+        "training_filelist": {
+          "default": "path/to/your/preprocessed/training_filelist.psv",
+          "description": "The path to a filelist containing samples belonging to your training set.",
+          "format": "path",
+          "title": "Training Filelist",
+          "type": "string"
+        },
+        "validation_filelist": {
+          "default": "path/to/your/preprocessed/validation_filelist.psv",
+          "description": "The path to a filelist containing samples belonging to your validation set.",
+          "format": "path",
+          "title": "Validation Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "description": "Advanced. The function to use to load the filelist.",
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "logger": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/LoggerConfig"
+            }
+          ],
+          "description": "The configuration for the logger."
+        },
+        "val_data_workers": {
+          "default": 0,
+          "description": "The number of CPU workers to use when loading data during validation.",
+          "title": "Val Data Workers",
+          "type": "integer"
+        },
+        "train_data_workers": {
+          "default": 4,
+          "description": "The number of CPU workers to use when loading data during training.",
+          "title": "Train Data Workers",
+          "type": "integer"
+        },
+        "feature_prediction_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Feature Prediction Checkpoint"
+        },
+        "vocoder_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vocoder Checkpoint"
+        }
+      },
+      "title": "E2ETrainingConfig",
+      "type": "object"
+    },
+    "FastSpeech2Config": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            }
+          ],
+          "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+        },
+        "VERSION": {
+          "default": "1.1",
+          "title": "Version",
+          "type": "string"
+        },
+        "model": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FastSpeech2ModelConfig"
+            }
+          ],
+          "description": "The model configuration settings."
+        },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a model configuration file.",
+          "title": "Path To Model Config File"
+        },
+        "training": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FastSpeech2TrainingConfig"
+            }
+          ],
+          "description": "The training configuration hyperparameters."
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a training configuration file.",
+          "title": "Path To Training Config File"
+        },
+        "preprocessing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/PreprocessingConfig"
+            }
+          ],
+          "description": "The preprocessing configuration, including information about audio settings."
+        },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Preprocessing Config File"
+        },
+        "text": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/TextConfig"
+            }
+          ],
+          "description": "The text configuration."
+        },
+        "path_to_text_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a text configuration file.",
+          "title": "Path To Text Config File"
+        }
+      },
+      "required": [
+        "contact"
+      ],
+      "title": "FastSpeech2Config",
+      "type": "object"
+    },
+    "FastSpeech2ModelConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "encoder": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ConformerConfig"
+            }
+          ],
+          "description": "The configuration of the encoder module."
+        },
+        "decoder": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ConformerConfig"
+            }
+          ],
+          "description": "The configuration of the decoder module."
+        },
+        "variance_predictors": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VariancePredictors"
+            }
+          ],
+          "description": "Configuration for energy, duration, and pitch variance predictors."
+        },
+        "target_text_representation_level": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/TargetTrainingTextRepresentationLevel"
+            }
+          ],
+          "default": "characters"
+        },
+        "learn_alignment": {
+          "default": true,
+          "description": "Whether to jointly learn alignments using monotonic alignment search module (See Badlani et. al. 2021: https://arxiv.org/abs/2108.10447). If set to False, you will have to provide text/audio alignments separately before training a text-to-spec (feature prediction) model.",
+          "title": "Learn Alignment",
+          "type": "boolean"
+        },
+        "use_global_style_token_module": {
+          "default": false,
+          "description": "Whether to use the Global Style Token (GST) module from Style Tokens: Unsupervised Style Modeling, Control and Transfer in End-to-End Speech Synthesis (https://arxiv.org/abs/1803.09017)",
+          "title": "Use Global Style Token Module",
+          "type": "boolean"
+        },
+        "max_length": {
+          "default": 1000,
+          "description": "The maximum length (i.e. number of symbols) for text inputs.",
+          "title": "Max Length",
+          "type": "integer"
+        },
+        "mel_loss": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceLossEnum"
+            }
+          ],
+          "default": "mse",
+          "description": "The loss function to use when calculating Mel spectrogram loss."
+        },
+        "use_postnet": {
+          "default": true,
+          "description": "Whether to use a postnet module.",
+          "title": "Use Postnet",
+          "type": "boolean"
+        },
+        "multilingual": {
+          "default": false,
+          "description": "Whether to train a multilingual model. For this to work, your filelist must contain a column/field for 'language' with values for each utterance.",
+          "title": "Multilingual",
+          "type": "boolean"
+        },
+        "multispeaker": {
+          "default": false,
+          "description": "Whether to train a multispeaker model. For this to work, your filelist must contain a column/field for 'speaker' with values for each utterance.",
+          "title": "Multispeaker",
+          "type": "boolean"
+        }
+      },
+      "title": "FastSpeech2ModelConfig",
+      "type": "object"
+    },
+    "FastSpeech2TrainingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "batch_size": {
+          "default": 16,
+          "description": "The number of samples to include in each batch when training. If you are running out of memory, consider lowering your batch_size.",
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "save_top_k_ckpts": {
+          "default": 5,
+          "description": "The number of checkpoints to save.",
+          "title": "Save Top K Ckpts",
+          "type": "integer"
+        },
+        "ckpt_steps": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The interval (in steps) for saving a checkpoint. By default checkpoints are saved every epoch using the 'ckpt_epochs' hyperparameter",
+          "title": "Ckpt Steps"
+        },
+        "ckpt_epochs": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1,
+          "description": "The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
+          "title": "Ckpt Epochs"
+        },
+        "val_check_interval": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 500,
+          "description": "How often to check the validation set. Pass a float in the range [0.0, 1.0] to check after a fraction of the training epoch. Pass an int to check after a fixed number of training batches.",
+          "title": "Val Check Interval"
+        },
+        "check_val_every_n_epoch": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
+          "title": "Check Val Every N Epoch"
+        },
+        "max_epochs": {
+          "default": 1000,
+          "description": "Stop training after this many epochs",
+          "title": "Max Epochs",
+          "type": "integer"
+        },
+        "max_steps": {
+          "default": 100000,
+          "description": "Stop training after this many steps",
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "finetune_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Automatically resume training from a checkpoint loaded from this path.",
+          "title": "Finetune Checkpoint"
+        },
+        "training_filelist": {
+          "default": "path/to/your/preprocessed/training_filelist.psv",
+          "description": "The path to a filelist containing samples belonging to your training set.",
+          "format": "path",
+          "title": "Training Filelist",
+          "type": "string"
+        },
+        "validation_filelist": {
+          "default": "path/to/your/preprocessed/validation_filelist.psv",
+          "description": "The path to a filelist containing samples belonging to your validation set.",
+          "format": "path",
+          "title": "Validation Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "description": "Advanced. The function to use to load the filelist.",
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "logger": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/LoggerConfig"
+            }
+          ],
+          "description": "The configuration for the logger."
+        },
+        "val_data_workers": {
+          "default": 0,
+          "description": "The number of CPU workers to use when loading data during validation.",
+          "title": "Val Data Workers",
+          "type": "integer"
+        },
+        "train_data_workers": {
+          "default": 4,
+          "description": "The number of CPU workers to use when loading data during training.",
+          "title": "Train Data Workers",
+          "type": "integer"
+        },
+        "use_weighted_sampler": {
+          "default": false,
+          "description": "Whether to use a sampler which oversamples from the minority language or speaker class for balanced training.",
+          "title": "Use Weighted Sampler",
+          "type": "boolean"
+        },
+        "optimizer": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/NoamOptimizer"
+            }
+          ],
+          "default": {
+            "learning_rate": 0.001,
+            "eps": 1e-08,
+            "weight_decay": 1e-06,
+            "betas": [
+              0.9,
+              0.999
+            ],
+            "name": "noam",
+            "warmup_steps": 1000
+          },
+          "description": "The optimizer to use during training."
+        },
+        "vocoder_path": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Vocoder Path"
+        },
+        "mel_loss_weight": {
+          "default": 1.0,
+          "description": "Multiply the spec loss by this weight",
+          "title": "Mel Loss Weight",
+          "type": "number"
+        },
+        "postnet_loss_weight": {
+          "default": 1.0,
+          "description": "Multiply the postnet loss by this weight",
+          "title": "Postnet Loss Weight",
+          "type": "number"
+        },
+        "pitch_loss_weight": {
+          "default": 0.1,
+          "description": "Multiply the pitch loss by this weight",
+          "title": "Pitch Loss Weight",
+          "type": "number"
+        },
+        "energy_loss_weight": {
+          "default": 0.1,
+          "description": "Multiply the energy loss by this weight",
+          "title": "Energy Loss Weight",
+          "type": "number"
+        },
+        "duration_loss_weight": {
+          "default": 0.1,
+          "description": "Multiply the duration loss by this weight",
+          "title": "Duration Loss Weight",
+          "type": "number"
+        },
+        "attn_ctc_loss_weight": {
+          "default": 0.1,
+          "description": "Multiply the Attention CTC loss by this weight",
+          "title": "Attn Ctc Loss Weight",
+          "type": "number"
+        },
+        "attn_bin_loss_weight": {
+          "default": 0.1,
+          "description": "Multiply the Attention Binarization loss by this weight",
+          "title": "Attn Bin Loss Weight",
+          "type": "number"
+        },
+        "attn_bin_loss_warmup_epochs": {
+          "default": 100,
+          "description": "Scale the Attention Binarization loss by (current_epoch / attn_bin_loss_warmup_epochs) until the number of epochs defined by attn_bin_loss_warmup_epochs is reached.",
+          "minimum": 1,
+          "title": "Attn Bin Loss Warmup Epochs",
+          "type": "integer"
+        }
+      },
+      "title": "FastSpeech2TrainingConfig",
+      "type": "object"
+    },
+    "FeaturePredictionConfigNoContact": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "VERSION": {
+          "default": "1.1",
+          "title": "Version",
+          "type": "string"
+        },
+        "model": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FastSpeech2ModelConfig"
+            }
+          ],
+          "description": "The model configuration settings."
+        },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a model configuration file.",
+          "title": "Path To Model Config File"
+        },
+        "training": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/FastSpeech2TrainingConfig"
+            }
+          ],
+          "description": "The training configuration hyperparameters."
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a training configuration file.",
+          "title": "Path To Training Config File"
+        },
+        "preprocessing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/PreprocessingConfig"
+            }
+          ],
+          "description": "The preprocessing configuration, including information about audio settings."
+        },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Preprocessing Config File"
+        },
+        "text": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/TextConfig"
+            }
+          ],
+          "description": "The text configuration."
+        },
+        "path_to_text_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a text configuration file.",
+          "title": "Path To Text Config File"
+        }
+      },
+      "title": "FeaturePredictionConfigNoContact",
+      "type": "object"
+    },
+    "HiFiGANConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            }
+          ],
+          "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+        },
+        "VERSION": {
+          "default": "1.0",
+          "title": "Version",
+          "type": "string"
+        },
+        "model": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANModelConfig"
+            }
+          ],
+          "description": "The model configuration settings."
+        },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a model configuration file.",
+          "title": "Path To Model Config File"
+        },
+        "training": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANTrainingConfig"
+            }
+          ],
+          "description": "The training configuration hyperparameters."
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a training configuration file.",
+          "title": "Path To Training Config File"
+        },
+        "preprocessing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/PreprocessingConfig"
+            }
+          ],
+          "description": "The preprocessing configuration, including information about audio settings."
+        },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Preprocessing Config File"
+        }
+      },
+      "required": [
+        "contact"
+      ],
+      "title": "HiFiGANConfig",
+      "type": "object"
+    },
+    "HiFiGANModelConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "resblock": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANResblock"
+            }
+          ],
+          "default": "1",
+          "description": "Which resblock to use. See Kong et. al. 2020: https://arxiv.org/abs/2010.05646"
+        },
+        "upsample_rates": {
+          "default": [
+            8,
+            8,
+            2,
+            2
+          ],
+          "description": "The stride of each convolutional layer in the upsampling module.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Upsample Rates",
+          "type": "array"
+        },
+        "upsample_kernel_sizes": {
+          "default": [
+            16,
+            16,
+            4,
+            4
+          ],
+          "description": "The kernel size of each convolutional layer in the upsampling module.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Upsample Kernel Sizes",
+          "type": "array"
+        },
+        "upsample_initial_channel": {
+          "default": 512,
+          "description": "The number of dimensions to project the Mel inputs to before being passed to the resblock.",
+          "title": "Upsample Initial Channel",
+          "type": "integer"
+        },
+        "resblock_kernel_sizes": {
+          "default": [
+            3,
+            7,
+            11
+          ],
+          "description": "The kernel size of each convolutional layer in the resblock.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Resblock Kernel Sizes",
+          "type": "array"
+        },
+        "resblock_dilation_sizes": {
+          "default": [
+            [
+              1,
+              3,
+              5
+            ],
+            [
+              1,
+              3,
+              5
+            ],
+            [
+              1,
+              3,
+              5
+            ]
+          ],
+          "description": "The dilations of each convolution in each layer of the resblock.",
+          "items": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array"
+          },
+          "title": "Resblock Dilation Sizes",
+          "type": "array"
+        },
+        "activation_function": {
+          "description": "The activation function to use.",
+          "title": "Activation Function",
+          "type": "string"
+        },
+        "istft_layer": {
+          "default": false,
+          "description": "Whether to predict phase and magnitude values and use an inverse Short-Time Fourier Transform instead of predicting a waveform directly. See Kaneko et. al. 2022: https://arxiv.org/abs/2203.02395",
+          "title": "Istft Layer",
+          "type": "boolean"
+        },
+        "msd_layers": {
+          "default": 3,
+          "description": "The number of layers to use in the Multi-Scale Discriminator.",
+          "title": "Msd Layers",
+          "type": "integer"
+        },
+        "mpd_layers": {
+          "default": [
+            2,
+            3,
+            5,
+            7,
+            11
+          ],
+          "description": "The size of each layer in the Multi-Period Discriminator.",
+          "items": {
+            "type": "integer"
+          },
+          "title": "Mpd Layers",
+          "type": "array"
+        }
+      },
+      "title": "HiFiGANModelConfig",
+      "type": "object"
+    },
+    "HiFiGANResblock": {
+      "enum": [
+        "1",
+        "2"
+      ],
+      "title": "HiFiGANResblock",
+      "type": "string"
+    },
+    "HiFiGANTrainTypes": {
+      "enum": [
+        "original",
+        "wgan"
+      ],
+      "title": "HiFiGANTrainTypes",
+      "type": "string"
+    },
+    "HiFiGANTrainingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "batch_size": {
+          "default": 16,
+          "description": "The number of samples to include in each batch when training. If you are running out of memory, consider lowering your batch_size.",
+          "title": "Batch Size",
+          "type": "integer"
+        },
+        "save_top_k_ckpts": {
+          "default": 5,
+          "description": "The number of checkpoints to save.",
+          "title": "Save Top K Ckpts",
+          "type": "integer"
+        },
+        "ckpt_steps": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The interval (in steps) for saving a checkpoint. By default checkpoints are saved every epoch using the 'ckpt_epochs' hyperparameter",
+          "title": "Ckpt Steps"
+        },
+        "ckpt_epochs": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 1,
+          "description": "The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
+          "title": "Ckpt Epochs"
+        },
+        "val_check_interval": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 500,
+          "description": "How often to check the validation set. Pass a float in the range [0.0, 1.0] to check after a fraction of the training epoch. Pass an int to check after a fixed number of training batches.",
+          "title": "Val Check Interval"
+        },
+        "check_val_every_n_epoch": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
+          "title": "Check Val Every N Epoch"
+        },
+        "max_epochs": {
+          "default": 1000,
+          "description": "Stop training after this many epochs",
+          "title": "Max Epochs",
+          "type": "integer"
+        },
+        "max_steps": {
+          "default": 100000,
+          "description": "Stop training after this many steps",
+          "title": "Max Steps",
+          "type": "integer"
+        },
+        "finetune_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Automatically resume training from a checkpoint loaded from this path.",
+          "title": "Finetune Checkpoint"
+        },
+        "training_filelist": {
+          "default": "path/to/your/preprocessed/training_filelist.psv",
+          "description": "The path to a filelist containing samples belonging to your training set.",
+          "format": "path",
+          "title": "Training Filelist",
+          "type": "string"
+        },
+        "validation_filelist": {
+          "default": "path/to/your/preprocessed/validation_filelist.psv",
+          "description": "The path to a filelist containing samples belonging to your validation set.",
+          "format": "path",
+          "title": "Validation Filelist",
+          "type": "string"
+        },
+        "filelist_loader": {
+          "description": "Advanced. The function to use to load the filelist.",
+          "title": "Filelist Loader",
+          "type": "string"
+        },
+        "logger": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/LoggerConfig"
+            }
+          ],
+          "description": "The configuration for the logger."
+        },
+        "val_data_workers": {
+          "default": 0,
+          "description": "The number of CPU workers to use when loading data during validation.",
+          "title": "Val Data Workers",
+          "type": "integer"
+        },
+        "train_data_workers": {
+          "default": 4,
+          "description": "The number of CPU workers to use when loading data during training.",
+          "title": "Train Data Workers",
+          "type": "integer"
+        },
+        "generator_warmup_steps": {
+          "default": 0,
+          "description": "The number of steps to run through before activating the discriminators.",
+          "title": "Generator Warmup Steps",
+          "type": "integer"
+        },
+        "gan_type": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANTrainTypes"
+            }
+          ],
+          "default": "original",
+          "description": "The type of GAN to use. Can be set to either 'original' for a vanilla GAN, or 'wgan' for a Wasserstein GAN that clips gradients."
+        },
+        "optimizer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AdamOptimizer"
+            },
+            {
+              "$ref": "#/$defs/AdamWOptimizer"
+            },
+            {
+              "$ref": "#/$defs/RMSOptimizer"
+            }
+          ],
+          "description": "Configuration settings for the optimizer.",
+          "title": "Optimizer"
+        },
+        "wgan_clip_value": {
+          "default": 0.01,
+          "description": "The gradient clip value when gan_type='wgan'.",
+          "title": "Wgan Clip Value",
+          "type": "number"
+        },
+        "use_weighted_sampler": {
+          "default": false,
+          "description": "Whether to use a sampler which oversamples from the minority language or speaker class for balanced training.",
+          "title": "Use Weighted Sampler",
+          "type": "boolean"
+        },
+        "finetune": {
+          "default": false,
+          "description": "Whether to read spectrograms from 'preprocessed/synthesized_spec' instead of 'preprocessed/spec'. This is used when finetuning a pretrained spec-to-wav (vocoder) model using the outputs of a trained text-to-spec (feature prediction network) model.",
+          "title": "Finetune",
+          "type": "boolean"
+        }
+      },
+      "title": "HiFiGANTrainingConfig",
+      "type": "object"
+    },
+    "LoggerConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "description": "The logger configures all the information needed for where to store your experiment's logs and checkpoints.\nThe structure of your logs will then be:\n<name> / <version> / <sub_dir>\n<sub_dir> will be generated by calling <sub_dir_callable> each time the LoggerConfig is constructed.",
+      "properties": {
+        "name": {
+          "default": "BaseExperiment",
+          "description": "The name of the experiment. The structure of your logs will be <name> / <version> / <sub_dir>.",
+          "title": "Experiment Name",
+          "type": "string"
+        },
+        "save_dir": {
+          "default": "logs_and_checkpoints",
+          "description": "The directory to save your checkpoints and logs to.",
+          "format": "path",
+          "title": "Save Dir",
+          "type": "string"
+        },
+        "sub_dir_callable": {
+          "description": "The function that generates a string to call your runs - by default this is a timestamp. The structure of your logs will be <name> / <version> / <sub_dir> where <sub_dir> is a timestamp.",
+          "title": "Sub Dir Callable",
+          "type": "string"
+        },
+        "version": {
+          "default": "base",
+          "description": "The version of your experiment. The structure of your logs will be <name> / <version> / <sub_dir>.",
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "title": "LoggerConfig",
+      "type": "object"
+    },
+    "NoamOptimizer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "learning_rate": {
+          "default": 0.0001,
+          "description": "The initial learning rate to use",
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "eps": {
+          "default": 1e-08,
+          "description": "Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
+          "title": "Eps",
+          "type": "number"
+        },
+        "weight_decay": {
+          "default": 0.01,
+          "title": "Weight Decay",
+          "type": "number"
+        },
+        "betas": {
+          "default": [
+            0.9,
+            0.98
+          ],
+          "description": "Advanced. The values of the Adam Optimizer beta coefficients.",
+          "maxItems": 2,
+          "minItems": 2,
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "title": "Betas",
+          "type": "array"
+        },
+        "name": {
+          "default": "noam",
+          "description": "The name of the optimizer to use.",
+          "title": "Name",
+          "type": "string"
+        },
+        "warmup_steps": {
+          "default": 1000,
+          "description": "The number of steps to increase the learning rate before starting to decrease it.",
+          "title": "Warmup Steps",
+          "type": "integer"
+        }
+      },
+      "title": "NoamOptimizer",
+      "type": "object"
+    },
+    "PreprocessingConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "dataset": {
+          "default": "YourDataSet",
+          "description": "The name of the dataset.",
+          "title": "Dataset",
+          "type": "string"
+        },
+        "train_split": {
+          "default": 0.9,
+          "description": "The amount of the dataset to use for training. The rest will be used as validation. Hold some of the validation set out for a test set if you are performing experiments.",
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Train Split",
+          "type": "number"
+        },
+        "dataset_split_seed": {
+          "default": 1234,
+          "description": "The seed to use when splitting the dataset into train and validation sets.",
+          "title": "Dataset Split Seed",
+          "type": "integer"
+        },
+        "save_dir": {
+          "default": "preprocessed/YourDataSet",
+          "description": "The directory to save preprocessed files to.",
+          "format": "path",
+          "title": "Save Dir",
+          "type": "string"
+        },
+        "audio": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/AudioConfig"
+            }
+          ],
+          "description": "Configuration settings for audio."
+        },
+        "path_to_audio_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path to an audio configuration file.",
+          "title": "Path To Audio Config File"
+        },
+        "source_data": {
+          "description": "A list of datasets.",
+          "items": {
+            "$ref": "#/$defs/Dataset"
+          },
+          "title": "Source Data",
+          "type": "array"
+        }
+      },
+      "title": "PreprocessingConfig",
+      "type": "object"
+    },
+    "Punctuation": {
+      "properties": {
+        "exclamations": {
+          "default": [
+            "!",
+            "\u00a1"
+          ],
+          "description": "Exclamation punctuation symbols used in your datasets. Replaces these symbols with <EXCL> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Exclamations",
+          "type": "array"
+        },
+        "question_symbols": {
+          "default": [
+            "?",
+            "\u00bf"
+          ],
+          "description": "Question/interrogative punctuation symbols used in your datasets. Replaces these symbols with <QINT> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Question Symbols",
+          "type": "array"
+        },
+        "quotemarks": {
+          "default": [
+            "\"",
+            "'",
+            "\u201c",
+            "\u201d",
+            "\u00ab",
+            "\u00bb"
+          ],
+          "description": "Quotemark punctuation symbols used in your datasets. Replaces these symbols with <QUOTE> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Quotemarks",
+          "type": "array"
+        },
+        "parentheses": {
+          "default": [
+            "(",
+            ")",
+            "[",
+            "]",
+            "{",
+            "}"
+          ],
+          "description": "Punctuation symbols indicating parentheses, brackets, or braces. Replaces these symbols with <PAREN> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Parentheses",
+          "type": "array"
+        },
+        "periods": {
+          "default": [
+            "."
+          ],
+          "description": "Punctuation symbols indicating a 'period' used in your datasets. Replaces these symbols with <PERIOD> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Periods",
+          "type": "array"
+        },
+        "colons": {
+          "default": [
+            ":"
+          ],
+          "description": "Punctuation symbols indicating a 'colon' used in your datasets. Replaces these symbols with <COLON> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Colons",
+          "type": "array"
+        },
+        "semi_colons": {
+          "default": [
+            ";"
+          ],
+          "description": "Punctuation symbols indicating a 'semi-colon' used in your datasets. Replaces these symbols with <SEMICOL> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Semi Colons",
+          "type": "array"
+        },
+        "hyphens": {
+          "default": [
+            "-",
+            "\u2014",
+            "*"
+          ],
+          "description": "Punctuation symbols indicating a 'hyphen' used in your datasets. * is a hyphen by default since unidecode decodes middle-dot punctuation as an asterisk. Replaces these symbols with <HYPHEN> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Hyphens",
+          "type": "array"
+        },
+        "commas": {
+          "default": [
+            ","
+          ],
+          "description": "Punctuation symbols indicating a 'comma' used in your datasets. Replaces these symbols with <COMMA> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Commas",
+          "type": "array"
+        },
+        "ellipses": {
+          "default": [
+            "\u2026"
+          ],
+          "description": "Punctuation symbols indicating ellipses used in your datasets. Replaces these symbols with <EPS> internally.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Ellipses",
+          "type": "array"
+        }
+      },
+      "title": "Punctuation",
+      "type": "object"
+    },
+    "RMSOptimizer": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "learning_rate": {
+          "default": 0.0001,
+          "description": "The initial learning rate to use",
+          "title": "Learning Rate",
+          "type": "number"
+        },
+        "eps": {
+          "default": 1e-08,
+          "description": "Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
+          "title": "Eps",
+          "type": "number"
+        },
+        "weight_decay": {
+          "default": 0.01,
+          "title": "Weight Decay",
+          "type": "number"
+        },
+        "alpha": {
+          "default": 0.99,
+          "description": "Advanced. The value of RMSProp optimizer alpha smoothing constant.",
+          "title": "Alpha",
+          "type": "number"
+        },
+        "name": {
+          "default": "rms",
+          "description": "The name of the optimizer to use.",
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "title": "RMSOptimizer",
+      "type": "object"
+    },
+    "Symbols": {
+      "additionalProperties": true,
+      "properties": {
+        "silence": {
+          "default": [
+            "<SIL>"
+          ],
+          "description": "The symbol(s) used to indicate silence.",
+          "items": {
+            "type": "string"
+          },
+          "title": "Silence",
+          "type": "array"
+        },
+        "punctuation": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/Punctuation"
+            }
+          ],
+          "description": "EveryVoice will combine punctuation and normalize it into a set of five permissible types of punctuation to help tractable training."
+        }
+      },
+      "title": "Symbols",
+      "type": "object"
+    },
+    "TargetTrainingTextRepresentationLevel": {
+      "enum": [
+        "characters",
+        "phones",
+        "phonological_features"
+      ],
+      "title": "TargetTrainingTextRepresentationLevel",
+      "type": "string"
+    },
+    "TextConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "symbols": {
+          "$ref": "#/$defs/Symbols"
+        },
+        "to_replace": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "default": {},
+          "title": "To Replace",
+          "type": "object"
+        },
+        "cleaners": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Cleaners",
+          "type": "array"
+        },
+        "g2p_engines": {
+          "additionalProperties": {
+            "examples": [
+              "everyvoice_plugin_g2p4example.g2p"
+            ],
+            "type": "string"
+          },
+          "default": {},
+          "description": "User defined or external G2P engines.\nSee https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P.",
+          "examples": [
+            "{\"fr\": \"everyvoice_plugin_g2p4example.g2p\"}"
+          ],
+          "title": "External G2P",
+          "type": "object"
+        }
+      },
+      "title": "TextConfig",
+      "type": "object"
+    },
+    "VarianceLevelEnum": {
+      "enum": [
+        "phone",
+        "frame"
+      ],
+      "title": "VarianceLevelEnum",
+      "type": "string"
+    },
+    "VarianceLossEnum": {
+      "enum": [
+        "mse",
+        "mae"
+      ],
+      "title": "VarianceLossEnum",
+      "type": "string"
+    },
+    "VariancePredictorBase": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "loss": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceLossEnum"
+            }
+          ],
+          "default": "mse",
+          "description": "The loss function to use when calculate variance loss. Either 'mse' or 'mae'."
+        },
+        "n_layers": {
+          "default": 5,
+          "description": "The number of layers in the variance predictor module.",
+          "title": "N Layers",
+          "type": "integer"
+        },
+        "kernel_size": {
+          "default": 3,
+          "description": "The kernel size of each convolutional layer in the variance predictor module.",
+          "title": "Kernel Size",
+          "type": "integer"
+        },
+        "dropout": {
+          "default": 0.5,
+          "description": "The amount of dropout to apply.",
+          "title": "Dropout",
+          "type": "number"
+        },
+        "input_dim": {
+          "default": 256,
+          "description": "The number of hidden dimensions in the input. This must match the input_dim value declared in the encoder and decoder modules.",
+          "title": "Input Dim",
+          "type": "integer"
+        },
+        "n_bins": {
+          "default": 256,
+          "description": "The number of bins to use in the variance predictor module.",
+          "title": "N Bins",
+          "type": "integer"
+        },
+        "depthwise": {
+          "default": true,
+          "description": "Whether to use depthwise separable convolutions.",
+          "title": "Depthwise",
+          "type": "boolean"
+        }
+      },
+      "title": "VariancePredictorBase",
+      "type": "object"
+    },
+    "VariancePredictorConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "loss": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceLossEnum"
+            }
+          ],
+          "default": "mse",
+          "description": "The loss function to use when calculate variance loss. Either 'mse' or 'mae'."
+        },
+        "n_layers": {
+          "default": 5,
+          "description": "The number of layers in the variance predictor module.",
+          "title": "N Layers",
+          "type": "integer"
+        },
+        "kernel_size": {
+          "default": 3,
+          "description": "The kernel size of each convolutional layer in the variance predictor module.",
+          "title": "Kernel Size",
+          "type": "integer"
+        },
+        "dropout": {
+          "default": 0.5,
+          "description": "The amount of dropout to apply.",
+          "title": "Dropout",
+          "type": "number"
+        },
+        "input_dim": {
+          "default": 256,
+          "description": "The number of hidden dimensions in the input. This must match the input_dim value declared in the encoder and decoder modules.",
+          "title": "Input Dim",
+          "type": "integer"
+        },
+        "n_bins": {
+          "default": 256,
+          "description": "The number of bins to use in the variance predictor module.",
+          "title": "N Bins",
+          "type": "integer"
+        },
+        "depthwise": {
+          "default": true,
+          "description": "Whether to use depthwise separable convolutions.",
+          "title": "Depthwise",
+          "type": "boolean"
+        },
+        "level": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VarianceLevelEnum"
+            }
+          ],
+          "default": "phone",
+          "description": "The level for the variance predictor to use. 'frame' will make predictions at the frame level. 'phone' will average predictions across all frames in each phone."
+        }
+      },
+      "title": "VariancePredictorConfig",
+      "type": "object"
+    },
+    "VariancePredictors": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "energy": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VariancePredictorConfig"
+            }
+          ],
+          "description": "The variance predictor for energy"
+        },
+        "duration": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VariancePredictorBase"
+            }
+          ],
+          "description": "The variance predictor for duration"
+        },
+        "pitch": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/VariancePredictorConfig"
+            }
+          ],
+          "description": "The variance predictor for pitch"
+        }
+      },
+      "title": "VariancePredictors",
+      "type": "object"
+    },
+    "VocoderConfigNoContact": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "properties": {
+        "contact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContactInformation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "VERSION": {
+          "default": "1.0",
+          "title": "Version",
+          "type": "string"
+        },
+        "model": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANModelConfig"
+            }
+          ],
+          "description": "The model configuration settings."
+        },
+        "path_to_model_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a model configuration file.",
+          "title": "Path To Model Config File"
+        },
+        "training": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/HiFiGANTrainingConfig"
+            }
+          ],
+          "description": "The training configuration hyperparameters."
+        },
+        "path_to_training_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a training configuration file.",
+          "title": "Path To Training Config File"
+        },
+        "preprocessing": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/PreprocessingConfig"
+            }
+          ],
+          "description": "The preprocessing configuration, including information about audio settings."
+        },
+        "path_to_preprocessing_config_file": {
+          "anyOf": [
+            {
+              "format": "file-path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The path of a preprocessing configuration file.",
+          "title": "Path To Preprocessing Config File"
+        }
+      },
+      "title": "VocoderConfigNoContact",
+      "type": "object"
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "additionalProperties": false,
+  "properties": {
+    "contact": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/ContactInformation"
+        }
+      ],
+      "description": "EveryVoice requires a contact name and email to help prevent misuse. Please read our Guide <https://docs.everyvoice.ca/latest/> to understand more about the importance of misuse prevention with TTS."
+    },
+    "aligner": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DFAlignerConfig"
+        },
+        {
+          "$ref": "#/$defs/AlignerConfigNoContact"
+        }
+      ],
+      "title": "Aligner"
+    },
+    "path_to_aligner_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Aligner Config File"
+    },
+    "feature_prediction": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/FastSpeech2Config"
+        },
+        {
+          "$ref": "#/$defs/FeaturePredictionConfigNoContact"
+        }
+      ],
+      "title": "Feature Prediction"
+    },
+    "path_to_feature_prediction_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Feature Prediction Config File"
+    },
+    "vocoder": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/HiFiGANConfig"
+        },
+        {
+          "$ref": "#/$defs/VocoderConfigNoContact"
+        }
+      ],
+      "title": "Vocoder"
+    },
+    "path_to_vocoder_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Vocoder Config File"
+    },
+    "training": {
+      "$ref": "#/$defs/E2ETrainingConfig"
+    },
+    "path_to_training_config_file": {
+      "anyOf": [
+        {
+          "format": "file-path",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Path To Training Config File"
+    }
+  },
+  "required": [
+    "contact"
+  ],
+  "title": "EveryVoiceConfig",
+  "type": "object"
+}
