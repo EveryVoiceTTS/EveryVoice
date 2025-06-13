@@ -110,7 +110,7 @@ To publish a new version of the project, follow these steps:
 
 3. **Update Schema (for Major/Minor bumps)**
    If you bumped a **major** or **minor** version:
-   - Run `everyvoice update-schema`.
+   - Run `everyvoice update-schema`. You may need to delete existing schema files if you get an error message, but you should only do so if you are sure that those schema files have not already been published. I.e. we might already have schema files related to an alpha release - those can be overwritten, but we should never change published schema files.
    - Commit the resulting changes.
 
 4. **Open a Pull Request**
@@ -120,8 +120,8 @@ To publish a new version of the project, follow these steps:
 5. **Tag the Release**
    After merging:
    ```bash
-   git tag 'v0.X.X'
-   git push --tags
+   git tag -a -m vX.Y.Z vX.Y.ZX
+   git push 'vX.Y.Z'
    ```
 
 6. **Update SchemaStore (for Major/Minor bumps)**
