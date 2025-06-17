@@ -1,4 +1,9 @@
-# Adapted from https://github.com/fakerybakery/txtsplit
+# Adapted by the NRC for the purposes of EveryVoice, from
+# https://github.com/fakerybakery/txtsplit
+# which describes itself as
+#   Tortoise TTS's text splitter, repackaged. All credit goes to the author of Tortoise TTS.
+# Tortoise TTS: https://github.com/neonbjb/tortoise-tts
+# License: Apache License 2.0
 
 import re
 
