@@ -103,26 +103,31 @@ To publish a new version of the project, follow these steps:
 
 2. **Update Version Files**
    - Update the `everyvoice._version` file to reflect the new version.
-   - Keep all `submodule._version` files in sync with this version, **except** for the `wav2vec2` aligner submodule (which can be installed separately).
+   - Keep all `submodule._version` files in sync with this version, **except** for the `wav2vec2aligner` submodule (which can be installed separately).
+   - Keep the `everyvoice` dependency in all `submodule/pyproject.toml` files in sync with the everyvoice Major.minor version, except in `wav2vec2aligner`.
    - Commit the resulting changes, including all submodules.
 
-3. **Update Schema (for Major/Minor bumps)**
+3. **Update the Documentation**
+   - Make sure the documentation reflects the current state of the code.
+   - Look for references to the current or most recent version and update them if necessary.
+
+4. **Update Schema (for Major/Minor bumps)**
    If you bumped a **major** or **minor** version:
    - Run `everyvoice update-schema`. You may need to delete existing schema files if you get an error message, but you should only do so if you are sure that those schema files have not already been published. I.e. we might already have schema files related to an alpha release - those can be overwritten, but we should never change published schema files.
    - Commit the resulting changes.
 
-4. **Open a Pull Request**
+5. **Open a Pull Request**
    - Create a PR with your changes.
    - Wait for tests to pass and for the PR to be merged into `main`.
 
-5. **Tag the Release**
+6. **Tag the Release**
    After merging:
    ```bash
    git tag -a -m vX.Y.Z vX.Y.Z
    git push 'vX.Y.Z'
    ```
 
-6. **Update SchemaStore (for Major/Minor bumps)**
+7. **Update SchemaStore (for Major/Minor bumps)**
     Once the CI has built and released your version, if you bumped a major or minor version:
 
     Submit a PR to [SchemaStore](https://github.com/SchemaStore/schemastore) to update the schema reference.
