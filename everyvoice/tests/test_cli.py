@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import TestCase
+from unittest import TestCase, mock
 
 import jsonschema
 import yaml
@@ -14,6 +14,8 @@ from pydantic import ValidationError
 from pytorch_lightning import Trainer
 from typer.testing import CliRunner
 from yaml import CLoader as Loader
+
+import everyvoice.tests.model_stubs
 
 # required for `./run_tests.py cli` to work, otherwise test_inspect_checkpoint
 # fails with an Intel MKL FATAL ERROR saying it cannot load libtorch_cpu.so
@@ -406,6 +408,57 @@ class CLITest(TestCase):
                     accelerator=None,
                 )
             self.assertIn("Unknown output format 'foo'", str(cm.exception))
+
+    def mock_create_demo_app(self, *_args, **_kwargs):
+
+        class MockCreateDemoApp:
+            def launch(self, *_args, **_kwargs):
+                print(f"  - Launch Port: {_kwargs['server_port']}")
+                print(f"  - Launch Share: {_kwargs['share']}")
+                print(f"  - Launch Server Name: {_kwargs['server_name']}")
+
+        return MockCreateDemoApp()
+
+    def test_create_demo_app(self):
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            # This test is just to make sure that the demo app can be created with parameters for gradio
+            # and that it doesn't crash.
+            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
+                tmpdir / "vocoder"
+            )
+            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
+                tmpdir / "spec_model"
+            )
+            # This test is just to make sure that the demo app params are passed correctly
+            port = 7000
+            ip = "123.456.78.90"
+            with mock.patch(
+                "everyvoice.demo.app.create_demo_app",
+                side_effect=self.mock_create_demo_app,
+            ):
+
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "demo",
+                        str(spec_model_path),
+                        str(vocoder_path),
+                        "--port",
+                        port,
+                        "--share",
+                        "--server-name",
+                        ip,  # Mock IP address
+                    ],
+                )
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn(f"  - Port: {port}", result.output)
+            self.assertIn("  - Share: True", result.output)
+            self.assertIn(f"  - Server Name: {ip}", result.output)
+
+            self.assertIn(f"  - Launch Port: {port}", result.output)
+            self.assertIn("  - Launch Share: True", result.output)
+            self.assertIn(f"  - Launch Server Name: {ip}", result.output)
 
 
 class TestBaseCLIHelper(TestCase):

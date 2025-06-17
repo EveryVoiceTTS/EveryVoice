@@ -653,6 +653,18 @@ def demo(
         "-a",
         help="Specify the Pytorch Lightning accelerator to use",
     ),
+    port: int = typer.Option(7860, "--port", "-p", help="The port to run the demo on."),
+    share: bool = typer.Option(
+        False,
+        "--share",
+        help="Share the demo using Gradio's share feature. This will make the demo accessible from the internet.",
+    ),
+    server_name: str = typer.Option(
+        "0.0.0.0",
+        "--server-name",
+        "-n",
+        help="The server name to run the demo on. This is useful if you want to run the demo on a specific IP address.",
+    ),
 ):
     if allowlist and denylist:
         raise ValueError(
@@ -670,6 +682,21 @@ def demo(
         with open(denylist) as f:
             denylist_data = [x.strip() for x in f]
 
+    # print the parameters to the console
+    print("INFO - Starting the demo with the following parameters:")
+    print(f"  - Text-to-Spec Model: {text_to_spec_model}")
+    print(f"  - Spec-to-Wav Model: {spec_to_wav_model}")
+    print(f"  - Languages: {languages}")
+    print(f"  - Speakers: {speakers}")
+    print(f"  - Outputs: {outputs}")
+    print(f"  - Output Directory: {output_dir}")
+    print(f"  - Accelerator: {accelerator}")
+    print(f"  - Allowlist: {allowlist_data if allowlist else 'None'}")
+    print(f"  - Denylist: {denylist_data if denylist else 'None'}")
+    print(f"  - Port: {port}")
+    print(f"  - Share: {share}")
+    print(f"  - Server Name: {server_name}")
+
     with spinner():
         from everyvoice.demo.app import create_demo_app
 
@@ -685,7 +712,7 @@ def demo(
             denylist=denylist_data,
         )
 
-    demo.launch()
+    demo.launch(share=share, server_port=port, server_name=server_name)
 
 
 @app.command(hidden=True)
