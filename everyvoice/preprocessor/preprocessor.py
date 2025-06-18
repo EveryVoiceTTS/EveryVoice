@@ -37,7 +37,6 @@ from everyvoice.config.type_definitions import (
     TargetTrainingTextRepresentationLevel,
 )
 from everyvoice.exceptions import ConfigError
-from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor.attention_prior import BetaBinomialInterpolator
@@ -62,7 +61,7 @@ class Preprocessor:
 
     def __init__(
         self,
-        config: AlignerConfig | FeaturePredictionConfig | VocoderConfig,
+        config: FeaturePredictionConfig | VocoderConfig,
     ):
         self.config = config
         self.counters = Counters(Manager())

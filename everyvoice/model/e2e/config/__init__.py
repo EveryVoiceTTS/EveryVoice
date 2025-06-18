@@ -10,17 +10,12 @@ from everyvoice.config.shared_types import (
     init_context,
 )
 from everyvoice.config.utils import PossiblyRelativePath, load_partials
-from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import load_config_from_json_or_yaml_path
 
 
 # The contact information only needs to be registered on the main config
-class AlignerConfigNoContact(AlignerConfig):
-    contact: Optional[ContactInformation] = None  # type: ignore
-
-
 class VocoderConfigNoContact(VocoderConfig):
     contact: Optional[ContactInformation] = None  # type: ignore
 
@@ -35,11 +30,6 @@ class E2ETrainingConfig(BaseTrainingConfig):
 
 
 class EveryVoiceConfig(BaseModelWithContact):
-    aligner: AlignerConfig | AlignerConfigNoContact = Field(
-        default_factory=AlignerConfigNoContact  # type: ignore
-    )
-    path_to_aligner_config_file: Optional[FilePath] = None
-
     feature_prediction: FeaturePredictionConfig | FeaturePredictionConfigNoContact = (
         Field(default_factory=FeaturePredictionConfigNoContact)  # type: ignore
     )
@@ -60,7 +50,7 @@ class EveryVoiceConfig(BaseModelWithContact):
         )
         return load_partials(
             self,  # type: ignore
-            ("aligner", "feature_prediction", "vocoder", "training"),
+            ("feature_prediction", "vocoder", "training"),
             config_path=config_path,
         )
 

@@ -1,7 +1,6 @@
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
-from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
@@ -27,7 +26,6 @@ class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
 
         self.config = EveryVoiceConfig(
             contact=BasicTestCase.contact,
-            aligner=AlignerConfig(contact=BasicTestCase.contact),
             feature_prediction=FeaturePredictionConfig(contact=BasicTestCase.contact),
             vocoder=VocoderConfig(
                 contact=BasicTestCase.contact,
@@ -44,7 +42,7 @@ class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
         )
 
     def test_base_data_loader(self):
-        bdm = BaseDataModule(self.config.aligner)
+        bdm = BaseDataModule(self.config.vocoder)
         with self.assertRaises(NotImplementedError):
             bdm.load_dataset()
 
