@@ -4,7 +4,7 @@ Feel free to dive in! [Open an issue](https://github.com/EveryVoiceTTS/EveryVoic
 
 Issues regarding the submodules should also be submitted on the main
 [EveryVoice repo](https://github.com/EveryVoiceTTS/EveryVoice), with the tag
-`[FastSpeech2]`, `[HiFiGAN]`, `[DeepForcedAligner]`, or `[wav2vec2aligner]`
+`[FastSpeech2]`, `[HiFiGAN]`, or `[wav2vec2aligner]`
 at the beginning of the issue title, as appropriate.
 
 To submit PRs for the submodules, please submit a PR with the code changes to the

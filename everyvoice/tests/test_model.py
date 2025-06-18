@@ -9,8 +9,6 @@ import torch
 from pytorch_lightning import Trainer
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
-from everyvoice.model.aligner.DeepForcedAligner.dfaligner.config import DFAlignerConfig
-from everyvoice.model.aligner.DeepForcedAligner.dfaligner.model import Aligner
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
@@ -27,7 +25,6 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.stubs import monkeypatch, mute_logger, silence_c_stderr
 from everyvoice.wizard import (
-    ALIGNER_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
 )
@@ -107,11 +104,6 @@ class ModelTest(BasicTestCase):
                     lang2id={"foo": 0, "bar": 1},
                     speaker2id={"baz": 0, "qux": 1},
                 ),  # we should probably also test that the error about the variance adaptor is raised
-                Aligner(
-                    DFAlignerConfig.load_config_from_path(
-                        self.config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
-                    )
-                ),
             ]
         for model in SERIAL_SAFE_MODELS:
             with silence_c_stderr():
@@ -337,14 +329,6 @@ class TestLoadingModel(BasicTestCase):
         with mute_logger("everyvoice.config.text_config"):
             tests = (
                 (
-                    Aligner,
-                    Aligner(
-                        DFAlignerConfig.load_config_from_path(
-                            self.config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
-                        )
-                    ),
-                ),
-                (
                     FastSpeech2,
                     FastSpeech2(
                         FastSpeech2Config.load_config_from_path(
@@ -402,12 +386,7 @@ class TestLoadingModel(BasicTestCase):
                     self.assertEqual(m["model_info"]["version"], CANARY_VERSION)
                     del m["model_info"]["version"]
                     torch.save(m, ckpt_fn)
-                    if isinstance(model, Aligner):
-                        # As of everyvoice==0.3.0 Aligner models trained using everyvoice<0.3.0 cannot be loaded
-                        with mute_logger("everyvoice.config.text_config"):
-                            with self.assertRaises(ValueError):
-                                model = ModelType.load_from_checkpoint(ckpt_fn)
-                    elif isinstance(model, FastSpeech2):
+                    if isinstance(model, FastSpeech2):
                         # As of everyvoice==0.3.0 FastSpeech2 models are loaded by translating the embedding tables
                         # but our mock here doesn't create a valid pre Version 1.2 FastSpeech2 checkpoint
                         with mute_logger("everyvoice.config.text_config"):
@@ -427,14 +406,6 @@ class TestLoadingModel(BasicTestCase):
 
         with mute_logger("everyvoice.config.text_config"):
             tests = (
-                (
-                    Aligner,
-                    Aligner(
-                        DFAlignerConfig.load_config_from_path(
-                            self.config_dir / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
-                        )
-                    ),
-                ),
                 (
                     FastSpeech2,
                     FastSpeech2(
@@ -507,7 +478,6 @@ class TestLoadingConfig(BasicTestCase):
         self.config_dir = self.data_dir / "relative" / "config"
         self.configs = (
             (FastSpeech2Config, TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX),
-            (DFAlignerConfig, ALIGNER_CONFIG_FILENAME_PREFIX),
             (HiFiGANConfig, SPEC_TO_WAV_CONFIG_FILENAME_PREFIX),
         )
 

@@ -78,9 +78,6 @@ class CLITest(TestCase):
         # Team decision 2025-02-10: we won't keep submodule versions in complete lockstep,
         # but we'll match major.minor.
         # But don't check wav2vec2aligner at all, it's much more independent.
-        from everyvoice.model.aligner.DeepForcedAligner.dfaligner._version import (
-            VERSION as DFA_VERSION,
-        )
         from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2._version import (
             VERSION as FS2_VERSION,
         )
@@ -88,11 +85,6 @@ class CLITest(TestCase):
             VERSION as HFGL_VERSION,
         )
 
-        self.assertEqual(
-            major_minor(VERSION),
-            major_minor(DFA_VERSION),
-            "please keep DeepForcedAligner and EveryVoice major.minor version in sync",
-        )
         self.assertEqual(
             major_minor(VERSION),
             major_minor(FS2_VERSION),
@@ -344,12 +336,12 @@ class CLITest(TestCase):
                 app,
                 [
                     "preprocess",
-                    str(self.config_dir / "everyvoice-aligner.yaml"),
+                    str(self.config_dir / "everyvoice-spec-to-wav.yaml"),
                 ],
             )
             self.assertEqual(result.exit_code, 1)
             self.assertIn(
-                "We are expecting a FastSpeech2Config but it looks like you provided a DFAlignerConfig",
+                "We are expecting a FastSpeech2Config but it looks like you provided a HiFiGANConfig",
                 "\n".join(output),
             )
 

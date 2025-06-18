@@ -3,7 +3,6 @@
 from enum import Enum
 
 TEXT_CONFIG_FILENAME_PREFIX = "everyvoice-shared-text"
-ALIGNER_CONFIG_FILENAME_PREFIX = "everyvoice-aligner"
 PREPROCESSING_CONFIG_FILENAME_PREFIX = "everyvoice-shared-data"
 TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX = "everyvoice-text-to-spec"
 SPEC_TO_WAV_CONFIG_FILENAME_PREFIX = "everyvoice-spec-to-wav"

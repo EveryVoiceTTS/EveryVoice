@@ -7,7 +7,6 @@ import torch
 from torch.utils.data import DataLoader
 
 from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
-from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
@@ -16,9 +15,7 @@ from everyvoice.model.vocoder.config import VocoderConfig
 class BaseDataModule(pl.LightningDataModule):
     def __init__(
         self,
-        config: Union[
-            AlignerConfig, VocoderConfig, FeaturePredictionConfig, EveryVoiceConfig
-        ],
+        config: Union[VocoderConfig, FeaturePredictionConfig, EveryVoiceConfig],
         inference_output_dir: Optional[Path] = None,
     ):
         super().__init__()
