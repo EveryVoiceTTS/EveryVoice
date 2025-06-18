@@ -4,7 +4,7 @@
 [![Documentation](https://github.com/EveryVoiceTTS/EveryVoice/actions/workflows/docs.yml/badge.svg)](https://docs.everyvoice.ca)
 [![Build Status](https://github.com/EveryVoiceTTS/EveryVoice/actions/workflows/test.yml/badge.svg)](https://github.com/EveryVoiceTTS/EveryVoice/actions)
 [![license](https://img.shields.io/badge/Licence-MIT-green)](LICENSE)
-![alpha](https://img.shields.io/badge/alpha-grey)
+![beta](https://img.shields.io/badge/beta-grey)
 
 This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generation for Indigenous Language Education" project.
 
