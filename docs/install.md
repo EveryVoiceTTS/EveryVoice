@@ -38,11 +38,11 @@ Direct installation from PyPI is fairly reliable.
 
 === "Using conda"
 
-        pip install everyvoice==0.2.0a1
+        pip install everyvoice
 
 === "Using uv"
 
-        uv pip install everyvoice==0.2.0a1
+        uv pip install everyvoice
 
 ## Installation from source
 

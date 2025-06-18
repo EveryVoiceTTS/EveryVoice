@@ -71,5 +71,5 @@ cat coverage.txt
     cd ../../../..
     diff-cover --compare-branch origin/main "$REGRESS_DIR"/coverage.xml --html-report "$REGRESS_DIR"/coverage-diff-main.html
     LAST_VERSION=$(git describe | sed 's/-.*//')
-    diff-cover --compare-branch "$LAST_VERSION" "$REGRESS_DIR"/coverage.xml --html-report "$REGRESS_DIR"/coverage-diff-v0.2.0a1.html
+    diff-cover --compare-branch "$LAST_VERSION" "$REGRESS_DIR"/coverage.xml --html-report "$REGRESS_DIR/coverage-diff-$LAST_VERSION.html"
 ) | tee coverage-diff.txt
