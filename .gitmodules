@@ -10,3 +10,6 @@
 [submodule "everyvoice/model/aligner/wav2vec2aligner"]
 	path = everyvoice/model/aligner/wav2vec2aligner
 	url = ../wav2vec2aligner.git
+[submodule "everyvoice/model/e2e/StyleTTS2"]
+	path = everyvoice/model/e2e/StyleTTS2
+	url = git@github.com:roedoejet/StyleTTS2.git
