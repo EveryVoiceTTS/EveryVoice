@@ -3,7 +3,6 @@
 """
 
 from everyvoice.wizard import (
-    ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_CONFIG_FILENAME_PREFIX,
@@ -17,8 +16,6 @@ def define_env(env):
 
     @env.macro
     def config_filename(filetype):
-        if filetype == "aligner":
-            return f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
         if filetype == "preprocessing":
             return f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.yaml"
         if filetype == "spec-to-wav":

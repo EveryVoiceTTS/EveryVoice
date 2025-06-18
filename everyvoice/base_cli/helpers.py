@@ -22,11 +22,6 @@ from tqdm import tqdm
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import InvalidConfiguration
-from everyvoice.model.aligner.config import DFAlignerConfig
-from everyvoice.model.aligner.DeepForcedAligner.dfaligner.dataset import (
-    AlignerDataModule,
-)
-from everyvoice.model.aligner.DeepForcedAligner.dfaligner.model import Aligner
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.e2e.dataset import E2EDataModule
 from everyvoice.model.e2e.model import EveryVoice
@@ -43,7 +38,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 
-MODEL_CONFIGS = [FastSpeech2Config, HiFiGANConfig, DFAlignerConfig]
+MODEL_CONFIGS = [FastSpeech2Config, HiFiGANConfig]
 
 
 def load_unknown_config(
@@ -55,7 +50,7 @@ def load_unknown_config(
     Args:
         config_file (Path): path to a configuration file
     Returns:
-        config (PreprocessingConfig | FastSpeech2Config | HiFiGANConfig | DFAlignerConfig): the loaded config
+        config (PreprocessingConfig | FastSpeech2Config | HiFiGANConfig): the loaded config
     """
     from everyvoice.config.preprocessing_config import PreprocessingConfig
 
@@ -64,7 +59,6 @@ def load_unknown_config(
         PreprocessingConfig,
         FastSpeech2Config,
         HiFiGANConfig,
-        DFAlignerConfig,
     ):
         try:
             return config_type.load_config_from_path(config_file)  # type: ignore
@@ -79,7 +73,6 @@ def load_unknown_config(
 
 def load_config_base_command(
     model_config: Union[
-        type[DFAlignerConfig],
         type[EveryVoiceConfig],
         type[FastSpeech2Config],
         type[HiFiGANConfig],
@@ -93,12 +86,12 @@ def load_config_base_command(
     try:
         config = model_config.load_config_from_path(config_file)
     except ValidationError as error:
-        # NOTE: To trigger this error handling code from the command line:
-        #   `everyvoice preprocess  config/everyvoice-aligner.yaml`
+        # NOTE: To trigger this error handling code from the command line,
+        # provide a mismatched config file, e.g.:
+        #   `everyvoice preprocess  config/everyvoice-spec-to-wav.yaml`
         import sys
 
         for config_type in (
-            DFAlignerConfig,
             EveryVoiceConfig,
             FastSpeech2Config,
             HiFiGANConfig,
@@ -123,7 +116,6 @@ def load_config_base_command(
 
 def preprocess_base_command(
     model_config: Union[
-        type[DFAlignerConfig],
         type[EveryVoiceConfig],
         type[FastSpeech2Config],
         type[HiFiGANConfig],
@@ -156,7 +148,7 @@ def preprocess_base_command(
 
 
 def save_configuration_to_log_dir(
-    config: Union[DFAlignerConfig, EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig]
+    config: Union[EveryVoiceConfig, FastSpeech2Config, HiFiGANConfig]
 ):
     """
     Adds a logging file to the module's logger.
@@ -178,18 +170,16 @@ def save_configuration_to_log_dir(
 
 def train_base_command(
     model_config: Union[
-        type[DFAlignerConfig],
         type[EveryVoiceConfig],
         type[FastSpeech2Config],
         type[HiFiGANConfig],
     ],
     data_module: Union[
-        type[AlignerDataModule],
         type[E2EDataModule],
         type[FastSpeech2DataModule],
         type[HiFiGANDataModule],
     ],
-    model: Union[type[Aligner], type[EveryVoice], type[FastSpeech2], type[HiFiGAN]],
+    model: Union[type[EveryVoice], type[FastSpeech2], type[HiFiGAN]],
     monitor: str,
     # Must include the above in model-specific command
     config_args: List[str],
