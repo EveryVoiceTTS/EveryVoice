@@ -54,7 +54,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
 from everyvoice.run_tests import SUITE_NAMES, run_tests
-from everyvoice.utils import load_config_from_json_or_yaml_path, spinner
+from everyvoice.utils import spinner
 from everyvoice.wizard import (
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
@@ -786,8 +786,7 @@ def g2p(
     from everyvoice.text.phonemizer import get_g2p_engine
 
     if config:
-        kwargs = load_config_from_json_or_yaml_path(config)
-        text_config: TextConfig = TextConfig(**kwargs)
+        text_config: TextConfig = TextConfig.load_config_from_path(config)
         print(
             f"Config contains custon G2P Engines: {text_config.g2p_engines}",
             file=sys.stderr,
