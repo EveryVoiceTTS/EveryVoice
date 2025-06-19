@@ -1,14 +1,19 @@
+from pathlib import Path
 from typing import Annotated, Dict
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
-from everyvoice.config.shared_types import ConfigModel
+from everyvoice.config.shared_types import ConfigModel, init_context
 from everyvoice.config.utils import PossiblySerializedCallable
 from everyvoice.text.phonemizer import G2PCallable
 from everyvoice.text.utils import normalize_text_helper
-from everyvoice.utils import collapse_whitespace, strip_text
+from everyvoice.utils import (
+    collapse_whitespace,
+    load_config_from_json_or_yaml_path,
+    strip_text,
+)
 
 
 class Punctuation(BaseModel):
@@ -227,3 +232,11 @@ class TextConfig(ConfigModel):
             logger.info(f"Adding G2P engine from `{name}` for `{lang_id}`")
 
         return self
+
+    @staticmethod
+    def load_config_from_path(path: Path) -> "TextConfig":
+        """Load a config from a path"""
+        config = load_config_from_json_or_yaml_path(path)
+        with init_context({"config_path": path}):
+            config = TextConfig(**config)
+        return config
