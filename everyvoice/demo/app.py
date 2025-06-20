@@ -91,12 +91,12 @@ def synthesize_audio(
         filelist=None,
         filelist_data=None,
         teacher_forcing_directory=None,
-        batch_size=1,
+        batch_size=16,
         num_workers=1,
     )
 
     wav_writer = callbacks[SynthesizeOutputFormats.wav]
-    wav_output = wav_writer.get_filename(basename, speaker, language)
+    wav_output = wav_writer.last_file_written
 
     file_output = None
     if output_format != SynthesizeOutputFormats.wav:
