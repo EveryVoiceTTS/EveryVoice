@@ -9,7 +9,6 @@ import json
 import os
 import tempfile
 import textwrap
-from enum import Enum
 from pathlib import Path
 from pprint import pformat
 from typing import List, Optional, Union
@@ -377,5 +376,12 @@ def train_base_command(
                 trainer.fit(model_obj, data, ckpt_path=tmp.name)
 
 
-def inference_base_command(_name: Enum):
-    pass
+def inference_base_command(
+    model_config: type[FastSpeech2Config],
+    model: type[FastSpeech2],
+    config_args: List[str],
+):
+    config_file = model.config.path_to_text_config_file
+    config = load_config_base_command(model_config, config_args, config_file)  # type: ignore
+
+    save_configuration_to_log_dir(config)
