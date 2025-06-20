@@ -179,6 +179,9 @@ class TextConfig(ConfigModel):
         description="User defined or external G2P engines.\nSee https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P.",
         examples=["""{"fr": "everyvoice_plugin_g2p4example.g2p"}"""],
     )
+    split_text: bool = True
+    desired_length: int = 100
+    max_length: int = 200
 
     @model_validator(mode="after")
     def clean_symbols(self) -> Self:

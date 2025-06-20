@@ -192,6 +192,21 @@
       ],
       "title": "External G2P",
       "type": "object"
+    },
+    "split_text": {
+      "default": true,
+      "title": "Split Text",
+      "type": "boolean"
+    },
+    "desired_length": {
+      "default": 100,
+      "title": "Desired Length",
+      "type": "integer"
+    },
+    "max_length": {
+      "default": 200,
+      "title": "Max Length",
+      "type": "integer"
     }
   },
   "title": "TextConfig",
