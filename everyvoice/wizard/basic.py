@@ -15,7 +15,6 @@ from everyvoice.config.shared_types import (
     init_context,
 )
 from everyvoice.config.text_config import Symbols, TextConfig
-from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import (
     FastSpeech2ModelConfig,
@@ -24,7 +23,6 @@ from everyvoice.model.feature_prediction.config import (
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import generic_psv_filelist_reader, slugify, write_filelist
 from everyvoice.wizard import (
-    ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_CONFIG_FILENAME_PREFIX,
@@ -339,37 +337,6 @@ class ConfigFormatStep(Step):
                 (config_dir / preprocessing_config_path).absolute(),
             )
 
-            ## Create Aligner Config
-            aligner_logger = LoggerConfig(
-                name="AlignerExperiment", save_dir=log_dir_relative_to_configs
-            ).model_dump()
-            aligner_config = AlignerConfig(
-                contact=CONTACT_INFO,
-                # This isn't the actual AlignerTrainingConfig, but we can use it because we just
-                # inherit the defaults if we pass a dict to the AlignerConfig.training field
-                training=BaseTrainingConfig(
-                    training_filelist=preprocessed_training_filelist_path,
-                    validation_filelist=preprocessed_validation_filelist_path,
-                    logger=aligner_logger,
-                ).model_dump(),
-            )
-            aligner_config_path = Path(
-                f"{ALIGNER_CONFIG_FILENAME_PREFIX}.{self.response}"
-            )
-            aligner_config_json = json.loads(
-                aligner_config.model_dump_json(
-                    exclude_none=False, exclude={"preprocessing": True, "text": True}
-                )
-            )
-            aligner_config_json["path_to_preprocessing_config_file"] = str(
-                preprocessing_config_path
-            )
-            aligner_config_json["path_to_text_config_file"] = str(text_config_path)
-            write_dict_to_config(
-                aligner_config_json,
-                (config_dir / aligner_config_path).absolute(),
-            )
-
             # Create Feature Prediction Config
             fp_logger = LoggerConfig(
                 name="FeaturePredictionExperiment", save_dir=log_dir_relative_to_configs
@@ -437,7 +404,6 @@ class ConfigFormatStep(Step):
             )
             e2e_config = EveryVoiceConfig(
                 contact=CONTACT_INFO,
-                aligner=aligner_config,
                 feature_prediction=fp_config,
                 vocoder=vocoder_config,
                 training=E2ETrainingConfig(
@@ -450,13 +416,11 @@ class ConfigFormatStep(Step):
                 e2e_config.model_dump_json(
                     exclude_none=False,
                     exclude={
-                        "aligner": True,
                         "feature_prediction": True,
                         "vocoder": True,
                     },
                 )
             )
-            e2e_config_json["path_to_aligner_config_file"] = str(aligner_config_path)
             e2e_config_json["path_to_feature_prediction_config_file"] = str(
                 fp_config_path
             )

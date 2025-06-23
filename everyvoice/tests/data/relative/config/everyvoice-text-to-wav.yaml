@@ -1,7 +1,6 @@
 contact:
   contact_name: Test name
   contact_email: info@everyvoice.ca
-path_to_aligner_config_file: everyvoice-aligner.yaml
 path_to_feature_prediction_config_file: everyvoice-text-to-spec.yaml
 path_to_vocoder_config_file: everyvoice-spec-to-wav.yaml
 training:

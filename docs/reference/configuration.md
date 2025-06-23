@@ -14,19 +14,18 @@ Static typing means that misconfiguration errors should occur as soon as the con
 ## Sharing Configurations
 
 The Text and Preprocessing configurations should only be defined once per dataset and shared between your models to ensure each model makes the same assumptions about your data.
-To achieve that, each model configuration can also be defined as a path to a configuration file. So, a configuration for an aligner that uses separately defined text and audio preprocessing configurations might look like this:
+To achieve that, each model configuration can also be defined as a path to a configuration file. So, a configuration for a text-to-spec model that uses separately defined text and audio preprocessing configurations might look like this:
 
 ```yaml hl_lines="8 9"
-
 model:
-    lstm_dim: 512
-    conv_dim: 512
+    decoder: ...
     ...
 training:
-    batch_size: 32
+    batch_size: 16
+    ckpt_epochs: 1
     ...
-preprocessing: "./config/default/{{ config_filename('preprocessing') }}"
-text: "./config/default/{{ config_filename('text') }}"
+path_to_preprocessing_config_file: "./config/default/{{ config_filename('preprocessing') }}"
+path_to_text_config_file: "./config/default/{{ config_filename('text') }}"
 ```
 
 ## Serialization

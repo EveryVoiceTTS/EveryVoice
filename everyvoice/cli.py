@@ -57,7 +57,6 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as t
 from everyvoice.run_tests import SUITE_NAMES, run_tests
 from everyvoice.utils import load_config_from_json_or_yaml_path, spinner
 from everyvoice.wizard import (
-    ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_CONFIG_FILENAME_PREFIX,
@@ -739,7 +738,6 @@ def update_schemas(
     # Defer somewhat slow imports to optimize CLI
     from everyvoice.config.preprocessing_config import PreprocessingConfig
     from everyvoice.config.text_config import TextConfig
-    from everyvoice.model.aligner.config import AlignerConfig
     from everyvoice.model.e2e.config import EveryVoiceConfig
     from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
     from everyvoice.model.vocoder.config import VocoderConfig
@@ -749,7 +747,6 @@ def update_schemas(
 
     SCHEMAS_TO_OUTPUT.update(
         {
-            f"{ALIGNER_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": AlignerConfig,
             f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": EveryVoiceConfig,
             f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": FeaturePredictionConfig,
             f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": PreprocessingConfig,

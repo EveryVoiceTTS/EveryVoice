@@ -220,12 +220,6 @@ Also note that you have to change `/home/username` with your own username in the
 {
   "json.schemas": [
     {
-      "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-aligner-0.1.json",
-      "fileMatch": [
-        "everyvoice-aligner.json"
-      ]
-    },
-    {
       "url": "file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-0.1.json",
       "fileMatch": [
         "everyvoice-shared-data.json"
@@ -257,9 +251,6 @@ Also note that you have to change `/home/username` with your own username in the
     }
   ],
   "yaml.schemas": {
-    "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-aligner-0.1.json": [
-      "everyvoice-aligner.yaml"
-    ],
     "file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-0.1.json": [
       "everyvoice-shared-data.yaml"
     ],
