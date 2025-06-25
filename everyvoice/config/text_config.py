@@ -179,6 +179,11 @@ class TextConfig(ConfigModel):
         description="User defined or external G2P engines.\nSee https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P.",
         examples=["""{"fr": "everyvoice_plugin_g2p4example.g2p"}"""],
     )
+    split_text: bool = Field(
+        True,
+        title="Split Text",
+        description="Whether or not to perform text splitting (also referred to as text chunking) at inference time.",
+    )
 
     @model_validator(mode="after")
     def clean_symbols(self) -> Self:
