@@ -9,7 +9,6 @@ import json
 import os
 import tempfile
 import textwrap
-from enum import Enum
 from pathlib import Path
 from pprint import pformat
 from typing import List, Optional, Union
@@ -20,6 +19,7 @@ from loguru import logger
 from pydantic import ValidationError
 from tqdm import tqdm
 
+from everyvoice.config.text_config import TextConfig
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import InvalidConfiguration
 from everyvoice.model.aligner.config import DFAlignerConfig
@@ -42,6 +42,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     HiFiGANDataModule,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
+from everyvoice.utils import update_config_from_cli_args
 
 MODEL_CONFIGS = [FastSpeech2Config, HiFiGANConfig, DFAlignerConfig]
 
@@ -65,6 +66,7 @@ def load_unknown_config(
         FastSpeech2Config,
         HiFiGANConfig,
         DFAlignerConfig,
+        TextConfig,
     ):
         try:
             return config_type.load_config_from_path(config_file)  # type: ignore
@@ -83,12 +85,12 @@ def load_config_base_command(
         type[EveryVoiceConfig],
         type[FastSpeech2Config],
         type[HiFiGANConfig],
+        type[TextConfig],
     ],
     # Must include the above in model-specific command
     config_args: List[str],
     config_file: Path,
 ):
-    from everyvoice.utils import update_config_from_cli_args
 
     try:
         config = model_config.load_config_from_path(config_file)
@@ -102,6 +104,7 @@ def load_config_base_command(
             EveryVoiceConfig,
             FastSpeech2Config,
             HiFiGANConfig,
+            TextConfig,
         ):
             try:
                 config = config_type.load_config_from_path(  # type: ignore[attr-defined]
@@ -377,5 +380,9 @@ def train_base_command(
                 trainer.fit(model_obj, data, ckpt_path=tmp.name)
 
 
-def inference_base_command(_name: Enum):
-    pass
+def inference_base_command(
+    model: FastSpeech2,
+    config_args: List[str],
+):
+    config = model.config
+    update_config_from_cli_args(config_args, config)
