@@ -173,6 +173,7 @@ def create_demo_app(
     accelerator: str,
     allowlist: list[str] = [],
     denylist: list[str] = [],
+    **kwargs,
 ) -> gr.Blocks:
     # Early argument validation where possible
     possible_outputs = [x.value for x in SynthesizeOutputFormats]
@@ -207,6 +208,11 @@ def create_demo_app(
         device
     )
     model.eval()
+
+    from everyvoice.base_cli.helpers import inference_base_command
+
+    inference_base_command(model, **kwargs)
+
     # normalize allowlist and denylist
     allowlist = [normalize_text(w) for w in allowlist]
     denylist = [normalize_text(w) for w in denylist]
