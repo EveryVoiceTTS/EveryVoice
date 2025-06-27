@@ -89,7 +89,7 @@ we maintain a script to automate the process and keep it reliable.
     conda create --name EveryVoice python=3.12 ffmpeg
     conda activate EveryVoice
     conda install sox -c conda-forge
-    CUDA_TAG=cu121 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+    CUDA_TAG=cu126 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
     pip install -e '.[dev]'
     ```
 
@@ -133,7 +133,7 @@ Create a new virtual environment and activate it:
     Install our pytorch requirements from `requirements.torch.txt`:
 
     ```sh
-    CUDA_TAG=cu121 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+    CUDA_TAG=cu126 pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
     ```
 
 === "Using uv"
@@ -142,14 +142,14 @@ Create a new virtual environment and activate it:
     (Unfortunately, `uv` does not support the environment variable we use with pip and conda.)
 
     ```sh
-    uv pip install torch==2.3.1+cu121 torchaudio==2.3.1+cu121 --find-links https://download.pytorch.org/whl/torch_stable.html
+    uv pip install torch==2.7.1 torchaudio==2.7.1 --find-links https://download.pytorch.org/whl/torch_stable.html
     ```
 
 Replace `cu121` above (for CUDA 12.1) by your actual CUDA version tag (cu118 or
 cu121), or by `cpu` for a CPU-only installation.
 
 Alternatively, you can follow the [PyTorch installation instructions](https://pytorch.org/get-started/locally/) relevant to your hardware.
-Make sure you specify the version declared in `requirements.torch.txt`, which is 2.3.1 at the moment,
+Make sure you specify the version declared in `requirements.torch.txt`, which is 2.7.1 at the moment,
 if you install EveryVoice from GitHub, but 2.1.0 if you install it from PyPI.
 
 #### Non-Python dependencies
