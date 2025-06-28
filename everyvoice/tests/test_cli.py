@@ -67,6 +67,7 @@ class CLITest(TestCase):
             "inspect-checkpoint",
             "evaluate",
             "demo",
+            "g2p",
         ]
 
     def test_version(self):
@@ -408,6 +409,22 @@ class CLITest(TestCase):
                     accelerator=None,
                 )
             self.assertIn("Unknown output format 'foo'", str(cm.exception))
+
+    def test_g2p(self):
+        result = self.runner.invoke(
+            app,
+            [
+                "g2p",
+                "abc",
+                str(self.data_dir / Path("text.txt")),
+                "--config",
+                str(self.config_dir / Path("everyvoice-shared-text.yaml")),
+            ],
+        )
+
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("['hello', 'world']", result.stdout)
+        self.assertNotIn("['HELLO', 'WORLD']", result.stdout)
 
     def mock_create_demo_app(self, *_args, **_kwargs):
 

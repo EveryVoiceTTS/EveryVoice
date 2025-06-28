@@ -5,3 +5,4 @@ symbols:
   pad: _
   silence: [<SIL>]
 to_replace: {}
+g2p_engines: {"abc": "everyvoice.tests.g2p_engines.dummy_g2p"}

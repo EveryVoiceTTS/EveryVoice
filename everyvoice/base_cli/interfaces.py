@@ -95,32 +95,6 @@ def train_base_command_interface(
 
 
 def inference_base_command_interface(
-    config_file: Path = typer.Argument(
-        ...,
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        help="The path to your model configuration file.",
-        shell_complete=complete_path,
-    ),
     config_args: List[str] = typer.Option(None, "--config", "-c"),
-    accelerator: str = typer.Option(
-        "auto",
-        "--accelerator",
-        "-a",
-        help="Uses PyTorch Lightning Accelerators: https://pytorch-lightning.readthedocs.io/en/stable/extensions/accelerator.html",
-    ),
-    devices: str = typer.Option(
-        "auto", "--devices", "-d", help="The number of GPUs on each node"
-    ),
-    nodes: int = typer.Option(
-        1, "--nodes", "-n", help="The number of nodes on your machine"
-    ),
-    strategy: str = typer.Option(
-        "ddp",
-        "--strategy",
-        "-s",
-        help="The strategy for data parallelization: https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html",
-    ),
 ):
     pass
