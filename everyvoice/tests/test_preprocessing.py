@@ -16,7 +16,6 @@ from everyvoice.config.preprocessing_config import (
     PreprocessingConfig,
 )
 from everyvoice.config.shared_types import init_context
-from everyvoice.model.aligner.config import AlignerConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
@@ -49,18 +48,6 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             with init_context({"writing_config": Path(tmpdir)}):
                 with self.assertRaises(ValueError):
                     FeaturePredictionConfig(**no_permissions_args)
-
-    def test_process_audio_for_alignment(self):
-        config = AlignerConfig(contact=self.contact)
-        for entry in self.filelist[1:]:
-            # This just applies the SOX effects
-            audio, sr = self.preprocessor.process_audio(
-                self.wavs_dir / (entry["basename"] + ".wav"),
-                sox_effects=config.preprocessing.source_data[0].sox_effects,
-                hop_size=config.preprocessing.audio.fft_hop_size,
-            )
-            self.assertEqual(sr, 22050)
-            self.assertEqual(audio.dtype, float32)
 
     def test_remove_silence(self):
         audio_path_with_silence = str(
@@ -673,7 +660,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             self.assertIn("Input should be less than or equal to 1", cout.getvalue())
 
     def test_no_speaker(self):
-        """Exercise getting the defalut speaker and languages during preprocessing"""
+        """Exercise getting the default speaker and languages during preprocessing"""
         # This doesn't really happen anymore because the wizard inserts speaker_0 by
         # default, or the user's selected default speaker name, and the wizard inserts
         # the language selected, but since we still support missing those columns, we

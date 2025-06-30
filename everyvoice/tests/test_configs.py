@@ -24,10 +24,6 @@ from everyvoice.config.shared_types import (
     init_context,
 )
 from everyvoice.config.text_config import TextConfig
-from everyvoice.model.aligner.config import AlignerConfig
-from everyvoice.model.aligner.DeepForcedAligner.dfaligner.config import (
-    DFAlignerTrainingConfig,
-)
 from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
@@ -45,7 +41,6 @@ from everyvoice.utils import (
     nfc_normalize,
 )
 from everyvoice.wizard import (
-    ALIGNER_CONFIG_FILENAME_PREFIX,
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
@@ -65,7 +60,6 @@ class ConfigTest(BasicTestCase):
         super().setUp()
         self.config = EveryVoiceConfig(
             contact=self.contact,
-            aligner=AlignerConfig(contact=self.contact),
             feature_prediction=FeaturePredictionConfig(contact=self.contact),
             vocoder=VocoderConfig(contact=self.contact),
         )
@@ -74,20 +68,17 @@ class ConfigTest(BasicTestCase):
         """Test from object"""
         config_default = EveryVoiceConfig(
             contact=self.contact,
-            aligner=AlignerConfig(contact=self.contact),
             feature_prediction=FeaturePredictionConfig(contact=self.contact),
             vocoder=VocoderConfig(contact=self.contact),
         )
         config_declared = EveryVoiceConfig(
             contact=self.contact,
-            aligner=AlignerConfig(contact=self.contact),
             feature_prediction=FeaturePredictionConfig(contact=self.contact),
             vocoder=VocoderConfig(contact=self.contact),
             training=E2ETrainingConfig(),
         )
         config_32 = EveryVoiceConfig(
             contact=self.contact,
-            aligner=AlignerConfig(contact=self.contact),
             feature_prediction=FeaturePredictionConfig(contact=self.contact),
             vocoder=VocoderConfig(contact=self.contact),
             training=E2ETrainingConfig(batch_size=32),
@@ -128,24 +119,6 @@ class ConfigTest(BasicTestCase):
             _writer_helper(PreprocessingConfig(), tempdir / "preprocessing.json")
             _writer_helper(TextConfig(), tempdir / "text.json")
             _writer_helper(BaseTrainingConfig(), tempdir / "training.json")
-            # Aligner Config
-            _writer_helper(
-                AlignerConfig(contact=self.contact).training,
-                tempdir / "aligner-training.json",
-            )
-            _writer_helper(
-                AlignerConfig(contact=self.contact).model,
-                tempdir / "aligner-model.json",
-            )
-            aligner_config = AlignerConfig(
-                contact=self.contact,
-                path_to_model_config_file=(tempdir / "aligner-model.json"),
-                path_to_preprocessing_config_file=(tempdir / "preprocessing.json"),
-                path_to_text_config_file=(tempdir / "text.json"),
-                path_to_training_config_file=tempdir / "aligner-training.json",
-            )
-            _writer_helper(aligner_config, tempdir / "aligner.json")
-            self.assertTrue(isinstance(aligner_config, AlignerConfig))
             # FP Config
             _writer_helper(
                 FeaturePredictionConfig(contact=self.contact).training,
@@ -185,7 +158,6 @@ class ConfigTest(BasicTestCase):
             with mute_logger("everyvoice.config.utils"):
                 e2e_config = EveryVoiceConfig(
                     contact=self.contact,
-                    path_to_aligner_config_file=(tempdir / "aligner.json"),
                     path_to_feature_prediction_config_file=(tempdir / "fp.json"),
                     path_to_training_config_file=(tempdir / "training.json"),
                     path_to_vocoder_config_file=(tempdir / "vocoder.json"),
@@ -266,7 +238,6 @@ class ConfigTest(BasicTestCase):
     def test_string_to_dict(self):
         base_config = EveryVoiceConfig(
             contact=self.contact,
-            aligner=AlignerConfig(contact=self.contact),
             feature_prediction=FeaturePredictionConfig(contact=self.contact),
             vocoder=VocoderConfig(contact=self.contact),
         )
@@ -337,7 +308,6 @@ class ConfigTest(BasicTestCase):
         config: EveryVoiceConfig = EveryVoiceConfig(
             vocoder=vocoder_config,
             contact=self.contact,
-            aligner=AlignerConfig(contact=self.contact),
             feature_prediction=FeaturePredictionConfig(contact=self.contact),
         )
         sox_effects = config.vocoder.preprocessing.source_data[0].sox_effects
@@ -351,7 +321,6 @@ class ConfigTest(BasicTestCase):
         config = EveryVoiceConfig(
             training=E2ETrainingConfig(batch_size=batch_size),
             contact=self.contact,
-            aligner=AlignerConfig(contact=self.contact),
             feature_prediction=FeaturePredictionConfig(contact=self.contact),
             vocoder=VocoderConfig(contact=self.contact),
         )
@@ -372,30 +341,6 @@ class LoadConfigTest(BasicTestCase):
         """
         self.assertTrue(path.is_absolute(), msg=path)
         self.assertTrue(path.exists(), msg=path)
-
-    def test_aligner_config(self):
-        """Create a AlignerConfig which pydantic will validate for us."""
-        config_path = self.REL_DATA_DIR / f"{ALIGNER_CONFIG_FILENAME_PREFIX}.yaml"
-        with config_path.open("r", encoding="utf8") as f:
-            pre_test = yaml.safe_load(f)
-            self.assertFalse(
-                Path(pre_test["path_to_preprocessing_config_file"]).is_absolute()
-            )
-            self.assertFalse(Path(pre_test["path_to_text_config_file"]).is_absolute())
-            training = pre_test["training"]
-            self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
-            self.assertFalse(Path(training["training_filelist"]).is_absolute())
-            self.assertFalse(Path(training["validation_filelist"]).is_absolute())
-        with silence_c_stderr():
-            config = AlignerConfig.load_config_from_path(config_path)
-        # print(config.model_dump_json(indent=2))
-        self.assertTrue(isinstance(config, AlignerConfig))
-        self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
-        self.validate_config_path(config.path_to_preprocessing_config_file)
-        self.validate_config_path(config.path_to_text_config_file)
-        self.validate_config_path(config.training.logger.save_dir)
-        self.validate_config_path(config.training.training_filelist)
-        self.validate_config_path(config.training.validation_filelist)
 
     def test_preprocessing_config(self):
         """Create a PreprocessingConfig which pydantic will validate for us."""
@@ -467,9 +412,6 @@ class LoadConfigTest(BasicTestCase):
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
             self.assertFalse(
-                Path(pre_test["path_to_aligner_config_file"]).is_absolute()
-            )
-            self.assertFalse(
                 Path(pre_test["path_to_feature_prediction_config_file"]).is_absolute()
             )
             self.assertFalse(
@@ -486,119 +428,118 @@ class LoadConfigTest(BasicTestCase):
         self.assertEqual(
             config.feature_prediction.preprocessing.dataset, self.DATASET_NAME
         )
-        self.validate_config_path(config.path_to_aligner_config_file)
         self.validate_config_path(config.path_to_feature_prediction_config_file)
         self.validate_config_path(config.path_to_vocoder_config_file)
         self.validate_config_path(config.training.logger.save_dir)
         self.validate_config_path(config.training.training_filelist)
         self.validate_config_path(config.training.validation_filelist)
 
-    def test_absolute_path(self):
-        """Load a config that has absolute paths."""
-        with (
-            TemporaryDirectory(prefix="test_absolute_path") as tempdir,
-            init_context({"writing_config": Path(tempdir)}),
-        ):
-            tempdir = Path(tempdir).absolute()
-            # Write preprocessing:
-            preprocessing_config_path = tempdir / "aligner-preprocessing.json"
-            _writer_helper(
-                PreprocessingConfig(dataset=self.DATASET_NAME),
-                preprocessing_config_path,
-            )
+    # def test_absolute_path(self):
+    #    """Load a config that has absolute paths."""
+    #    with (
+    #        TemporaryDirectory(prefix="test_absolute_path") as tempdir,
+    #        init_context({"writing_config": Path(tempdir)}),
+    #    ):
+    #        tempdir = Path(tempdir).absolute()
+    #        # Write preprocessing:
+    #        preprocessing_config_path = tempdir / "aligner-preprocessing.json"
+    #        _writer_helper(
+    #            PreprocessingConfig(dataset=self.DATASET_NAME),
+    #            preprocessing_config_path,
+    #        )
 
-            # Write text:
-            text_config_path = tempdir / "aligner-text.json"
-            _writer_helper(TextConfig(), text_config_path)
+    #        # Write text:
+    #        text_config_path = tempdir / "aligner-text.json"
+    #        _writer_helper(TextConfig(), text_config_path)
 
-            # Write training:
-            aligner_training_path = tempdir / "aligner-training.json"
-            training = DFAlignerTrainingConfig(
-                training_filelist=tempdir / "training_filelist.psv",
-                validation_filelist=tempdir / "validation_filelist.psv",
-            )
-            (tempdir / training.logger.save_dir).mkdir(parents=True, exist_ok=True)
-            # print(tempdir, training.training_filelist)
-            (training.training_filelist).touch(exist_ok=True)
-            (training.validation_filelist).touch(exist_ok=True)
-            _writer_helper(training, aligner_training_path)
+    #        # Write training:
+    #        aligner_training_path = tempdir / "aligner-training.json"
+    #        training = DFAlignerTrainingConfig(
+    #            training_filelist=tempdir / "training_filelist.psv",
+    #            validation_filelist=tempdir / "validation_filelist.psv",
+    #        )
+    #        (tempdir / training.logger.save_dir).mkdir(parents=True, exist_ok=True)
+    #        # print(tempdir, training.training_filelist)
+    #        (training.training_filelist).touch(exist_ok=True)
+    #        (training.validation_filelist).touch(exist_ok=True)
+    #        _writer_helper(training, aligner_training_path)
 
-            # Write model:
-            aligner_model_path = tempdir / "aligner-model.json"
-            _writer_helper(
-                AlignerConfig(contact=self.contact).model, aligner_model_path
-            )
+    #        # Write model:
+    #        aligner_model_path = tempdir / "aligner-model.json"
+    #        _writer_helper(
+    #            AlignerConfig(contact=self.contact).model, aligner_model_path
+    #        )
 
-            # Aligner Config
-            aligner_config = AlignerConfig(
-                contact=self.contact,
-                path_to_model_config_file=aligner_model_path,
-                path_to_preprocessing_config_file=preprocessing_config_path,
-                path_to_text_config_file=text_config_path,
-                path_to_training_config_file=aligner_training_path,
-            )
-            self.assertTrue(isinstance(aligner_config, AlignerConfig))
-            aligner_config_path = tempdir / "aligner.json"
-            _writer_helper(aligner_config, aligner_config_path)
+    #        # Aligner Config
+    #        aligner_config = AlignerConfig(
+    #            contact=self.contact,
+    #            path_to_model_config_file=aligner_model_path,
+    #            path_to_preprocessing_config_file=preprocessing_config_path,
+    #            path_to_text_config_file=text_config_path,
+    #            path_to_training_config_file=aligner_training_path,
+    #        )
+    #        self.assertTrue(isinstance(aligner_config, AlignerConfig))
+    #        aligner_config_path = tempdir / "aligner.json"
+    #        _writer_helper(aligner_config, aligner_config_path)
 
-            # Reload and validate
-            with mute_logger("everyvoice.config.utils"):
-                config = AlignerConfig.load_config_from_path(aligner_config_path)
-            self.assertTrue(isinstance(config, AlignerConfig))
-            self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
-            self.validate_config_path(config.path_to_model_config_file)
-            self.validate_config_path(config.path_to_preprocessing_config_file)
-            self.validate_config_path(config.path_to_text_config_file)
-            self.validate_config_path(config.path_to_training_config_file)
-            self.validate_config_path(config.training.logger.save_dir)
-            self.validate_config_path(config.training.training_filelist)
-            self.validate_config_path(config.training.validation_filelist)
+    #        # Reload and validate
+    #        with mute_logger("everyvoice.config.utils"):
+    #            config = AlignerConfig.load_config_from_path(aligner_config_path)
+    #        self.assertTrue(isinstance(config, AlignerConfig))
+    #        self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
+    #        self.validate_config_path(config.path_to_model_config_file)
+    #        self.validate_config_path(config.path_to_preprocessing_config_file)
+    #        self.validate_config_path(config.path_to_text_config_file)
+    #        self.validate_config_path(config.path_to_training_config_file)
+    #        self.validate_config_path(config.training.logger.save_dir)
+    #        self.validate_config_path(config.training.training_filelist)
+    #        self.validate_config_path(config.training.validation_filelist)
 
-    def test_missing_path(self):
-        """Load a config that is missing a partial config file."""
-        with (
-            TemporaryDirectory(prefix="test_missing_path") as tempdir,
-            init_context({"writing_config": Path(tempdir)}),
-        ):
-            tempdir = Path(tempdir)
-            _writer_helper(AudioConfig(), tempdir / "audio.json")
-            config = PreprocessingConfig(
-                path_to_audio_config_file=(tempdir / "audio.json")
-            )
-            self.assertTrue(isinstance(config.audio, AudioConfig))
-            # Write shared:
-            _writer_helper(
-                PreprocessingConfig(dataset=self.DATASET_NAME),
-                tempdir / "preprocessing.json",
-            )
-            _writer_helper(TextConfig(), tempdir / "text.json")
-            _writer_helper(BaseTrainingConfig(), tempdir / "training.json")
-            # Aligner Config
-            _writer_helper(
-                AlignerConfig(contact=self.contact).training,
-                tempdir / "aligner-training.json",
-            )
-            _writer_helper(
-                AlignerConfig(contact=self.contact).model,
-                tempdir / "aligner-model.json",
-            )
-            aligner_config = AlignerConfig(
-                contact=self.contact,
-                path_to_model_config_file=tempdir / "aligner-model.json",
-                path_to_preprocessing_config_file=tempdir / "preprocessing.json",
-                path_to_text_config_file=tempdir / "text.json",
-                path_to_training_config_file=tempdir / "aligner-training.json",
-            )
-            _writer_helper(aligner_config, tempdir / "aligner.json")
-            self.assertTrue(isinstance(aligner_config, AlignerConfig))
-            # Create the missing partial config file by deleting.
-            # NOTE, we need the file to exists if we want to write its parent config to disk.
-            (tempdir / "preprocessing.json").unlink()
-            with mute_logger("everyvoice.config.utils"):
-                with self.assertRaises(ValidationError):
-                    config = AlignerConfig.load_config_from_path(
-                        tempdir / "aligner.json"
-                    )
+    # def test_missing_path(self):
+    #    """Load a config that is missing a partial config file."""
+    #    with (
+    #        TemporaryDirectory(prefix="test_missing_path") as tempdir,
+    #        init_context({"writing_config": Path(tempdir)}),
+    #    ):
+    #        tempdir = Path(tempdir)
+    #        _writer_helper(AudioConfig(), tempdir / "audio.json")
+    #        config = PreprocessingConfig(
+    #            path_to_audio_config_file=(tempdir / "audio.json")
+    #        )
+    #        self.assertTrue(isinstance(config.audio, AudioConfig))
+    #        # Write shared:
+    #        _writer_helper(
+    #            PreprocessingConfig(dataset=self.DATASET_NAME),
+    #            tempdir / "preprocessing.json",
+    #        )
+    #        _writer_helper(TextConfig(), tempdir / "text.json")
+    #        _writer_helper(BaseTrainingConfig(), tempdir / "training.json")
+    #        # Aligner Config
+    #        _writer_helper(
+    #            AlignerConfig(contact=self.contact).training,
+    #            tempdir / "aligner-training.json",
+    #        )
+    #        _writer_helper(
+    #            AlignerConfig(contact=self.contact).model,
+    #            tempdir / "aligner-model.json",
+    #        )
+    #        aligner_config = AlignerConfig(
+    #            contact=self.contact,
+    #            path_to_model_config_file=tempdir / "aligner-model.json",
+    #            path_to_preprocessing_config_file=tempdir / "preprocessing.json",
+    #            path_to_text_config_file=tempdir / "text.json",
+    #            path_to_training_config_file=tempdir / "aligner-training.json",
+    #        )
+    #        _writer_helper(aligner_config, tempdir / "aligner.json")
+    #        self.assertTrue(isinstance(aligner_config, AlignerConfig))
+    #        # Create the missing partial config file by deleting.
+    #        # NOTE, we need the file to exists if we want to write its parent config to disk.
+    #        (tempdir / "preprocessing.json").unlink()
+    #        with mute_logger("everyvoice.config.utils"):
+    #            with self.assertRaises(ValidationError):
+    #                config = AlignerConfig.load_config_from_path(
+    #                    tempdir / "aligner.json"
+    #                )
 
 
 class BaseTrainingConfigTest(TestCase):
