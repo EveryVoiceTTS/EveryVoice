@@ -898,16 +898,16 @@
 <p>Static typing means that misconfiguration errors should occur as soon as the configuration is instantiated instead of producing downstream runtime errors. It also means that intellisense is available in your code editor when working with a configuration class.</p>
 <h2 id="sharing-configurations">Sharing Configurations<a class="headerlink" href="#sharing-configurations" title="Permanent link">&para;</a></h2>
 <p>The Text and Preprocessing configurations should only be defined once per dataset and shared between your models to ensure each model makes the same assumptions about your data.
-To achieve that, each model configuration can also be defined as a path to a configuration file. So, a configuration for an aligner that uses separately defined text and audio preprocessing configurations might look like this:</p>
+To achieve that, each model configuration can also be defined as a path to a configuration file. So, a configuration for a text-to-spec model that uses separately defined text and audio preprocessing configurations might look like this:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">model</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">lstm_dim</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span>
-<span class="w">    </span><span class="nt">conv_dim</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">512</span>
+<span class="w">    </span><span class="nt">decoder</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
 <span class="nt">training</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">32</span>
+<span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+<span class="w">    </span><span class="nt">ckpt_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
-<span class="hll"><span class="nt">preprocessing</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-shared-data.yaml&quot;</span>
-</span><span class="hll"><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-shared-text.yaml&quot;</span>
+<span class="hll"><span class="nt">path_to_preprocessing_config_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-shared-data.yaml&quot;</span>
+</span><span class="hll"><span class="nt">path_to_text_config_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-shared-text.yaml&quot;</span>
 </span></code></pre></div>
 <h2 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h2>
 <p>By default configuration objects are serialized as dictionaries, which works as expected with integers, floats, lists, booleans, dicts etc. But there are some cases where you need to specify a Callable in your configuration. For example the {ref}<code>TextConfig</code> has a <code>cleaners</code> field that takes a list of Callables to apply in order to raw text.
