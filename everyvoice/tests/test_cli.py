@@ -489,8 +489,3 @@ class TestBaseCLIHelper(TestCase):
                     config.training.logger.name,
                     config_reloaded["training"]["logger"]["name"],
                 )
-
-    def test_complete_path_hack(self):
-        from everyvoice.base_cli.interfaces import complete_path
-
-        self.assertEqual(complete_path(None, None, None), [])

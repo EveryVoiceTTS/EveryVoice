@@ -12,8 +12,6 @@ from typing import Any, Dict
 import typer
 from typing_extensions import Annotated
 
-from everyvoice.base_cli.interfaces import complete_path
-
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
     help="Extract checkpoint's hyperparameters.",
@@ -95,7 +93,6 @@ def inspect(
         dir_okay=False,
         file_okay=True,
         help="The path to your model checkpoint file.",
-        shell_complete=complete_path,
     ),
     show_config: Annotated[
         bool,
