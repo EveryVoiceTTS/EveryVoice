@@ -5,9 +5,9 @@
 
 import argparse
 import importlib
-import os
 import re
 import sys
+from os.path import dirname
 from typing import Iterable
 from unittest import TestLoader, TestSuite, TextTestRunner
 
@@ -63,13 +63,13 @@ def all_test_suites() -> TestSuite:
     loader = TestLoader()
     # NOTE: Looking specifically under `/tests` removes empty TestSuites.
     test_suite = loader.discover(
-        os.path.dirname(__file__) + "/tests",
-        top_level_dir=os.path.dirname(__file__),
+        dirname(__file__) + "/tests",
+        top_level_dir=dirname(dirname(__file__)),
     )
     for submodule_testsuite in SUBMODULE_SUITES.values():
         suite = loader.discover(
-            os.path.dirname(__file__) + submodule_testsuite[0],
-            top_level_dir=os.path.dirname(__file__),  # MANDATORY
+            dirname(__file__) + submodule_testsuite[0],
+            top_level_dir=dirname(dirname(__file__)),  # MANDATORY
         )
         test_suite.addTests(suite)
 
@@ -113,8 +113,8 @@ def run_tests(suite: str, describe: bool = False, verbosity=3):
             logger.info(f"Loading {test=}")
             if test.startswith("/"):
                 sub_suite = loader.discover(
-                    os.path.dirname(__file__) + test,
-                    top_level_dir=os.path.dirname(__file__),  # MANDATORY
+                    dirname(__file__) + test,
+                    top_level_dir=dirname(dirname(__file__)),  # MANDATORY
                 )
                 test_suite.addTests(sub_suite)
             else:
