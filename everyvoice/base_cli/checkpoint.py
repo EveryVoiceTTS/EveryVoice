@@ -176,3 +176,49 @@ def inspect(
                                 headers=["LayerName", "Number of Parameters"],
                             )
                         )
+
+
+@app.command()
+def rename_speaker(
+    model_path: Path = typer.Argument(
+        ...,
+        exists=True,
+        dir_okay=False,
+        file_okay=True,
+        help="The path to your model checkpoint file.",
+    ),
+    old_speaker_name: str = typer.Argument(
+        ...,
+        help="The name of the speaker to rename.",
+    ),
+    new_speaker_name: str = typer.Argument(
+        ...,
+        help="The new name for the speaker.",
+    ),
+):
+    """
+    Rename a speaker in the checkpoint's parameters.
+    """
+    ckpt = load_checkpoint(model_path, minimal=False)
+
+    if (
+        "hyper_parameters" in ckpt
+        and "speaker2id" in ckpt["hyper_parameters"]
+        and len(ckpt["hyper_parameters"]["speaker2id"]) > 0
+    ):
+        speakers = ckpt["hyper_parameters"]["speaker2id"]
+        if old_speaker_name in speakers:
+            speakers[new_speaker_name] = speakers.pop(old_speaker_name)
+            print(f"Renamed speaker '{old_speaker_name}' to '{new_speaker_name}'.")
+            print(f"Updated speakers: {speakers}")
+            # Update the parameter in the checkpoint
+            ckpt["hyper_parameters"]["speaker2id"] = speakers
+            import torch
+
+            torch.save(ckpt, model_path)
+            print(f"Updated checkpoint saved to {model_path}.")
+        else:
+            raise ValueError(f"Speaker '{old_speaker_name}' not found in parameters.")
+
+    else:
+        raise ValueError("No speakers found in checkpoint parameters.")

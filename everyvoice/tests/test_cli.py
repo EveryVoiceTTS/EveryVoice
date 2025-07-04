@@ -469,6 +469,108 @@ class CLITest(TestCase):
             self.assertIn("  - Launch Share: True", result.output)
             self.assertIn(f"  - Launch Server Name: {ip}", result.output)
 
+    def mock_torch_save(self, *args, **kwargs):
+        """
+        Mock function to replace torch.save, which is used in the rename_speaker command.
+        This is to avoid writing files during the test.
+        """
+        pass
+
+    def test_rename_speaker(self):
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            import torch
+
+            tmpdir = Path(tmpdir_str)
+            # Create a test checkpoint file with speakers
+            ckpt = {
+                "hyper_parameters": {
+                    "speaker2id": {"old_speaker": 0, "another_speaker": 1}
+                }
+            }
+            torch.save(ckpt, tmpdir / "test.ckpt")
+
+            with mock.patch("torch.save", side_effect=self.mock_torch_save):
+                # Mock the torch.save function to avoid writing files
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "rename-speaker",
+                        str(tmpdir / "test.ckpt"),
+                        "old_speaker",
+                        "new_speaker",
+                    ],
+                )
+
+                self.assertEqual(result.exit_code, 0)
+                self.assertIn(
+                    "Renamed speaker 'old_speaker' to 'new_speaker'.", result.output
+                )
+                self.assertIn(
+                    "Updated speakers: {'another_speaker': 1, 'new_speaker': 0}",
+                    result.output,
+                )
+
+    def test_rename_speaker_with_non_existing_speaker(self):
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            import torch
+
+            tmpdir = Path(tmpdir_str)
+            # Create a test checkpoint file with speakers
+            ckpt = {
+                "hyper_parameters": {
+                    "speaker2id": {"old_speaker": 0, "another_speaker": 1}
+                }
+            }
+            torch.save(ckpt, tmpdir / "test.ckpt")
+
+            with mock.patch("torch.save", side_effect=self.mock_torch_save):
+
+                # Test renaming a non-existing speaker
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "rename-speaker",
+                        str(tmpdir / "test.ckpt"),
+                        "non_existing_speaker",
+                        "new_speaker",
+                    ],
+                )
+                print(result.output)
+                self.assertNotEqual(result.exit_code, 0)
+                self.assertIn(
+                    result.output,
+                    "Speaker 'non_existing_speaker' not found in parameters.",
+                )
+
+    def test_rename_speaker_with_no_speakers(self):
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            import torch
+
+            tmpdir = Path(tmpdir_str)
+
+            # Create an empty checkpoint file
+            empty_ckpt = {"hyper_parameters": {"speaker2id": {}}}
+            torch.save(empty_ckpt, tmpdir / "empty.ckpt")
+
+            with mock.patch("torch.save", side_effect=self.mock_torch_save):
+
+                # Test renaming with no speakers in the checkpoint
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "rename-speaker",
+                        str(tmpdir / "empty.ckpt"),
+                        "old_speaker",
+                        "new_speaker",
+                    ],
+                )
+                print(result.output)
+                self.assertNotEqual(result.exit_code, 0)
+                self.assertIn(
+                    result.output,
+                    "No speakers found in checkpoint parameters.",
+                )
+
 
 class TestBaseCLIHelper(TestCase):
     def test_save_configuration_to_log_dir(self):
