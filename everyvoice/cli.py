@@ -14,6 +14,7 @@ from rich.panel import Panel
 
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
+from everyvoice.base_cli.checkpoint import rename_speaker
 from everyvoice.base_cli.interfaces import complete_path
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
@@ -565,6 +566,11 @@ app.command(
     name="inspect-checkpoint",
     short_help="Extract structural information from a checkpoint",
 )(inspect_checkpoint)
+
+app.command(
+    name="rename-speaker",
+    short_help="Rename a speaker in the checkpoint's parameters",
+)(rename_speaker)
 
 
 TestSuites = Enum("TestSuites", {name: name for name in SUITE_NAMES})  # type: ignore
