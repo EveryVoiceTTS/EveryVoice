@@ -192,6 +192,12 @@
       ],
       "title": "External G2P",
       "type": "object"
+    },
+    "split_text": {
+      "default": true,
+      "description": "Whether or not to perform text splitting (also referred to as text chunking) at inference time. Instead of synthesizing an entire utterance, the utterance will be split into smaller chunks and re-combined after synthesis. This can lead to more natural synthesis for long-form (i.e. paragraph) synthesis.",
+      "title": "Split Text",
+      "type": "boolean"
     }
   },
   "title": "TextConfig",

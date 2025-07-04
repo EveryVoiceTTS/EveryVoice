@@ -9,7 +9,6 @@ import json
 import os
 import tempfile
 import textwrap
-from enum import Enum
 from pathlib import Path
 from pprint import pformat
 from typing import List, Optional, Union
@@ -37,6 +36,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     HiFiGANDataModule,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
+from everyvoice.utils import update_config_from_cli_args
 
 MODEL_CONFIGS = [FastSpeech2Config, HiFiGANConfig]
 
@@ -81,7 +81,6 @@ def load_config_base_command(
     config_args: List[str],
     config_file: Path,
 ):
-    from everyvoice.utils import update_config_from_cli_args
 
     try:
         config = model_config.load_config_from_path(config_file)
@@ -367,5 +366,9 @@ def train_base_command(
                 trainer.fit(model_obj, data, ckpt_path=tmp.name)
 
 
-def inference_base_command(_name: Enum):
-    pass
+def inference_base_command(
+    model: FastSpeech2,
+    config_args: List[str],
+):
+    config = model.config
+    update_config_from_cli_args(config_args, config)
