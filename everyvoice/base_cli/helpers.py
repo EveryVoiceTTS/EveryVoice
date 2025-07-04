@@ -19,7 +19,6 @@ from loguru import logger
 from pydantic import ValidationError
 from tqdm import tqdm
 
-from everyvoice.config.text_config import TextConfig
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import InvalidConfiguration
 from everyvoice.model.e2e.config import EveryVoiceConfig
@@ -77,7 +76,6 @@ def load_config_base_command(
         type[EveryVoiceConfig],
         type[FastSpeech2Config],
         type[HiFiGANConfig],
-        type[TextConfig],
     ],
     # Must include the above in model-specific command
     config_args: List[str],
@@ -96,7 +94,6 @@ def load_config_base_command(
             EveryVoiceConfig,
             FastSpeech2Config,
             HiFiGANConfig,
-            TextConfig,
         ):
             try:
                 config = config_type.load_config_from_path(  # type: ignore[attr-defined]
