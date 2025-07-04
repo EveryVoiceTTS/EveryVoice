@@ -650,6 +650,23 @@ class HasLanguageStep(Step):
             self.tour.add_step(SelectLanguageStep(state_subset=self.state_subset), self)
 
 
+class CustomG2PStep(Step):
+    DEFAULT_NAME = StepNames.custom_g2p_step
+    REVERSIBLE = True
+    choices = ("no", "yes")
+
+    def prompt(self):
+        return get_response_from_menu_prompt(
+            prompt_text="Do you have custom G2P engine(s) you would like to use?",
+            choices = self.choices,
+        )
+    def validate(self, response):
+        return response in self.choices
+    def effect(self):
+        self.tour.add_step(
+            None # TODO insert step to provide a custom g2p engine here
+        )
+
 class SelectLanguageStep(Step):
     DEFAULT_NAME = StepNames.select_language_step
     REVERSIBLE = True
