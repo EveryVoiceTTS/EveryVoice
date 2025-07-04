@@ -9,12 +9,16 @@ from textwrap import dedent
 from typing import Annotated, Any, List, Optional
 
 import typer
+from merge_args import merge_args
 from rich import print as rich_print
 from rich.panel import Panel
 
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
-from everyvoice.base_cli.interfaces import complete_path
+from everyvoice.base_cli.interfaces import (
+    complete_path,
+    inference_base_command_interface,
+)
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
     ALIGN_SINGLE_SHORT_HELP,
@@ -587,6 +591,7 @@ AllowedDemoOutputFormats = Enum(  # type: ignore
 
 
 @app.command()
+@merge_args(inference_base_command_interface)
 def demo(
     text_to_spec_model: Path = typer.Argument(
         ...,
@@ -664,6 +669,7 @@ def demo(
         "-n",
         help="The server name to run the demo on. This is useful if you want to run the demo on a specific IP address.",
     ),
+    **kwargs,
 ):
     if allowlist and denylist:
         raise ValueError(
@@ -709,6 +715,7 @@ def demo(
             accelerator=accelerator,
             allowlist=allowlist_data,
             denylist=denylist_data,
+            **kwargs,
         )
 
     demo.launch(share=share, server_port=port, server_name=server_name)
