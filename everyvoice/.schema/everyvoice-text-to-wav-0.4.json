@@ -1851,6 +1851,12 @@
           ],
           "title": "External G2P",
           "type": "object"
+        },
+        "split_text": {
+          "default": true,
+          "description": "Whether or not to perform text splitting (also referred to as text chunking) at inference time.",
+          "title": "Split Text",
+          "type": "boolean"
         }
       },
       "title": "TextConfig",
