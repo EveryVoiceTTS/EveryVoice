@@ -70,7 +70,12 @@ everyvoice preprocess config/{{ config_filename('text-to-spec') }}
 
 ## Step 6: Select a Vocoder
 
-So you don't need to train your own vocoder, EveryVoice has a variety of publicly released vocoders available [here](TODO). Follow the instructions there for downloading the checkpoints.
+So you don't need to train your own vocoder, EveryVoice has a variety of publicly released vocoders available.
+First ensure that you have [gdown](https://pypi.org/project/gdown/) installed, you can install with `pip install gdown`. Then to download the checkpoint you can run:
+
+```bash
+gdown https://drive.google.com/uc?id=1-iarZV2hTeociQjTX7l2WShuXalROGQf
+```
 
 EveryVoice is also compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint from [the official HiFiGAN implementation](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model), which is very good quality. You can find the EveryVoice-compatible version of this checkpoint [here](https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing).
 
