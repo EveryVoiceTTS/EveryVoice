@@ -306,7 +306,10 @@ class ConfigFormatStep(Step):
                 )
             )
 
-        text_config = TextConfig(symbols=Symbols(**symbols))
+        text_config = TextConfig(
+            symbols=Symbols(**symbols),
+            g2p_engines=self.state.get("custom_g2p", {}),
+        )
         text_config.cleaners += global_cleaners
         text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
         write_dict_to_config(

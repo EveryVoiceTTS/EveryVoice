@@ -33,6 +33,8 @@ class StepNames(Enum):
     add_speaker_step = "Add Speaker Step"
     data_has_language_value_step = "Data Has Language Step"
     language_header_step = "Language Header Step"
+    custom_g2p_step = "Custom G2P Step"
+    select_g2p_engine_step = "Select G2P Engine Step"
     select_language_step = "Select Language Step"
     text_processing_step = "Text Processing Step"
     g2p_step = "G2P Step"

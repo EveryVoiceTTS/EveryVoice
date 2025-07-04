@@ -248,7 +248,7 @@ def read_festival(
     path,
     record_limit: int = 0,  # if non-zero, read only this many records
     text_field_name: str = "text",
-):
+) -> list[dict[str, str]]:
     """Read Festival format into filelist
     Args:
         path (Path): Path to festival format filelist
