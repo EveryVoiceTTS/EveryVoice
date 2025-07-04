@@ -19,7 +19,6 @@ def chunk_text(text, desired_length=100, max_length=200):  # noqa: C901
     # Normalize input
     text = re.sub(r"\n\n+", "\n", text)
     text = re.sub(r"\s+", " ", text)
-    text = re.sub(r"[“”]", '"', text)
 
     chunks = []
     current = ""

@@ -182,7 +182,7 @@ class TextConfig(ConfigModel):
     split_text: bool = Field(
         True,
         title="Split Text",
-        description="Whether or not to perform text splitting (also referred to as text chunking) at inference time.",
+        description="Whether or not to perform text splitting (also referred to as text chunking) at inference time. Instead of synthesizing an entire utterance, the utterance will be split into smaller chunks and re-combined after synthesis. This can lead to more natural synthesis for long-form (i.e. paragraph) synthesis.",
     )
 
     @model_validator(mode="after")

@@ -587,8 +587,8 @@ class TestTextSplit(TestCase):
         self.assertEqual([a + " " + b, c + " " + d, e], chunk_text(text, 75, 1000))
 
     def test_normalization(self):
-        a = 'Welcome to the "EveryVoice" Documentation! Please read the background section below.'
-        text = "       Welcome to     the “EveryVoice”       Documentation!\n\n\n\nPlease read the background section below.                        "
+        a = "Welcome to the EveryVoice Documentation! Please read the background section below."
+        text = "       Welcome to     the EveryVoice       Documentation!\n\n\n\nPlease read the background section below.                        "
         self.assertEqual([a], chunk_text(text))
 
     def test_quote_toggling(self):
