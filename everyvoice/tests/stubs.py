@@ -324,6 +324,9 @@ class patch_questionary:
             monkey.__exit__(*_exc_info)
 
 
+VERBOSE_OVERRIDE = bool(os.environ.get("EVERYVOICE_VERBOSE_TESTS", False))
+
+
 @contextmanager
 def silence_c_stdout():
     """Capture stdout from C output, e.g., from SoundSwallower.
@@ -337,14 +340,17 @@ def silence_c_stdout():
     address our narrow needs, namely to silence stdout in a context manager.
     """
 
-    stdout_fileno = sys.stdout.fileno()
-    stdout_save = os.dup(stdout_fileno)
-    stdout_fd = os.open(os.devnull, os.O_RDWR)
-    os.dup2(stdout_fd, stdout_fileno)
-    yield
-    os.dup2(stdout_save, stdout_fileno)
-    os.close(stdout_save)
-    os.close(stdout_fd)
+    if not VERBOSE_OVERRIDE:
+        stdout_fileno = sys.stdout.fileno()
+        stdout_save = os.dup(stdout_fileno)
+        stdout_fd = os.open(os.devnull, os.O_RDWR)
+        os.dup2(stdout_fd, stdout_fileno)
+        yield
+        os.dup2(stdout_save, stdout_fileno)
+        os.close(stdout_save)
+        os.close(stdout_fd)
+    else:
+        yield
 
 
 @contextmanager
@@ -360,11 +366,14 @@ def silence_c_stderr():
     address our narrow needs, namely to silence stderr in a context manager.
     """
 
-    stderr_fileno = sys.stderr.fileno()
-    stderr_save = os.dup(stderr_fileno)
-    stderr_fd = os.open(os.devnull, os.O_RDWR)
-    os.dup2(stderr_fd, stderr_fileno)
-    yield
-    os.dup2(stderr_save, stderr_fileno)
-    os.close(stderr_save)
-    os.close(stderr_fd)
+    if not VERBOSE_OVERRIDE:
+        stderr_fileno = sys.stderr.fileno()
+        stderr_save = os.dup(stderr_fileno)
+        stderr_fd = os.open(os.devnull, os.O_RDWR)
+        os.dup2(stderr_fd, stderr_fileno)
+        yield
+        os.dup2(stderr_save, stderr_fileno)
+        os.close(stderr_save)
+        os.close(stderr_fd)
+    else:
+        yield
