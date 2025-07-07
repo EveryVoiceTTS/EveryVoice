@@ -148,4 +148,9 @@ Many thanks to:
 
 ## Tests
 
-Run unit tests by `python -m unittest tests/test_configs.py` or suites of tests by running `everyvoice test dev` if you have the package installed interactively.
+There are many ways to run the unit tests, if you installed EveryVoice from source:
+ - Run all the dev tests: `everyvoice/run_tests.py dev` or `everyvoice test dev`
+ - Run the tests with verbose logs: `everyvoice/run_tests.py --verbose dev`
+ - Show the names of the other suites you can run: `everyvoice/run_tests.py -h`
+ - Run all the tests in one test file: `python -m unittest everyvoice/tests/test_<somefilename>.py`
+ - Run one specific test case: `python -m unittest everyvoice.tests.<filename>.<class_name>.<function_name>`
