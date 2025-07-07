@@ -566,9 +566,17 @@ TestSuites = Enum("TestSuites", {name: name for name in SUITE_NAMES})  # type: i
 
 
 @app.command(hidden=True)
-def test(suite: TestSuites = typer.Argument("dev")):
+def test(suite: TestSuites = typer.Argument("dev")):  # pragma: no cover
     """Run a test suite"""
-    run_tests(suite.value)
+    try:
+        import everyvoice.tests  # noqa: F401
+
+        run_tests(suite.value)
+    except ModuleNotFoundError:
+        print(
+            "ERROR: hidden command 'everyvoice test' only works when you install EveryVoice from source.",
+            file=sys.stderr,
+        )
 
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
