@@ -36,7 +36,7 @@ from everyvoice.wizard.prompts import (
     get_response_from_menu_prompt,
 )
 from everyvoice.wizard.tour import Step
-from everyvoice.wizard.utils import sanitize_paths, write_dict_to_config
+from everyvoice.wizard.utils import escape, sanitize_paths, write_dict_to_config
 
 
 class NameStep(Step):
@@ -55,7 +55,7 @@ class NameStep(Step):
         sanitized_path = slugify(response)
         if not sanitized_path == response:
             rich_print(
-                f"Sorry, the project name '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like '{sanitized_path}' instead."
+                f"Sorry, the project name '{escape(response)}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like '{sanitized_path}' instead."
             )
             return False
         return True
@@ -82,7 +82,7 @@ class ContactNameStep(Step):
         return True
 
     def effect(self):
-        rich_print(f"Great! Nice to meet you, '{self.response}'.")
+        rich_print(f"Great! Nice to meet you, '{escape(self.response)}'.")
 
 
 class ContactEmailStep(Step):
