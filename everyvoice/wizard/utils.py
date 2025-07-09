@@ -8,6 +8,7 @@ from itertools import islice
 from pathlib import Path
 from typing import Iterable
 
+import rich.markup
 import yaml
 from anytree import NodeMixin, PreOrderIter
 from anytree.util import leftsibling, rightsibling
@@ -226,7 +227,7 @@ def get_iso_code(language):
     """
     if language is None:
         return None
-    result = re.search(r"\[[\w-]*\]", language)
+    result = re.search(r"\[[\w-]+\]", language)
     if result is None:
         return language
     else:
@@ -241,3 +242,11 @@ def has_columns_left(state) -> bool:
     return not state[StepNames.filelist_format_step] == "festival" and len(
         state.get("selected_headers", [])
     ) < len(state["filelist_data_list"][0])
+
+
+def escape(text):
+    """Wrapper around rich.markup.escape() which also accepts non-str input"""
+    if isinstance(text, str):
+        return rich.markup.escape(text)
+    else:
+        return text
