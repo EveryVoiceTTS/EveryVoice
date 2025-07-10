@@ -1,3 +1,4 @@
+import importlib
 from pathlib import Path
 from typing import Annotated, Dict
 
@@ -143,7 +144,7 @@ G2P_Engines = Annotated[
 ]
 
 
-def _validate_g2p_engine_signature(g2p_func: G2PCallable) -> G2PCallable:
+def validate_g2p_engine_signature(g2p_func: G2PCallable) -> G2PCallable:
     """
     A G2P engine's signature should be:
 
@@ -167,6 +168,19 @@ def _validate_g2p_engine_signature(g2p_func: G2PCallable) -> G2PCallable:
     ), "G2P Engine's signature should return a list of strings"
 
     return g2p_func
+
+
+def load_custom_g2p_engine(lang_id: str, qualified_g2p_func_name: str) -> G2PCallable:
+    # Load the user provided G2P Engine.
+    try:
+        module_name, _, function_name = qualified_g2p_func_name.rpartition(".")
+        module = importlib.import_module(module_name)
+    except ModuleNotFoundError:
+        error_message = f"Invalid G2P engine module `{module_name}` for `{lang_id}`"
+        logger.error(error_message)
+        raise ValueError(error_message)
+
+    return validate_g2p_engine_signature(getattr(module, function_name))
 
 
 class TextConfig(ConfigModel):
@@ -210,23 +224,10 @@ class TextConfig(ConfigModel):
         """
         Given `g2p_engines`, populate the global list `AVAILABLE_G2P_ENGINES`.
         """
-        import importlib
-
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 
         for lang_id, name in self.g2p_engines.items():
-            # Load the user provided G2P Engine.
-            try:
-                module_name, _, function_name = name.rpartition(".")
-                module = importlib.import_module(module_name)
-            except ModuleNotFoundError:
-                error_message = (
-                    f"Invalid G2P engine module `{module_name}` for `{lang_id}`"
-                )
-                logger.error(error_message)
-                raise ValueError(error_message)
-
-            g2p_func = _validate_g2p_engine_signature(getattr(module, function_name))
+            g2p_func = load_custom_g2p_engine(lang_id, name)
 
             if lang_id in AVAILABLE_G2P_ENGINES:
                 logger.warning(
