@@ -465,6 +465,11 @@ class TextProcessor:
 
     @overload
     def decode_tokens(  # noqa E704  # pragma: no cover
+        self, sequence: list[int], join_character: None
+    ) -> list[str]: ...
+
+    @overload
+    def decode_tokens(  # noqa E704  # pragma: no cover
         self, sequence: list[int], join_character: str, joiner_substitution: str
     ) -> str: ...
 

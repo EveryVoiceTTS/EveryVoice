@@ -6,34 +6,23 @@ repos:
       - id: end-of-file-fixer
       - id: trailing-whitespace
         exclude: \.svg$
-  - repo: local
-    # Using local repos because these won't work for me from remote repo -EJ
-    # They're also more convenient because we install them via requirements.dev.txt
-    # and they are then available on the command line as well as in pre-commit.
+  - repo: https://github.com/PyCQA/isort
+    rev: 6.0.1
     hooks:
       - id: isort
-        name: isort
-        entry: isort
-        language: system
-        types: [python]
-        stages: [pre-commit]
+        args: [--profile=black]
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
       - id: black
-        name: black
-        entry: black
-        language: system
-        types: [python]
-        stages: [pre-commit]
-  # We do flake8 last since black fixes a lot of the stuff it complains about
+  # We do flake8 after black since black fixes a lot of the stuff it complains about
   - repo: https://github.com/pycqa/flake8
     rev: 7.1.0
     hooks:
       - id: flake8
   # We do mypy last because it's the slowest of them all
-  - repo: local
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.16.1
     hooks:
       - id: mypy
-        name: mypy
-        entry: mypy
-        language: system
-        types: [python]
-        stages: [pre-commit]
+        additional_dependencies: [pydantic, numpy<2, types-requests, types-pyyaml, types-setuptools, types-tabulate, types-tqdm]
