@@ -713,6 +713,12 @@ class CustomG2PStep(Step):
         """Enumerate the languages this dataset uses."""
         from g2p import get_arpabet_langs
 
+        from everyvoice.text.phonemizer import (
+            AVAILABLE_G2P_ENGINES,
+            DEFAULT_G2P,
+            CachingG2PEngine,
+        )
+
         if not hasattr(self, "language_codes"):
             self.language_codes = sorted(
                 set(row["language"] for row in self.state["filelist_data"])
@@ -722,13 +728,27 @@ class CustomG2PStep(Step):
                 g2p_langs_full.get(language, language)
                 for language in self.language_codes
             ]
+            self.current_engines = []
+            self.set_a_custom = []
+            for language in self.language_codes:
+                current = AVAILABLE_G2P_ENGINES.get(language, None)
+                if isinstance(current, CachingG2PEngine) or current == DEFAULT_G2P:
+                    current = f"default g2p mapping for '{language}'"
+                    set_a_custom = "Set a custom"
+                elif current is None:
+                    current = "none"
+                    set_a_custom = "Set a"
+                else:
+                    set_a_custom = "Change the custom"
+                    try:
+                        current = current.__module__ + "." + current.__name__
+                    except Exception as e:
+                        print(e)
+                        current = "unknown"
+                self.current_engines.append(current)
+                self.set_a_custom.append(set_a_custom)
 
     def prompt(self):
-        from everyvoice.text.phonemizer import (
-            AVAILABLE_G2P_ENGINES,
-            DEFAULT_G2P,
-            CachingG2PEngine,
-        )
 
         self.find_languages()
 
@@ -742,25 +762,19 @@ class CustomG2PStep(Step):
                 "(see <TODO link to docs page on custom g2p>)."
             )
         )
-        options = ["Keep the current g2p settings and continue"]
-        for language, language_name in zip(self.language_codes, self.language_names):
-            current = AVAILABLE_G2P_ENGINES.get(language, "none")
-            if isinstance(current, CachingG2PEngine) or current == DEFAULT_G2P:
-                current = "default"
-                set_a_custom = "Set a custom"
-            else:
-                set_a_custom = "Change the custom"
-                try:
-                    current = current.__module__ + "." + current.__name__
-                except Exception as e:
-                    print(e)
-            options.append(
-                f"[{language}] {set_a_custom} g2p engine for {language_name}. (Current: {current})"
+        self.options = ["Keep the current g2p settings and continue"] + [
+            f"[{language}] {set_a_custom} g2p engine for {language_name}. (Current: {current})"
+            for language, language_name, current, set_a_custom in zip(
+                self.language_codes,
+                self.language_names,
+                self.current_engines,
+                self.set_a_custom,
             )
+        ]
 
         return get_response_from_menu_prompt(
             prompt_text=prompt_text,
-            choices=options,
+            choices=self.options,
             title="What would you like to do?",
             search=True,
             return_indices=True,
@@ -778,6 +792,7 @@ class CustomG2PStep(Step):
                     SelectG2PEngineStep(
                         language_code=self.language_codes[self.response - 1],
                         language_name=self.language_names[self.response - 1],
+                        current_engine=self.current_engines[self.response - 1],
                         state_subset=self.state_subset,
                     ),
                     CustomG2PStep(state_subset=self.state_subset),
@@ -798,21 +813,38 @@ class SelectG2PEngineStep(Step):
     REVERSIBLE = True
     UNSET_SENTINEL = object()
 
-    def __init__(self, language_code, language_name, *args, **kwargs):
+    def __init__(self, language_code, language_name, current_engine, *args, **kwargs):
         # print(language_code, language_name)
         super().__init__(*args, **kwargs)
         self.language_code = language_code
         self.language_name = language_name
+        self.current_engine = current_engine
 
     def prompt(self):
-        return input(
-            "Please enter the fully qualified path to your custom g2p function. "
-            "E.g., for function my_g2p_map() in mymodule/submodule/g2p_mappings.py, "
-            'answer "mymodule.submodule.g2p_mappings.my_g2p_map": '
+        if self.language_code == self.language_name:
+            lang_desc = self.language_name
+        else:
+            lang_desc = f"{self.language_name} ({self.language_code})"
+        rich_print(
+            Panel(
+                f"Please enter the fully qualified Python name of your custom g2p function for {lang_desc}.\n"
+                "E.g., for function my_g2p_map() in mymodule/submodule/g2p_mappings.py, "
+                'answer "mymodule.submodule.g2p_mappings.my_g2p_map".\n'
+                f"[yellow]Warning: custom g2p settings will apply to all '{self.language_code}' data in this project, not just in the current dataset.[/yellow]\n"
+                f"Leave this blank to keep the current settings: {self.current_engine}"
+            )
         )
+        return input(f"g2p function for {self.language_code}: ")
+
+    def sanitize_input(self, response):
+        return response.strip()
 
     def validate(self, response):
         from everyvoice.config.text_config import load_custom_g2p_engine
+
+        if response == "":
+            # An empty response will keep the current settings
+            return True
 
         try:
             self.g2p_func = load_custom_g2p_engine(self.language_code, response)
@@ -827,6 +859,10 @@ class SelectG2PEngineStep(Step):
 
     def effect(self):
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
+
+        if self.response == "":
+            rich_print(f"Keeping the current settings for {self.language_code}.")
+            return
 
         self.saved_g2p_func = AVAILABLE_G2P_ENGINES.get(
             self.language_code, self.UNSET_SENTINEL
