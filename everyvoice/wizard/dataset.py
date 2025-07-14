@@ -479,13 +479,6 @@ class LanguageHeaderStep(HeaderStep):
         # Add speaker IDs if they are not specified in the filelist
         if self.state[StepNames.data_has_speaker_value_step] == "no":
             add_missing_speaker(self.state)
-        # apply automatic conversions
-        self.state["model_target_training_text_representation"] = (
-            apply_automatic_text_conversions(
-                self.state["filelist_data"],
-                self.state[StepNames.filelist_text_representation_step],
-            )
-        )
 
 
 class HasHeaderLineStep(Step):
@@ -695,14 +688,8 @@ class SelectLanguageStep(Step):
             add_missing_speaker(self.state)
         # Apply the language code:
         isocode = get_iso_code(self.response)
-        # Apply text conversions and get target training representation
-        self.state["model_target_training_text_representation"] = (
-            apply_automatic_text_conversions(
-                self.state["filelist_data"],
-                self.state[StepNames.filelist_text_representation_step],
-                global_isocode=isocode,
-            )
-        )
+        for item in self.state["filelist_data"]:
+            item["language"] = isocode
 
 
 class CustomG2PStep(Step):
@@ -1067,6 +1054,21 @@ class SymbolSetStep(Step):
 
     def effect(self):
         from everyvoice.config.text_config import Punctuation
+
+        self.saved_state = {
+            "model_target_training_text_representation": None,
+        }
+
+        # apply automatic conversions before extracting symbols
+        # - text processing
+        # - g2p conversion
+        # and get target training representation
+        self.state["model_target_training_text_representation"] = (
+            apply_automatic_text_conversions(
+                self.state["filelist_data"],
+                self.state[StepNames.filelist_text_representation_step],
+            )
+        )
 
         character_graphemes = set()
         phone_graphemes = set()
