@@ -36,6 +36,7 @@ class StepNames(Enum):
     custom_g2p_step = "Custom G2P Step"
     select_g2p_engine_step = "Select G2P Engine Step"
     select_language_step = "Select Language Step"
+    language_code_step = "Language Code Step"
     text_processing_step = "Text Processing Step"
     g2p_step = "G2P Step"
     symbol_set_step = "Symbol-Set Step"
