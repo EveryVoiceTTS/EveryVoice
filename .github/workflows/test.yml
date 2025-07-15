@@ -41,9 +41,16 @@ jobs:
       - uses: pre-commit-ci/lite-action@v1.0.2
         if: always()
       - name: Run tests
+        id: tests
+        continue-on-error: true
         run: |
           cd everyvoice && coverage run run_tests.py dev
           coverage xml
+      - name: Verbose test outputs in case of failure
+        if: steps.tests.outcome == 'failure'
+        run: |
+          cd everyvoice && python run_tests.py --verbose dev
+          false
       - run: cd everyvoice && coverage report
       - name: Check for logs_and_checkpoints/ and preprocessed/
         id: no-extra-directories

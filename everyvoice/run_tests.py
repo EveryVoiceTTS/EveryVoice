@@ -133,6 +133,9 @@ def main():
     parser = argparse.ArgumentParser(description="Run EveryVoice test suites.")
     parser.add_argument("--quiet", "-q", action="store_true", help="reduce output")
     parser.add_argument(
+        "--verbose", "-v", action="store_true", help="let stderr logs go to screen"
+    )
+    parser.add_argument(
         "--describe", action="store_true", help="describe the selected test suite"
     )
     parser.add_argument(
@@ -143,6 +146,11 @@ def main():
         choices=SUITE_NAMES,
     )
     args = parser.parse_args()
+    if args.verbose:
+        import everyvoice.tests.stubs as stubs
+
+        stubs.VERBOSE_OVERRIDE = True
+
     result = run_tests(args.suite, args.describe, 1 if args.quiet else 3)
     if not result:
         sys.exit(1)

@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 from enum import Enum
 from os.path import join
@@ -7,7 +9,7 @@ from pydub import AudioSegment
 
 from everyvoice.utils import generic_dict_loader, read_festival
 
-app = typer.Typer()
+app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 
 
 class MetadataFileFormat(str, Enum):
