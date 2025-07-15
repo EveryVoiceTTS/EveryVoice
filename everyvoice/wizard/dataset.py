@@ -659,9 +659,10 @@ class SelectLanguageStep(Step):
         )
         # TODO: currently we only support the languages from g2p, but we should add more
         supported_langs = list(AVAILABLE_G2P_ENGINES)
-        supported_langs_choices = ["[und]: my language isn't here"] + [
-            f"[{k}]: {g2p_langs_full.get(k, 'Unknown')}" for k in supported_langs
-        ]
+        supported_langs_choices = [
+            "[und]: my language isn't here, use the default undetermined mapping",
+            "[custom]: my language isn't here, I will provide a custom code",
+        ] + [f"[{k}]: {g2p_langs_full.get(k, 'Unknown')}" for k in supported_langs]
         return get_response_from_menu_prompt(
             choices=supported_langs_choices,
             title="Which of the following supported languages is the language of your dataset?",
@@ -670,6 +671,50 @@ class SelectLanguageStep(Step):
 
     def validate(self, response):
         return isinstance(response, str)
+
+    def effect(self):
+        isocode = get_iso_code(self.response)
+        if isocode == "custom":
+            # The user picked "custom" to provide their own language code
+            self.tour.add_step(LanguageCodeStep(state_subset=self.state_subset), self)
+        else:
+            self.saved_state = {
+                "filelist_headers": copy(self.state["filelist_headers"]),
+                "filelist_data": deepcopy(self.state.get("filelist_data", None)),
+                "model_target_training_text_representation": None,
+            }
+            # Rename unselected headers to unknown:
+            self.state["filelist_headers"] = rename_unknown_headers(
+                self.state["filelist_headers"]
+            )
+            # re-parse data:
+            convert_filelist_data_to_dict(self.state)
+            # Add speaker IDs if they are not specified in the filelist
+            if self.state[StepNames.data_has_speaker_value_step] == "no":
+                add_missing_speaker(self.state)
+            # Apply the language code:
+            for item in self.state["filelist_data"]:
+                item["language"] = isocode
+
+
+class LanguageCodeStep(Step):
+    DEFAULT_NAME = StepNames.language_code_step
+    REVERSIBLE = True
+
+    def prompt(self):
+        return input("Please enter the language code for this dataset's language: ")
+
+    def validate(self, response):
+        if response != slugify(response):
+            rich_print(
+                "ERROR: Language codes should contain only letters and hyphens. Please try again."
+            )
+            return False
+        else:
+            return True
+
+    def sanitize_input(self, response):
+        return response.strip()
 
     def effect(self):
         self.saved_state = {
@@ -687,14 +732,17 @@ class SelectLanguageStep(Step):
         if self.state[StepNames.data_has_speaker_value_step] == "no":
             add_missing_speaker(self.state)
         # Apply the language code:
-        isocode = get_iso_code(self.response)
         for item in self.state["filelist_data"]:
-            item["language"] = isocode
+            item["language"] = self.response
 
 
 class CustomG2PStep(Step):
     DEFAULT_NAME = StepNames.custom_g2p_step
     REVERSIBLE = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.found_languages = False
 
     def find_languages(self):
         """Enumerate the languages this dataset uses."""
@@ -706,37 +754,49 @@ class CustomG2PStep(Step):
             CachingG2PEngine,
         )
 
-        if not hasattr(self, "language_codes"):
-            self.language_codes = sorted(
-                set(row["language"] for row in self.state["filelist_data"])
+        self.language_codes = sorted(
+            set(row["language"] for row in self.state["filelist_data"])
+        )
+
+        _, g2p_langs_full = get_arpabet_langs()
+        self.language_names = [
+            g2p_langs_full.get(language, language) for language in self.language_codes
+        ]
+
+        self.current_engines = []
+        self.set_a_custom = []
+        for language in self.language_codes:
+            current = AVAILABLE_G2P_ENGINES.get(language, None)
+            if isinstance(current, CachingG2PEngine) or current == DEFAULT_G2P:
+                current = f"default g2p mapping for '{language}'"
+                set_a_custom = "Set a custom"
+            elif current is None:
+                current = "none"
+                set_a_custom = "Set a"
+            else:
+                set_a_custom = "Change the custom"
+                try:
+                    current = current.__module__ + "." + current.__name__
+                except Exception as e:
+                    print(e)
+                    current = "unknown"
+            self.current_engines.append(current)
+            self.set_a_custom.append(set_a_custom)
+
+        self.options = ["Keep the current g2p settings and continue"] + [
+            f"[{language}] {set_a_custom} g2p engine for {language_name}. (Current: {current})"
+            for language, language_name, current, set_a_custom in zip(
+                self.language_codes,
+                self.language_names,
+                self.current_engines,
+                self.set_a_custom,
             )
-            _, g2p_langs_full = get_arpabet_langs()
-            self.language_names = [
-                g2p_langs_full.get(language, language)
-                for language in self.language_codes
-            ]
-            self.current_engines = []
-            self.set_a_custom = []
-            for language in self.language_codes:
-                current = AVAILABLE_G2P_ENGINES.get(language, None)
-                if isinstance(current, CachingG2PEngine) or current == DEFAULT_G2P:
-                    current = f"default g2p mapping for '{language}'"
-                    set_a_custom = "Set a custom"
-                elif current is None:
-                    current = "none"
-                    set_a_custom = "Set a"
-                else:
-                    set_a_custom = "Change the custom"
-                    try:
-                        current = current.__module__ + "." + current.__name__
-                    except Exception as e:
-                        print(e)
-                        current = "unknown"
-                self.current_engines.append(current)
-                self.set_a_custom.append(set_a_custom)
+        ]
+
+        self.found_languages = True
 
     def prompt(self):
-
+        # Needs to be redone each time we get here, to prompt with the current list
         self.find_languages()
 
         prompt_text = (
@@ -749,15 +809,6 @@ class CustomG2PStep(Step):
                 "(see <TODO link to docs page on custom g2p>)."
             )
         )
-        self.options = ["Keep the current g2p settings and continue"] + [
-            f"[{language}] {set_a_custom} g2p engine for {language_name}. (Current: {current})"
-            for language, language_name, current, set_a_custom in zip(
-                self.language_codes,
-                self.language_names,
-                self.current_engines,
-                self.set_a_custom,
-            )
-        ]
 
         return get_response_from_menu_prompt(
             prompt_text=prompt_text,
@@ -768,7 +819,8 @@ class CustomG2PStep(Step):
         )
 
     def validate(self, response):
-        self.find_languages()  # Needed when we get here via --resume-from
+        if not self.found_languages:
+            self.find_languages()  # Needed when we get here via --resume-from
         return response >= 0 and response <= len(self.language_codes)
 
     def effect(self):
@@ -786,13 +838,6 @@ class CustomG2PStep(Step):
                 ],
                 self,
             )
-
-    def undo(self):
-        # We need to undo the effects of find_languages() in case we go back
-        # before steps that affect the language list
-        del self.language_codes
-        del self.language_names
-        super().undo()
 
 
 class SelectG2PEngineStep(Step):
@@ -818,7 +863,7 @@ class SelectG2PEngineStep(Step):
                 "E.g., for function my_g2p_map() in mymodule/submodule/g2p_mappings.py, "
                 'answer "mymodule.submodule.g2p_mappings.my_g2p_map".\n'
                 f"[yellow]Warning: custom g2p settings will apply to all '{self.language_code}' data in this project, not just in the current dataset.[/yellow]\n"
-                f"Leave this blank to keep the current settings: {self.current_engine}"
+                f"Use Ctrl-C / Go back one step to keep the current settings: {self.current_engine}"
             )
         )
         return input(f"g2p function for {self.language_code}: ")
@@ -828,10 +873,6 @@ class SelectG2PEngineStep(Step):
 
     def validate(self, response):
         from everyvoice.config.text_config import load_custom_g2p_engine
-
-        if response == "":
-            # An empty response will keep the current settings
-            return True
 
         try:
             self.g2p_func = load_custom_g2p_engine(self.language_code, response)
@@ -847,17 +888,12 @@ class SelectG2PEngineStep(Step):
     def effect(self):
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 
-        if self.response == "":
-            rich_print(f"Keeping the current settings for {self.language_code}.")
-            return
+        self.saved_state = {"custom_g2p": deepcopy(self.tour.state.get("custom_g2p"))}
 
-        self.saved_g2p_func = AVAILABLE_G2P_ENGINES.get(
-            self.language_code, self.UNSET_SENTINEL
-        )
+        self.saved_g2p_func = AVAILABLE_G2P_ENGINES.get(self.language_code, None)
         AVAILABLE_G2P_ENGINES[self.language_code] = self.g2p_func
         if "custom_g2p" not in self.tour.state:
             self.tour.state["custom_g2p"] = {}
-        self.saved_state = {"custom_g2p": deepcopy(self.tour.state["custom_g2p"])}
         self.tour.state["custom_g2p"][self.language_code] = self.response
         rich_print(
             Panel(
@@ -868,10 +904,11 @@ class SelectG2PEngineStep(Step):
     def undo(self):
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 
-        if self.saved_g2p_func is self.UNSET_SENTINEL:
-            del AVAILABLE_G2P_ENGINES[self.language_code]
-        else:
-            AVAILABLE_G2P_ENGINES[self.language_code] = self.saved_g2p_func
+        match self.saved_g2p_func:
+            case None:
+                del AVAILABLE_G2P_ENGINES[self.language_code]
+            case _:
+                AVAILABLE_G2P_ENGINES[self.language_code] = self.saved_g2p_func
         super().undo()
 
 
