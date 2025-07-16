@@ -32,6 +32,7 @@ from everyvoice.tests.stubs import (
     patch_menu_prompt,
     patch_questionary,
 )
+from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard import basic, dataset, prompts, utils
 from everyvoice.wizard.main_tour import get_main_wizard_tour
@@ -623,6 +624,23 @@ class WizardTest(TestCase):
         with patch_menu_prompt(0):  # 0 is "characters"
             text_representation_step.run()
         self.assertEqual(step.state["filelist_headers"][2], "characters")
+
+        text_processing_step = find_step(SN.text_processing_step, tour.steps)
+        # 0 is lowercase, 1 is NFC Normalization, select both
+        with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
+            with patch_menu_prompt([0, 1]):
+                text_processing_step.run()
+        # print(text_processing_step.state)
+        self.assertEqual(
+            text_processing_step.state["filelist_data_list"][2][2],
+            "cased nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
+        )
+
+        self.assertEqual(
+            text_processing_step.state["filelist_data_list"][3][2],
+            "let us see if it collapses whitespace",
+        )
+
         speaker_step = find_step(SN.data_has_speaker_value_step, tour.steps)
         children_before = len(speaker_step.children)
         with patch_menu_prompt(0):  # 0 is "no"
@@ -652,13 +670,24 @@ class WizardTest(TestCase):
 
         select_lang_step = language_step.children[0]
         with capture_stdout(), capture_stderr():
-            with patch_menu_prompt(15):  # some arbitrary language from the list
+            # We rely on Finnish g2p in assertions below, so find it in the list.
+            # 2 + index(fin) because in select_lang_step, [0] is "und", [1] is "custom",
+            # and then follow the contents of AVAILABLE_G2P_ENGINES in order.
+            fin_index = 2 + list(AVAILABLE_G2P_ENGINES).index("fin")
+            with patch_menu_prompt(fin_index):
                 select_lang_step.run()
         # print(select_lang_step.state)
         self.assertEqual(
             select_lang_step.state["filelist_headers"],
             ["unknown_0", "basename", "characters", "unknown_3"],
         )
+
+        # Make sure realoading the data as dict stripped the header line
+        self.assertEqual(len(step.state["filelist_data"]), 4)
+
+        custom_g2p_step = find_step(SN.custom_g2p_step, tour.steps)
+        with monkeypatch(custom_g2p_step, "prompt", Say(0)):
+            custom_g2p_step.run()
 
         wavs_dir_step = find_step(SN.wavs_dir_step, tour.steps)
         with monkeypatch(wavs_dir_step, "prompt", Say(str(self.data_dir))):
@@ -670,24 +699,25 @@ class WizardTest(TestCase):
         self.assertEqual(step.state[SN.validate_wavs_step][:2], "No")
         self.assertRegex(out.getvalue(), "Warning: .*4.* wav files were not found")
 
-        text_processing_step = find_step(SN.text_processing_step, tour.steps)
-        # 0 is lowercase, 1 is NFC Normalization, select both
-        with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
-            with patch_menu_prompt([0, 1]):
-                text_processing_step.run()
-        # print(text_processing_step.state)
-        self.assertEqual(
-            text_processing_step.state["filelist_data_list"][2][2],
-            "cased nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
+        symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
+        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 4)
+        with capture_stdout(), capture_stderr():
+            symbol_set_step.run()
+        self.assertEqual(len(symbol_set_step.state[SN.symbol_set_step.value]), 2)
+        self.assertIn("t͡s", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
+        self.assertNotIn(
+            ":", symbol_set_step.state[SN.symbol_set_step.value]["characters"]
         )
-
+        self.assertNotIn(":", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
+        # assert that symbols contain no duplicates
         self.assertEqual(
-            text_processing_step.state["filelist_data_list"][3][2],
-            "let us see if it collapses whitespace",
+            len(set(symbol_set_step.state[SN.symbol_set_step.value]["characters"])),
+            len(symbol_set_step.state[SN.symbol_set_step.value]["characters"]),
         )
-
-        # Make sure realoading the data as dict stripped the header line
-        self.assertEqual(len(step.state["filelist_data"]), 4)
+        self.assertEqual(
+            len(set(symbol_set_step.state[SN.symbol_set_step.value]["phones"])),
+            len(symbol_set_step.state[SN.symbol_set_step.value]["phones"]),
+        )
 
         sox_effects_step = find_step(SN.sox_effects_step, tour.steps)
         # 0 is resample to 22050 kHz, 2 is remove silence at start and end
@@ -714,26 +744,6 @@ class WizardTest(TestCase):
                 ],
                 ["reverse"],
             ],
-        )
-
-        symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
-        self.assertEqual(len(symbol_set_step.state["filelist_data"]), 4)
-        with capture_stdout(), capture_stderr():
-            symbol_set_step.run()
-        self.assertEqual(len(symbol_set_step.state[SN.symbol_set_step.value]), 2)
-        self.assertIn("t͡s", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
-        self.assertNotIn(
-            ":", symbol_set_step.state[SN.symbol_set_step.value]["characters"]
-        )
-        self.assertNotIn(":", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
-        # assert that symbols contain no duplicates
-        self.assertEqual(
-            len(set(symbol_set_step.state[SN.symbol_set_step.value]["characters"])),
-            len(symbol_set_step.state[SN.symbol_set_step.value]["characters"]),
-        )
-        self.assertEqual(
-            len(set(symbol_set_step.state[SN.symbol_set_step.value]["phones"])),
-            len(symbol_set_step.state[SN.symbol_set_step.value]["phones"]),
         )
 
     def test_empty_filelist(self):
@@ -871,7 +881,7 @@ class WizardTest(TestCase):
             self.assertEqual(answer, 1)
 
     def monkey_run_tour(
-        self, name: str, steps_and_answers: list[StepAndAnswer]
+        self, name: str, steps_and_answers: list[StepAndAnswer], debug=False
     ) -> tuple[Tour, str]:
         """Create and run a tour with the monkey answers given
 
@@ -889,6 +899,7 @@ class WizardTest(TestCase):
                    (Answer/Monkey, optional recursive [chidren answer/monkeys])
                    to be used recursively for the children of Step.
                    This must align with what Step.effect() adds as children.
+            debug: if true, dump progress info while running steps
 
         Returns: (tour, logs_from_stdout)
         """
@@ -900,6 +911,7 @@ class WizardTest(TestCase):
             for step_and_answer in steps_and_answers:
                 step = step_and_answer.step
                 # saved_monkey = copy(step_and_answer.monkey)
+                print("Step:", step.name, file=sys.stderr)
                 with step_and_answer.monkey:
                     step.run()
 
@@ -934,8 +946,9 @@ class WizardTest(TestCase):
         tour = Tour(name, steps=[step for (step, *_) in steps_and_answers])
         # fail on accidentally shared initializer
         self.assertTrue(tour.state == {} or tour.state == {"dataset_0": {}})
-        with capture_stdout() as out, capture_stderr():
-            recursive_helper(steps_and_answers)
+        with capture_stdout() as out:
+            with null_patch() if debug else capture_stderr():
+                recursive_helper(steps_and_answers)
         return tour, out.getvalue()
 
     def test_monkey_tour_1(self):
@@ -1520,6 +1533,7 @@ class WizardTest(TestCase):
                                 )
                             ],
                         ),
+                        RecursiveAnswers(patch_menu_prompt(0)),  # Keep g2p settings
                         RecursiveAnswers(patch_questionary(tmpdir)),  # wav directory
                         RecursiveAnswers(null_patch()),  # ValidateWavsStep
                         RecursiveAnswers(null_patch()),  # SymbolSetStep
@@ -1590,7 +1604,7 @@ class WizardTest(TestCase):
                     children_answers=more_dataset_children_answers,
                 ),
             ]
-            tour, _ = self.monkey_run_tour(
+            _tour, _ = self.monkey_run_tour(
                 "Tour with datafile in the festival format",
                 steps_and_answers,
             )
@@ -1693,6 +1707,7 @@ class WizardTest(TestCase):
                                 )
                             ],
                         ),
+                        RecursiveAnswers(patch_menu_prompt(0)),  # Keep g2p settings
                         RecursiveAnswers(patch_questionary(tmpdir)),  # wav directory
                         RecursiveAnswers(null_patch()),  # ValidateWavsStep
                         RecursiveAnswers(null_patch()),  # SymbolSetStep
@@ -1744,6 +1759,10 @@ class WizardTest(TestCase):
                     children_answers=[RecursiveAnswers(Say(1))],
                 ),
                 StepAndAnswer(
+                    dataset.CustomG2PStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # 0 is Keep the current g2p settings
+                ),
+                StepAndAnswer(
                     dataset.TextProcessingStep(state_subset="dataset_0"),
                     patch_menu_prompt(()),
                 ),
@@ -1765,7 +1784,7 @@ class WizardTest(TestCase):
                     children_answers=more_dataset_children_answers,
                 ),
             ]
-            tour, _ = self.monkey_run_tour(
+            _tour, _ = self.monkey_run_tour(
                 "Tour with datafile in the festival format",
                 steps_and_answers,
             )
