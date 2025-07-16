@@ -14,12 +14,6 @@ from everyvoice.config.shared_types import (
     LoggerConfig,
     init_context,
 )
-from everyvoice.config.text_config import Symbols, TextConfig
-from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
-from everyvoice.model.feature_prediction.config import (
-    FastSpeech2ModelConfig,
-    FeaturePredictionConfig,
-)
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import generic_psv_filelist_reader, slugify, write_filelist
 from everyvoice.wizard import (
@@ -207,6 +201,13 @@ class ConfigFormatStep(Step):
         return response in ("yaml", "json")
 
     def effect(self):
+        from everyvoice.config.text_config import Symbols, TextConfig
+        from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
+        from everyvoice.model.feature_prediction.config import (
+            FastSpeech2ModelConfig,
+            FeaturePredictionConfig,
+        )
+
         output_path = (
             Path(self.state[StepNames.output_step]) / self.state[StepNames.name_step]
         ).expanduser()
