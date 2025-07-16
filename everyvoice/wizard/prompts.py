@@ -103,11 +103,13 @@ def get_response_from_menu_prompt(
     if multi:
         if selection is None:
             return []
-        elif return_indices:
+        print("\n".join(choices[i] for i in selection))
+        if return_indices:
             return list(selection)  # selection might be a tuple, but we need a list
         else:
             return [choices[i] for i in selection]
     else:
+        print(choices[selection])
         if return_indices:
             return selection
         else:
