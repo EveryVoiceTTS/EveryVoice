@@ -28,6 +28,7 @@ from everyvoice.wizard.dataset import TextProcessingStep, get_dataset_steps
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
+    input,
 )
 from everyvoice.wizard.tour import Step
 from everyvoice.wizard.utils import escape, sanitize_paths, write_dict_to_config
@@ -38,9 +39,10 @@ class NameStep(Step):
     REVERSIBLE = True
 
     def prompt(self):
-        return input(
-            "What would you like to call this project? This name should reflect the model you intend to train, e.g. 'my-sinhala-project' or 'english-french-model' or something similarly descriptive of your project: "
+        rich_print(
+            "What would you like to call this project? This name should reflect the model you intend to train, e.g. 'my-sinhala-project' or 'english-french-model' or something similarly descriptive of your project?"
         )
+        return input("project name: ")
 
     def validate(self, response):
         if len(response) == 0:
