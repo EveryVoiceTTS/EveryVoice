@@ -19,6 +19,7 @@ from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, StepNames
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
+    input,
 )
 from everyvoice.wizard.tour import Step, Tour
 from everyvoice.wizard.utils import (
