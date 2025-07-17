@@ -108,6 +108,21 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             self.assertEqual(audio, None)
             self.assertEqual(sr, None)
 
+    def test_multichannel_audio_error(self):
+        """Test that audio files with more than 2 channels raise ValueError"""
+        multichannel_audio_path = self.data_dir / "multichannel_test.wav"
+
+        with self.assertRaises(ValueError) as context:
+            self.preprocessor.process_audio(multichannel_audio_path, hop_size=256)
+
+        error_message = str(context.exception)
+        self.assertIn("has 4 channels", error_message)
+        self.assertIn(
+            "EveryVoice only supports mono (1 channel) or stereo (2 channel)",
+            error_message,
+        )
+        self.assertIn("Please convert your audio to mono or stereo", error_message)
+
     def test_process_audio(self):
         import torchaudio
 
