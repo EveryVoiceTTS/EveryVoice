@@ -147,6 +147,14 @@ class Preprocessor:
         """
         audio, sr, seconds = self.load_audio(wav_path)
 
+        # Check if audio has more than 2 channels
+        if audio.shape[0] > 2:
+            raise ValueError(
+                f"Audio file '{wav_path}' has {audio.shape[0]} channels. "
+                f"EveryVoice only supports mono (1 channel) or stereo (2 channel) audio files. "
+                f"Please convert your audio to mono or stereo before preprocessing."
+            )
+
         if seconds > self.audio_config.max_audio_length:
             logger.warning(
                 f"Audio too long: {wav_path} ({seconds} seconds - we will skip this file)"
