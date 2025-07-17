@@ -65,6 +65,7 @@ class Preprocessor:
     ):
         self.config = config
         self.counters = Counters(Manager())
+        self.missing_files_list: list[str] = []
         self.cpus = 0
         self.pitch_scaler = Scaler()
         self.energy_scaler = Scaler()
@@ -352,7 +353,18 @@ class Preprocessor:
             table = audio_1 + audio_2
         else:
             table = audio_1 + others + audio_2
-        return tabulate(table, headers, tablefmt=tablefmt)
+
+        report_text = tabulate(table, headers, tablefmt=tablefmt)
+
+        # Add missing files section if any exist
+        if self.missing_files_list:
+            report_text += (
+                f"\n\nMissing Audio Files ({len(self.missing_files_list)} total):\n"
+            )
+            for missing_file in self.missing_files_list:
+                report_text += f"  - {missing_file}\n"
+
+        return report_text
 
     def get_speaker_and_language(self, item):
         """Unless the dataset already has values for speaker and language, set them to 'default'"""
@@ -474,6 +486,7 @@ class Preprocessor:
         if not audio_path.exists():
             logger.warning(f"File '{item}' is missing and will not be processed.")
             self.counters.increment("missing_files")
+            self.missing_files_list.append(str(audio_path))
             return None
 
         item = self.get_speaker_and_language(item)
@@ -816,6 +829,7 @@ class Preprocessor:
         if not input_audio_path.exists():
             self.counters.increment("skipped_processes")
             logger.info(f"Audio at {input_audio_path} is missing. Skipping...")
+            self.missing_files_list.append(str(input_audio_path))
             return input_spec, output_spec
         output_audio_path = self.create_path(
             item, "audio", f"audio-{self.output_sampling_rate}.wav"
@@ -1042,6 +1056,19 @@ class Preprocessor:
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
                         f.write(report)
                         f.write("\n")
+
+                    # Save missing files list to a separate file
+                    if self.missing_files_list:
+                        with open(
+                            self.save_dir / "missing_files.txt", "w", encoding="utf8"
+                        ) as f:
+                            f.write(
+                                f"Missing Audio Files ({len(self.missing_files_list)} total):\n"
+                            )
+                            f.write("=" * 50 + "\n")
+                            for missing_file in self.missing_files_list:
+                                f.write(f"{missing_file}\n")
+
                     rich_print("Partial report showing only audio statistics:")
                     rich_print(report)
                 else:
@@ -1117,6 +1144,21 @@ class Preprocessor:
             report = "Here is a report:\n" + self.report()
             if not self.counters.value("duration"):
                 report += "\n\nWARNING: No audio files were processed."
+
+            # Save missing files list to a separate file if we haven't already
+            if (
+                self.missing_files_list
+                and not (self.save_dir / "missing_files.txt").exists()
+            ):
+                with open(
+                    self.save_dir / "missing_files.txt", "w", encoding="utf8"
+                ) as f:
+                    f.write(
+                        f"Missing Audio Files ({len(self.missing_files_list)} total):\n"
+                    )
+                    f.write("=" * 50 + "\n")
+                    for missing_file in self.missing_files_list:
+                        f.write(f"{missing_file}\n")
         else:
             report = ""
         rich_print(
