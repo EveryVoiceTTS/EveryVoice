@@ -777,7 +777,7 @@ class CustomG2PStep(Step):
                 set_a_custom = "Change the custom"
                 try:
                     current = current.__module__ + "." + current.__name__
-                except Exception as e:
+                except Exception as e:  # pragma: no cover
                     print(e)
                     current = "unknown"
             self.current_engines.append(current)
