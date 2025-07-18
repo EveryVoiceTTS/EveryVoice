@@ -26,6 +26,9 @@ class monkeypatch:
         self.name = name
         self.value = value
 
+    def __repr__(self):
+        return f"{self.__class__.__name__}(obj={self.obj}, name={self.name}, value={self.value})"
+
     def __enter__(self):
         self.saved_value = getattr(self.obj, self.name, self._NOTSET)
         setattr(self.obj, self.name, self.value)
@@ -164,6 +167,10 @@ class patch_menu_prompt:
         self.response_index = response_index
         self.multi = multi
 
+    def __repr__(self):
+        multi = f", multi={self.multi}" if self.multi else ""
+        return f"{self.__class__.__name__}(response_index={self.response_index}{multi})"
+
     def __enter__(self):
         self.monkey1 = monkeypatch(
             prompts,
@@ -188,6 +195,10 @@ class patch_input:
     def __init__(self, response: Any, multi=False):
         self.response = response
         self.multi = multi
+
+    def __repr__(self):
+        multi = f", multi={self.multi}" if self.multi else ""
+        return f"{self.__class__.__name__}(response={self.response}{multi})"
 
     def __enter__(self):
         self.monkey = monkeypatch(builtins, "input", Say(self.response, self.multi))
@@ -215,6 +226,10 @@ class Say:
         self.response = response
         self.last_index = -1
         self.multi = multi
+
+    def __repr__(self):
+        multi = f", multi={self.multi}" if self.multi else ""
+        return f"{self.__class__.__name__}(response={self.response}{multi})"
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         if self.multi:
@@ -309,6 +324,9 @@ class patch_questionary:
     def __init__(self, responses: Path | str | Sequence, ask_ok: bool = False):
         self.responses = responses
         self.ask_ok = ask_ok
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(responses={self.responses}, ask_ok={self.ask_ok})"
 
     def __enter__(self):
         stub = QuestionaryStub(self.responses, self.ask_ok)
