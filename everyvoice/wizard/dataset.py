@@ -888,9 +888,9 @@ class SelectG2PEngineStep(Step):
     def effect(self):
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 
-        self.saved_state = {"custom_g2p": deepcopy(self.tour.state.get("custom_g2p"))}
-
+        self.saved_custom_g2p = deepcopy(self.tour.state.get("custom_g2p"))
         self.saved_g2p_func = AVAILABLE_G2P_ENGINES.get(self.language_code, None)
+
         AVAILABLE_G2P_ENGINES[self.language_code] = self.g2p_func
         if "custom_g2p" not in self.tour.state:
             self.tour.state["custom_g2p"] = {}
@@ -904,11 +904,18 @@ class SelectG2PEngineStep(Step):
     def undo(self):
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 
+        match self.saved_custom_g2p:
+            case None:
+                del self.tour.state["custom_g2p"]
+            case _:
+                self.tour.state["custome_g2p"] = self.saved_custom_g2p
+
         match self.saved_g2p_func:
             case None:
                 del AVAILABLE_G2P_ENGINES[self.language_code]
             case _:
                 AVAILABLE_G2P_ENGINES[self.language_code] = self.saved_g2p_func
+
         super().undo()
 
 
