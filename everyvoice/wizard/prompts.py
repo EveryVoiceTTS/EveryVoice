@@ -2,6 +2,7 @@
 Encapsulate the logic for prompting the user for input in a simple terminal window
 """
 
+import builtins
 import sys
 from typing import Sequence
 
@@ -31,6 +32,26 @@ CUSTOM_QUESTIONARY_STYLE = Style(
         ("disabled", "fg:default"),  # disabled choices for select and checkbox prompts
     ]
 )
+
+
+def input(prompt: str = ""):
+    """Like builtins.input(), but always prints the prompt to stdout.
+
+    Without this, 'everyvoice new-project 2> error.log' sends input prompts to
+    stderr and I cannot see them anymore. Possibly never user relevant, but
+    important to EJ during development and testing.
+
+    I think this is a bug in builtins.input: the official documentation says the
+    prompt goes to stdout, but that's not true if any redirection happens.
+
+    References:
+     - https://docs.python.org/3/library/functions.html#input
+     - https://stackoverflow.com/questions/53904474/pythons-input-or-raw-input-redirect-to-stderr-instead-of-stdout
+     - https://www.reddit.com/r/learnpython/comments/lyldtc/python_input_function_writes_prompt_to_standard/
+     - https://bugs.python.org/issue1927
+    """
+    print(prompt, end="", flush=True)
+    return builtins.input()
 
 
 def get_response_from_menu_prompt(
@@ -82,11 +103,13 @@ def get_response_from_menu_prompt(
     if multi:
         if selection is None:
             return []
-        elif return_indices:
+        print("\n".join(choices[i] for i in selection))
+        if return_indices:
             return list(selection)  # selection might be a tuple, but we need a list
         else:
             return [choices[i] for i in selection]
     else:
+        print(choices[selection])
         if return_indices:
             return selection
         else:

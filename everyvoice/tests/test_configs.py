@@ -32,7 +32,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
     HiFiGANTrainingConfig,
 )
 from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.stubs import mute_logger, silence_c_stderr
+from everyvoice.tests.stubs import mute_logger, patch_logger, silence_c_stderr
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.utils import (
     expand_config_string_syntax,
@@ -672,12 +672,13 @@ class TextConfigTest(TestCase):
         """
 
         lang_id_1, lang_id_2 = "unittest1", "unittest2"
-        TextConfig(
-            g2p_engines={
-                lang_id_1: "everyvoice.tests.g2p_engines.valid",
-                lang_id_2: "everyvoice.tests.g2p_engines.valid",
-            }
-        )
+        with mute_logger("everyvoice.config.text_config"):
+            TextConfig(
+                g2p_engines={
+                    lang_id_1: "everyvoice.tests.g2p_engines.valid",
+                    lang_id_2: "everyvoice.tests.g2p_engines.valid",
+                }
+            )
         self.assertIn(lang_id_1, AVAILABLE_G2P_ENGINES)
         self.assertIn(lang_id_2, AVAILABLE_G2P_ENGINES)
         self.assertIs(
@@ -695,12 +696,17 @@ class TextConfigTest(TestCase):
         """
 
         lang_id = "unittest"
-        with self.assertRaisesRegex(
-            ValueError,
-            rf".*Invalid G2P engine module `unknown_module` for `{lang_id}`.*",
+        with (
+            self.assertRaisesRegex(
+                ValueError,
+                rf".*Invalid G2P engine module `unknown_module` for `{lang_id}`.*",
+            ),
+            patch_logger(everyvoice.config.text_config) as logger,
+            self.assertLogs(logger) as logs,
         ):
             TextConfig(g2p_engines={lang_id: "unknown_module.g2p"})
         self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+        self.assertIn("Invalid G2P engine", "\n".join(logs.output))
 
     def test_g2p_engine_signature_multiple_arguments(self):
         """
@@ -751,7 +757,8 @@ class TextConfigTest(TestCase):
         lang_id = "fra"
         self.assertIn(lang_id, AVAILABLE_G2P_ENGINES)
         old_g2p_engine = AVAILABLE_G2P_ENGINES[lang_id]
-        TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.valid"})
+        with mute_logger("everyvoice.config.text_config"):
+            TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.valid"})
         self.assertEqual(
             num_g2p_engines,
             len(AVAILABLE_G2P_ENGINES.keys()),

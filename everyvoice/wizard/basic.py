@@ -14,12 +14,6 @@ from everyvoice.config.shared_types import (
     LoggerConfig,
     init_context,
 )
-from everyvoice.config.text_config import Symbols, TextConfig
-from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
-from everyvoice.model.feature_prediction.config import (
-    FastSpeech2ModelConfig,
-    FeaturePredictionConfig,
-)
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import generic_psv_filelist_reader, slugify, write_filelist
 from everyvoice.wizard import (
@@ -34,9 +28,10 @@ from everyvoice.wizard.dataset import TextProcessingStep, get_dataset_steps
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
+    input,
 )
 from everyvoice.wizard.tour import Step
-from everyvoice.wizard.utils import sanitize_paths, write_dict_to_config
+from everyvoice.wizard.utils import escape, sanitize_paths, write_dict_to_config
 
 
 class NameStep(Step):
@@ -44,9 +39,10 @@ class NameStep(Step):
     REVERSIBLE = True
 
     def prompt(self):
-        return input(
-            "What would you like to call this project? This name should reflect the model you intend to train, e.g. 'my-sinhala-project' or 'english-french-model' or something similarly descriptive of your project: "
+        rich_print(
+            "What would you like to call this project? This name should reflect the model you intend to train, e.g. 'my-sinhala-project' or 'english-french-model' or something similarly descriptive of your project?"
         )
+        return input("project name: ")
 
     def validate(self, response):
         if len(response) == 0:
@@ -55,7 +51,7 @@ class NameStep(Step):
         sanitized_path = slugify(response)
         if not sanitized_path == response:
             rich_print(
-                f"Sorry, the project name '{response}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like '{sanitized_path}' instead."
+                f"Sorry, the project name '{escape(response)}' is not valid, since it will be used to create a folder and special characters are not permitted for folder names. Please re-type something like '{sanitized_path}' instead."
             )
             return False
         return True
@@ -82,7 +78,7 @@ class ContactNameStep(Step):
         return True
 
     def effect(self):
-        rich_print(f"Great! Nice to meet you, '{self.response}'.")
+        rich_print(f"Great! Nice to meet you, '{escape(self.response)}'.")
 
 
 class ContactEmailStep(Step):
@@ -207,6 +203,13 @@ class ConfigFormatStep(Step):
         return response in ("yaml", "json")
 
     def effect(self):
+        from everyvoice.config.text_config import Symbols, TextConfig
+        from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
+        from everyvoice.model.feature_prediction.config import (
+            FastSpeech2ModelConfig,
+            FeaturePredictionConfig,
+        )
+
         output_path = (
             Path(self.state[StepNames.output_step]) / self.state[StepNames.name_step]
         ).expanduser()
