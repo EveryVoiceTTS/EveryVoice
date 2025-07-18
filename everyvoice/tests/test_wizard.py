@@ -1442,7 +1442,7 @@ class WizardTest(TestCase):
                     ),
                     StepAndAnswer(
                         dataset.TextProcessingStep(state_subset="dataset_0"),
-                        patch_menu_prompt(()),
+                        patch_menu_prompt((1,)),  # one arbitrary text processor
                     ),
                     StepAndAnswer(
                         dataset.SymbolSetStep(state_subset="dataset_0"),
@@ -1849,6 +1849,7 @@ class WizardTest(TestCase):
                             "f4|str|foo foo",
                             "f5|git|bar bar",
                             "f6|und|baz baz",
+                            "f7|lang1|a b c",
                             "f7|unknown-lang|zang",
                         ]
                     )
@@ -1934,7 +1935,17 @@ class WizardTest(TestCase):
                                 RecursiveAnswers(Say(1))  # speaker column is is 1
                             ],
                         ),
-                        RecursiveAnswers(patch_menu_prompt(0)),  # Keep g2p settings
+                        RecursiveAnswers(
+                            patch_menu_prompt(2),  # custom g2p for "lang1"
+                            children_answers=[
+                                RecursiveAnswers(
+                                    patch_input("everyvoice.tests.g2p_engines.valid")
+                                ),
+                                RecursiveAnswers(
+                                    patch_menu_prompt(0),  # done with custom g2p
+                                ),
+                            ],
+                        ),
                         RecursiveAnswers(patch_questionary(tmpdir)),  # wav directory
                         RecursiveAnswers(null_patch()),  # ValidateWavsStep
                         RecursiveAnswers(null_patch()),  # SymbolSetStep
@@ -1995,11 +2006,12 @@ class WizardTest(TestCase):
                                 (
                                     "asdf",
                                     "everyvoice.tests.g2p_engines.not_a_list",
-                                    "everyvoice.tests.g2p_engines.valid",
+                                    "everyvoice.tests.g2p_engines.g2p_test_upper",
                                 ),
                                 multi=True,
                             )
-                        )
+                        ),
+                        RecursiveAnswers(patch_menu_prompt(0)),  # keep g2p
                     ],
                 ),
                 StepAndAnswer(
@@ -2027,8 +2039,9 @@ class WizardTest(TestCase):
             tour, _ = self.monkey_run_tour(
                 "Tour with datafile in the festival format",
                 steps_and_answers,
-                debug=False,
+                # debug=True,
             )
+            # tour.visualize()
 
             with open(
                 tmpdir / "out/project/config/everyvoice-shared-text.yaml",
@@ -2036,7 +2049,8 @@ class WizardTest(TestCase):
             ) as f:
                 text_config = "".join(f)
             self.assertIn(
-                "g2p_engines: {git: everyvoice.tests.g2p_engines.valid}", text_config
+                "g2p_engines: {git: everyvoice.tests.g2p_engines.g2p_test_upper, lang1: everyvoice.tests.g2p_engines.valid}",
+                text_config,
             )
 
             # import pprint
@@ -2052,9 +2066,9 @@ class WizardTest(TestCase):
                 dedent(
                     """\
                     basename|language|speaker|characters|phones
-                    f1|git|speaker_0|foo bar|foobar
-                    f2|git|speaker_0|bar baz|barbaz
-                    f3|git|speaker_0|baz foo|bazfoo
+                    f1|git|speaker_0|foo bar|FOOBAR
+                    f2|git|speaker_0|bar baz|BARBAZ
+                    f3|git|speaker_0|baz foo|BAZFOO
                     """
                 ),
                 "With g2p_engines.valid as custom g2p, phones has spaces stripped",
@@ -2062,9 +2076,14 @@ class WizardTest(TestCase):
             with open(filelist_base / "dataset1-filelist.psv", encoding="utf8") as f:
                 dataset1 = f.read()
             self.assertIn(
-                "f7|unknown-lang|my_speaker|zang|\n",
+                "\nf7|unknown-lang|my_speaker|zang|\n",
                 dataset1,
                 "unknown-lang has no g2p engine so phones value is missing",
+            )
+            self.assertIn(
+                "\nf7|lang1|my_speaker|a b c|abc\n",
+                dataset1,
+                "lang1 uses valid so it strip spaces",
             )
             with open(filelist_base / "dataset2-filelist.psv", encoding="utf8") as f:
                 dataset2 = f.read()
