@@ -31,6 +31,7 @@ from everyvoice.tests.stubs import (
     patch_input,
     patch_menu_prompt,
     patch_questionary,
+    silence_c_stderr,
 )
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.wizard import StepNames as SN
@@ -952,7 +953,7 @@ class WizardTest(TestCase):
         # fail on accidentally shared initializer
         self.assertTrue(tour.state == {} or tour.state == {"dataset_0": {}})
         with capture_stdout() as out:
-            with null_patch() if debug else capture_stderr():
+            with null_patch() if debug else silence_c_stderr():
                 recursive_helper(steps_and_answers)
         return tour, out.getvalue()
 
@@ -1304,7 +1305,7 @@ class WizardTest(TestCase):
 
     def test_keyboard_interrupt(self):
         step = basic.NameStep()
-        with self.assertRaises(KeyboardInterrupt):
+        with self.assertRaises(KeyboardInterrupt), capture_stdout():
             with patch_input(KeyboardInterrupt()):
                 step.run()
 
@@ -1855,7 +1856,58 @@ class WizardTest(TestCase):
             for i in range(1, 8):
                 with open(tmpdir / f"f{i}.wav", "wb"):
                     pass
-            more_dataset_children_answers = [
+            third_dataset_children_answers = [
+                RecursiveAnswers(
+                    patch_questionary(tmpdir / "filelist1.psv")
+                ),  # filelist step
+                RecursiveAnswers(
+                    patch_menu_prompt(1),  # yes to permission
+                    children_answers=[
+                        RecursiveAnswers(patch_menu_prompt(0)),  # psv format
+                        RecursiveAnswers(patch_menu_prompt(0)),  # characters
+                        RecursiveAnswers(patch_menu_prompt(())),  # no text prepro
+                        RecursiveAnswers(
+                            patch_menu_prompt(0),  # no, does not have speaker column
+                            children_answers=[
+                                RecursiveAnswers(
+                                    patch_menu_prompt(1),  # Yes, give speaker ID
+                                    children_answers=[
+                                        RecursiveAnswers(patch_input("my_speaker"))
+                                    ],
+                                ),
+                            ],
+                        ),
+                        RecursiveAnswers(
+                            patch_menu_prompt(0),  # no, there is no language column
+                            children_answers=[
+                                RecursiveAnswers(
+                                    patch_menu_prompt(1),  # [custom] lang code option
+                                    children_answers=[
+                                        RecursiveAnswers(
+                                            patch_input(
+                                                ["not valid / bad slug", "my-lang"],
+                                                multi=True,
+                                            )
+                                        )
+                                    ],
+                                )
+                            ],
+                        ),
+                        # Keep g2p settings means this project will have one non-g2p-able lang
+                        RecursiveAnswers(patch_menu_prompt(0)),  # Keep g2p settings
+                        RecursiveAnswers(patch_questionary(tmpdir)),  # wav directory
+                        RecursiveAnswers(null_patch()),  # ValidateWavsStep
+                        RecursiveAnswers(null_patch()),  # SymbolSetStep
+                        RecursiveAnswers(patch_menu_prompt([])),  # no Sox
+                        RecursiveAnswers(patch_input("dataset2")),  # Dataset name
+                    ],
+                ),
+                RecursiveAnswers(
+                    patch_menu_prompt(0),  # no more data
+                    children_answers=[RecursiveAnswers(patch_menu_prompt(0))],  # yaml
+                ),
+            ]
+            second_dataset_children_answers = [
                 RecursiveAnswers(
                     patch_questionary(tmpdir / "filelist2.psv")
                 ),  # filelist step
@@ -1891,8 +1943,8 @@ class WizardTest(TestCase):
                     ],
                 ),
                 RecursiveAnswers(
-                    patch_menu_prompt(0),  # no more data
-                    children_answers=[RecursiveAnswers(patch_menu_prompt(0))],  # yaml
+                    patch_menu_prompt(1),  # yes more data
+                    children_answers=third_dataset_children_answers,
                 ),
             ]
             steps_and_answers = [
@@ -1969,13 +2021,13 @@ class WizardTest(TestCase):
                 StepAndAnswer(
                     basic.MoreDatasetsStep(),
                     patch_menu_prompt(1),  # 1 is yes
-                    children_answers=more_dataset_children_answers,
+                    children_answers=second_dataset_children_answers,
                 ),
             ]
             tour, _ = self.monkey_run_tour(
                 "Tour with datafile in the festival format",
                 steps_and_answers,
-                debug=True,
+                debug=False,
             )
 
             with open(
@@ -1986,7 +2038,48 @@ class WizardTest(TestCase):
             self.assertIn(
                 "g2p_engines: {git: everyvoice.tests.g2p_engines.valid}", text_config
             )
+
+            # import pprint
+
+            # pprint.pp(tour.state)
             # print(text_config)
+
+            filelist_base = tmpdir / "out/project"
+            with open(filelist_base / "dataset0-filelist.psv", encoding="utf8") as f:
+                dataset0 = f.read()
+            self.assertEqual(
+                dataset0,
+                dedent(
+                    """\
+                    basename|language|speaker|characters|phones
+                    f1|git|speaker_0|foo bar|foobar
+                    f2|git|speaker_0|bar baz|barbaz
+                    f3|git|speaker_0|baz foo|bazfoo
+                    """
+                ),
+                "With g2p_engines.valid as custom g2p, phones has spaces stripped",
+            )
+            with open(filelist_base / "dataset1-filelist.psv", encoding="utf8") as f:
+                dataset1 = f.read()
+            self.assertIn(
+                "f7|unknown-lang|my_speaker|zang|\n",
+                dataset1,
+                "unknown-lang has no g2p engine so phones value is missing",
+            )
+            with open(filelist_base / "dataset2-filelist.psv", encoding="utf8") as f:
+                dataset2 = f.read()
+            self.assertEqual(
+                dataset2,
+                dedent(
+                    """\
+                    basename|language|speaker|characters
+                    f1|my-lang|my_speaker|foo bar
+                    f2|my-lang|my_speaker|bar baz
+                    f3|my-lang|my_speaker|baz foo
+                    """
+                ),
+                "With no g2p engine, the phones column is simply absent",
+            )
 
     trivial_tour_results = {
         SN.name_step.value: "project_name",
