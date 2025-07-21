@@ -9,11 +9,15 @@ from textwrap import dedent
 from typing import Annotated, Any, List, Optional
 
 import typer
+from merge_args import merge_args
 from rich import print as rich_print
 from rich.panel import Panel
 
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
+from everyvoice.base_cli.interfaces import (
+    inference_base_command_interface,
+)
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
     ALIGN_SINGLE_SHORT_HELP,
@@ -54,7 +58,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
 from everyvoice.run_tests import SUITE_NAMES, run_tests
-from everyvoice.utils import load_config_from_json_or_yaml_path, spinner
+from everyvoice.utils import spinner
 from everyvoice.wizard import (
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
@@ -590,6 +594,7 @@ AllowedDemoOutputFormats = Enum(  # type: ignore
 
 
 @app.command()
+@merge_args(inference_base_command_interface)
 def demo(
     text_to_spec_model: Path = typer.Argument(
         ...,
@@ -662,6 +667,7 @@ def demo(
         "-n",
         help="The server name to run the demo on. This is useful if you want to run the demo on a specific IP address.",
     ),
+    **kwargs,
 ):
     if allowlist and denylist:
         raise ValueError(
@@ -707,6 +713,7 @@ def demo(
             accelerator=accelerator,
             allowlist=allowlist_data,
             denylist=denylist_data,
+            **kwargs,
         )
 
     demo.launch(share=share, server_port=port, server_name=server_name)
@@ -786,8 +793,7 @@ def g2p(
     from everyvoice.text.phonemizer import get_g2p_engine
 
     if config:
-        kwargs = load_config_from_json_or_yaml_path(config)
-        text_config: TextConfig = TextConfig(**kwargs)
+        text_config: TextConfig = TextConfig.load_config_from_path(config)
         print(
             f"Config contains custon G2P Engines: {text_config.g2p_engines}",
             file=sys.stderr,
