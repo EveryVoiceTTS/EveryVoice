@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-""" Organize tests into Test Suites
-"""
+"""Organize tests into Test Suites"""
 
 import argparse
 import importlib
@@ -25,7 +24,13 @@ SUITES: dict[str, tuple[str, ...]] = {
     "text": ("test_text", "test_utils", "test_doctests"),
     "preprocessing": ("test_preprocessing",),
     "model": ("test_model",),
-    "cli": ("test_wizard", "test_cli", "test_wizard_helpers", "test_subsample"),
+    "cli": (
+        "test_wizard",
+        "test_cli",
+        "test_wizard_helpers",
+        "test_subsample",
+        "test_custom_g2p",
+    ),
     "evaluation": ("test_evaluation",),
     **SUBMODULE_SUITES,
 }
