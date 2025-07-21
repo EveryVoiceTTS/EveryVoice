@@ -5,6 +5,7 @@ from pathlib import Path
 from textwrap import dedent
 from unittest import TestCase
 
+import yaml
 from pydantic import ValidationError
 
 import everyvoice
@@ -289,34 +290,40 @@ class TextConfigWithG2pTest(TestCase):
 
 
 class CustomG2pTest(WizardTestBase):
+    DATASET1 = dedent(
+        """\
+        basename|text
+        f1|foo bar
+        f2|bar baz
+        f3|baz foo
+        """
+    )
+
+    DATASET2 = dedent(
+        """\
+        basename|language|text
+        f4|str|foo foo
+        f5|git|bar bar
+        f6|und|baz baz
+        f7|lang1|a b c
+        f7|unknown-lang|zang
+        """
+    )
+
+    basic_steps = [
+        StepAndAnswer(basic.NameStep(), Say("project")),
+        StepAndAnswer(basic.ContactNameStep(), Say("Test Name")),
+        StepAndAnswer(basic.ContactEmailStep(), Say("info@everyvoice.ca")),
+    ]
+
     def test_custom_g2p_in_wizard(self):
         """Test using a custom g2p on a custom language code"""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
             with open(tmpdir / "filelist1.psv", "w", encoding="utf8") as f:
-                f.write(
-                    "\n".join(
-                        [
-                            "basename|text",
-                            "f1|foo bar",
-                            "f2|bar baz",
-                            "f3|baz foo",
-                        ]
-                    )
-                )
+                f.write(self.DATASET1)
             with open(tmpdir / "filelist2.psv", "w", encoding="utf8") as f:
-                f.write(
-                    "\n".join(
-                        [
-                            "basename|language|text",
-                            "f4|str|foo foo",
-                            "f5|git|bar bar",
-                            "f6|und|baz baz",
-                            "f7|lang1|a b c",
-                            "f7|unknown-lang|zang",
-                        ]
-                    )
-                )
+                f.write(self.DATASET2)
             for i in range(1, 8):
                 with open(tmpdir / f"f{i}.wav", "wb"):
                     pass
@@ -422,11 +429,7 @@ class CustomG2pTest(WizardTestBase):
                 ),
             ]
             steps_and_answers = [
-                StepAndAnswer(basic.NameStep(), patch_input("project")),
-                StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
-                StepAndAnswer(
-                    basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
-                ),
+                *self.basic_steps,
                 StepAndAnswer(
                     basic.OutputPathStep(), patch_questionary(tmpdir / "out")
                 ),
@@ -500,7 +503,7 @@ class CustomG2pTest(WizardTestBase):
                 ),
             ]
             tour, _ = self.monkey_run_tour(
-                "Tour with datafile in the festival format",
+                "Tour with three datasets and some custom g2p functions, valid and not",
                 steps_and_answers,
                 # debug=True,
             )
@@ -510,10 +513,13 @@ class CustomG2pTest(WizardTestBase):
                 tmpdir / "out/project/config/everyvoice-shared-text.yaml",
                 encoding="utf8",
             ) as f:
-                text_config = "".join(f)
-            self.assertIn(
-                "g2p_engines: {git: everyvoice.tests.g2p_engines.g2p_test_upper, lang1: everyvoice.tests.g2p_engines.valid}",
-                text_config,
+                text_config = yaml.safe_load(f)
+            self.assertEqual(
+                text_config["g2p_engines"],
+                {
+                    "git": "everyvoice.tests.g2p_engines.g2p_test_upper",
+                    "lang1": "everyvoice.tests.g2p_engines.valid",
+                },
             )
 
             # import pprint
@@ -561,4 +567,170 @@ class CustomG2pTest(WizardTestBase):
                     """
                 ),
                 "With no g2p engine, the phones column is simply absent",
+            )
+
+    def test_custom_g2p_on_second_instance(self):
+        """Ensure correct results when you set the custom g2p the second time a language is seen"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            with open(tmpdir / "filelist1.psv", "w", encoding="utf8") as f:
+                f.write(self.DATASET1)
+            with open(tmpdir / "filelist2.psv", "w", encoding="utf8") as f:
+                f.write(self.DATASET1)  # reuse DATASET1 (not 2) on purpose
+            for i in range(1, 4):
+                with open(tmpdir / f"f{i}.wav", "wb"):
+                    pass
+
+            second_dataset_children_answers = [
+                RecursiveAnswers(
+                    patch_questionary(tmpdir / "filelist2.psv")
+                ),  # filelist step
+                RecursiveAnswers(
+                    patch_menu_prompt(1),  # yes to permission
+                    children_answers=[
+                        RecursiveAnswers(patch_menu_prompt(0)),  # psv format
+                        RecursiveAnswers(patch_menu_prompt(0)),  # characters
+                        RecursiveAnswers(patch_menu_prompt(())),  # no text prepro
+                        RecursiveAnswers(
+                            patch_menu_prompt(0),  # no, does not have speaker column
+                            children_answers=[
+                                RecursiveAnswers(
+                                    patch_menu_prompt(1),  # Yes, give speaker ID
+                                    children_answers=[
+                                        RecursiveAnswers(patch_input("my_speaker"))
+                                    ],
+                                ),
+                            ],
+                        ),
+                        RecursiveAnswers(
+                            patch_menu_prompt(0),  # no, there is no language column
+                            children_answers=[RecursiveAnswers(Say("git"))],
+                        ),
+                        # Keep g2p settings means this project will have one non-g2p-able lang
+                        RecursiveAnswers(
+                            patch_menu_prompt(1),
+                            children_answers=[
+                                RecursiveAnswers(
+                                    Say("everyvoice.tests.g2p_engines.g2p_test_upper")
+                                )
+                            ],
+                        ),  # Request custom g2p for git
+                        RecursiveAnswers(patch_questionary(tmpdir)),  # wav directory
+                        RecursiveAnswers(null_patch()),  # ValidateWavsStep
+                        RecursiveAnswers(null_patch()),  # SymbolSetStep
+                        RecursiveAnswers(patch_menu_prompt([])),  # no Sox
+                        RecursiveAnswers(patch_input("dataset1")),  # Dataset name
+                    ],
+                ),
+                RecursiveAnswers(
+                    patch_menu_prompt(0),  # no more data
+                    children_answers=[RecursiveAnswers(patch_menu_prompt(0))],  # yaml
+                ),
+            ]
+
+            steps_and_answers = [
+                *self.basic_steps,
+                StepAndAnswer(
+                    basic.OutputPathStep(), patch_questionary(tmpdir / "out")
+                ),
+                # First dataset
+                StepAndAnswer(
+                    dataset.FilelistStep(state_subset="dataset_0"),
+                    patch_questionary(tmpdir / "filelist1.psv"),
+                ),
+                StepAndAnswer(
+                    dataset.FilelistFormatStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # psv
+                ),
+                StepAndAnswer(
+                    dataset.FilelistTextRepresentationStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # characters
+                ),
+                StepAndAnswer(
+                    dataset.TextProcessingStep(state_subset="dataset_0"),
+                    patch_menu_prompt(()),
+                ),
+                StepAndAnswer(
+                    dataset.HasSpeakerStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # 0 is no
+                    children_answers=[
+                        RecursiveAnswers(
+                            patch_menu_prompt(1),  # Yes, give speaker ID
+                            children_answers=[
+                                RecursiveAnswers(patch_input("my_speaker"))
+                            ],
+                        ),
+                    ],
+                ),
+                StepAndAnswer(
+                    dataset.HasLanguageStep(state_subset="dataset_0"),
+                    patch_menu_prompt(0),  # 0 is no
+                    children_answers=[RecursiveAnswers(Say("git"))],
+                ),
+                StepAndAnswer(
+                    dataset.CustomG2PStep(state_subset="dataset_0"),
+                    patch_menu_prompt(1),  # custom g2p for "git"
+                    children_answers=[
+                        RecursiveAnswers(Say("everyvoice.tests.g2p_engines.valid")),
+                        # RecursiveAnswers( patch_input( ( "everyvoice.tests.g2p_engines.valid",),)),
+                        RecursiveAnswers(patch_menu_prompt(0)),  # keep g2p
+                    ],
+                ),
+                StepAndAnswer(
+                    dataset.WavsDirStep(state_subset="dataset_0"),
+                    patch_questionary(tmpdir),
+                ),
+                StepAndAnswer(
+                    dataset.SymbolSetStep(state_subset="dataset_0"),
+                    null_patch(),
+                ),
+                StepAndAnswer(
+                    dataset.SoxEffectsStep(state_subset="dataset_0"),
+                    patch_menu_prompt([]),
+                ),
+                StepAndAnswer(
+                    dataset.DatasetNameStep(state_subset="dataset_0"),
+                    patch_input("dataset0"),
+                ),
+                StepAndAnswer(
+                    basic.MoreDatasetsStep(),
+                    patch_menu_prompt(1),  # 1 is yes
+                    children_answers=second_dataset_children_answers,
+                ),
+            ]
+
+            tour, _ = self.monkey_run_tour(
+                "Tour with custom g2p functions overriden between datasets",
+                steps_and_answers,
+                # debug=True,
+            )
+            # tour.visualize()
+
+            with open(
+                tmpdir / "out/project/config/everyvoice-shared-text.yaml",
+                encoding="utf8",
+            ) as f:
+                text_config = yaml.safe_load(f)
+            self.assertEqual(
+                text_config["g2p_engines"],
+                {"git": "everyvoice.tests.g2p_engines.g2p_test_upper"},
+            )
+
+            filelist_base = tmpdir / "out/project"
+            with open(filelist_base / "dataset0-filelist.psv", encoding="utf8") as f:
+                dataset0 = f.read()
+            with open(filelist_base / "dataset1-filelist.psv", encoding="utf8") as f:
+                dataset1 = f.read()
+            # print(dataset1)
+            self.assertEqual(dataset0, dataset1)
+            self.assertEqual(
+                dataset0,
+                dedent(
+                    """\
+                    basename|language|speaker|characters|phones
+                    f1|git|my_speaker|foo bar|FOOBAR
+                    f2|git|my_speaker|bar baz|BARBAZ
+                    f3|git|my_speaker|baz foo|BAZFOO
+                    """
+                ),
             )
