@@ -148,16 +148,26 @@ def validate_g2p_engine_signature(g2p_func: G2PCallable) -> G2PCallable:
     Note that we have to use `List` and not `list`.
     """
     import typing
-    from inspect import signature
+    from inspect import isclass, signature
 
-    sig = signature(g2p_func)
+    try:
+        sig = signature(g2p_func)
+    except TypeError:
+        assert False, "G2P Engine should be a function or a callable object"
+
+    assert not isclass(
+        g2p_func
+    ), "G2P Engine should not be a class (though it could be an instance of a callable class)"
+
     assert (
         len(sig.parameters) == 1
     ), "G2P engine's signature should take a single argument"
+
     arg_names = list(sig.parameters)
     assert (
         sig.parameters[arg_names[0]].annotation is str
     ), "G2P Engine's signature should take a string"
+
     assert (
         sig.return_annotation is typing.List[str]
     ), "G2P Engine's signature should return a list of strings"

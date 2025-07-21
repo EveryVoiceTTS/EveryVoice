@@ -262,6 +262,20 @@ class TextConfigWithG2pTest(TestCase):
             TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.not_a_list"})
         self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
 
+    def test_g2p_engine_not_a_function(self):
+        """
+        User provide a G2P engine that is not even a function.
+        """
+        lang_id = "unittest"
+        with self.assertRaisesRegex(
+            ValidationError,
+            r".*G2P Engine should be a function or a callable object.*",
+        ):
+            TextConfig(
+                g2p_engines={lang_id: "everyvoice.tests.g2p_engines.not_a_function"}
+            )
+        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+
     def test_overriding_default_g2p_engine(self):
         """
         User provided a G2P engine that overrides a default G2P engine.

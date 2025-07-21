@@ -34,3 +34,21 @@ def not_a_list(a: str) -> int:
     A G2P engine with the wrong function's signature.
     """
     return 42
+
+
+not_a_function = "A g2p engine that is not a callable object."
+
+
+class AClass:
+    def __init__(self, a: str):
+        self.a = a
+
+    def __call__(self, a: str) -> List[str]:
+        return a.split()
+
+
+a_class_instance = AClass("x")
+
+
+def implicit_signature(a):
+    return a.split()
