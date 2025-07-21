@@ -859,11 +859,13 @@ class SelectG2PEngineStep(Step):
             lang_desc = f"{self.language_name} ({self.language_code})"
         rich_print(
             Panel(
-                f"Please enter the fully qualified Python name of your custom g2p function for {lang_desc}.\n"
-                "E.g., for function my_g2p_map() in mymodule/submodule/g2p_mappings.py, "
-                'answer "mymodule.submodule.g2p_mappings.my_g2p_map".\n'
+                f"Please [bold]enter[/bold] the fully qualified Python name of your custom g2p function for {lang_desc}.\n"
+                "[yellow]Note: you cannot provide a file path to a script. Your g2p function must be installed and accessible as a module in your Python environment,[/yellow] "
+                "e.g., for function my_g2p_map() in mymodule/submodule/g2p_mappings.py, "
+                'install mymodule using pip and answer "mymodule.submodule.g2p_mappings.my_g2p_map".\n'
                 f"[yellow]Warning: custom g2p settings will apply to all '{self.language_code}' data in this project, not just in the current dataset.[/yellow]\n"
-                f"Use Ctrl-C / Go back one step to keep the current settings: {self.current_engine}"
+                f"Current settings: {self.current_engine}\n"
+                'Use Ctrl-C / "Go back one step" to keep the current settings.'
             )
         )
         return input(f"g2p function for {self.language_code}: ")
@@ -880,7 +882,7 @@ class SelectG2PEngineStep(Step):
         except Exception as e:
             rich_print(
                 Panel(
-                    f"Sorry, the function {response} did not pass validation: [red]{e}[/red]"
+                    f"Sorry, the function '{response}' did not pass validation: [red]{e}[/red]"
                 )
             )
             return False
