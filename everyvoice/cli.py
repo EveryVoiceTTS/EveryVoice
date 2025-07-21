@@ -16,7 +16,6 @@ from rich.panel import Panel
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
 from everyvoice.base_cli.interfaces import (
-    complete_path,
     inference_base_command_interface,
 )
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
