@@ -180,12 +180,21 @@ def load_custom_g2p_engine(lang_id: str, qualified_g2p_func_name: str) -> G2PCal
     try:
         module_name, _, function_name = qualified_g2p_func_name.rpartition(".")
         module = importlib.import_module(module_name)
-    except ModuleNotFoundError:
-        error_message = f"Invalid G2P engine module `{module_name}` for `{lang_id}`"
+    except ModuleNotFoundError as e:
+        error_message = (
+            f"Invalid G2P engine module `{module_name}` for `{lang_id}`: {e}"
+        )
         logger.error(error_message)
         raise ValueError(error_message)
 
-    return validate_g2p_engine_signature(getattr(module, function_name))
+    try:
+        g2p_engine = getattr(module, function_name)
+    except AttributeError as e:
+        error_message = f"Invalid G2P engine: could not find function `{function_name}` in module `{module_name}`: {e}"
+        logger.error(error_message)
+        raise ValueError(error_message)
+
+    return validate_g2p_engine_signature(g2p_engine)
 
 
 class TextConfig(ConfigModel):
