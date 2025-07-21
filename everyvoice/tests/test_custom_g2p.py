@@ -212,7 +212,7 @@ class TextConfigWithG2pTest(TestCase):
         with (
             self.assertRaisesRegex(
                 ValueError,
-                rf".*Invalid G2P engine module `unknown_module` for `{lang_id}`.*",
+                rf".*Invalid G2P engine module 'unknown_module' for '{lang_id}'.*",
             ),
             patch_logger(everyvoice.config.text_config) as logger,
             self.assertLogs(logger) as logs,

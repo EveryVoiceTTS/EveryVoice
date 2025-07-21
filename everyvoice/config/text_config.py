@@ -182,7 +182,7 @@ def load_custom_g2p_engine(lang_id: str, qualified_g2p_func_name: str) -> G2PCal
         module = importlib.import_module(module_name)
     except ModuleNotFoundError as e:
         error_message = (
-            f"Invalid G2P engine module `{module_name}` for `{lang_id}`: {e}"
+            f"Invalid G2P engine module '{module_name}' for '{lang_id}': {e}"
         )
         logger.error(error_message)
         raise ValueError(error_message)
@@ -190,7 +190,7 @@ def load_custom_g2p_engine(lang_id: str, qualified_g2p_func_name: str) -> G2PCal
     try:
         g2p_engine = getattr(module, function_name)
     except AttributeError as e:
-        error_message = f"Invalid G2P engine: could not find function `{function_name}` in module `{module_name}`: {e}"
+        error_message = f"Invalid G2P engine: could not find function '{function_name}' in module '{module_name}': {e}"
         logger.error(error_message)
         raise ValueError(error_message)
 
@@ -240,10 +240,10 @@ class TextConfig(ConfigModel):
 
             if lang_id in AVAILABLE_G2P_ENGINES:
                 logger.warning(
-                    f"Overriding g2p for `{lang_id}` with user provided g2p plugin `{name}`"
+                    f"Overriding g2p for '{lang_id}' with user provided g2p plugin '{name}'"
                 )
 
             AVAILABLE_G2P_ENGINES[lang_id] = g2p_func
-            logger.info(f"Adding G2P engine from `{name}` for `{lang_id}`")
+            logger.info(f"Adding G2P engine from '{name}' for '{lang_id}'")
 
         return self
