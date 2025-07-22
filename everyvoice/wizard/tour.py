@@ -16,7 +16,7 @@ from everyvoice.wizard.prompts import (
     get_response_from_menu_prompt,
 )
 from everyvoice.wizard.utils import EnumDict as State
-from everyvoice.wizard.utils import NodeMixinWithNavigation, sanitize_paths
+from everyvoice.wizard.utils import NodeMixinWithNavigation, escape, sanitize_paths
 
 
 class _Step:
@@ -120,7 +120,7 @@ class Step(_Step, NodeMixinWithNavigation):
             self.response = self.prompt()
         self.response = self.sanitize_input(self.response)
         if self.tour is not None and self.tour.trace:
-            rich_print(f"{self.name}: '{self.response}'")
+            rich_print(escape(f"{self.name}: '{self.response}'"))
         if self.validate(self.response):
             self.completed = True
             try:
@@ -357,13 +357,13 @@ class Tour:
             if node.validate(saved_response):
                 if node.name != "Root":
                     rich_print(
-                        f"Applying saved response '{saved_response}' for [green]{node.name}[/green]"
+                        f"Applying saved response '{escape(saved_response)}' for [green]{node.name}[/green]"
                     )
                 node.run(saved_response=saved_response)
             else:
                 rich_print(
                     Panel(
-                        f"Error: saved response '{saved_response}' for {node.name} is invalid. "
+                        f"Error: saved response '{escape(saved_response)}' for {node.name} is invalid. "
                         "The remaining saved responses will not be applied, but you can continue from here."
                     )
                 )
@@ -431,7 +431,7 @@ class Tour:
                     treestr = (
                         "[green]"
                         + (treestr + ":").ljust(just_width)
-                        + str(node.response)
+                        + escape(str(node.response))
                         + "[/green]"
                     )
             text += treestr + "\n"
