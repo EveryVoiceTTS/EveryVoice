@@ -8,6 +8,13 @@ def valid(a: str) -> List[str]:
     return a.split()
 
 
+def g2p_test_upper(a: str) -> List[str]:
+    """
+    A valid G2P engine with very visible effects, for unit testing
+    """
+    return a.upper().split()
+
+
 def multiple_arguments(a: int, b: int) -> List[str]:
     """
     A G2P engine with the wrong function's signature.

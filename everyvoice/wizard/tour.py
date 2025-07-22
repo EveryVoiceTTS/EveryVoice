@@ -321,7 +321,7 @@ class Tour:
         # for new questions if possible, or else giving a warning explaining what needs
         # to be changed if auto upgrade is not possible.
         # Regression testing should warn us when such auto-upgrade code is required here.
-        compatible_since = Version("0.2.0a0")
+        compatible_since = Version("0.4.0.dev0")
         if version != VERSION:
             if Version(version) >= Version(VERSION):
                 rich_print(

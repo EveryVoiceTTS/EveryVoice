@@ -475,17 +475,10 @@ class LanguageHeaderStep(HeaderStep):
             self.state["filelist_headers"]
         )
         # re-parse data:
-        reload_filelist_data_as_dict(self.state)
+        convert_filelist_data_to_dict(self.state)
         # Add speaker IDs if they are not specified in the filelist
         if self.state[StepNames.data_has_speaker_value_step] == "no":
             add_missing_speaker(self.state)
-        # apply automatic conversions
-        self.state["model_target_training_text_representation"] = (
-            apply_automatic_text_conversions(
-                self.state["filelist_data"],
-                self.state[StepNames.filelist_text_representation_step],
-            )
-        )
 
 
 class HasHeaderLineStep(Step):
@@ -660,15 +653,16 @@ class SelectLanguageStep(Step):
 
         from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 
-        g2p_langs_full = get_arpabet_langs()[1]
+        _, g2p_langs_full = get_arpabet_langs()
         rich_print(
             "Note: if your dataset has more than one language in it, you will have to provide a 'language' column to indicate the language of each sample, because the configuration wizard can't guess!"
         )
         # TODO: currently we only support the languages from g2p, but we should add more
         supported_langs = list(AVAILABLE_G2P_ENGINES)
-        supported_langs_choices = ["[und]: my language isn't here"] + [
-            f"[{k}]: {g2p_langs_full.get(k, 'Unknown')}" for k in supported_langs
-        ]
+        supported_langs_choices = [
+            "[und]: my language isn't here, use the default undetermined mapping",
+            "[custom]: my language isn't here, I will provide a custom code",
+        ] + [f"[{k}]: {g2p_langs_full.get(k, 'Unknown')}" for k in supported_langs]
         return get_response_from_menu_prompt(
             choices=supported_langs_choices,
             title="Which of the following supported languages is the language of your dataset?",
@@ -677,6 +671,50 @@ class SelectLanguageStep(Step):
 
     def validate(self, response):
         return isinstance(response, str)
+
+    def effect(self):
+        isocode = get_iso_code(self.response)
+        if isocode == "custom":
+            # The user picked "custom" to provide their own language code
+            self.tour.add_step(LanguageCodeStep(state_subset=self.state_subset), self)
+        else:
+            self.saved_state = {
+                "filelist_headers": copy(self.state["filelist_headers"]),
+                "filelist_data": deepcopy(self.state.get("filelist_data", None)),
+                "model_target_training_text_representation": None,
+            }
+            # Rename unselected headers to unknown:
+            self.state["filelist_headers"] = rename_unknown_headers(
+                self.state["filelist_headers"]
+            )
+            # re-parse data:
+            convert_filelist_data_to_dict(self.state)
+            # Add speaker IDs if they are not specified in the filelist
+            if self.state[StepNames.data_has_speaker_value_step] == "no":
+                add_missing_speaker(self.state)
+            # Apply the language code:
+            for item in self.state["filelist_data"]:
+                item["language"] = isocode
+
+
+class LanguageCodeStep(Step):
+    DEFAULT_NAME = StepNames.language_code_step
+    REVERSIBLE = True
+
+    def prompt(self):
+        return input("Please enter the language code for this dataset's language: ")
+
+    def validate(self, response):
+        if response != slugify(response):
+            rich_print(
+                "ERROR: Language codes should contain only letters and hyphens. Please try again."
+            )
+            return False
+        else:
+            return True
+
+    def sanitize_input(self, response):
+        return response.strip()
 
     def effect(self):
         self.saved_state = {
@@ -689,20 +727,198 @@ class SelectLanguageStep(Step):
             self.state["filelist_headers"]
         )
         # re-parse data:
-        reload_filelist_data_as_dict(self.state)
+        convert_filelist_data_to_dict(self.state)
         # Add speaker IDs if they are not specified in the filelist
         if self.state[StepNames.data_has_speaker_value_step] == "no":
             add_missing_speaker(self.state)
         # Apply the language code:
-        isocode = get_iso_code(self.response)
-        # Apply text conversions and get target training representation
-        self.state["model_target_training_text_representation"] = (
-            apply_automatic_text_conversions(
-                self.state["filelist_data"],
-                self.state[StepNames.filelist_text_representation_step],
-                global_isocode=isocode,
+        for item in self.state["filelist_data"]:
+            item["language"] = self.response
+
+
+class CustomG2PStep(Step):
+    DEFAULT_NAME = StepNames.custom_g2p_step
+    REVERSIBLE = True
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.found_languages = False
+
+    def find_languages(self):
+        """Enumerate the languages this dataset uses."""
+        from g2p import get_arpabet_langs
+
+        from everyvoice.text.phonemizer import (
+            AVAILABLE_G2P_ENGINES,
+            DEFAULT_G2P,
+            CachingG2PEngine,
+        )
+
+        self.language_codes = sorted(
+            set(row["language"] for row in self.state["filelist_data"])
+        )
+
+        _, g2p_langs_full = get_arpabet_langs()
+        self.language_names = [
+            g2p_langs_full.get(language, language) for language in self.language_codes
+        ]
+
+        self.current_engines = []
+        self.set_a_custom = []
+        for language in self.language_codes:
+            current = AVAILABLE_G2P_ENGINES.get(language, None)
+            if isinstance(current, CachingG2PEngine) or current == DEFAULT_G2P:
+                current = f"default g2p mapping for '{language}'"
+                set_a_custom = "Set a custom"
+            elif current is None:
+                current = "none"
+                set_a_custom = "Set a"
+            else:
+                set_a_custom = "Change the custom"
+                try:
+                    current = current.__module__ + "." + current.__name__
+                except Exception as e:  # pragma: no cover
+                    print(e)
+                    current = "unknown"
+            self.current_engines.append(current)
+            self.set_a_custom.append(set_a_custom)
+
+        self.options = ["Keep the current g2p settings and continue"] + [
+            f"[{language}] {set_a_custom} g2p engine for {language_name}. (Current: {current})"
+            for language, language_name, current, set_a_custom in zip(
+                self.language_codes,
+                self.language_names,
+                self.current_engines,
+                self.set_a_custom,
+            )
+        ]
+
+        self.found_languages = True
+
+    def prompt(self):
+        # Needs to be redone each time we get here, to prompt with the current list
+        self.find_languages()
+
+        prompt_text = (
+            ""
+            if isinstance(self.parent, self.__class__)
+            else (
+                "Advanced configuration: by default, EveryVoice will map text characters to "
+                "IPA phonemes using the g2p library (https://github.com/roedoejet/g2p). "
+                "However, you have the option of providing your own g2p functions instead "
+                "(see <TODO link to docs page on custom g2p>)."
             )
         )
+
+        return get_response_from_menu_prompt(
+            prompt_text=prompt_text,
+            choices=self.options,
+            title="What would you like to do?",
+            search=True,
+            return_indices=True,
+        )
+
+    def validate(self, response):
+        if not self.found_languages:
+            self.find_languages()  # Needed when we get here via --resume-from
+        return response >= 0 and response <= len(self.language_codes)
+
+    def effect(self):
+        # print(self.language_codes[self.response])
+        if self.response > 0:
+            self.tour.add_steps(
+                [
+                    SelectG2PEngineStep(
+                        language_code=self.language_codes[self.response - 1],
+                        language_name=self.language_names[self.response - 1],
+                        current_engine=self.current_engines[self.response - 1],
+                        state_subset=self.state_subset,
+                    ),
+                    CustomG2PStep(state_subset=self.state_subset),
+                ],
+                self,
+            )
+
+
+class SelectG2PEngineStep(Step):
+    DEFAULT_NAME = StepNames.select_g2p_engine_step
+    REVERSIBLE = True
+    UNSET_SENTINEL = object()
+
+    def __init__(self, language_code, language_name, current_engine, *args, **kwargs):
+        # print(language_code, language_name)
+        super().__init__(*args, **kwargs)
+        self.language_code = language_code
+        self.language_name = language_name
+        self.current_engine = current_engine
+
+    def prompt(self):
+        if self.language_code == self.language_name:
+            lang_desc = self.language_name
+        else:
+            lang_desc = f"{self.language_name} ({self.language_code})"
+        rich_print(
+            Panel(
+                f"Please [bold]enter[/bold] the fully qualified Python name of your custom g2p function for {lang_desc}.\n"
+                "[yellow]Note: you cannot provide a file path to a script. Your g2p function must be installed and accessible as a module in your Python environment,[/yellow] "
+                "e.g., for function my_g2p_map() in mymodule/submodule/g2p_mappings.py, "
+                'install mymodule using pip and answer "mymodule.submodule.g2p_mappings.my_g2p_map".\n'
+                f"[yellow]Warning: custom g2p settings will apply to all '{self.language_code}' data in this project, not just in the current dataset.[/yellow]\n"
+                f"Current settings: {self.current_engine}\n"
+                'Use Ctrl-C / "Go back one step" to keep the current settings.'
+            )
+        )
+        return input(f"g2p function for {self.language_code}: ")
+
+    def sanitize_input(self, response):
+        return response.strip()
+
+    def validate(self, response):
+        from everyvoice.config.text_config import load_custom_g2p_engine
+
+        try:
+            self.g2p_func = load_custom_g2p_engine(self.language_code, response)
+            return True
+        except Exception as e:
+            rich_print(
+                Panel(
+                    f"Sorry, the function '{response}' did not pass validation: [red]{e}[/red]"
+                )
+            )
+            return False
+
+    def effect(self):
+        from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
+
+        self.saved_custom_g2p = deepcopy(self.tour.state.get("custom_g2p"))
+        self.saved_g2p_func = AVAILABLE_G2P_ENGINES.get(self.language_code, None)
+
+        AVAILABLE_G2P_ENGINES[self.language_code] = self.g2p_func
+        if "custom_g2p" not in self.tour.state:
+            self.tour.state["custom_g2p"] = {}
+        self.tour.state["custom_g2p"][self.language_code] = self.response
+        rich_print(
+            Panel(
+                f'Successfully set the g2p engine for {self.language_code} to "{self.response}".'
+            )
+        )
+
+    def undo(self):
+        from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
+
+        match self.saved_custom_g2p:
+            case None:
+                del self.tour.state["custom_g2p"]
+            case _:
+                self.tour.state["custome_g2p"] = self.saved_custom_g2p
+
+        match self.saved_g2p_func:
+            case None:
+                del AVAILABLE_G2P_ENGINES[self.language_code]
+            case _:
+                AVAILABLE_G2P_ENGINES[self.language_code] = self.saved_g2p_func
+
+        super().undo()
 
 
 def add_missing_speaker(state):
@@ -711,7 +927,7 @@ def add_missing_speaker(state):
         item["speaker"] = state[StepNames.add_speaker_step]
 
 
-def reload_filelist_data_as_dict(state):
+def convert_filelist_data_to_dict(state):
     """Given a tour or step's state, reload the filelist_data as a dict if
     that was not already done."""
     data = state.get("filelist_data", None)
@@ -719,10 +935,7 @@ def reload_filelist_data_as_dict(state):
         # data is already a dict, no need to do anything
         return
 
-    # reparse data
-    filelist_path = state.get(StepNames.filelist_step)
-    if not isinstance(filelist_path, Path):
-        filelist_path = Path(filelist_path).expanduser()
+    # copy data from list to dict
     if state.get(StepNames.filelist_format_step, None) in [
         "psv",
         "tsv",
@@ -888,6 +1101,21 @@ class SymbolSetStep(Step):
     def effect(self):
         from everyvoice.config.text_config import Punctuation
 
+        self.saved_state = {
+            "model_target_training_text_representation": None,
+        }
+
+        # apply automatic conversions before extracting symbols
+        # - text processing
+        # - g2p conversion
+        # and get target training representation
+        self.state["model_target_training_text_representation"] = (
+            apply_automatic_text_conversions(
+                self.state["filelist_data"],
+                self.state[StepNames.filelist_text_representation_step],
+            )
+        )
+
         character_graphemes = set()
         phone_graphemes = set()
         for item in tqdm(
@@ -923,6 +1151,7 @@ def get_dataset_steps(dataset_index=0):
             TextProcessingStep(state_subset=f"dataset_{dataset_index}"),
             HasSpeakerStep(state_subset=f"dataset_{dataset_index}"),
             HasLanguageStep(state_subset=f"dataset_{dataset_index}"),
+            CustomG2PStep(state_subset=f"dataset_{dataset_index}"),
             WavsDirStep(state_subset=f"dataset_{dataset_index}"),
             ValidateWavsStep(state_subset=f"dataset_{dataset_index}"),
             SymbolSetStep(state_subset=f"dataset_{dataset_index}"),

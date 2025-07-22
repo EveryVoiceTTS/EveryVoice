@@ -29,16 +29,13 @@ def rename_unknown_headers(headers):
     return headers
 
 
-def apply_automatic_text_conversions(
-    filelist_data, text_representation, global_isocode=None
-) -> str:
+def apply_automatic_text_conversions(filelist_data, text_representation) -> str:
     """Arpabet is automatically converted to phones. phones are automatically derived from characters
        if a corresponding g2p module is available.
 
     Args:
         filelist_data (list[dict]): _description_
         text_representation (DatasetTextRepresentation): _description_
-        isocode (str, optional): _description_. Defaults to None.
     Returns:
         target_training_representation (str): the target training representation level. returns 'phones' unless there is more data available from using 'characters'.
     """
@@ -53,13 +50,7 @@ def apply_automatic_text_conversions(
     character_counter = 0
     phone_counter = 0
     for item in tqdm(filelist_data, desc=f"Processing your {text_representation}"):
-        # add globally defined language code
-        if global_isocode is not None:
-            item["language"] = global_isocode
-            item_isocode = global_isocode
-        else:
-            # define the isocode from the item
-            item_isocode = item.get("language", None)
+        item_isocode = item.get("language", None)
         # convert arpabet to phones
         if (
             DatasetTextRepresentation.arpabet.value in item
