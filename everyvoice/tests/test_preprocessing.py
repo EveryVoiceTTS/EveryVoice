@@ -108,20 +108,46 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             self.assertEqual(audio, None)
             self.assertEqual(sr, None)
 
-    def test_multichannel_audio_error(self):
-        """Test that audio files with more than 2 channels raise ValueError"""
+    def test_multichannel_audio_skipped(self):
+        """Test that audio files with more than 2 channels are skipped gracefully"""
         multichannel_audio_path = self.data_dir / "multichannel_test.wav"
 
-        with self.assertRaises(ValueError) as context:
+        with mute_logger("everyvoice.preprocessor.preprocessor"):
+            audio, sr = self.preprocessor.process_audio(
+                multichannel_audio_path, hop_size=256
+            )
+
+        # Should return None, None indicating the file was skipped
+        self.assertEqual(audio, None)
+        self.assertEqual(sr, None)
+
+        # Should be added to the multichannel files list
+        self.assertIn(
+            str(multichannel_audio_path), self.preprocessor.multichannel_files_list
+        )
+
+        # Should increment the counter
+        self.assertEqual(self.preprocessor.counters.value("multichannel_files"), 1)
+
+    def test_multichannel_files_report(self):
+        """Test that multichannel files appear in the report"""
+        # Get the current count before processing
+        initial_count = self.preprocessor.counters.value("multichannel_files")
+        multichannel_audio_path = self.data_dir / "multichannel_test.wav"
+
+        # Process the multichannel file to add it to the list
+        with mute_logger("everyvoice.preprocessor.preprocessor"):
             self.preprocessor.process_audio(multichannel_audio_path, hop_size=256)
 
-        error_message = str(context.exception)
-        self.assertIn("has 4 channels", error_message)
-        self.assertIn(
-            "EveryVoice only supports mono (1 channel) or stereo (2 channel)",
-            error_message,
-        )
-        self.assertIn("Please convert your audio to mono or stereo", error_message)
+        # Generate report
+        report = self.preprocessor.report()
+
+        # Check that multichannel files are mentioned in the report
+        self.assertIn("multichannel_files", report)
+        expected_count = initial_count + 1
+        self.assertIn(f"multichannel_files          {expected_count}", report)
+        self.assertIn(f"Multichannel Audio Files ({expected_count} total)", report)
+        self.assertIn(str(multichannel_audio_path), report)
 
     def test_process_audio(self):
         import torchaudio

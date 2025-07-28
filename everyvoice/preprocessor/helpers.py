@@ -101,6 +101,7 @@ class Counters:
         self._audio_empty = manager.Value("l", 0)
         self._audio_too_long = manager.Value("l", 0)
         self._audio_too_short = manager.Value("l", 0)
+        self._multichannel_files = manager.Value("l", 0)
         self._skipped_processes = manager.Value("l", 0)
         self._missing_files = manager.Value("l", 0)
 
