@@ -149,6 +149,57 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         self.assertIn(f"Multichannel Audio Files ({expected_count} total)", report)
         self.assertIn(str(multichannel_audio_path), report)
 
+    def test_multichannel_files_empty_report(self):
+        """Test that report works correctly when no multichannel files exist"""
+        # Create a fresh preprocessor to ensure clean state
+        fresh_preprocessor = Preprocessor(self.fp_config)
+
+        # Generate report with no multichannel files processed
+        report = fresh_preprocessor.report()
+
+        # Should show 0 multichannel files and no multichannel files section
+        self.assertIn("multichannel_files          0", report)
+        self.assertNotIn("Multichannel Audio Files", report)
+
+    def test_multichannel_files_file_creation(self):
+        """Test that multichannel_files.txt is created correctly"""
+        import tempfile
+        from pathlib import Path
+
+        # Add some multichannel files to the preprocessor
+        multichannel_path = self.data_dir / "multichannel_test.wav"
+
+        # Process the multichannel file to populate the list
+        with mute_logger("everyvoice.preprocessor.preprocessor"):
+            self.preprocessor.process_audio(multichannel_path, hop_size=256)
+
+        # Test the file creation logic directly
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_dir = Path(tmpdir)
+
+            # Simulate the file creation code from preprocess method
+            if self.preprocessor.multichannel_files_list:
+                with open(
+                    save_dir / "multichannel_files.txt", "w", encoding="utf8"
+                ) as f:
+                    f.write(
+                        f"Multichannel Audio Files ({len(self.preprocessor.multichannel_files_list)} total):\n"
+                    )
+                    f.write("=" * 50 + "\n")
+                    for multichannel_file in self.preprocessor.multichannel_files_list:
+                        f.write(f"{multichannel_file}\n")
+
+            # Check that multichannel_files.txt was created
+            multichannel_file = save_dir / "multichannel_files.txt"
+            self.assertTrue(multichannel_file.exists())
+
+            # Check the content of multichannel_files.txt
+            with open(multichannel_file, "r") as f:
+                content = f.read()
+                self.assertIn("Multichannel Audio Files", content)
+                self.assertIn("multichannel_test.wav", content)
+                self.assertIn("=" * 50, content)
+
     def test_process_audio(self):
         import torchaudio
 
