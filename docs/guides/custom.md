@@ -2,11 +2,11 @@
 
 ## Step 1: Make sure you have Permission!
 
-So, you want to build a text-to-speech system for a new language or dataset - cool! But, just because you *can* build a text-to-speech system, doesn't mean you *should*. There are a lot of important ethical questions around text-to-speech. For example, it's **not** ethical to just use audio you find somewhere online if it doesn't have explicit permission to use it for the purposes of text-to-speech. The first step is always to make sure you have permission to use the data in question and that whoever contributed their voice to the data you want to use is aware and supportive of your goal.
+So, you want to build a text-to-speech system for a new language or dataset - cool! But, just because you _can_ build a text-to-speech system, doesn't mean you _should_. There are a lot of important ethical questions around text-to-speech. For example, it's **not** ethical to just use audio you find somewhere online if it doesn't have explicit permission to use it for the purposes of text-to-speech. The first step is always to make sure you have permission to use the data in question and that whoever contributed their voice to the data you want to use is aware and supportive of your goal.
 
 Creating a text-to-speech model without permission is unethical, but even when you do have permission, you should take great care in how you distribute the model you have created. Increasingly, text-to-speech technology is used in fraud and unauthorized impersonation. The technology has also been used to disenfranchise voice actors and other professionals. When you create an EveryVoice model, you are responsible for ensuring the model is only used and distributed according to the permissions you have. To help with this accountability, you will be required by EveryVoice to attest that you have permission to use your data and to provide a full name and contact information that will also be distributed with the model.
 
-In addition, we invite you to check out our [short guide](./ethics.md) that contains prompts about ethical questions *before* starting on any of the next steps.
+In addition, we invite you to check out our [short guide](./ethics.md) that contains prompts about ethical questions _before_ starting on any of the next steps.
 
 ## Step 2: Gather Your Data
 
@@ -58,7 +58,7 @@ cd your_everyvoice_project
 ```
 
 !!! important
-    After you run the Configuration Wizard 🧙, please inspect your text configuration `config/{{ config_filename('text') }}` to make sure everything looks right. That is, if some unexpected symbols show up, please inspect your data (if you remove symbols from the configuration here, they will be ignored during training). Sometimes characters that are treated as punctuation by default will need to be removed from the punctuation list if they are treated as non-punctuation in your language.
+After you run the Configuration Wizard 🧙, please inspect your text configuration `config/{{ config_filename('text') }}` to make sure everything looks right. That is, if some unexpected symbols show up, please inspect your data (if you remove symbols from the configuration here, they will be ignored during training). Sometimes characters that are treated as punctuation by default will need to be removed from the punctuation list if they are treated as non-punctuation in your language.
 
 ## Step 5: Run the Preprocessor
 
@@ -70,9 +70,14 @@ everyvoice preprocess config/{{ config_filename('text-to-spec') }}
 
 ## Step 6: Select a Vocoder
 
-So you don't need to train your own vocoder, EveryVoice has a variety of publicly released vocoders available [here](TODO). Follow the instructions there for downloading the checkpoints.
+You do not need to train your own vocoder.
+EveryVoice is compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint from [the official HiFiGAN implementation](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model), which is very good quality. You can find the EveryVoice-compatible version of this checkpoint [here](https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing).
 
-EveryVoice is also compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint from [the official HiFiGAN implementation](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model), which is very good quality. You can find the EveryVoice-compatible version of this checkpoint [here](https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing).
+You can download the checkpoint by following the link above, or you can download it using the command line with [gdown](https://pypi.org/project/gdown/). First ensure that you have _gdown_ installed; you can install it with `pip install gdown`. Then to download the checkpoint you can run:
+
+```bash
+gdown https://drive.google.com/uc?id=1-iarZV2hTeociQjTX7l2WShuXalROGQf
+```
 
 Using a pre-trained vocoder is recommended, and the above checkpoint should work well even for new languages after [finetuning](./finetune.md).
 
@@ -105,7 +110,7 @@ everyvoice train text-to-spec config/{{ config_filename('text-to-spec') }}
 ```
 
 !!! tip
-    While your model is training, you can use TensorBoard to view the logs which will show information about the progress of training and display spectrogram images. If you have provided a `vocoder_path` key, then you will also be able to hear audio in the logs. To use TensorBoard, make sure that your conda environment is activated and run `tensorboard --logdir path/to/logs_and_checkpoints`. Then your logs will be viewable at [http://localhost:6006](http://localhost:6006).
+While your model is training, you can use TensorBoard to view the logs which will show information about the progress of training and display spectrogram images. If you have provided a `vocoder_path` key, then you will also be able to hear audio in the logs. To use TensorBoard, make sure that your conda environment is activated and run `tensorboard --logdir path/to/logs_and_checkpoints`. Then your logs will be viewable at [http://localhost:6006](http://localhost:6006).
 
 ## Step 8 (optional): Finetune your Vocoder
 
@@ -131,7 +136,6 @@ everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoint
 
 And an interactive demo will be available at [http://localhost:7260](http://localhost:7260)
 
-
 ## Optional: Evaluation
 
 If you want to evaluate the model you just built, you can make use of the `everyvoice evaluate` command. In order to use it, you have to first generate some audio (see step 9) and then you can evaluate either a single file with `everyvoice evaluate -f your_file.wav` or a directory of audio files with `everyvoice evaluate -d path_to_wavs/`. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in [this](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680) paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: `everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav`. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.
@@ -139,4 +143,4 @@ If you want to evaluate the model you just built, you can make use of the `every
 Please refer to `everyvoice evaluate --help` for more information.
 
 !!! note
-    Automatic evaluation can be helpful, but please take the reported numbers with a grain of salt. They are not always reliable, and do not always correlate well with human judgements.
+Automatic evaluation can be helpful, but please take the reported numbers with a grain of salt. They are not always reliable, and do not always correlate well with human judgements.
