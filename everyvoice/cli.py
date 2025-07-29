@@ -14,8 +14,7 @@ from rich import print as rich_print
 from rich.panel import Panel
 
 from everyvoice._version import VERSION
-from everyvoice.base_cli.checkpoint import inspect as inspect_checkpoint
-from everyvoice.base_cli.checkpoint import rename_speaker
+from everyvoice.base_cli.checkpoint import inspect, rename_speaker
 from everyvoice.base_cli.interfaces import inference_base_command_interface
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
@@ -559,15 +558,53 @@ app.add_typer(
     short_help="Synthesize using your pre-trained EveryVoice models",
 )
 
-app.command(
-    name="inspect-checkpoint",
-    short_help="Extract structural information from a checkpoint",
-)(inspect_checkpoint)
+# Add the checkpoint commands
+checkpoint_group = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    context_settings={"help_option_names": ["-h", "--help"]},
+    rich_markup_mode="markdown",
+    cls=TyperGroupOrderAsDeclared,
+    help="""
+    # Checkpoint Help
 
-app.command(
+        - **inspect** --- Extract structural information from a checkpoint.
+
+        - **rename-speaker** --- Rename a speaker in the checkpoint's parameters.
+    """,
+)
+checkpoint_group.command(
+    name="inspect",
+    short_help="Extract structural information from a checkpoint",
+)(inspect)
+
+checkpoint_group.command(
     name="rename-speaker",
     short_help="Rename a speaker in the checkpoint's parameters",
 )(rename_speaker)
+
+app.add_typer(
+    checkpoint_group,
+    name="checkpoint",
+    short_help="Inspect and rename speakers in your EveryVoice checkpoints",
+)
+
+
+@app.command(hidden=True, short_help="Inspect a model checkpoint")
+def inspect_checkpoint(model_path: Path):
+    """
+    Inspect a model checkpoint.
+    """
+    rich_print(
+        Panel(
+            dedent(
+                f"""
+                This command has been renamed to `everyvoice checkpoint inspect`.
+                Please use `everyvoice checkpoint inspect {model_path}` instead.
+                """
+            ).strip(),
+            title="Inspect Checkpoint",
+        )
+    )
 
 
 TestSuites = Enum("TestSuites", {name: name for name in SUITE_NAMES})  # type: ignore
