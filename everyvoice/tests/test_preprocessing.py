@@ -1140,46 +1140,6 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
             self.assertIn("WARNING: No audio files were processed.", report)
 
-    def test_missing_files_save_during_preprocess(self):
-        """Test that missing files are saved to file in the preprocess method path"""
-        with tempfile.TemporaryDirectory(prefix="test_save", dir=".") as tmpdir:
-            tmpdir = Path(tmpdir)
-            preprocessor = Preprocessor(FeaturePredictionConfig(contact=self.contact))
-            preprocessor.save_dir = tmpdir
-
-            # Add some missing files to the list
-            preprocessor.missing_files_list = [
-                "/path/to/missing1.wav",
-                "/path/to/missing2.wav",
-            ]
-
-            # Simulate the preprocess method's file saving logic
-            if (
-                preprocessor.missing_files_list
-                and not (preprocessor.save_dir / "missing_files.txt").exists()
-            ):
-                with open(
-                    preprocessor.save_dir / "missing_files.txt", "w", encoding="utf8"
-                ) as f:
-                    f.write(
-                        f"Missing Audio Files ({len(preprocessor.missing_files_list)} total):\n"
-                    )
-                    f.write("=" * 50 + "\n")
-                    for missing_file in preprocessor.missing_files_list:
-                        f.write(f"{missing_file}\n")
-
-            # Verify file was created with correct content
-            missing_files_path = tmpdir / "missing_files.txt"
-            self.assertTrue(missing_files_path.exists())
-
-            with open(missing_files_path, "r", encoding="utf8") as f:
-                content = f.read()
-
-            self.assertIn("Missing Audio Files (2 total)", content)
-            self.assertIn("=" * 50, content)
-            self.assertIn("/path/to/missing1.wav", content)
-            self.assertIn("/path/to/missing2.wav", content)
-
 
 class PreprocessingHierarchyTest(TestCase):
     def test_hierarchy(self):

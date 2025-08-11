@@ -1221,21 +1221,6 @@ class Preprocessor:
             report = "Here is a report:\n" + self.report()
             if not self.counters.value("duration"):
                 report += "\n\nWARNING: No audio files were processed."
-
-            # Save missing files list to a separate file if we haven't already
-            if (
-                self.missing_files_list
-                and not (self.save_dir / "missing_files.txt").exists()
-            ):
-                with open(
-                    self.save_dir / "missing_files.txt", "w", encoding="utf8"
-                ) as f:
-                    f.write(
-                        f"Missing Audio Files ({len(self.missing_files_list)} total):\n"
-                    )
-                    f.write("=" * 50 + "\n")
-                    for missing_file in self.missing_files_list:
-                        f.write(f"{missing_file}\n")
         else:
             report = ""
         rich_print(
