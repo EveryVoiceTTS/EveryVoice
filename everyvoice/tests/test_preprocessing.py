@@ -239,6 +239,92 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                 self.assertIn("multichannel_test.wav", content)
                 self.assertIn("=" * 50, content)
 
+    def test_audio_too_long_condition(self):
+        """Test that audio files longer than max_audio_length are skipped"""
+        # Use the long test audio file (12 seconds, longer than default 11.0 limit)
+        long_audio_path = self.data_dir / "long_audio_test.wav"
+
+        with mute_logger("everyvoice.preprocessor.preprocessor"):
+            audio, sr = self.preprocessor.process_audio(long_audio_path, hop_size=256)
+
+        # Should return None, None indicating the file was skipped
+        self.assertEqual(audio, None)
+        self.assertEqual(sr, None)
+
+        # Should increment the counter
+        self.assertEqual(self.preprocessor.counters.value("audio_too_long"), 1)
+
+    def test_full_preprocess_with_multichannel_files(self):
+        """Test the full preprocess method creates multichannel_files.txt"""
+        import tempfile
+        from pathlib import Path
+
+        # Create a temporary directory for this test
+        with tempfile.TemporaryDirectory() as tmpdir:
+            save_dir = Path(tmpdir)
+
+            # Create a config that points to a dataset with multichannel files
+            from everyvoice.config.preprocessing_config import Dataset
+
+            test_config = self.fp_config.model_copy()
+            test_config.preprocessing.save_dir = save_dir
+
+            # Create a test filelist that includes both a valid file and the multichannel file
+            test_filelist = save_dir / "test_metadata.psv"
+            test_filelist.write_text(
+                "basename|text\nLJ050-0269|Test text\nmultichannel_test|Test text",
+                encoding="utf8",
+            )
+
+            # Create test wavs directory and copy both files there
+            test_wavs_dir = save_dir / "wavs"
+            test_wavs_dir.mkdir()
+            # Copy a valid audio file
+            shutil.copy2(
+                self.data_dir / "lj" / "wavs" / "LJ050-0269.wav",
+                test_wavs_dir / "LJ050-0269.wav",
+            )
+            # Copy multichannel file
+            shutil.copy2(
+                self.data_dir / "multichannel_test.wav",
+                test_wavs_dir / "multichannel_test.wav",
+            )
+
+            # Update config to point to test data
+            test_config.preprocessing.source_data = [
+                Dataset(
+                    data_dir=test_wavs_dir,
+                    filelist=test_filelist,
+                    permissions_obtained=True,
+                )
+            ]
+
+            preprocessor = Preprocessor(test_config)
+
+            # Run the preprocess method with just audio processing
+            with mute_logger("everyvoice.preprocessor.preprocessor"):
+                preprocessor.preprocess(
+                    output_path=str(save_dir / "filelist.psv"),
+                    cpus=1,
+                    overwrite=True,
+                    to_process=(
+                        "audio",
+                    ),  # Only process audio to trigger the multichannel file creation
+                )
+
+            # Verify that multichannel_files.txt was created
+            multichannel_file = save_dir / "multichannel_files.txt"
+            self.assertTrue(
+                multichannel_file.exists(), "multichannel_files.txt should be created"
+            )
+
+            # Verify the content
+            with open(multichannel_file, "r") as f:
+                content = f.read()
+                self.assertIn("Multichannel Audio Files (1 total)", content)
+                self.assertIn("multichannel_test.wav", content)
+                self.assertIn("=" * 50, content)
+
     def test_process_audio(self):
         import torchaudio
 
