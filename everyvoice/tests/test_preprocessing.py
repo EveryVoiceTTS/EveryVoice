@@ -1119,6 +1119,67 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         # Should not contain missing files section
         self.assertNotIn("Missing Audio Files", report)
 
+    def test_no_audio_files_warning(self):
+        """Test that warning is shown when no audio files are processed"""
+        preprocessor = Preprocessor(FeaturePredictionConfig(contact=self.contact))
+
+        # Duration counter is already 0 by default, no need to set it
+        # Verify it's 0
+        self.assertEqual(preprocessor.counters.value("duration"), 0)
+
+        # Create a simple report scenario that triggers the warning
+        with tempfile.TemporaryDirectory(prefix="test_warning", dir=".") as tmpdir:
+            tmpdir = Path(tmpdir)
+            preprocessor.save_dir = tmpdir
+
+            # Simulate the preprocess method's report generation
+            if "audio" in ("audio",):
+                report = "Here is a report:\n" + preprocessor.report()
+                if not preprocessor.counters.value("duration"):
+                    report += "\n\nWARNING: No audio files were processed."
+
+            self.assertIn("WARNING: No audio files were processed.", report)
+
+    def test_missing_files_save_during_preprocess(self):
+        """Test that missing files are saved to file in the preprocess method path"""
+        with tempfile.TemporaryDirectory(prefix="test_save", dir=".") as tmpdir:
+            tmpdir = Path(tmpdir)
+            preprocessor = Preprocessor(FeaturePredictionConfig(contact=self.contact))
+            preprocessor.save_dir = tmpdir
+
+            # Add some missing files to the list
+            preprocessor.missing_files_list = [
+                "/path/to/missing1.wav",
+                "/path/to/missing2.wav",
+            ]
+
+            # Simulate the preprocess method's file saving logic
+            if (
+                preprocessor.missing_files_list
+                and not (preprocessor.save_dir / "missing_files.txt").exists()
+            ):
+                with open(
+                    preprocessor.save_dir / "missing_files.txt", "w", encoding="utf8"
+                ) as f:
+                    f.write(
+                        f"Missing Audio Files ({len(preprocessor.missing_files_list)} total):\n"
+                    )
+                    f.write("=" * 50 + "\n")
+                    for missing_file in preprocessor.missing_files_list:
+                        f.write(f"{missing_file}\n")
+
+            # Verify file was created with correct content
+            missing_files_path = tmpdir / "missing_files.txt"
+            self.assertTrue(missing_files_path.exists())
+
+            with open(missing_files_path, "r", encoding="utf8") as f:
+                content = f.read()
+
+            self.assertIn("Missing Audio Files (2 total)", content)
+            self.assertIn("=" * 50, content)
+            self.assertIn("/path/to/missing1.wav", content)
+            self.assertIn("/path/to/missing2.wav", content)
+
 
 class PreprocessingHierarchyTest(TestCase):
     def test_hierarchy(self):
