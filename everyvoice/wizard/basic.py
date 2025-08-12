@@ -14,7 +14,9 @@ from everyvoice.config.shared_types import (
     LoggerConfig,
     init_context,
 )
+from everyvoice.config.text_config import LanguageBoundaries
 from everyvoice.model.vocoder.config import VocoderConfig
+from everyvoice.text.utils import is_sentence_final
 from everyvoice.utils import generic_psv_filelist_reader, slugify, write_filelist
 from everyvoice.wizard import (
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
@@ -311,6 +313,29 @@ class ConfigFormatStep(Step):
             g2p_engines=self.state.get("custom_g2p", {}),
         )
         text_config.cleaners += global_cleaners
+        language_codes = sorted(
+            set(row["language"] for row in dataset_state["filelist_data"])
+        )
+        strong: str = "".join(
+            [
+                char
+                for char in (
+                    text_config.symbols.punctuation.question_symbols
+                    + text_config.symbols.punctuation.periods
+                    + text_config.symbols.punctuation.exclamations
+                )
+                if is_sentence_final(char)
+            ]
+        )
+        weak: str = "".join(
+            text_config.symbols.punctuation.commas
+            + text_config.symbols.punctuation.semi_colons
+            + text_config.symbols.punctuation.colons
+        )
+        text_config.boundaries = {
+            lang: LanguageBoundaries(**{"strong": strong, "weak": weak})
+            for lang in language_codes
+        }
         text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
         write_dict_to_config(
             json.loads(text_config.model_dump_json(exclude_none=False)),

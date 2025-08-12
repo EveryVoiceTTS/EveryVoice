@@ -8,7 +8,13 @@
 import re
 
 
-def chunk_text(text, desired_length=100, max_length=200):  # noqa: C901
+def chunk_text(  # noqa: C901
+    text: str,
+    desired_length: int = 100,
+    max_length: int = 200,
+    strong_boundaries: str = "!?.",
+    weak_boundaries: str = ":;,",
+):
     """
     Split text into chunks of approximately `desired_length`,
     trying to preserve sentence boundaries (!?.), with commas as lower-priority fallbacks.
@@ -58,11 +64,11 @@ def chunk_text(text, desired_length=100, max_length=200):  # noqa: C901
 
         # Record potential split points
         if not in_quote:
-            if char in "!?\n":
+            if char == "\n":
                 add_split("strong")
-            elif char == "." and peek(1) in "\n ":
+            elif char in strong_boundaries and peek(1) in "\n ":
                 add_split("strong")
-            elif char in ",;:":
+            elif char in weak_boundaries and peek(1) in "\n ":
                 add_split("weak")
 
         # If chunk is too long, find best place to split
@@ -85,7 +91,9 @@ def chunk_text(text, desired_length=100, max_length=200):  # noqa: C901
             weak_splits = []
 
         # Early commit on strong boundary
-        elif not in_quote and (char in "!?\n" or (char == "." and peek(1) in "\n ")):
+        elif not in_quote and (
+            char == "\n" or (char in strong_boundaries and peek(1) in "\n ")
+        ):
             if len(current) >= desired_length:
                 commit()
 
@@ -95,4 +103,5 @@ def chunk_text(text, desired_length=100, max_length=200):  # noqa: C901
         chunks.append(current.strip())
 
     # Final filtering
-    return [s for s in chunks if s and not re.match(r"^[\s\.,;:!?]*$", s)]
+    non_lexical = rf"^[\s{re.escape(strong_boundaries + weak_boundaries)}]*$"
+    return [chunk for chunk in chunks if chunk and not re.match(non_lexical, chunk)]
