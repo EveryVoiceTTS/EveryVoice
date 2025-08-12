@@ -136,6 +136,26 @@ everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoint
 
 And an interactive demo will be available at [http://localhost:7260](http://localhost:7260)
 
+Please consult the demo help for more information on how to use the demo: `everyvoice demo --help`.
+
+You can provide a custom json configuration file to override parts of the user interface the demo by using the `--ui-config-file` flag, e.g. `everyvoice demo --ui-config-file=my_config.json  logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt`.
+
+This user interface configuration can provide a custom title (`app_title`), a custom labels for the languages and speakers see sameple below.
+
+```json
+{
+  "app_title": "My Custom TTS Demo",
+  "languages": {
+    "en": "English",
+    "fr": "French"
+  },
+  "speakers": {
+    "speaker1": "Speaker One",
+    "speaker2": "Speaker Two"
+  }
+}
+```
+
 ## Optional: Evaluation
 
 If you want to evaluate the model you just built, you can make use of the `everyvoice evaluate` command. In order to use it, you have to first generate some audio (see step 9) and then you can evaluate either a single file with `everyvoice evaluate -f your_file.wav` or a directory of audio files with `everyvoice evaluate -d path_to_wavs/`. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in [this](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680) paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: `everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav`. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.
