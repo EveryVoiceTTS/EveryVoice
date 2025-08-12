@@ -472,3 +472,23 @@ class TextSplitTest(TestCase):
         text = "Hello, world!"
         with self.assertRaises(AssertionError):
             chunk_text(text, self.strong, self.weak, 200, 100)
+
+    def test_no_boundaries(self):
+        a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families. As a consequence of the residential school system and other policies of cultural suppression, the m"
+        b = "ajority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
+        text = a + " " + b
+        self.assertEqual([a, b], chunk_text(text, "", ""))
+
+    def test_custom_boundaries(self):
+        # This text, in SENĆOŦEN, is the W̱SÁNEĆ Mission Statement (https://wsanecschoolboard.ca/sencoten-language/)
+        a = "W̱UĆIST TŦE SKÁLs I,"  # This sentence is intentionally broken up mid-word
+        b = "TŦE Ś,X̱ENAṈs ĆSE LÁ,E TŦE ÁLEṈENEȻ TŦE W̱SÁNEĆ."
+        text = a + " " + b
+        # We test that the chunking alogrithm does NOT split "I, TŦE into different chunks
+        self.assertNotIn(a, chunk_text(text, self.strong, ":;", 15, 30))
+
+        # This text, in East Cree, is from the 'Marriage and Inuits in the old days' story (https://www.eastcree.org/cree/en/stories/)
+        a = "ᐧᐋᔥᑭᒡ ᐃᓐᑖᐦ ᑖᐹ ᐧᐃᒡ ᓃᔓᑳᐳᐧᐃᒡ ᐊᐧᐋᓂᒌ ᒥᒄ ᒌᐦ ᐧᐄᒋᒥᑑᒡ ᐋᑳ ᑭᐧᐹ ᐧᐃᒡ ᑖᑦ ᐋᔨᒻᐦᐋᐅᒋᒫᐤ᙮"
+        b = "ᐄᔥᒋᒫᐅᒡ ᒌᐦ ᓂᐱᐦᐋᐅᒡ ᐄᔨᔨᐤᐦ ᒥᒄ ᒌᐦ ᑖᐤ ᐹᔨᒄ ᐄᔥᒌᒫᐤ ᐋᑳ ᐧᐃᒡ ᒦᐧᔮᔨᑎ ᐋᐦ ᓂᐱᐦᐄᐧᐋᑦ ᑳᐦ ᐧᐄᑎᒥᐧᐋᑦ ᐋᓂᔮᐦ ᐄᔨᔨᐤᐦ ᐋᐃᑖᔨᑎᒦᒡ ᐄᔥᒋᒫᐤ ᒑᓂᐱᐦᐋᔨᒡ ᑳᓂᑎᐧᐋᔨᑎᒧᐧᐋᑦ ᒋᔥᑖᒫᐤ᙮"
+        text = a + " " + b
+        self.assertEqual([a, b], chunk_text(text, "᙮", self.weak, 50, 1000))
