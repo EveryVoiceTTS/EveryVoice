@@ -430,18 +430,22 @@ class SymbolsTest(TestCase):
         )
 
 
-class TestTextSplit(TestCase):
+class TextSplitTest(TestCase):
+    def setUp(self):
+        self.strong = ".!¡?¿"
+        self.weak = ";:,"
+
     def test_strong_boundary(self):
         a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families."
         b = "As a consequence of the residential school system and other policies of cultural suppression, the majority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
         text = a + " " + b
-        self.assertEqual([a, b], chunk_text(text))
+        self.assertEqual([a, b], chunk_text(text, self.strong, self.weak))
 
     def test_weak_boundary(self):
         a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families; as a consequence of the residential school system and other policies of cultural suppression,"
         b = "the majority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
         text = a + " " + b
-        self.assertEqual([a, b], chunk_text(text))
+        self.assertEqual([a, b], chunk_text(text, self.strong, self.weak))
 
     def test_custom_desired_length(self):
         a = "There are approximately 70 Indigenous languages spoken in Canada!"
@@ -450,18 +454,21 @@ class TestTextSplit(TestCase):
         d = "the majority of these languages now have fewer than 500 fluent speakers remaining."
         e = "Most fluent speakers are elderly."
         text = a + " " + b + " " + c + " " + d + " " + e
-        self.assertEqual([a + " " + b, c + " " + d, e], chunk_text(text, 75, 1000))
+        self.assertEqual(
+            [a + " " + b, c + " " + d, e],
+            chunk_text(text, self.strong, self.weak, 75, 1000),
+        )
 
     def test_normalization(self):
         a = "Welcome to the EveryVoice Documentation! Please read the background section below."
         text = "       Welcome to     the EveryVoice       Documentation!\n\n\n\nPlease read the background section below.                        "
-        self.assertEqual([a], chunk_text(text))
+        self.assertEqual([a], chunk_text(text, self.strong, self.weak))
 
     def test_quote_toggling(self):
         text = 'There are approximately "70 Indigenous languages spoken in Canada. The majority of these languages" now have fewer than 500 fluent speakers remaining.'
-        self.assertEqual([text], chunk_text(text, 75, 1000))
+        self.assertEqual([text], chunk_text(text, self.strong, self.weak, 75, 1000))
 
     def test_invalid_lengths(self):
         text = "Hello, world!"
         with self.assertRaises(AssertionError):
-            chunk_text(text, 200, 100)
+            chunk_text(text, self.strong, self.weak, 200, 100)
