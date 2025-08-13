@@ -363,8 +363,8 @@ class Preprocessor:
         return {**item, **{"speaker": speaker, "language": language}}
 
     def compute_stats(
-        self, energy=True, pitch=True
-    ) -> tuple[Optional[Scaler], Optional[Scaler]]:
+        self, energy=True, pitch=True, length=True
+    ) -> tuple[Optional[Scaler], Optional[Scaler], Optional[Scaler]]:
         if self.cpus > 1:
             parallel = Parallel(n_jobs=self.cpus, backend="loky", batch_size=500)
         if energy:
@@ -403,7 +403,37 @@ class Preprocessor:
                 for path in tqdm(paths, desc="Gathering pitch values"):
                     pitch_data = torch.load(path, weights_only=True)
                     pitch_scaler.data.append(pitch_data)
-        return energy_scaler if energy else energy, pitch_scaler if pitch else pitch
+        if length:
+            length_scaler = Scaler()
+            filelist = self.load_filelist(
+                self.config.preprocessing.save_dir / "filelist.psv"
+            )
+            # TODO: should we use this (after preprocessing) or ../dataset-filelist.psv (before preprocessing)
+            # TODO: will this work if there are multiple datasets?
+            if self.cpus > 1:
+                logger.info("Gathering character length values")
+                with tqdm_joblib_context(
+                    tqdm(desc="Gathering character length values")
+                ):
+                    for length_data in parallel(
+                        delayed(
+                            lambda utterance: torch.tensor([len(utterance)], dtype=float)  # fmt: skip
+                        )(line["characters"])
+                        for line in filelist
+                    ):
+                        # TODO: Not sure if its bad that I have coerced length_data so much to make it fit helpers.calculate_stats()
+                        length_scaler.data.append(length_data)
+            else:
+                for line in tqdm(filelist, desc="Gathering character length values"):
+                    length_data = torch.tensor(
+                        [len(line["characters"])]
+                    )  # This is the same as the lambda function above!
+                    length_scaler.data.append(length_data)
+        return (
+            energy_scaler if energy else energy,
+            pitch_scaler if pitch else pitch,
+            length_scaler if length else length,
+        )
 
     def normalize_stats(self, energy_scaler: Scaler, pitch_scaler: Scaler):
         """Normalize pitch and energy to unit variance"""
