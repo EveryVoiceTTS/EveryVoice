@@ -64,7 +64,7 @@ class CLITest(TestCase):
             "train",
             "synthesize",
             "preprocess",
-            "inspect-checkpoint",
+            "checkpoint",
             "evaluate",
             "demo",
             "g2p",
@@ -310,15 +310,26 @@ class CLITest(TestCase):
         self.assertTrue(evaluation_output.exists(), "should print results to a file")
         evaluation_output.unlink()
 
+    def test_old_inspect_checkpoint(self):
+        with silence_c_stderr():
+            result = self.runner.invoke(
+                app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
+            )
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn(
+            "This command has been renamed to `everyvoice checkpoint inspect`.",
+            result.stdout,
+        )
+
     def test_inspect_checkpoint_help(self):
         with silence_c_stderr():
-            result = self.runner.invoke(app, ["inspect-checkpoint", "--help"])
-        self.assertIn("inspect-checkpoint [OPTIONS] MODEL_PATH", result.stdout)
+            result = self.runner.invoke(app, ["checkpoint", "inspect", "--help"])
+        self.assertIn("checkpoint inspect [OPTIONS] MODEL_PATH", result.stdout)
 
     def test_inspect_checkpoint(self):
         with silence_c_stderr():
             result = self.runner.invoke(
-                app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
+                app, ["checkpoint", "inspect", str(self.data_dir / "test.ckpt")]
             )
         self.assertIn('global_step": 52256', result.stdout)
         self.assertIn(
@@ -494,6 +505,7 @@ class CLITest(TestCase):
                 result = self.runner.invoke(
                     app,
                     [
+                        "checkpoint",
                         "rename-speaker",
                         str(tmpdir / "test.ckpt"),
                         "old_speaker",
@@ -529,6 +541,7 @@ class CLITest(TestCase):
                 result = self.runner.invoke(
                     app,
                     [
+                        "checkpoint",
                         "rename-speaker",
                         str(tmpdir / "test.ckpt"),
                         "non_existing_speaker",
@@ -558,6 +571,7 @@ class CLITest(TestCase):
                 result = self.runner.invoke(
                     app,
                     [
+                        "checkpoint",
                         "rename-speaker",
                         str(tmpdir / "empty.ckpt"),
                         "old_speaker",
