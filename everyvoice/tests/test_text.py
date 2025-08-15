@@ -430,18 +430,22 @@ class SymbolsTest(TestCase):
         )
 
 
-class TestTextSplit(TestCase):
+class TextSplitTest(TestCase):
+    def setUp(self):
+        self.strong = ".!¡?¿"
+        self.weak = ";:,"
+
     def test_strong_boundary(self):
         a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families."
         b = "As a consequence of the residential school system and other policies of cultural suppression, the majority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
         text = a + " " + b
-        self.assertEqual([a, b], chunk_text(text))
+        self.assertEqual([a, b], chunk_text(text, self.strong, self.weak))
 
     def test_weak_boundary(self):
         a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families; as a consequence of the residential school system and other policies of cultural suppression,"
         b = "the majority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
         text = a + " " + b
-        self.assertEqual([a, b], chunk_text(text))
+        self.assertEqual([a, b], chunk_text(text, self.strong, self.weak))
 
     def test_custom_desired_length(self):
         a = "There are approximately 70 Indigenous languages spoken in Canada!"
@@ -450,18 +454,41 @@ class TestTextSplit(TestCase):
         d = "the majority of these languages now have fewer than 500 fluent speakers remaining."
         e = "Most fluent speakers are elderly."
         text = a + " " + b + " " + c + " " + d + " " + e
-        self.assertEqual([a + " " + b, c + " " + d, e], chunk_text(text, 75, 1000))
+        self.assertEqual(
+            [a + " " + b, c + " " + d, e],
+            chunk_text(text, self.strong, self.weak, 75, 1000),
+        )
 
     def test_normalization(self):
         a = "Welcome to the EveryVoice Documentation! Please read the background section below."
         text = "       Welcome to     the EveryVoice       Documentation!\n\n\n\nPlease read the background section below.                        "
-        self.assertEqual([a], chunk_text(text))
+        self.assertEqual([a], chunk_text(text, self.strong, self.weak))
 
     def test_quote_toggling(self):
         text = 'There are approximately "70 Indigenous languages spoken in Canada. The majority of these languages" now have fewer than 500 fluent speakers remaining.'
-        self.assertEqual([text], chunk_text(text, 75, 1000))
+        self.assertEqual([text], chunk_text(text, self.strong, self.weak, 75, 1000))
 
     def test_invalid_lengths(self):
         text = "Hello, world!"
         with self.assertRaises(AssertionError):
-            chunk_text(text, 200, 100)
+            chunk_text(text, self.strong, self.weak, 200, 100)
+
+    def test_no_boundaries(self):
+        a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families. As a consequence of the residential school system and other policies of cultural suppression, the m"
+        b = "ajority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
+        text = a + " " + b
+        self.assertEqual([a, b], chunk_text(text, "", ""))
+
+    def test_custom_boundaries(self):
+        # This text, in SENĆOŦEN, is the W̱SÁNEĆ Mission Statement (https://wsanecschoolboard.ca/sencoten-language/)
+        a = "W̱UĆIST TŦE SKÁLs I,"  # This sentence is intentionally broken up mid-word
+        b = "TŦE Ś,X̱ENAṈs ĆSE LÁ,E TŦE ÁLEṈENEȻ TŦE W̱SÁNEĆ."
+        text = a + " " + b
+        # We test that the chunking alogrithm does NOT split "I, TŦE into different chunks
+        self.assertNotIn(a, chunk_text(text, self.strong, ":;", 15, 30))
+
+        # This text, in East Cree, is from the 'Marriage and Inuits in the old days' story (https://www.eastcree.org/cree/en/stories/)
+        a = "ᐧᐋᔥᑭᒡ ᐃᓐᑖᐦ ᑖᐹ ᐧᐃᒡ ᓃᔓᑳᐳᐧᐃᒡ ᐊᐧᐋᓂᒌ ᒥᒄ ᒌᐦ ᐧᐄᒋᒥᑑᒡ ᐋᑳ ᑭᐧᐹ ᐧᐃᒡ ᑖᑦ ᐋᔨᒻᐦᐋᐅᒋᒫᐤ᙮"
+        b = "ᐄᔥᒋᒫᐅᒡ ᒌᐦ ᓂᐱᐦᐋᐅᒡ ᐄᔨᔨᐤᐦ ᒥᒄ ᒌᐦ ᑖᐤ ᐹᔨᒄ ᐄᔥᒌᒫᐤ ᐋᑳ ᐧᐃᒡ ᒦᐧᔮᔨᑎ ᐋᐦ ᓂᐱᐦᐄᐧᐋᑦ ᑳᐦ ᐧᐄᑎᒥᐧᐋᑦ ᐋᓂᔮᐦ ᐄᔨᔨᐤᐦ ᐋᐃᑖᔨᑎᒦᒡ ᐄᔥᒋᒫᐤ ᒑᓂᐱᐦᐋᔨᒡ ᑳᓂᑎᐧᐋᔨᑎᒧᐧᐋᑦ ᒋᔥᑖᒫᐤ᙮"
+        text = a + " " + b
+        self.assertEqual([a, b], chunk_text(text, "᙮", self.weak, 50, 1000))

@@ -311,6 +311,22 @@ class ConfigFormatStep(Step):
             g2p_engines=self.state.get("custom_g2p", {}),
         )
         text_config.cleaners += global_cleaners
+        language_codes = sorted(
+            set(row["language"] for row in dataset_state["filelist_data"])
+        )
+        strong: str = "".join(
+            text_config.symbols.punctuation.question_symbols
+            + text_config.symbols.punctuation.periods
+            + text_config.symbols.punctuation.exclamations
+        )
+        weak: str = "".join(
+            text_config.symbols.punctuation.commas
+            + text_config.symbols.punctuation.semi_colons
+            + text_config.symbols.punctuation.colons
+        )
+        text_config.boundaries = {
+            lang: {"strong": strong, "weak": weak} for lang in language_codes
+        }
         text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
         write_dict_to_config(
             json.loads(text_config.model_dump_json(exclude_none=False)),
