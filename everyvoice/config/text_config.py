@@ -124,7 +124,7 @@ class Symbols(BaseModel):
         return self
 
 
-G2P_lang = Annotated[
+Language = Annotated[
     str,
     Field(
         title="Language ID",
@@ -139,8 +139,25 @@ G2P_py_module = Annotated[
     ),
 ]
 G2P_Engines = Annotated[
-    dict[G2P_lang, G2P_py_module],
+    dict[Language, G2P_py_module],
     Field(description="Mapping from language id to g2p module"),
+]
+
+
+class LanguageBoundaries(BaseModel):
+    strong: str = Field(
+        "!?.",
+        description="All characters that constitute strong boundaries, for one language.",
+    )
+    weak: str = Field(
+        ":;,",
+        description="All characters that constitute strong boundaries, for one language.",
+    )
+
+
+GlobalBoundaries = Annotated[
+    dict[Language, LanguageBoundaries],
+    Field(description="Dictionary of strong and weak boundaries, for every language."),
 ]
 
 
@@ -197,6 +214,12 @@ class TextConfig(ConfigModel):
         True,
         title="Split Text",
         description="Whether or not to perform text splitting (also referred to as text chunking) at inference time. Instead of synthesizing an entire utterance, the utterance will be split into smaller chunks and re-combined after synthesis. This can lead to more natural synthesis for long-form (i.e. paragraph) synthesis.",
+    )
+    boundaries: GlobalBoundaries = Field(
+        {},
+        title="Boundaries",
+        description="Strong and Weak boundaries on which text splitting is to be performed.",
+        examples=["""{'eng': {'strong': '!?.', 'weak': ':;,'}}'"""],
     )
 
     @model_validator(mode="after")
