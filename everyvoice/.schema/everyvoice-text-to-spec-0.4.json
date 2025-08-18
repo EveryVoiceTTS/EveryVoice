@@ -547,6 +547,24 @@
       "title": "FastSpeech2TrainingConfig",
       "type": "object"
     },
+    "LanguageBoundaries": {
+      "properties": {
+        "strong": {
+          "default": "!?.",
+          "description": "All characters that constitute strong boundaries, for one language.",
+          "title": "Strong",
+          "type": "string"
+        },
+        "weak": {
+          "default": ":;,",
+          "description": "All characters that constitute strong boundaries, for one language.",
+          "title": "Weak",
+          "type": "string"
+        }
+      },
+      "title": "LanguageBoundaries",
+      "type": "object"
+    },
     "LoggerConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -908,6 +926,18 @@
           "description": "Whether or not to perform text splitting (also referred to as text chunking) at inference time. Instead of synthesizing an entire utterance, the utterance will be split into smaller chunks and re-combined after synthesis. This can lead to more natural synthesis for long-form (i.e. paragraph) synthesis.",
           "title": "Split Text",
           "type": "boolean"
+        },
+        "boundaries": {
+          "additionalProperties": {
+            "$ref": "#/$defs/LanguageBoundaries"
+          },
+          "default": {},
+          "description": "Strong and Weak boundaries on which text splitting is to be performed, for every language.",
+          "examples": [
+            "{'eng': {'strong': '!?.', 'weak': ':;,'}}'"
+          ],
+          "title": "Boundaries",
+          "type": "object"
         }
       },
       "title": "TextConfig",

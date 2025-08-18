@@ -2,6 +2,7 @@ import re
 from typing import Optional
 
 import grapheme
+import regex
 from ipatok import tokenise
 
 from everyvoice.config.utils import PossiblySerializedCallable
@@ -162,3 +163,17 @@ def guess_ipa_phones_in_text_lines(text_lines: list[str]) -> set[str]:
     for line in text_lines:
         phones.update(guess_ipa_phones_in_text(line))
     return phones
+
+
+def is_sentence_final(char: str) -> bool:
+    """Given a character, determine if it is encoded by Unicode as sentence final.
+
+    >>> is_sentence_final('!')
+    True
+    >>> is_sentence_final('¡')
+    False
+    """
+    if len(char) == 1:
+        return bool(regex.match(r"\p{Sentence_Break=ST}|\p{Sentence_Break=AT}", char))
+    else:
+        raise ValueError("Input must be a character (string of length one).")

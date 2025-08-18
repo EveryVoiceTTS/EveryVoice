@@ -15,6 +15,7 @@ from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
 from everyvoice.text.textsplit import chunk_text
+from everyvoice.text.utils import is_sentence_final
 from everyvoice.utils import (
     collapse_whitespace,
     generic_psv_filelist_reader,
@@ -274,6 +275,14 @@ class TextTest(BasicTestCase):
         with self.assertRaises(exceptions.OutOfVocabularySymbolError):
             self.base_text_processor.encode_string_tokens([JOINER_SUBSTITUTION])
 
+    def test_is_sentence_final(self):
+        self.assertTrue(is_sentence_final("!"))
+        self.assertTrue(is_sentence_final("?"))
+        self.assertTrue(is_sentence_final("."))
+        self.assertTrue(is_sentence_final("᙮"))
+        self.assertFalse(is_sentence_final("¡"))
+        self.assertFalse(is_sentence_final("¿"))
+
 
 class LookupTableTest(TestCase):
     def test_build_lookup(self):
@@ -465,3 +474,40 @@ class TestTextSplit(TestCase):
         text = "Hello, world!"
         with self.assertRaises(AssertionError):
             chunk_text(text, 200, 100)
+
+    def test_no_boundaries(self):
+        """
+        When there are no boundaries, chunk_text should split at the max length (possibly in the middle of a word).
+        """
+        a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families. As a consequence of the residential school system and other policies of cultural suppression, the m"
+        b = "ajority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
+        text = a + b
+        self.assertEqual(
+            [a, b], chunk_text(text, weak_boundaries="", strong_boundaries="")
+        )
+
+    def test_custom_weak_boundaries(self):
+        """
+        Test that a split DOES NOT occur on the SENĆOŦEN , character.
+        """
+        # This text, in SENĆOŦEN, is the W̱SÁNEĆ Mission Statement (https://wsanecschoolboard.ca/sencoten-language/)
+        a = "W̱UĆIST TŦE SKÁLs I,"  # This sentence is intentionally broken up mid-word
+        b = "TŦE Ś,X̱ENAṈs ĆSE LÁ,E TŦE ÁLEṈENEȻ TŦE W̱SÁNEĆ."
+        text = a + " " + b
+        # With custom weak boundaries
+        self.assertNotIn(a, chunk_text(text, 15, 30, weak_boundaries=":;"))
+        # Without custom weak boundaries
+        self.assertIn(a, chunk_text(text, 15, 30))
+
+    def test_custom_strong_boundaries(self):
+        """
+        Test that the a split occurs on ᙮, the Cree full stop.
+        """
+        # This text, in East Cree, is from the 'Marriage and Inuits in the old days' story (https://www.eastcree.org/cree/en/stories/)
+        a = "ᐧᐋᔥᑭᒡ ᐃᓐᑖᐦ ᑖᐹ ᐧᐃᒡ ᓃᔓᑳᐳᐧᐃᒡ ᐊᐧᐋᓂᒌ ᒥᒄ ᒌᐦ ᐧᐄᒋᒥᑑᒡ ᐋᑳ ᑭᐧᐹ ᐧᐃᒡ ᑖᑦ ᐋᔨᒻᐦᐋᐅᒋᒫᐤ᙮"
+        b = "ᐄᔥᒋᒫᐅᒡ ᒌᐦ ᓂᐱᐦᐋᐅᒡ ᐄᔨᔨᐤᐦ ᒥᒄ ᒌᐦ ᑖᐤ ᐹᔨᒄ ᐄᔥᒌᒫᐤ ᐋᑳ ᐧᐃᒡ ᒦᐧᔮᔨᑎ ᐋᐦ ᓂᐱᐦᐄᐧᐋᑦ ᑳᐦ ᐧᐄᑎᒥᐧᐋᑦ ᐋᓂᔮᐦ ᐄᔨᔨᐤᐦ ᐋᐃᑖᔨᑎᒦᒡ ᐄᔥᒋᒫᐤ ᒑᓂᐱᐦᐋᔨᒡ ᑳᓂᑎᐧᐋᔨᑎᒧᐧᐋᑦ ᒋᔥᑖᒫᐤ᙮"
+        text = a + " " + b
+        # Behaviour with custom strong boundary
+        self.assertEqual([a, b], chunk_text(text, 50, 200, strong_boundaries="᙮"))
+        # Without custom strong boundary
+        self.assertEqual([text], chunk_text(text, 50, 200))
