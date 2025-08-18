@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.16">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
     
     
       
@@ -955,18 +955,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
               <details class="quote">
                 <summary>Source code in <code>everyvoice/config/text_config.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">186</span>
-<span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span>
-<span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span>
-<span class="normal">196</span>
-<span class="normal">197</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">197</span>
 <span class="normal">198</span>
 <span class="normal">199</span>
 <span class="normal">200</span>
@@ -1017,7 +1006,24 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">245</span>
 <span class="normal">246</span>
 <span class="normal">247</span>
-<span class="normal">248</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TextConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TextConfig</span><span class="p">(</span><span class="n">ConfigModel</span><span class="p">):</span>
     <span class="n">symbols</span><span class="p">:</span> <span class="n">Symbols</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Symbols</span><span class="p">)</span>
     <span class="n">to_replace</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Happens before cleaners</span>
     <span class="n">cleaners</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">collapse_whitespace</span><span class="p">,</span> <span class="n">strip_text</span><span class="p">]</span>
@@ -1031,6 +1037,12 @@ for your data. You can share the TextConfig with any models that need it and onl
         <span class="kc">True</span><span class="p">,</span>
         <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Split Text&quot;</span><span class="p">,</span>
         <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether or not to perform text splitting (also referred to as text chunking) at inference time. Instead of synthesizing an entire utterance, the utterance will be split into smaller chunks and re-combined after synthesis. This can lead to more natural synthesis for long-form (i.e. paragraph) synthesis.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">boundaries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Language</span><span class="p">,</span> <span class="n">LanguageBoundaries</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
+        <span class="p">{},</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Boundaries&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Strong and Weak boundaries on which text splitting is to be performed, for every language.&quot;</span><span class="p">,</span>
+        <span class="n">examples</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;&quot;{&#39;eng&#39;: {&#39;strong&#39;: &#39;!?.&#39;, &#39;weak&#39;: &#39;:;,&#39;}}&#39;&quot;&quot;&quot;</span><span class="p">],</span>
     <span class="p">)</span>
 
     <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
@@ -1575,10 +1587,10 @@ have to be a list of strings.</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.select", "content.tabs.link", "announce.dismiss", "content.footnote.tooltips", "navigation.instant", "navigation.footer"], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "content.code.select", "content.tabs.link", "announce.dismiss", "content.footnote.tooltips", "navigation.instant", "navigation.footer"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"default": "stable", "provider": "mike"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.50899def.min.js"></script>
+      <script src="../../assets/javascripts/bundle.92b07e13.min.js"></script>
       
     
   </body>
