@@ -15,6 +15,7 @@ from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
 from everyvoice.text.textsplit import chunk_text
+from everyvoice.text.utils import is_sentence_final
 from everyvoice.utils import (
     collapse_whitespace,
     generic_psv_filelist_reader,
@@ -273,6 +274,14 @@ class TextTest(BasicTestCase):
             self.base_text_processor.encode_string_tokens(["oov"])
         with self.assertRaises(exceptions.OutOfVocabularySymbolError):
             self.base_text_processor.encode_string_tokens([JOINER_SUBSTITUTION])
+
+    def test_is_sentence_final(self):
+        self.assertTrue(is_sentence_final("!"))
+        self.assertTrue(is_sentence_final("?"))
+        self.assertTrue(is_sentence_final("."))
+        self.assertTrue(is_sentence_final("᙮"))
+        self.assertFalse(is_sentence_final("¡"))
+        self.assertFalse(is_sentence_final("¿"))
 
 
 class LookupTableTest(TestCase):
