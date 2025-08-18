@@ -712,6 +712,7 @@ def demo(
     ui_config_file: Optional[Path] = typer.Option(
         None,
         "--ui-config-file",
+        "-C",
         file_okay=True,
         dir_okay=False,
         exists=True,

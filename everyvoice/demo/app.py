@@ -10,6 +10,7 @@ import gradio as gr
 import torch
 from loguru import logger
 
+from everyvoice.cli import AllowedDemoOutputFormats
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
     synthesize_helper,
@@ -33,7 +34,10 @@ from everyvoice.utils import slugify
 from everyvoice.utils.heavy import get_device_from_accelerator
 
 os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
-GradioChoices = list[tuple[str, str]]
+# list[str] would also be allowed, but we want to keep it a list of tuples to allow for decoupling model internal slugs and display names.
+GradioChoices = list[
+    tuple[str, str]
+]  # expected format: [(display-name, form-value), ...]
 
 
 def synthesize_audio(
@@ -180,6 +184,10 @@ def set_speaker_list(speakers: list[str], model_speakers: list[str]) -> GradioCh
                 print(
                     f"Attention: The model have not been trained for speech synthesis with '{speaker}' speaker. The '{speaker}' speaker option will not be available for selection."
                 )
+    if speaker_list == []:
+        raise ValueError(
+            f"Speaker option has been activated, but valid speakers have not been provided. The model has been trained with {model_speakers} speakers. Please select either 'all' or at least some of them."
+        )
     return speaker_list
 
 
@@ -197,16 +205,21 @@ def set_language_list(
                 print(
                     f"Attention: The model have not been trained for speech synthesis in '{language}' language. The '{language}' language option will not be available for selection."
                 )
+    if language_list == []:
+        raise ValueError(
+            f"Language option has been activated, but valid languages have not been provided. The model has been trained in {model_languages} languages. Please select either 'all' or at least some of them."
+        )
+
     return language_list
 
 
-def load_demo_app_speakers_and_languages(
+def load_app_ui_labels(
     ui_config_json_path: os.PathLike | None = None,
     speakers: list[str] = ["all"],
     languages: list[str] = ["all"],
     model_languages: list[str] = [],
     model_speakers: list[str] = [],
-) -> tuple[GradioChoices, GradioChoices, str]:
+) -> tuple[GradioChoices, GradioChoices, dict[str, str]]:
     """Load the app config JSON file if provided and update the speaker and language lists.
     This function checks if the provided ui_config_json_path is a valid JSON file and contains
     the 'speakers' and 'languages' keys. If they are present, it updates the speaker and language lists accordingly.
@@ -217,37 +230,28 @@ def load_demo_app_speakers_and_languages(
         speak_list (list[str]): List of speakers from the model.
         lang_list (list[str]): List of languages from the model.
     Returns:
-        tuple: A tuple of [display-name, form-value] for speakers, languages and the app title text.
+        tuple: A tuple of [display-name, form-value] for speakers, languages and the app config json.
     Raises:
         ValueError: If the 'speakers' or 'languages' are not checkpoint or keys in the app config JSON do not match the provided speakers or languages, or if the keys are not dictionaries.
     """
     # tuple of (display-name, form-value) for gradio dropdown
     language_list: GradioChoices = set_language_list(languages, model_languages)
     speaker_list: GradioChoices = set_speaker_list(speakers, model_speakers)
-    app_title = "EveryVoice Demo App"
+    app_ui_labels = {}  # dict[str,str]  # app UI config JSON
 
-    if language_list == []:
-        raise ValueError(
-            f"Language option has been activated, but valid languages have not been provided. The model has been trained in {model_languages} languages. Please select either 'all' or at least some of them."
-        )
-    if speaker_list == []:
-        raise ValueError(
-            f"Speaker option has been activated, but valid speakers have not been provided. The model has been trained with {model_speakers} speakers. Please select either 'all' or at least some of them."
-        )
     # json config file is passed
     if ui_config_json_path and str(ui_config_json_path).lower().endswith(".json"):
 
         # Load the app config JSON file if provided
         with open(ui_config_json_path, "r") as f:
-            app_config = json.load(f)  # type: dict[str, dict[str, str] | str]
+            app_ui_config = json.load(f)  # type: dict[str, dict[str, str] | str]
         # Update the app config with the current settings
-        if "speakers" in app_config:
-            if not isinstance(app_config["speakers"], dict):
-                print(app_config["speakers"])
+        if "speakers" in app_ui_config:
+            if not isinstance(app_ui_config["speakers"], dict):
                 raise ValueError(
                     "The 'speakers' key in the app config JSON must be a dictionary."
                 )
-            if ":".join(app_config["speakers"].keys()) != ":".join(
+            if ":".join(app_ui_config["speakers"].keys()) != ":".join(
                 [row[0] for row in speaker_list]
             ):
 
@@ -255,57 +259,73 @@ def load_demo_app_speakers_and_languages(
                     "The 'speakers' key in the app config JSON does not match the speakers provided."
                 )
 
-            # flip the tuple to (name, id) for gradio dropdown
-            config_speaker_list = [
-                (str(speaker), id) for id, speaker in app_config["speakers"].items()
-            ]  # type: list[tuple[str, str]]
-
-            # apply speaker list contraints
-            if speakers != ["all"]:
-                config_speaker_list.clear()
+            speaker_list.clear()
+            if speakers == ["all"]:
+                # if all speakers are selected, use the speakers from the app config JSON
+                speaker_list.extend(
+                    [
+                        (str(app_ui_config["speakers"].get(speaker, speaker)), speaker)
+                        for speaker in app_ui_config["speakers"]
+                    ]
+                )
+            else:
                 for speaker in speakers:
-                    if speaker in app_config["speakers"]:
-                        config_speaker_list.append(
-                            (str(app_config["speakers"][speaker]), speaker)
+                    if speaker in app_ui_config["speakers"]:
+                        speaker_list.append(
+                            (
+                                str(app_ui_config["speakers"].get(speaker, speaker)),
+                                speaker,
+                            )
                         )
 
-            print("\n\tUsing speakers from app config JSON: ", config_speaker_list)
-        if "languages" in app_config:
-            if not isinstance(app_config["languages"], dict):
+            print("\n\tUsing speakers from app config JSON:", speaker_list)
+        if "languages" in app_ui_config:
+            if not isinstance(app_ui_config["languages"], dict):
                 raise ValueError(
                     "The 'languages' key in the app config JSON must be a dictionary."
                 )
 
-            if ":".join(app_config["languages"].keys()) != ":".join(
+            if ":".join(app_ui_config["languages"].keys()) != ":".join(
                 [row[0] for row in language_list]
             ):
                 raise ValueError(
                     "The 'languages' key in the app config JSON does not match the languages provided."
                 )
 
-            # flip the tuple to (name, id) for gradio dropdown
-            config_language_list = [
-                (str(language), id) for id, language in app_config["languages"].items()
-            ]  # type: list[tuple[str, str]]
             # apply language list contraints
-            if speakers != ["all"]:
-                config_language_list.clear()
-                for language in languages:
-                    if language in app_config["languages"]:
-                        config_language_list.append(
-                            (str(app_config["languages"][language]), language)
-                        )
-            print("\n\tUsing languages from app config JSON: ", config_language_list)
-        if "app_title" in app_config:
-            if not isinstance(app_config["app_title"], str):
-                raise ValueError(
-                    "The 'app_title' key in the app config JSON must be a string."
-                )
-            app_title = app_config["app_title"]
-            print("\n\tUsing app title from app config JSON: ", app_title)
 
-        return config_speaker_list, config_language_list, app_title
-    return speaker_list, language_list, app_title
+            language_list.clear()
+            if languages == ["all"]:
+                # if all languages are selected, use the languages from the app config JSON
+                language_list.extend(
+                    [
+                        (
+                            str(app_ui_config["languages"].get(language, language)),
+                            language,
+                        )
+                        for language in app_ui_config["languages"]
+                    ]
+                )
+            else:
+                # if specific languages are selected, use only those from the app config JSON
+                for language in languages:
+                    if language in app_ui_config["languages"]:
+                        language_list.append(
+                            (
+                                str(app_ui_config["languages"].get(language, language)),
+                                language,
+                            )
+                        )
+            print("\n\tUsing languages from app config JSON:", language_list)
+        if "app_title" in app_ui_config:
+            print(
+                f"\n\tUsing app title from app config JSON: {app_ui_config['app_title']}"
+            )
+        for key in app_ui_config:
+            if key not in ["speakers", "languages"]:
+                app_ui_labels[key] = str(app_ui_config[key])
+
+    return speaker_list, language_list, app_ui_labels
 
 
 def make_gradio_display(
@@ -315,7 +335,7 @@ def make_gradio_display(
     output_list: list,
     model: FastSpeech2,
     synthesize_audio_preset: partial,
-    app_title,
+    app_ui_config: dict[str, str],
 ) -> gr.Blocks:
     """Create the Gradio Blocks for the demo app."""
 
@@ -325,33 +345,51 @@ def make_gradio_display(
     interactive_speaker = len(speaker_list) > 1
     default_output = output_list[0]
     interactive_output = len(output_list) > 1
+    app_title = app_ui_config.get("app_title", "EveryVoice Demo App")
+    app_description = app_ui_config.get("app_description", "")
+    app_instructions = app_ui_config.get("app_instructions", "")
+    helper_text = ""
+
+    if app_description:
+        helper_text += f"<p align='center'>{app_description}</p>"
+        print(f"\n\tUsing app description from app config JSON: {app_description}")
+    if app_instructions:
+        helper_text += f"<h5 style='color:#777;margin-bottom:0;padding-bottom:0;'>How to use this app</h5><p style='color:#999;margin-top:0.1em;padding-top:0;'>{app_instructions}</p>"
+        print(f"\n\tUsing app instructions from app config JSON: {app_instructions}")
     with gr.Blocks() as demo:
         gr.Markdown(
             f"""
             <h1 align="center">{app_title}</h1>
+            {helper_text}
             """
         )
         with gr.Row():
             with gr.Column():
                 inp_text = gr.Text(
                     placeholder="This text will be turned into speech.",
-                    label="Input Text",
+                    label=app_ui_config.get("input_text_label", "Input Text"),
                 )
                 inp_slider = gr.Slider(
-                    0.75, 1.75, 1.0, step=0.25, label="Duration Multiplier"
+                    0.75,
+                    1.75,
+                    1.0,
+                    step=0.25,
+                    label=app_ui_config.get(
+                        "duration_multiplier_label", "Duration Multiplier"
+                    ),
                 )
                 with gr.Row():
                     inp_lang = gr.Dropdown(
                         choices=language_list,
                         value=default_language,
                         interactive=interactive_language,
-                        label="Language",
+                        label=app_ui_config.get("language_label", "Language"),
                     )
                     inp_speak = gr.Dropdown(
                         choices=speaker_list,
                         value=default_speaker,
                         interactive=interactive_speaker,
-                        label="Speaker",
+                        label=app_ui_config.get("speaker_label", "Speaker"),
                     )
                 inputs = [inp_text, inp_slider, inp_lang, inp_speak]
                 if output_list != [SynthesizeOutputFormats.wav]:
@@ -360,7 +398,9 @@ def make_gradio_display(
                             choices=output_list,
                             value=default_output,
                             interactive=interactive_output,
-                            label="Output Format",
+                            label=app_ui_config.get(
+                                "output_format_label", "Output Format"
+                            ),
                         )
                     inputs.append(output_format)
                 else:
@@ -372,14 +412,17 @@ def make_gradio_display(
                 if model.config.model.use_global_style_token_module:
                     with gr.Row():
                         style_reference = gr.Audio(type="filepath")
-                btn = gr.Button("Synthesize")
+                btn = gr.Button(app_ui_config.get("synthesize_label", "Synthesize"))
             with gr.Column():
                 out_audio = gr.Audio(format="wav")
                 if output_list == [SynthesizeOutputFormats.wav]:
                     # When the only output option is wav, don't show the File Output box
                     outputs = [out_audio]
                 else:
-                    out_file = gr.File(label="File Output", elem_id="file_output")
+                    out_file = gr.File(
+                        label=app_ui_config.get("file_output_label", "File Output"),
+                        elem_id="file_output",
+                    )
                     outputs = [out_audio, out_file]
         # Only include the style reference input if the model supports it
         if model.config.model.use_global_style_token_module:
@@ -431,10 +474,9 @@ def create_demo_app(
     # Early argument validation where possible
     possible_outputs = [x.value for x in SynthesizeOutputFormats]
 
-    # this used to be `if outputs == ["all"]:` but my Enum() constructor for
-    # AllowedDemoOutputFormats breaks that, unfortunately, and enum.StrEnum
-    # doesn't appear until Python 3.11 so I can't use it.
-    if len(outputs) == 1 and getattr(outputs[0], "value", outputs[0]) == "all":
+    if outputs == [AllowedDemoOutputFormats["all"].value] or outputs == [
+        AllowedDemoOutputFormats["all"]
+    ]:
         output_list = possible_outputs
     else:
         if not outputs:
@@ -474,7 +516,7 @@ def create_demo_app(
     )
     model_languages = list(model.lang2id.keys())
     model_speakers = list(model.speaker2id.keys())
-    speaker_list, language_list, app_title = load_demo_app_speakers_and_languages(
+    speaker_list, language_list, app_ui_config = load_app_ui_labels(
         ui_config_json_path=ui_config_json_path,
         speakers=speakers,
         languages=languages,
@@ -488,5 +530,5 @@ def create_demo_app(
         output_list,
         model,
         synthesize_audio_preset,
-        app_title,
+        app_ui_config,
     )

@@ -590,32 +590,28 @@ class CLITest(TestCase):
 
             self.assertEqual(result.exit_code, 0)
             self.assertIn(
-                f"Using speakers from app config JSON:  [('{config['speakers']['default']}', 'default')]",
+                f"Using speakers from app config JSON: [('{config['speakers']['default']}', 'default')]",
                 result.output,
             )
             self.assertIn(
-                f"Using languages from app config JSON:  [('{config['languages']['default']}', 'default')]",
+                f"Using languages from app config JSON: [('{config['languages']['default']}', 'default')]",
                 result.output,
             )
 
             self.assertIn(
-                f"Using app title from app config JSON:  {config['app_title']}",
+                f"Using app title from app config JSON: {config['app_title']}",
                 result.output,
             )
 
-    def test_create_demo_app_with_ui_config_file_unknown_speaker(self):
+    # unit test for error handling in load_app_ui_labels
+    def test_create_demo_load_app_ui_labels_errors(self):
+        from everyvoice.demo.app import load_app_ui_labels
+
         with tempfile.TemporaryDirectory() as tmpdir_str:
             tmpdir = Path(tmpdir_str)
-            # This test is just to make sure that the demo app can be created with parameters for gradio
-            # and that it doesn't crash.
-            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
-                tmpdir / "vocoder"
-            )
-            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
-                tmpdir / "spec_model"
-            )
+
             # Create a dummy app config file
-            config = {
+            config_bad_speaker = {
                 "app_title": "Test App",
                 "speakers": {
                     "unknown": "Person A",
@@ -624,67 +620,7 @@ class CLITest(TestCase):
                     "default": "English",
                 },
             }
-            config_file = tmpdir / "demo_config.json"
-            with config_file.open("w", encoding="utf8") as f:
-                json.dump(config, f)
-            # This test is just to make sure that the demo app params are passed correctly
-            port = 7000
-            ip = "123.456.78.90"
-
-            with (
-                mock.patch(
-                    "everyvoice.demo.app.load_model_from_checkpoint",
-                    side_effect=self.mock_demo_load_model_from_checkpoint,
-                ),
-                mock.patch(
-                    "everyvoice.base_cli.helpers.inference_base_command",
-                    side_effect=self.mock_fuction_placeholder,
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.synthesize_audio",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-                mock.patch(
-                    "gradio.Blocks.launch",
-                    return_value="Launching gradio app blocks",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-            ):
-
-                result = self.runner.invoke(
-                    app,
-                    [
-                        "demo",
-                        str(spec_model_path),
-                        str(vocoder_path),
-                        "--port",
-                        port,
-                        "--server-name",
-                        ip,  # Mock IP address
-                        "--ui-config-file",
-                        str(config_file),
-                    ],
-                )
-
-            self.assertEqual(result.exit_code, 1)
-            self.assertIn(
-                "ValueError: The 'speakers' key in the app config JSON does not match the speakers provided.",
-                result.output,
-            )
-
-    def test_create_demo_app_with_ui_config_file_unknown_language(self):
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
-            # This test is just to make sure that the demo app can be created with parameters for gradio
-            # and that it doesn't crash.
-            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
-                tmpdir / "vocoder"
-            )
-            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
-                tmpdir / "spec_model"
-            )
-            # Create a dummy app config file
-            config = {
+            config_bad_language = {
                 "app_title": "Test App",
                 "speakers": {
                     "default": "Person A",
@@ -693,52 +629,60 @@ class CLITest(TestCase):
                     "unknown": "English",
                 },
             }
-            config_file = tmpdir / "demo_config.json"
-            with config_file.open("w", encoding="utf8") as f:
-                json.dump(config, f)
-            # This test is just to make sure that the demo app params are passed correctly
-            port = 7000
-            ip = "123.456.78.90"
-
-            with (
-                mock.patch(
-                    "everyvoice.demo.app.load_model_from_checkpoint",
-                    side_effect=self.mock_demo_load_model_from_checkpoint,
-                ),
-                mock.patch(
-                    "everyvoice.base_cli.helpers.inference_base_command",
-                    side_effect=self.mock_fuction_placeholder,
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.synthesize_audio",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-                mock.patch(
-                    "gradio.Blocks.launch",
-                    return_value="Launching gradio app blocks",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-            ):
-
-                result = self.runner.invoke(
-                    app,
-                    [
-                        "demo",
-                        str(spec_model_path),
-                        str(vocoder_path),
-                        "--port",
-                        port,
-                        "--server-name",
-                        ip,  # Mock IP address
-                        "--ui-config-file",
-                        str(config_file),
-                    ],
+            config_file_bad_speaker = tmpdir / "demo_config_bad_speaker.json"
+            with config_file_bad_speaker.open("w", encoding="utf8") as f:
+                json.dump(config_bad_speaker, f)
+            config_file_bad_language = tmpdir / "demo_config_bad_language.json"
+            with config_file_bad_language.open("w", encoding="utf8") as f:
+                json.dump(config_bad_language, f)
+            with self.assertRaises(ValueError) as cm:
+                load_app_ui_labels(
+                    str(config_file_bad_language),
+                    ["all"],
+                    ["all"],
+                    ["default"],
+                    ["default"],
                 )
-            # print(result.output, result.exit_code)  # Debug output
-            self.assertEqual(result.exit_code, 1)
             self.assertIn(
-                "ValueError: The 'languages' key in the app config JSON does not match the languages provided.",
-                str(result.output),
+                "The 'languages' key in the app config JSON does not match the languages provided.",
+                str(cm.exception),
+            )
+            with self.assertRaises(ValueError) as cm:
+                load_app_ui_labels(
+                    str(config_file_bad_speaker),
+                    ["all"],
+                    ["all"],
+                    ["default"],
+                    ["default"],
+                )
+            self.assertIn(
+                "The 'speakers' key in the app config JSON does not match the speakers provided.",
+                str(cm.exception),
+            )
+            with self.assertRaises(ValueError) as cm:
+                load_app_ui_labels(
+                    str(config_file_bad_speaker),
+                    ["default"],
+                    ["unknown"],
+                    ["default"],
+                    ["default"],
+                )
+
+            self.assertIn(
+                "Language option has been activated, but valid languages have not been provided. The model has been trained in ['default'] languages. Please select either 'all' or at least some of them.",
+                str(cm.exception),
+            )
+            with self.assertRaises(ValueError) as cm:
+                load_app_ui_labels(
+                    str(config_file_bad_speaker),
+                    ["unknown"],
+                    ["default"],
+                    ["default"],
+                    ["default"],
+                )
+            self.assertIn(
+                "Speaker option has been activated, but valid speakers have not been provided. The model has been trained with ['default'] speakers. Please select either 'all' or at least some of them.",
+                str(cm.exception),
             )
 
     def test_rename_speaker(self):

@@ -138,13 +138,15 @@ And an interactive demo will be available at [http://localhost:7260](http://loca
 
 Please consult the demo help for more information on how to use the demo: `everyvoice demo --help`.
 
-You can provide a custom json configuration file to override parts of the user interface the demo by using the `--ui-config-file` flag, e.g. `everyvoice demo --ui-config-file=my_config.json  logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt`.
+You can provide a custom json configuration file to override parts of the user interface the demo by using the `--ui-config-file` or `-C` flag, e.g. `everyvoice demo --ui-config-file=my_config.json  logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt`.
 
-This user interface configuration can provide a custom title (`app_title`), a custom labels for the languages and speakers see sameple below.
+This user interface configuration can provide a custom title (`app_title`), and custom labels for other UI elements as well as display for the languages and speakers. See sample below:
 
 ```json
 {
   "app_title": "My Custom TTS Demo",
+  "app_description": "This is a custom text-to-speech demo for my language.",
+  "app_instructions": "Type your text in the box below and click 'Generate speech' to generate it spoken in the selected language and by the selected speaker.",
   "languages": {
     "en": "English",
     "fr": "French"
@@ -152,7 +154,14 @@ This user interface configuration can provide a custom title (`app_title`), a cu
   "speakers": {
     "speaker1": "Speaker One",
     "speaker2": "Speaker Two"
-  }
+  },
+  "input_text_label": "Input Text",
+  "duration_multiplier_label": "Duration Multiplier",
+  "language_label": "Language",
+  "speaker_label": "Speaker",
+  "output_format_label": "Output Format",
+  "synthesize_label": "Synthesize",
+  "file_output_label": "File Output"
 }
 ```
 
