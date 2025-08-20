@@ -4,7 +4,7 @@
 # manual instructions in README.md
 
 # Default versions:
-CUDA_VERSION=12.6
+CUDA_VERSION=12.8
 PYTHON_VERSION=3.12
 
 usage() {
@@ -23,7 +23,7 @@ Torch pre-compilation options:
                           Default: --cuda $CUDA_VERSION
                           Special value: "--cuda system" compiles torch
                           against what is available on the system.
-                          Available: 11.8 , 12.6 , 12.8
+                          Available: 12.6 , 12.8 , 12.9
   --cpu                   Install torch for use on CPU only
   --python PYTHON_VERSION Specify the Python version to use
                           Default: --python $PYTHON_VERSION
