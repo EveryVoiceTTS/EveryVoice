@@ -363,10 +363,12 @@ class Preprocessor:
         return {**item, **{"speaker": speaker, "language": language}}
 
     def compute_stats(
-        self, energy=True, pitch=True
-    ) -> tuple[Optional[Scaler], Optional[Scaler]]:
+        self, energy=True, pitch=True, char_length=True, phone_length=True
+    ) -> tuple[Optional[Scaler], Optional[Scaler], Optional[Scaler], Optional[Scaler]]:
+        # Determine whether parallel processing is necessary
         if self.cpus > 1:
             parallel = Parallel(n_jobs=self.cpus, backend="loky", batch_size=500)
+        # Compute energy stats
         if energy:
             energy_scaler = Scaler()
             # Until Python 3.13, pathlib.Path.glob() doesn't work with symlinks: https://github.com/python/cpython/issues/77609
@@ -385,6 +387,7 @@ class Preprocessor:
                 for path in tqdm(paths, desc="Gathering energy values"):
                     energy_data = torch.load(path, weights_only=True)
                     energy_scaler.data.append(energy_data)
+        # Compute pitch stats
         if pitch:
             pitch_scaler = Scaler()
             # Until Python 3.13, pathlib.Path.glob() doesn't work with symlinks: https://github.com/python/cpython/issues/77609
@@ -403,7 +406,35 @@ class Preprocessor:
                 for path in tqdm(paths, desc="Gathering pitch values"):
                     pitch_data = torch.load(path, weights_only=True)
                     pitch_scaler.data.append(pitch_data)
-        return energy_scaler if energy else energy, pitch_scaler if pitch else pitch
+        # Compute character length stats and phone length stats
+        if char_length or phone_length:
+            filelist = self.load_filelist(
+                self.config.preprocessing.save_dir / self.output_path
+            )
+            char_length = (
+                char_length and DatasetTextRepresentation.characters in filelist[0]
+            )
+            phone_length = (
+                phone_length and DatasetTextRepresentation.ipa_phones in filelist[0]
+            )
+            if char_length:
+                char_length_scaler = Scaler()
+                for line in tqdm(filelist, desc="Gathering character length values"):
+                    char_length_data = torch.tensor(
+                        [len(line["characters"])], dtype=float
+                    )
+                    char_length_scaler.data.append(char_length_data)
+            if phone_length:
+                phone_length_scaler = Scaler()
+                for line in tqdm(filelist, desc="Gathering phone length values"):
+                    phone_length_data = torch.tensor([len(line["phones"])], dtype=float)
+                    phone_length_scaler.data.append(phone_length_data)
+        return (
+            energy_scaler if energy else energy,
+            pitch_scaler if pitch else pitch,
+            char_length_scaler if char_length else char_length,
+            phone_length_scaler if phone_length else phone_length,
+        )
 
     def normalize_stats(self, energy_scaler: Scaler, pitch_scaler: Scaler):
         """Normalize pitch and energy to unit variance"""
@@ -1012,6 +1043,7 @@ class Preprocessor:
         debug=False,
     ):
         self.overwrite = overwrite
+        self.output_path = output_path
 
         if not overwrite:
             if self.config_lock_has_conflicts():
