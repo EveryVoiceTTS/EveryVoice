@@ -30,7 +30,6 @@ from everyvoice.wizard.dataset import TextProcessingStep, get_dataset_steps
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
-    input,
 )
 from everyvoice.wizard.tour import Step
 from everyvoice.wizard.utils import escape, sanitize_paths, write_dict_to_config
@@ -44,7 +43,9 @@ class NameStep(Step):
         rich_print(
             "What would you like to call this project? This name should reflect the model you intend to train, e.g. 'my-sinhala-project' or 'english-french-model' or something similarly descriptive of your project?"
         )
-        return input("project name: ")
+        return questionary.text(
+            "project name: ", style=CUSTOM_QUESTIONARY_STYLE
+        ).unsafe_ask()
 
     def validate(self, response):
         if len(response) == 0:
@@ -69,7 +70,9 @@ class ContactNameStep(Step):
     REVERSIBLE = True
 
     def prompt(self):
-        return input("What is your full name? ")
+        return questionary.text(
+            "What is your full name? ", style=CUSTOM_QUESTIONARY_STYLE
+        ).unsafe_ask()
 
     def validate(self, response):
         # Some languages don't use first and last names, so we can't necessarily check that response.split() > 1
@@ -88,7 +91,10 @@ class ContactEmailStep(Step):
     REVERSIBLE = True
 
     def prompt(self):
-        return input("Please provide a contact email address for your models. ")
+        return questionary.text(
+            "Please provide a contact email address for your models. ",
+            style=CUSTOM_QUESTIONARY_STYLE,
+        ).unsafe_ask()
 
     def in_unit_testing(self):
         """Skip checking deliverability when in unit testing.
