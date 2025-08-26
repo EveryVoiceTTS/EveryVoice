@@ -106,23 +106,28 @@ jobs:
 
   matrix:
     strategy:
+      fail-fast: false
       matrix:
+        os: [ubuntu-latest, macos-latest]
         python-version: ["3.11", "3.12"]
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - run: sudo apt-get update
-      - run: sudo apt-get install --fix-missing sox libsox-dev ffmpeg
+      - uses: FedericoCarboni/setup-ffmpeg@v2
+      - name: Install sox on Linux
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install --fix-missing sox libsox-dev
+      - name: Install sox on macOS
+        if: matrix.os == 'macos-latest'
+        run: brew install sox
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
       - name: Install dependencies and package
-        run: |
-          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -e .[dev]
+        run: pip install -e .[dev]
       - run: pip freeze
       - run: pip list
       - run: cd everyvoice && coverage run run_tests.py dev
