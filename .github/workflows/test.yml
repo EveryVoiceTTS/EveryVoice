@@ -116,9 +116,13 @@ jobs:
         with:
           submodules: recursive
       - uses: FedericoCarboni/setup-ffmpeg@v2
+        if: matrix.os == 'ubuntu-latest'
+      - run: brew install ffmpeg
+        if: matrix.os == 'macos-latest'
       - name: Install sox on Linux
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get update && sudo apt-get install --fix-missing sox libsox-dev
+        #run: sudo apt-get update && sudo apt-get install --fix-missing sox libsox-dev
+        run: sudo apt-get install sox libsox-dev
       - name: Install sox on macOS
         if: matrix.os == 'macos-latest'
         run: brew install sox
