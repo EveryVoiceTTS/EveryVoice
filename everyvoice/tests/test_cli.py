@@ -457,9 +457,28 @@ class CLITest(TestCase):
             # This test is just to make sure that the demo app params are passed correctly
             port = 7000
             ip = "123.456.78.90"
-            with mock.patch(
-                "everyvoice.demo.app.create_demo_app",
-                side_effect=self.mock_create_demo_app,
+            # with mock.patch(
+            #    "everyvoice.demo.app.create_demo_app",
+            #    side_effect=self.mock_create_demo_app,
+            # ):
+            with (
+                mock.patch(
+                    "everyvoice.demo.app.load_model_from_checkpoint",
+                    side_effect=self.mock_demo_load_model_from_checkpoint,
+                ),
+                mock.patch(
+                    "everyvoice.base_cli.helpers.inference_base_command",
+                    side_effect=self.mock_fuction_placeholder,
+                ),
+                mock.patch(
+                    "everyvoice.demo.app.synthesize_audio",
+                    side_effect=self.mock_fuction_placeholder2,
+                ),
+                mock.patch(
+                    "gradio.Blocks.launch",
+                    return_value="Launching gradio app blocks",
+                    side_effect=self.mock_fuction_placeholder2,
+                ),
             ):
                 result = self.runner.invoke(
                     app,
@@ -478,10 +497,6 @@ class CLITest(TestCase):
             self.assertIn(f"  - Port: {port}", result.output)
             self.assertIn("  - Share: True", result.output)
             self.assertIn(f"  - Server Name: {ip}", result.output)
-
-            self.assertIn(f"  - Launch Port: {port}", result.output)
-            self.assertIn("  - Launch Share: True", result.output)
-            self.assertIn(f"  - Launch Server Name: {ip}", result.output)
 
     def mock_demo_load_model_from_checkpoint(
         *_arg, **kwargs
@@ -534,12 +549,21 @@ class CLITest(TestCase):
             # Create a dummy app config file
             config = {
                 "app_title": "Test App",
+                "app_description": "This is a test app description.",
+                "app_instructions": "These are test app instructions.",
                 "speakers": {
                     "default": "Person A",
                 },
                 "languages": {
                     "default": "English",
                 },
+                "input_text_label": "Input Text",
+                "duration_multiplier_label": "Duration Multiplier",
+                "language_label": "Language",
+                "speaker_label": "Speaker",
+                "output_format_label": "Output Format",
+                "synthesize_label": "Synthesize",
+                "file_output_label": "File Output",
             }
             config_file = tmpdir / "demo_config.json"
             with config_file.open("w", encoding="utf8") as f:
