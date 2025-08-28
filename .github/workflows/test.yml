@@ -115,21 +115,26 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: FedericoCarboni/setup-ffmpeg@v2
-        if: matrix.os == 'ubuntu-latest'
-      - run: brew install ffmpeg
-        if: matrix.os == 'macos-latest'
-      - name: Install sox on Linux
-        if: matrix.os == 'ubuntu-latest'
-        #run: sudo apt-get update && sudo apt-get install --fix-missing sox libsox-dev
-        run: sudo apt-get install sox libsox-dev
-      - name: Install sox on macOS
-        if: matrix.os == 'macos-latest'
-        run: brew install sox
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
+      - uses: FedericoCarboni/setup-ffmpeg@v2
+        if: matrix.os == 'ubuntu-latest'
+      - name: Install sox on Linux
+        if: matrix.os == 'ubuntu-latest'
+        #run: sudo apt-get update && sudo apt-get install --fix-missing sox libsox-dev
+        run: sudo apt-get install sox libsox-dev
+      - run: echo $PATH
+      - run: cat $HOME/.bash_profile
+      - name: Install ffmpeg and sox on MacOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install ffmpeg
+          brew install sox
+          echo 'export PATH="/usr/local/bin:$PATH"' >> $HOME/.bash_profile
+      - run: cat $HOME/.bash_profile
+      - run: echo $PATH
       - name: Install dependencies and package
         run: pip install -e .[dev]
       - run: pip freeze
