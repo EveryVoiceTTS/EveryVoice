@@ -405,11 +405,11 @@ class Preprocessor:
                     for energy_data in parallel(
                         delayed(torch.load)(path, weights_only=True) for path in paths
                     ):
-                        energy_scaler.data.append(energy_data)
+                        energy_scaler.append(energy_data)
             else:
                 for path in tqdm(paths, desc="Gathering energy values"):
                     energy_data = torch.load(path, weights_only=True)
-                    energy_scaler.data.append(energy_data)
+                    energy_scaler.append(energy_data)
         # Compute pitch stats
         if pitch:
             pitch_scaler = Scaler()
@@ -424,11 +424,11 @@ class Preprocessor:
                     for pitch_data in parallel(
                         delayed(torch.load)(path, weights_only=True) for path in paths
                     ):
-                        pitch_scaler.data.append(pitch_data)
+                        pitch_scaler.append(pitch_data)
             else:
                 for path in tqdm(paths, desc="Gathering pitch values"):
                     pitch_data = torch.load(path, weights_only=True)
-                    pitch_scaler.data.append(pitch_data)
+                    pitch_scaler.append(pitch_data)
         # Compute character length stats and phone length stats
         if char_length or phone_length:
             filelist = self.load_filelist(
@@ -442,16 +442,17 @@ class Preprocessor:
             )
             if char_length:
                 char_length_scaler = Scaler()
-                for line in tqdm(filelist, desc="Gathering character length values"):
+                print("Gathering character length values")
+                for line in filelist:
                     char_length_data = torch.tensor(
                         [len(line["characters"])], dtype=float
                     )
-                    char_length_scaler.data.append(char_length_data)
+                    char_length_scaler.append(char_length_data)
             if phone_length:
                 phone_length_scaler = Scaler()
                 for line in tqdm(filelist, desc="Gathering phone length values"):
                     phone_length_data = torch.tensor([len(line["phones"])], dtype=float)
-                    phone_length_scaler.data.append(phone_length_data)
+                    phone_length_scaler.append(phone_length_data)
         return (
             energy_scaler if energy else energy,
             pitch_scaler if pitch else pitch,
