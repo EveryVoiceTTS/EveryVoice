@@ -143,4 +143,5 @@ jobs:
         run: BUILD_SOX=1 pip install -e .[dev]
       - run: pip freeze
       - run: pip list
+      - run: python -m unittest everyvoice.tests.test_preprocessing.PreprocessingTest
       - run: cd everyvoice && python run_tests.py dev
