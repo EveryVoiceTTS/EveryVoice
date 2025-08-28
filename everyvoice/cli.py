@@ -716,7 +716,23 @@ def demo(
         file_okay=True,
         dir_okay=False,
         exists=True,
-        help="A path to a configuration file that will be used to override parts of the default configuration for the demo UI. This is useful if you want to override some of the text in the UI",
+        help="""A path to a configuration file that will be used to override parts of the default configuration for the demo UI. This is useful if you want to override some of the text in the UI.
+        The config file should be a valid JSON FORMAT. The expect optional values and types are:
+
+            "app_title": string,
+            "app_description": string,
+            "app_instructions": string,
+            "languages": dict ["id":"name"],
+            "speakers":  dict ["id":"name"],
+            "input_text_label": string,
+            "duration_multiplier_label": string,
+            "language_label": string,
+            "speaker_label": string,
+            "output_format_label":string,
+            "synthesize_label": string,
+            "file_output_label": string
+
+        """,
     ),
     **kwargs,
 ):
@@ -727,6 +743,7 @@ def demo(
 
     allowlist_data = []
     denylist_data = []
+    ui_config_json: dict | None = None
 
     if allowlist:
         with open(allowlist) as f:
@@ -752,6 +769,12 @@ def demo(
     print(f"  - Server Name: {server_name}")
     if ui_config_file:
         print(f"  - UI Config file path: {ui_config_file}")
+        with open(ui_config_file) as f:
+            try:
+                ui_config_json = json.load(f)
+                print("\t config loaded")
+            except Exception as e:
+                raise ValueError(f"Your config file has errors\n {e}")
     else:
         print("  - UI Config file path: None")
 
@@ -768,7 +791,7 @@ def demo(
             accelerator=accelerator,
             allowlist=allowlist_data,
             denylist=denylist_data,
-            ui_config_json_path=ui_config_file,
+            app_ui_config=ui_config_json,
             **kwargs,
         )
 
