@@ -126,6 +126,7 @@ jobs:
         #run: sudo apt-get update && sudo apt-get install --fix-missing sox libsox-dev
         run: sudo apt-get install sox libsox-dev
       - run: echo $PATH
+      - run: echo $LC_RPATH
       - run: cat $HOME/.bash_profile
       - name: Install ffmpeg and sox on MacOS
         if: matrix.os == 'macos-latest'
@@ -134,7 +135,9 @@ jobs:
           echo "" >> $HOME/.bash_profile
           echo 'export PATH="/usr/local/bin:$PATH"' >> $HOME/.bash_profile
       - run: cat $HOME/.bash_profile
+      - run: which sox
       - run: echo $PATH
+      - run: echo $LC_RPATH
       - name: Install dependencies and package
         run: pip install -e .[dev]
       - run: pip freeze
