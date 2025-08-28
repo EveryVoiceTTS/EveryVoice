@@ -27,30 +27,12 @@ class SubsampleTest(TestCase):
             ],
         )
         self.assertEqual(result.exit_code, 0)
-        self.assertIn(
-            "basename|",
-            result.stdout,
-        )
-        self.assertIn(
-            "LJ050-0269|",
-            result.stdout,
-        )
-        self.assertIn(
-            "LJ050-0270|",
-            result.stdout,
-        )
-        self.assertIn(
-            "LJ050-0271|",
-            result.stdout,
-        )
-        self.assertIn(
-            "LJ050-0272.wav|",
-            result.stdout,
-        )
-        self.assertNotIn(
-            "LJ050-0273|",
-            result.stdout,
-        )
+        self.assertIn("basename|", result.stdout)
+        self.assertIn("LJ050-0269|", result.stdout)
+        self.assertIn("LJ050-0270|", result.stdout)
+        self.assertIn("LJ050-0271|", result.stdout)
+        self.assertIn("LJ050-0272.wav|", result.stdout)
+        self.assertNotIn("LJ050-0273|", result.stdout)
 
     def test_festival(self):
         self.metadata_path = Path(__file__).parent / "data" / "metadata.festival"
@@ -61,18 +43,9 @@ class SubsampleTest(TestCase):
         )
 
         self.assertEqual(result.exit_code, 0)
-        self.assertIn(
-            "LJ050-0269",
-            result.stdout,
-        )
-        self.assertIn(
-            "LJ050-0270",
-            result.stdout,
-        )
-        self.assertNotIn(
-            "LJ050-0271",
-            result.stdout,
-        )
+        self.assertIn("LJ050-0269", result.stdout)
+        self.assertIn("LJ050-0270", result.stdout)
+        self.assertNotIn("LJ050-0271", result.stdout)
 
     def test_help(self):
         result = self.runner.invoke(app, ["--help"])
@@ -100,22 +73,10 @@ class SubsampleTest(TestCase):
             ],
         )
 
-        self.assertIn(
-            "basename|",
-            result.stdout,
-        )
-        self.assertIn(
-            "LJ050-0269|",
-            result.stdout,
-        )
-        self.assertIn(
-            "LJ050-0272.wav|",
-            result.stdout,
-        )
-        self.assertNotIn(
-            "LJ050-0270|",
-            result.stdout,
-        )
+        self.assertIn("basename|", result.stdout)
+        self.assertIn("LJ050-0269|", result.stdout)
+        self.assertIn("LJ050-0272.wav|", result.stdout)
+        self.assertNotIn("LJ050-0270|", result.stdout)
 
     def test_error_validation(self):
         # Test for incorrect file formats
