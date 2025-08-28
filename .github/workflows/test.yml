@@ -135,6 +135,8 @@ jobs:
           brew install ffmpeg sox
           echo "" >> $HOME/.bash_profile
           echo 'export PATH="/usr/local/bin:$PATH"' >> $HOME/.bash_profile
+          sudo ln -s /opt/homebrew/lib/libsox.dylib /Library/Frameworks/Python.framework/Versions/3.11/lib/python3.11/site-packages/torchaudio/lib/ || true
+          sudo ln -s /opt/homebrew/lib/libsox.dylib /Library/Frameworks/Python.framework/Versions/3.12/lib/python3.12/site-packages/torchaudio/lib/ || true
       - run: cat $HOME/.bash_profile
       - run: which sox
       - run: echo $PATH
