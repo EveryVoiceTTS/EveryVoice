@@ -631,83 +631,75 @@ class CLITest(TestCase):
     def test_create_demo_load_app_ui_labels_errors(self):
         from everyvoice.demo.app import load_app_ui_labels
 
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
+        # Create a dummy app config file
+        config_bad_speaker = {
+            "app_title": "Test App",
+            "speakers": {
+                "unknown": "Person A",
+            },
+            "languages": {
+                "default": "English",
+            },
+        }
+        config_bad_language = {
+            "app_title": "Test App",
+            "speakers": {
+                "default": "Person A",
+            },
+            "languages": {
+                "unknown": "English",
+            },
+        }
 
-            # Create a dummy app config file
-            config_bad_speaker = {
-                "app_title": "Test App",
-                "speakers": {
-                    "unknown": "Person A",
-                },
-                "languages": {
-                    "default": "English",
-                },
-            }
-            config_bad_language = {
-                "app_title": "Test App",
-                "speakers": {
-                    "default": "Person A",
-                },
-                "languages": {
-                    "unknown": "English",
-                },
-            }
-            config_file_bad_speaker = tmpdir / "demo_config_bad_speaker.json"
-            with config_file_bad_speaker.open("w", encoding="utf8") as f:
-                json.dump(config_bad_speaker, f)
-            config_file_bad_language = tmpdir / "demo_config_bad_language.json"
-            with config_file_bad_language.open("w", encoding="utf8") as f:
-                json.dump(config_bad_language, f)
-            with self.assertRaises(ValueError) as cm:
-                load_app_ui_labels(
-                    str(config_file_bad_language),
-                    ["all"],
-                    ["all"],
-                    ["default"],
-                    ["default"],
-                )
-            self.assertIn(
-                "The 'languages' key in the app config JSON does not match the languages provided.",
-                str(cm.exception),
+        with self.assertRaises(ValueError) as cm:
+            load_app_ui_labels(
+                config_bad_language,
+                ["all"],
+                ["all"],
+                ["default"],
+                ["default"],
             )
-            with self.assertRaises(ValueError) as cm:
-                load_app_ui_labels(
-                    str(config_file_bad_speaker),
-                    ["all"],
-                    ["all"],
-                    ["default"],
-                    ["default"],
-                )
-            self.assertIn(
-                "The 'speakers' key in the app config JSON does not match the speakers provided.",
-                str(cm.exception),
+        self.assertIn(
+            "The 'languages' key in the app config JSON does not match the languages provided.",
+            str(cm.exception),
+        )
+        with self.assertRaises(ValueError) as cm:
+            load_app_ui_labels(
+                config_bad_speaker,
+                ["all"],
+                ["all"],
+                ["default"],
+                ["default"],
             )
-            with self.assertRaises(ValueError) as cm:
-                load_app_ui_labels(
-                    str(config_file_bad_speaker),
-                    ["default"],
-                    ["unknown"],
-                    ["default"],
-                    ["default"],
-                )
+        self.assertIn(
+            "The 'speakers' key in the app config JSON does not match the speakers provided.",
+            str(cm.exception),
+        )
+        with self.assertRaises(ValueError) as cm:
+            load_app_ui_labels(
+                config_bad_speaker,
+                ["default"],
+                ["unknown"],
+                ["default"],
+                ["default"],
+            )
 
-            self.assertIn(
-                "Language option has been activated, but valid languages have not been provided. The model has been trained in ['default'] languages. Please select either 'all' or at least some of them.",
-                str(cm.exception),
+        self.assertIn(
+            "Language option has been activated, but valid languages have not been provided. The model has been trained in ['default'] languages. Please select either 'all' or at least some of them.",
+            str(cm.exception),
+        )
+        with self.assertRaises(ValueError) as cm:
+            load_app_ui_labels(
+                config_bad_speaker,
+                ["unknown"],
+                ["default"],
+                ["default"],
+                ["default"],
             )
-            with self.assertRaises(ValueError) as cm:
-                load_app_ui_labels(
-                    str(config_file_bad_speaker),
-                    ["unknown"],
-                    ["default"],
-                    ["default"],
-                    ["default"],
-                )
-            self.assertIn(
-                "Speaker option has been activated, but valid speakers have not been provided. The model has been trained with ['default'] speakers. Please select either 'all' or at least some of them.",
-                str(cm.exception),
-            )
+        self.assertIn(
+            "Speaker option has been activated, but valid speakers have not been provided. The model has been trained with ['default'] speakers. Please select either 'all' or at least some of them.",
+            str(cm.exception),
+        )
 
     def test_rename_speaker(self):
         with tempfile.TemporaryDirectory() as tmpdir_str:

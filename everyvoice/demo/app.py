@@ -1,4 +1,3 @@
-import json
 import os
 import string
 import subprocess
@@ -214,7 +213,7 @@ def set_language_list(
 
 
 def load_app_ui_labels(
-    ui_config_json_path: os.PathLike | None = None,
+    app_ui_config: dict | None = None,
     speakers: list[str] = ["all"],
     languages: list[str] = ["all"],
     model_languages: list[str] = [],
@@ -240,11 +239,8 @@ def load_app_ui_labels(
     app_ui_labels = {}  # dict[str,str]  # app UI config JSON
 
     # json config file is passed
-    if ui_config_json_path and str(ui_config_json_path).lower().endswith(".json"):
+    if app_ui_config is not None:
 
-        # Load the app config JSON file if provided
-        with open(ui_config_json_path, "r") as f:
-            app_ui_config = json.load(f)  # type: dict[str, dict[str, str] | str]
         # Update the app config with the current settings
         if "speakers" in app_ui_config:
             if not isinstance(app_ui_config["speakers"], dict):
@@ -468,7 +464,7 @@ def create_demo_app(
     accelerator: str,
     allowlist: list[str] = [],
     denylist: list[str] = [],
-    ui_config_json_path: os.PathLike | None = None,
+    app_ui_config: dict | None = None,
     **kwargs,
 ) -> gr.Blocks:
     # Early argument validation where possible
@@ -517,7 +513,7 @@ def create_demo_app(
     model_languages = list(model.lang2id.keys())
     model_speakers = list(model.speaker2id.keys())
     speaker_list, language_list, app_ui_config = load_app_ui_labels(
-        ui_config_json_path=ui_config_json_path,
+        app_ui_config=app_ui_config,
         speakers=speakers,
         languages=languages,
         model_languages=model_languages,
