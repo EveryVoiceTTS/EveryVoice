@@ -130,8 +130,8 @@ jobs:
       - name: Install ffmpeg and sox on MacOS
         if: matrix.os == 'macos-latest'
         run: |
-          brew install ffmpeg
-          brew install sox
+          brew install ffmpeg sox
+          echo "" >> $HOME/.bash_profile
           echo 'export PATH="/usr/local/bin:$PATH"' >> $HOME/.bash_profile
       - run: cat $HOME/.bash_profile
       - run: echo $PATH
