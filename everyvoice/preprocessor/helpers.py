@@ -54,7 +54,7 @@ class Scaler:
         )
 
     def append(self, value):
-        self._data += value
+        self._data.append(value)
 
     def clear_data(self):
         """Clear data"""
