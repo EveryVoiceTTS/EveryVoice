@@ -1,4 +1,3 @@
-import builtins
 import io
 import logging
 import os
@@ -185,27 +184,6 @@ class patch_menu_prompt:
     def __exit__(self, *_exc_info):
         self.monkey2.__exit__(*_exc_info)
         self.monkey1.__exit__(*_exc_info)
-
-
-class patch_input:
-    """Shortcut for patching the builtin input() function, which we need often.
-
-    Args: see class Say"""
-
-    def __init__(self, response: Any, multi=False):
-        self.response = response
-        self.multi = multi
-
-    def __repr__(self):
-        multi = f", multi={self.multi}" if self.multi else ""
-        return f"{self.__class__.__name__}(response={self.response}{multi})"
-
-    def __enter__(self):
-        self.monkey = monkeypatch(builtins, "input", Say(self.response, self.multi))
-        return self.monkey.__enter__()
-
-    def __exit__(self, *_exc_info):
-        self.monkey.__exit__(*_exc_info)
 
 
 class null_patch:

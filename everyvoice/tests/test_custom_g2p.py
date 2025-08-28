@@ -13,7 +13,6 @@ from everyvoice.tests.stubs import (
     Say,
     mute_logger,
     null_patch,
-    patch_input,
     patch_logger,
     patch_menu_prompt,
     patch_questionary,
@@ -336,7 +335,9 @@ class CustomG2pTest(WizardTestBase):
                                 RecursiveAnswers(
                                     patch_menu_prompt(1),  # Yes, give speaker ID
                                     children_answers=[
-                                        RecursiveAnswers(patch_input("my_speaker"))
+                                        RecursiveAnswers(
+                                            patch_questionary("my_speaker")
+                                        )
                                     ],
                                 ),
                             ],
@@ -348,9 +349,9 @@ class CustomG2pTest(WizardTestBase):
                                     patch_menu_prompt(1),  # [custom] lang code option
                                     children_answers=[
                                         RecursiveAnswers(
-                                            patch_input(
+                                            patch_questionary(
                                                 ["not valid / bad slug", "my-lang"],
-                                                multi=True,
+                                                True,
                                             )
                                         )
                                     ],
@@ -363,7 +364,7 @@ class CustomG2pTest(WizardTestBase):
                         RecursiveAnswers(null_patch()),  # ValidateWavsStep
                         RecursiveAnswers(null_patch()),  # SymbolSetStep
                         RecursiveAnswers(patch_menu_prompt([])),  # no Sox
-                        RecursiveAnswers(patch_input("dataset2")),  # Dataset name
+                        RecursiveAnswers(patch_questionary("dataset2")),  # Dataset name
                     ],
                 ),
                 RecursiveAnswers(
@@ -387,7 +388,9 @@ class CustomG2pTest(WizardTestBase):
                                 RecursiveAnswers(
                                     patch_menu_prompt(1),  # Yes, give speaker ID
                                     children_answers=[
-                                        RecursiveAnswers(patch_input("my_speaker"))
+                                        RecursiveAnswers(
+                                            patch_questionary("my_speaker")
+                                        )
                                     ],
                                 ),
                             ],
@@ -402,7 +405,9 @@ class CustomG2pTest(WizardTestBase):
                             patch_menu_prompt(2),  # custom g2p for "lang1"
                             children_answers=[
                                 RecursiveAnswers(
-                                    patch_input("everyvoice.tests.g2p_engines.valid")
+                                    patch_questionary(
+                                        "everyvoice.tests.g2p_engines.valid"
+                                    )
                                 ),
                                 RecursiveAnswers(
                                     patch_menu_prompt(0),  # done with custom g2p
@@ -413,7 +418,7 @@ class CustomG2pTest(WizardTestBase):
                         RecursiveAnswers(null_patch()),  # ValidateWavsStep
                         RecursiveAnswers(null_patch()),  # SymbolSetStep
                         RecursiveAnswers(patch_menu_prompt([])),  # no Sox
-                        RecursiveAnswers(patch_input("dataset1")),  # Dataset name
+                        RecursiveAnswers(patch_questionary("dataset1")),  # Dataset name
                     ],
                 ),
                 RecursiveAnswers(
@@ -422,10 +427,10 @@ class CustomG2pTest(WizardTestBase):
                 ),
             ]
             steps_and_answers = [
-                StepAndAnswer(basic.NameStep(), patch_input("project")),
-                StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                StepAndAnswer(basic.NameStep(), patch_questionary("project")),
+                StepAndAnswer(basic.ContactNameStep(), patch_questionary("Test Name")),
                 StepAndAnswer(
-                    basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                    basic.ContactEmailStep(), patch_questionary("info@everyvoice.ca")
                 ),
                 StepAndAnswer(
                     basic.OutputPathStep(), patch_questionary(tmpdir / "out")
@@ -465,13 +470,13 @@ class CustomG2pTest(WizardTestBase):
                     children_answers=[
                         # RecursiveAnswers(Say("everyvoice.tests.g2p_engines.valid"))
                         RecursiveAnswers(
-                            patch_input(
+                            patch_questionary(
                                 (
                                     "asdf",
                                     "everyvoice.tests.g2p_engines.not_a_list",
                                     "everyvoice.tests.g2p_engines.g2p_test_upper",
                                 ),
-                                multi=True,
+                                True,
                             )
                         ),
                         RecursiveAnswers(patch_menu_prompt(0)),  # keep g2p
@@ -491,7 +496,7 @@ class CustomG2pTest(WizardTestBase):
                 ),
                 StepAndAnswer(
                     dataset.DatasetNameStep(state_subset="dataset_0"),
-                    patch_input("dataset0"),
+                    patch_questionary("dataset0"),
                 ),
                 StepAndAnswer(
                     basic.MoreDatasetsStep(),
