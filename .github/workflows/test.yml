@@ -125,6 +125,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         #run: sudo apt-get update && sudo apt-get install --fix-missing sox libsox-dev
         run: sudo apt-get install sox libsox-dev
+      - run: which python
       - run: echo $PATH
       - run: echo $LC_RPATH
       - run: cat $HOME/.bash_profile
@@ -139,7 +140,7 @@ jobs:
       - run: echo $PATH
       - run: echo $LC_RPATH
       - name: Install dependencies and package
-        run: pip install -e .[dev]
+        run: BUILD_SOX=1 pip install -e .[dev]
       - run: pip freeze
       - run: pip list
       - run: cd everyvoice && python run_tests.py dev
