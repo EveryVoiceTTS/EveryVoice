@@ -19,7 +19,6 @@ from everyvoice.wizard import TEXT_CONFIG_FILENAME_PREFIX, StepNames
 from everyvoice.wizard.prompts import (
     CUSTOM_QUESTIONARY_STYLE,
     get_response_from_menu_prompt,
-    input,
 )
 from everyvoice.wizard.tour import Step, Tour
 from everyvoice.wizard.utils import (
@@ -40,9 +39,10 @@ class DatasetNameStep(Step):
     REVERSIBLE = True
 
     def prompt(self):
-        return input(
-            "What would you like to call this dataset? This is needed because EveryVoice lets you train models with multiple sources of data. Please choose a name that distinguishes this data source, e.g. 'john-english' or 'maria-spanish' or something similarly descriptive: "
-        )
+        return questionary.text(
+            "What would you like to call this dataset? This is needed because EveryVoice lets you train models with multiple sources of data. Please choose a name that distinguishes this data source, e.g. 'john-english' or 'maria-spanish' or something similarly descriptive: ",
+            style=CUSTOM_QUESTIONARY_STYLE,
+        ).unsafe_ask()
 
     def validate(self, response):
         if len(response) == 0:
@@ -589,7 +589,10 @@ class AddSpeakerStep(Step):
     REVERSIBLE = True
 
     def prompt(self):
-        return input("Please enter the desired speaker ID: ")
+        return questionary.text(
+            "Please enter the desired speaker ID: ",
+            style=CUSTOM_QUESTIONARY_STYLE,
+        ).unsafe_ask()
 
     def validate(self, response):
         if len(response) == 0:
@@ -702,7 +705,10 @@ class LanguageCodeStep(Step):
     REVERSIBLE = True
 
     def prompt(self):
-        return input("Please enter the language code for this dataset's language: ")
+        return questionary.text(
+            "Please enter the language code for this dataset's language: ",
+            style=CUSTOM_QUESTIONARY_STYLE,
+        ).unsafe_ask()
 
     def validate(self, response):
         if response != slugify(response):
@@ -868,7 +874,10 @@ class SelectG2PEngineStep(Step):
                 'Use Ctrl-C / "Go back one step" to keep the current settings.'
             )
         )
-        return input(f"g2p function for {self.language_code}: ")
+        return questionary.text(
+            f"g2p function for {self.language_code}: ",
+            style=CUSTOM_QUESTIONARY_STYLE,
+        ).unsafe_ask()
 
     def sanitize_input(self, response):
         return response.strip()

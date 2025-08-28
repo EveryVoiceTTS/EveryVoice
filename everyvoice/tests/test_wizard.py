@@ -28,7 +28,6 @@ from everyvoice.tests.stubs import (
     capture_stdout,
     monkeypatch,
     null_patch,
-    patch_input,
     patch_menu_prompt,
     patch_questionary,
     silence_c_stderr,
@@ -320,7 +319,7 @@ class WizardTest(WizardTestBase):
         """Exercise providing a valid dataset name."""
         step = basic.NameStep()
         with capture_stdout() as stdout:
-            with patch_input("myname"):
+            with patch_questionary("myname"):
                 step.run()
         self.assertEqual(step.response, "myname")
         self.assertIn("'myname'", stdout.getvalue())
@@ -342,7 +341,7 @@ class WizardTest(WizardTestBase):
 
         step = basic.NameStep("")
         with capture_stdout() as stdout:
-            with patch_input(("bad/name", "good-name"), True):
+            with patch_questionary(("bad/name", "good-name"), True):
                 step.run()
         output = stdout.getvalue()
         self.assertIn("'bad/name'", stdout.getvalue())
@@ -410,7 +409,7 @@ class WizardTest(WizardTestBase):
         # We need to answer the name step before we can validate the output path step
         step = tour.steps[0]
         with capture_stdout():
-            with patch_input("myname"):
+            with patch_questionary("myname"):
                 step.run()
 
         step = tour.steps[1]
@@ -481,7 +480,7 @@ class WizardTest(WizardTestBase):
 
     def test_dataset_name(self):
         step = dataset.DatasetNameStep()
-        with patch_input(("", "bad/name", "good-name"), True):
+        with patch_questionary(("", "bad/name", "good-name"), True):
             with capture_stdout() as stdout:
                 step.run()
         output = stdout.getvalue().replace(" \n", " ").split("\n")
@@ -492,7 +491,7 @@ class WizardTest(WizardTestBase):
 
     def test_speaker_name(self):
         step = dataset.AddSpeakerStep()
-        with patch_input(("", "bad/name", "good-name"), True):
+        with patch_questionary(("", "bad/name", "good-name"), True):
             with capture_stdout() as stdout:
                 step.run()
         output = stdout.getvalue().replace(" \n", " ").split("\n")
@@ -624,7 +623,7 @@ class WizardTest(WizardTestBase):
             know_speaker_step.run()
 
         add_speaker_step = know_speaker_step.children[0]
-        with patch_input("default"), capture_stdout():
+        with patch_questionary("default"), capture_stdout():
             add_speaker_step.run()
 
         language_step = find_step(SN.data_has_language_value_step, tour.steps)
@@ -737,7 +736,7 @@ class WizardTest(WizardTestBase):
 
         add_speaker_step = know_speaker_step.children[0]
         children_before = len(add_speaker_step.children)
-        with patch_input("default"), capture_stdout():
+        with patch_questionary("default"), capture_stdout():
             add_speaker_step.run()
         self.assertEqual(len(add_speaker_step.children), children_before)
 
@@ -966,7 +965,9 @@ class WizardTest(WizardTestBase):
             tour, _ = self.monkey_run_tour(
                 "monkey tour 1",
                 [
-                    StepAndAnswer(basic.NameStep(), patch_input("my-dataset-name")),
+                    StepAndAnswer(
+                        basic.NameStep(), patch_questionary("my-dataset-name")
+                    ),
                     StepAndAnswer(
                         basic.OutputPathStep(), patch_questionary(tmpdirname)
                     ),
@@ -1015,7 +1016,7 @@ class WizardTest(WizardTestBase):
                 StepAndAnswer(dataset.SymbolSetStep(), null_patch()),
                 StepAndAnswer(dataset.SoxEffectsStep(), patch_menu_prompt([0])),
                 StepAndAnswer(
-                    dataset.DatasetNameStep(), patch_input("my-monkey-dataset")
+                    dataset.DatasetNameStep(), patch_questionary("my-monkey-dataset")
                 ),
             ],
         )
@@ -1043,10 +1044,13 @@ class WizardTest(WizardTestBase):
             tour, _ = self.monkey_run_tour(
                 "tour with language column",
                 [
-                    StepAndAnswer(basic.NameStep(), patch_input("project")),
-                    StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                    StepAndAnswer(basic.NameStep(), patch_questionary("project")),
                     StepAndAnswer(
-                        basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                        basic.ContactNameStep(), patch_questionary("Test Name")
+                    ),
+                    StepAndAnswer(
+                        basic.ContactEmailStep(),
+                        patch_questionary("info@everyvoice.ca"),
                     ),
                     StepAndAnswer(
                         basic.OutputPathStep(), patch_questionary(tmpdir / "out")
@@ -1093,7 +1097,7 @@ class WizardTest(WizardTestBase):
                     ),
                     StepAndAnswer(
                         dataset.DatasetNameStep(state_subset="dataset_0"),
-                        patch_input("my-monkey-dataset"),
+                        patch_questionary("my-monkey-dataset"),
                     ),
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
@@ -1126,10 +1130,13 @@ class WizardTest(WizardTestBase):
             tour, _ = self.monkey_run_tour(
                 "Tour with datafile missing the header line",
                 [
-                    StepAndAnswer(basic.NameStep(), patch_input("project")),
-                    StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                    StepAndAnswer(basic.NameStep(), patch_questionary("project")),
                     StepAndAnswer(
-                        basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                        basic.ContactNameStep(), patch_questionary("Test Name")
+                    ),
+                    StepAndAnswer(
+                        basic.ContactEmailStep(),
+                        patch_questionary("info@everyvoice.ca"),
                     ),
                     StepAndAnswer(
                         basic.OutputPathStep(), patch_questionary(tmpdir / "out")
@@ -1185,7 +1192,7 @@ class WizardTest(WizardTestBase):
                     ),
                     StepAndAnswer(
                         dataset.DatasetNameStep(state_subset="dataset_0"),
-                        patch_input("dataset"),
+                        patch_questionary("dataset"),
                     ),
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
@@ -1219,10 +1226,13 @@ class WizardTest(WizardTestBase):
             tour, _ = self.monkey_run_tour(
                 "Tour without enough columns to have speaker or language",
                 [
-                    StepAndAnswer(basic.NameStep(), patch_input("project")),
-                    StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                    StepAndAnswer(basic.NameStep(), patch_questionary("project")),
                     StepAndAnswer(
-                        basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                        basic.ContactNameStep(), patch_questionary("Test Name")
+                    ),
+                    StepAndAnswer(
+                        basic.ContactEmailStep(),
+                        patch_questionary("info@everyvoice.ca"),
                     ),
                     StepAndAnswer(
                         basic.OutputPathStep(), patch_questionary(tmpdir / "out")
@@ -1276,7 +1286,7 @@ class WizardTest(WizardTestBase):
                     ),
                     StepAndAnswer(
                         dataset.DatasetNameStep(state_subset="dataset_0"),
-                        patch_input("dataset"),
+                        patch_questionary("dataset"),
                     ),
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
@@ -1310,7 +1320,7 @@ class WizardTest(WizardTestBase):
     def test_keyboard_interrupt(self):
         step = basic.NameStep()
         with self.assertRaises(KeyboardInterrupt), capture_stdout():
-            with patch_input(KeyboardInterrupt()):
+            with patch_questionary([KeyboardInterrupt()]):
                 step.run()
 
         step = dataset.WavsDirStep()
@@ -1397,10 +1407,13 @@ class WizardTest(WizardTestBase):
             tour, _ = self.monkey_run_tour(
                 "Tour with datafile in the festival format",
                 [
-                    StepAndAnswer(basic.NameStep(), patch_input("project")),
-                    StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                    StepAndAnswer(basic.NameStep(), patch_questionary("project")),
                     StepAndAnswer(
-                        basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                        basic.ContactNameStep(), patch_questionary("Test Name")
+                    ),
+                    StepAndAnswer(
+                        basic.ContactEmailStep(),
+                        patch_questionary("info@everyvoice.ca"),
                     ),
                     StepAndAnswer(
                         basic.OutputPathStep(), patch_questionary(tmpdir / "out")
@@ -1430,7 +1443,9 @@ class WizardTest(WizardTestBase):
                             RecursiveAnswers(
                                 patch_menu_prompt(1),
                                 children_answers=[
-                                    RecursiveAnswers(patch_input("default_speaker"))
+                                    RecursiveAnswers(
+                                        patch_questionary("default_speaker")
+                                    )
                                 ],
                             ),  # want to specify speaker ID
                         ],
@@ -1458,7 +1473,7 @@ class WizardTest(WizardTestBase):
                     ),
                     StepAndAnswer(
                         dataset.DatasetNameStep(state_subset="dataset_0"),
-                        patch_input("dataset"),
+                        patch_questionary("dataset"),
                     ),
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
@@ -1530,7 +1545,9 @@ class WizardTest(WizardTestBase):
                                     patch_menu_prompt(1),  # will specify the speaker ID
                                     children_answers=[
                                         # new speaker ID
-                                        RecursiveAnswers(patch_input("default_speaker"))
+                                        RecursiveAnswers(
+                                            patch_questionary("default_speaker")
+                                        )
                                     ],
                                 ),
                             ],
@@ -1548,7 +1565,7 @@ class WizardTest(WizardTestBase):
                         RecursiveAnswers(null_patch()),  # ValidateWavsStep
                         RecursiveAnswers(null_patch()),  # SymbolSetStep
                         RecursiveAnswers(patch_menu_prompt([])),  # no Sox
-                        RecursiveAnswers(patch_input("dataset1")),  # Dataset name
+                        RecursiveAnswers(patch_questionary("dataset1")),  # Dataset name
                     ],
                 ),
                 RecursiveAnswers(
@@ -1557,10 +1574,10 @@ class WizardTest(WizardTestBase):
                 ),
             ]
             steps_and_answers = [
-                StepAndAnswer(basic.NameStep(), patch_input("project")),
-                StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                StepAndAnswer(basic.NameStep(), patch_questionary("project")),
+                StepAndAnswer(basic.ContactNameStep(), patch_questionary("Test Name")),
                 StepAndAnswer(
-                    basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                    basic.ContactEmailStep(), patch_questionary("info@everyvoice.ca")
                 ),
                 StepAndAnswer(
                     basic.OutputPathStep(), patch_questionary(tmpdir / "out")
@@ -1606,7 +1623,7 @@ class WizardTest(WizardTestBase):
                 ),
                 StepAndAnswer(
                     dataset.DatasetNameStep(state_subset="dataset_0"),
-                    patch_input("dataset0"),
+                    patch_questionary("dataset0"),
                 ),
                 StepAndAnswer(
                     basic.MoreDatasetsStep(),
@@ -1703,7 +1720,7 @@ class WizardTest(WizardTestBase):
                                     ),  # want to specify the speaker ID
                                     children_answers=[
                                         RecursiveAnswers(
-                                            patch_input("speaker_0")
+                                            patch_questionary("speaker_0")
                                         )  # new speaker ID
                                     ],
                                 ),
@@ -1722,7 +1739,7 @@ class WizardTest(WizardTestBase):
                         RecursiveAnswers(null_patch()),  # ValidateWavsStep
                         RecursiveAnswers(null_patch()),  # SymbolSetStep
                         RecursiveAnswers(patch_menu_prompt([])),  # no Sox
-                        RecursiveAnswers(patch_input("dataset1")),  # Dataset name
+                        RecursiveAnswers(patch_questionary("dataset1")),  # Dataset name
                     ],
                 ),
                 RecursiveAnswers(
@@ -1731,10 +1748,10 @@ class WizardTest(WizardTestBase):
                 ),
             ]
             steps_and_answers = [
-                StepAndAnswer(basic.NameStep(), patch_input("project")),
-                StepAndAnswer(basic.ContactNameStep(), patch_input("Test Name")),
+                StepAndAnswer(basic.NameStep(), patch_questionary("project")),
+                StepAndAnswer(basic.ContactNameStep(), patch_questionary("Test Name")),
                 StepAndAnswer(
-                    basic.ContactEmailStep(), patch_input("info@everyvoice.ca")
+                    basic.ContactEmailStep(), patch_questionary("info@everyvoice.ca")
                 ),
                 StepAndAnswer(
                     basic.OutputPathStep(), patch_questionary(tmpdir / "out")
@@ -1786,7 +1803,7 @@ class WizardTest(WizardTestBase):
                 ),
                 StepAndAnswer(
                     dataset.DatasetNameStep(state_subset="dataset_0"),
-                    patch_input("dataset0"),
+                    patch_questionary("dataset0"),
                 ),
                 StepAndAnswer(
                     basic.MoreDatasetsStep(),
@@ -1839,7 +1856,7 @@ class WizardTest(WizardTestBase):
     def test_control_c_go_back(self):
         # Ctrl-C plus option 0 goes back
         tour = make_trivial_tour()
-        with patch_input(
+        with patch_questionary(
             [
                 "bad_name",
                 KeyboardInterrupt(),
@@ -1849,7 +1866,7 @@ class WizardTest(WizardTestBase):
                 "Jane Doe",
                 "email@mail.com",
             ],
-            multi=True,
+            True,
         ):
             with patch_menu_prompt(0):  # say 0==go back each time
                 tour.run()
@@ -1858,9 +1875,9 @@ class WizardTest(WizardTestBase):
     def test_control_c_continue(self):
         # Ctrl-C plus option 1 continues
         tour = make_trivial_tour()
-        with patch_input(
+        with patch_questionary(
             ["project_name", KeyboardInterrupt(), "Jane Doe", "email@mail.com"],
-            multi=True,
+            True,
         ):
             # Ctrl-C once, then hit 1 to continue
             with patch_menu_prompt([KeyboardInterrupt(), 1], multi=True):
@@ -1870,9 +1887,9 @@ class WizardTest(WizardTestBase):
     def test_control_c_display_tree(self):
         # Ctrl-C plus option 2 displays the current tree
         tour = make_trivial_tour()
-        with patch_input(
+        with patch_questionary(
             ["project_name", "Jane Doe", KeyboardInterrupt(), "email@mail.com"],
-            multi=True,
+            True,
         ):
             with patch_menu_prompt(2) as output:
                 tour.run()
@@ -1898,17 +1915,15 @@ class WizardTest(WizardTestBase):
             tmpdir = Path(tmpdirname)
             tour = make_trivial_tour()
             progress_file = tmpdir / "saved-progress"
-            with (
-                patch_input(
-                    [
-                        "project_name",
-                        "Jane Doe",
-                        KeyboardInterrupt(),
-                        "email@mail.com",
-                    ],
-                    multi=True,
-                ),
-                patch_questionary(str(progress_file), ask_ok=True),
+            with patch_questionary(
+                [
+                    "project_name",
+                    "Jane Doe",
+                    KeyboardInterrupt(),
+                    str(progress_file),
+                    "email@mail.com",
+                ],
+                ask_ok=True,
             ):
                 with patch_menu_prompt(3):
                     tour.run()
@@ -1928,7 +1943,7 @@ class WizardTest(WizardTestBase):
                 f.write(self.progress_template.format(version=VERSION))
             # resume works
             tour = make_trivial_tour()
-            with patch_input("email@mail.com"), capture_stdout() as out:
+            with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=progress_file)
             self.assertIn("Applying saved response", out.getvalue())
             self.assertEqual(tour.state, self.trivial_tour_results)
@@ -1947,7 +1962,7 @@ class WizardTest(WizardTestBase):
                 )
 
             tour = make_trivial_tour()
-            with patch_input("email@mail.com"), capture_stdout() as out:
+            with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
             self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
             self.assertRegex(out.getvalue(), r"(?s)consider.*updating.*your.*software")
@@ -1964,7 +1979,7 @@ class WizardTest(WizardTestBase):
                 f.write(self.progress_template.format(version=recent_past))
 
             tour = make_trivial_tour()
-            with patch_input("email@mail.com"), capture_stdout() as out:
+            with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
             self.assertRegex(out.getvalue(), r"(?s)expected.*to.*be.*compatible")
             self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
@@ -1979,7 +1994,7 @@ class WizardTest(WizardTestBase):
             with open(changed_version, "w", encoding="utf8") as f:
                 f.write(self.progress_template.format(version="0.1.2"))
             tour = make_trivial_tour()
-            with patch_input("email@mail.com"), capture_stdout() as out:
+            with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
             self.assertRegex(out.getvalue(), r"(?s)not.*fully.*compatible")
             self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
@@ -1996,7 +2011,7 @@ class WizardTest(WizardTestBase):
                 f.write(self.progress_template.format(version=VERSION))
                 f.write("- - Contact Email Step\n  - invalid email\n")
             tour = make_trivial_tour()
-            with patch_input("email@mail.com"), capture_stdout() as out:
+            with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=invalid_response)
             self.assertIn("Error: saved response 'invalid email'", out.getvalue())
             self.assertEqual(tour.state, self.trivial_tour_results)
@@ -2064,20 +2079,23 @@ class WizardTest(WizardTestBase):
     def test_control_c_exit(self):
         # Ctrl-C plus option 4 (Exit) exits
         tour = make_trivial_tour()
-        with patch_input(KeyboardInterrupt()):
+        with patch_questionary([KeyboardInterrupt()]):
             with patch_menu_prompt(4):  # 4 is "Exit" in keyboard interrupt handling
                 with self.assertRaises(SystemExit):
                     tour.run()
 
         # Three Ctrl-C also exits
         tour = make_trivial_tour()
-        with patch_input(KeyboardInterrupt()), patch_menu_prompt(KeyboardInterrupt()):
+        with (
+            patch_questionary([KeyboardInterrupt()]),
+            patch_menu_prompt(KeyboardInterrupt()),
+        ):
             with self.assertRaises(SystemExit):
                 tour.run()
 
     def test_trace(self):
         tour = make_trivial_tour(trace=True)
-        with patch_input(["project_name", "user name", "email@mail.com"], multi=True):
+        with patch_questionary(["project_name", "user name", "email@mail.com"], True):
             with capture_stdout() as out:
                 tour.run()
         for step in tour.steps:
@@ -2092,7 +2110,7 @@ class WizardTest(WizardTestBase):
     def test_debug_state(self):
         tour = make_trivial_tour(debug_state=True)
         responses = ["project_name", "user name", "email@mail.com"]
-        with patch_input(responses, multi=True):
+        with patch_questionary(responses, True):
             with capture_stdout() as out:
                 tour.run()
         for step, response in zip(tour.steps, responses[:-1]):
