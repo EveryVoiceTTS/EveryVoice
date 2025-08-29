@@ -128,7 +128,7 @@ jobs:
 
   matrix-macos:
     timeout-minutes: 30
-    stragegy:
+    strategy:
       matrix:
         python-version: ["3.11", "3.12"]
     runs-on: macos-latest
