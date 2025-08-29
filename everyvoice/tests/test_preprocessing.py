@@ -1,6 +1,7 @@
 import os
 import shutil
 import tempfile
+from math import sqrt
 from pathlib import Path
 
 import torch
@@ -9,7 +10,6 @@ from pydantic_core._pydantic_core import ValidationError
 from torch import float32
 
 import everyvoice.preprocessor
-import everyvoice.text.text_processor
 from everyvoice.config.preprocessing_config import (
     AudioConfig,
     AudioSpecTypeEnum,
@@ -458,7 +458,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         """Create a simple config for testing"""
         tmpdir = Path(tmpdir)
         lj_preprocessed = tmpdir / "preprocessed"
-        lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
+        lj_filelist = lj_preprocessed / "filelist.psv"
 
         fp_config = FeaturePredictionConfig(contact=self.contact)  # type: ignore
         fp_config.preprocessing.source_data[0].data_dir = self.data_dir / "lj" / "wavs"
@@ -687,6 +687,48 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             ),
             {"item": "foo", "speaker": "baz", "language": "bar"},
         )
+
+    def test_stats(self):
+        """
+        Tests compute_stats() and calculate_stats() for character length on 5 examples from LJ Speech.
+        TODO: Expand this function to test for energy and pitch
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with (
+                mute_logger("everyvoice.preprocessor"),
+                capture_stdout(),
+                capture_stderr(),
+            ):
+                tmpdir = Path(tmpdir)
+                (
+                    fp_config,
+                    lj_filelist,
+                    _,
+                    _,
+                    _,
+                ) = self.get_simple_config(tmpdir)
+
+                # Create a preprocessor with one cpu
+                preprocessor = Preprocessor(fp_config)
+                preprocessor.preprocess(
+                    output_path=lj_filelist, to_process=("audio", "text")
+                )
+                _, _, char_length_data, phone_length_data = preprocessor.compute_stats(
+                    energy=False, pitch=False, char_length=True, phone_length=True
+                )
+                char_length_stats = char_length_data.calculate_stats()
+                self.assertEqual(char_length_stats["min"], 83)
+                self.assertEqual(char_length_stats["max"], 118)
+                self.assertAlmostEqual(char_length_stats["std"], sqrt(200.5), places=10)
+                self.assertEqual(char_length_stats["mean"], 105)
+
+                phone_length_stats = phone_length_data.calculate_stats()
+                self.assertEqual(phone_length_stats["min"], 76)
+                self.assertEqual(phone_length_stats["max"], 111)
+                self.assertAlmostEqual(
+                    phone_length_stats["std"], sqrt(216.3), places=10
+                )
+                self.assertEqual(phone_length_stats["mean"], 98.4)
 
 
 class PreprocessingHierarchyTest(BasicTestCase):
