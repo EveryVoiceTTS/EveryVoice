@@ -218,7 +218,9 @@ def rename_speaker(
             torch.save(ckpt, model_path)
             print(f"Updated checkpoint saved to {model_path}.")
         else:
-            raise ValueError(f"Speaker '{old_speaker_name}' not found in parameters.")
+            raise typer.BadParameter(
+                f"Speaker '{old_speaker_name}' not found in checkpoint parameters."
+            )
 
     else:
-        raise ValueError("No speakers found in checkpoint parameters.")
+        raise typer.BadParameter("No speakers found in checkpoint parameters.")

@@ -711,7 +711,7 @@ def demo(
     **kwargs,
 ):
     if allowlist and denylist:
-        raise ValueError(
+        raise typer.BadParameter(
             "You provided a value for both the allowlist and the denylist but you can only provide one."
         )
 
