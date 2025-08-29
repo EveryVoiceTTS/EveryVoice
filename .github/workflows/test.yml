@@ -123,17 +123,17 @@ jobs:
       - run: pip install -e .[dev]
       - run: pip freeze
       - run: pip list
-      - run: python -m unittest everyvoice.tests.test_preprocessing.PreprocessingTest
       - run: cd everyvoice && python run_tests.py dev
 
   matrix-macos:
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12"]
     runs-on: macos-latest
     defaults:
       run:
+        # Required for conda
         shell: bash -l {0}
     steps:
       - uses: actions/checkout@v4
@@ -147,7 +147,7 @@ jobs:
           conda-remove-defaults: true
       - run: conda install -y -c conda-forge sox ffmpeg
       - run: pip install -e .[dev]
+      - run: python --version
       - run: pip freeze
       - run: pip list
-      - run: python -m unittest everyvoice.tests.test_preprocessing.PreprocessingTest
       - run: cd everyvoice && python run_tests.py dev
