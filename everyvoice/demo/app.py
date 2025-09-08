@@ -7,6 +7,7 @@ from unicodedata import normalize
 
 import gradio as gr
 import torch
+import typer
 from loguru import logger
 
 from everyvoice.cli import AllowedDemoOutputFormats
@@ -184,7 +185,7 @@ def set_speaker_list(speakers: list[str], model_speakers: list[str]) -> GradioCh
                     f"Attention: The model have not been trained for speech synthesis with '{speaker}' speaker. The '{speaker}' speaker option will not be available for selection."
                 )
     if speaker_list == []:
-        raise ValueError(
+        raise typer.BadParameter(
             f"Speaker option has been activated, but valid speakers have not been provided. The model has been trained with {model_speakers} speakers. Please select either 'all' or at least some of them."
         )
     return speaker_list
@@ -205,7 +206,7 @@ def set_language_list(
                     f"Attention: The model have not been trained for speech synthesis in '{language}' language. The '{language}' language option will not be available for selection."
                 )
     if language_list == []:
-        raise ValueError(
+        raise typer.BadParameter(
             f"Language option has been activated, but valid languages have not been provided. The model has been trained in {model_languages} languages. Please select either 'all' or at least some of them."
         )
 
@@ -244,14 +245,14 @@ def load_app_ui_labels(
         # Update the app config with the current settings
         if "speakers" in app_ui_config:
             if not isinstance(app_ui_config["speakers"], dict):
-                raise ValueError(
+                raise typer.BadParameter(
                     "The 'speakers' key in the app config JSON must be a dictionary."
                 )
             if ":".join(app_ui_config["speakers"].keys()) != ":".join(
                 [row[0] for row in speaker_list]
             ):
 
-                raise ValueError(
+                raise typer.BadParameter(
                     "The 'speakers' key in the app config JSON does not match the speakers provided."
                 )
 
@@ -277,14 +278,14 @@ def load_app_ui_labels(
             print("\n\tUsing speakers from app config JSON:", speaker_list)
         if "languages" in app_ui_config:
             if not isinstance(app_ui_config["languages"], dict):
-                raise ValueError(
+                raise typer.BadParameter(
                     "The 'languages' key in the app config JSON must be a dictionary."
                 )
 
             if ":".join(app_ui_config["languages"].keys()) != ":".join(
                 [row[0] for row in language_list]
             ):
-                raise ValueError(
+                raise typer.BadParameter(
                     "The 'languages' key in the app config JSON does not match the languages provided."
                 )
 

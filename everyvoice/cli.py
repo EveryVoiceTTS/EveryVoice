@@ -717,7 +717,7 @@ def demo(
         dir_okay=False,
         exists=True,
         help="""A path to a configuration file that will be used to override parts of the default configuration for the demo UI. This is useful if you want to override some of the text in the UI.
-        The config file should be a valid JSON FORMAT. The expect optional values and types are:
+        The config file should be a valid JSON FORMAT. The expected optional values and types are:
 
             "app_title": string,
             "app_description": string,
@@ -774,7 +774,9 @@ def demo(
                 ui_config_json = json.load(f)
                 print("\t config loaded")
             except Exception as e:
-                raise ValueError(f"Your config file has errors\n {e}")
+                raise typer.BadParameter(
+                    f"Your config file {ui_config_file} has errors\n {e}"
+                )
     else:
         print("  - UI Config file path: None")
 
