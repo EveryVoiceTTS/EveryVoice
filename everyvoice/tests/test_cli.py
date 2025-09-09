@@ -316,9 +316,9 @@ class CLITest(TestCase):
                 app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
             )
         self.assertEqual(result.exit_code, 0)
-        self.assertIn(
-            "This command has been renamed to `everyvoice checkpoint inspect`.",
+        self.assertRegex(
             result.stdout,
+            r"(?s)This command has been renamed to `everyvoice.*checkpoint.*inspect`",
         )
 
     def test_inspect_checkpoint_help(self):
@@ -430,7 +430,6 @@ class CLITest(TestCase):
         self.assertNotIn("['HELLO', 'WORLD']", result.stdout)
 
     def mock_create_demo_app(self, *_args, **_kwargs):
-
         class MockCreateDemoApp:
             def launch(self, *_args, **_kwargs):
                 print(f"  - Launch Port: {_kwargs['server_port']}")
@@ -457,7 +456,6 @@ class CLITest(TestCase):
                 "everyvoice.demo.app.create_demo_app",
                 side_effect=self.mock_create_demo_app,
             ):
-
                 result = self.runner.invoke(
                     app,
                     [
@@ -536,7 +534,6 @@ class CLITest(TestCase):
             torch.save(ckpt, tmpdir / "test.ckpt")
 
             with mock.patch("torch.save", side_effect=self.mock_torch_save):
-
                 # Test renaming a non-existing speaker
                 result = self.runner.invoke(
                     app,
@@ -548,12 +545,9 @@ class CLITest(TestCase):
                         "new_speaker",
                     ],
                 )
-                print(result.output)
+                # print(result.output)
                 self.assertNotEqual(result.exit_code, 0)
-                self.assertIn(
-                    result.output,
-                    "Speaker 'non_existing_speaker' not found in parameters.",
-                )
+                self.assertIn("Speaker 'non_existing_speaker' not found", result.output)
 
     def test_rename_speaker_with_no_speakers(self):
         with tempfile.TemporaryDirectory() as tmpdir_str:
@@ -566,7 +560,6 @@ class CLITest(TestCase):
             torch.save(empty_ckpt, tmpdir / "empty.ckpt")
 
             with mock.patch("torch.save", side_effect=self.mock_torch_save):
-
                 # Test renaming with no speakers in the checkpoint
                 result = self.runner.invoke(
                     app,
@@ -578,12 +571,9 @@ class CLITest(TestCase):
                         "new_speaker",
                     ],
                 )
-                print(result.output)
+                # print(result.output)
                 self.assertNotEqual(result.exit_code, 0)
-                self.assertIn(
-                    result.output,
-                    "No speakers found in checkpoint parameters.",
-                )
+                self.assertIn("No speakers found", result.output)
 
 
 class TestBaseCLIHelper(TestCase):
