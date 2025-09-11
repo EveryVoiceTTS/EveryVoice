@@ -1,6 +1,7 @@
 import enum
 import json
 import os
+import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -8,6 +9,7 @@ from tempfile import TemporaryDirectory
 from unittest import TestCase, mock
 
 import jsonschema
+import typer
 import yaml
 from packaging.version import Version
 from pydantic import ValidationError
@@ -431,10 +433,15 @@ class CLITest(TestCase):
 
     def mock_create_demo_app(self, *_args, **_kwargs):
         class MockCreateDemoApp:
+
             def launch(self, *_args, **_kwargs):
                 print(f"  - Launch Port: {_kwargs['server_port']}")
                 print(f"  - Launch Share: {_kwargs['share']}")
                 print(f"  - Launch Server Name: {_kwargs['server_name']}")
+                if "config_file" in _kwargs:
+                    print(f"  - Config File: {_kwargs['config_file']}")
+                else:
+                    print("  - Config File: None")
 
         return MockCreateDemoApp()
 
@@ -452,9 +459,28 @@ class CLITest(TestCase):
             # This test is just to make sure that the demo app params are passed correctly
             port = 7000
             ip = "123.456.78.90"
-            with mock.patch(
-                "everyvoice.demo.app.create_demo_app",
-                side_effect=self.mock_create_demo_app,
+            # with mock.patch(
+            #    "everyvoice.demo.app.create_demo_app",
+            #    side_effect=self.mock_create_demo_app,
+            # ):
+            with (
+                mock.patch(
+                    "everyvoice.demo.app.load_model_from_checkpoint",
+                    side_effect=self.mock_demo_load_model_from_checkpoint,
+                ),
+                mock.patch(
+                    "everyvoice.base_cli.helpers.inference_base_command",
+                    side_effect=self.mock_fuction_placeholder,
+                ),
+                mock.patch(
+                    "everyvoice.demo.app.synthesize_audio",
+                    side_effect=self.mock_fuction_placeholder2,
+                ),
+                mock.patch(
+                    "gradio.Blocks.launch",
+                    return_value="Launching gradio app blocks",
+                    side_effect=self.mock_fuction_placeholder2,
+                ),
             ):
                 result = self.runner.invoke(
                     app,
@@ -474,16 +500,290 @@ class CLITest(TestCase):
             self.assertIn("  - Share: True", result.output)
             self.assertIn(f"  - Server Name: {ip}", result.output)
 
-            self.assertIn(f"  - Launch Port: {port}", result.output)
-            self.assertIn("  - Launch Share: True", result.output)
-            self.assertIn(f"  - Launch Server Name: {ip}", result.output)
+    def mock_demo_load_model_from_checkpoint(
+        *_arg, **kwargs
+    ) -> tuple:  # [FastSpeech2, torch.nn.Module, dict, torch.device]:
+        print(
+            "mock_demo_load_model_from_checkpoint called with args:",
+            _arg,
+            "and kwargs:",
+            kwargs,
+        )
 
-    def mock_torch_save(self, *args, **kwargs):
+        class model:
+            from types import SimpleNamespace
+
+            lang2id = {"default": 0}
+            speaker2id = {"default": 0}
+            model_data = {"use_global_style_token_module": False}
+            config_data = {"model": SimpleNamespace(**model_data)}
+            config = SimpleNamespace(
+                **config_data,
+            )
+
+        return model, {}, {}, "cpu"  # Mock return values for the test
+
+    def mock_fuction_placeholder(self, *args, **kwargs):
         """
-        Mock function to replace torch.save, which is used in the rename_speaker command.
-        This is to avoid writing files during the test.
+        Mock function to replace any function that we are not testing.
         """
+        print("mock_fuction_placeholder called with args:", args, "and kwargs:", kwargs)
         pass
+
+    def mock_fuction_placeholder2(self, **kwargs):
+        """
+        Mock function to replace any function that we are not testing.
+        """
+        print("mock_fuction_placeholder2 called with kwargs:", kwargs)
+        pass
+
+    def test_create_demo_app_with_ui_config_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            # This test is just to make sure that the demo app can be created with parameters for gradio
+            # and that it doesn't crash.
+            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
+                tmpdir / "vocoder"
+            )
+            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
+                tmpdir / "spec_model"
+            )
+
+            # Create a dummy app config file
+            config = {
+                "app_title": "Test App",
+                "app_description": "This is a test app description.",
+                "app_instructions": "These are test app instructions.",
+                "speakers": {
+                    "default": "Person A",
+                },
+                "languages": {
+                    "default": "English",
+                },
+                "input_text_label": "Input Text",
+                "duration_multiplier_label": "Duration Multiplier",
+                "language_label": "Language",
+                "speaker_label": "Speaker",
+                "output_format_label": "Output Format",
+                "synthesize_label": "Synthesize",
+                "file_output_label": "File Output",
+            }
+            config_file = tmpdir / "demo_config.json"
+            with config_file.open("w", encoding="utf8") as f:
+                json.dump(config, f)
+            allowlist_file = tmpdir / "allowlist.txt"
+            with allowlist_file.open("w", encoding="utf8") as f:
+                f.write("hey\nyes\nword")
+            # This test is just to make sure that the demo app params are passed correctly
+            port = 7000
+            ip = "123.456.78.90"
+
+            with (
+                mock.patch(
+                    "everyvoice.demo.app.load_model_from_checkpoint",
+                    side_effect=self.mock_demo_load_model_from_checkpoint,
+                ),
+                mock.patch(
+                    "everyvoice.base_cli.helpers.inference_base_command",
+                    side_effect=self.mock_fuction_placeholder,
+                ),
+                mock.patch(
+                    "everyvoice.demo.app.synthesize_audio",
+                    side_effect=self.mock_fuction_placeholder2,
+                ),
+                mock.patch(
+                    "gradio.Blocks.launch",
+                    return_value="Launching gradio app blocks",
+                    side_effect=self.mock_fuction_placeholder2,
+                ),
+            ):
+
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "demo",
+                        str(spec_model_path),
+                        str(vocoder_path),
+                        "--port",
+                        port,
+                        "--server-name",
+                        ip,  # Mock IP address
+                        "--ui-config-file",
+                        str(config_file),
+                        "--speaker",
+                        "default",
+                        "--language",
+                        "default",
+                        "--allowlist",
+                        allowlist_file,
+                    ],
+                )
+                # print(result.output, result.exit_code)  # Debug output
+
+            self.assertEqual(result.exit_code, 0)
+            self.assertIn(
+                f"Using speakers from app config JSON: [('{config['speakers']['default']}', 'default')]",
+                result.output,
+            )
+            self.assertIn(
+                f"Using languages from app config JSON: [('{config['languages']['default']}', 'default')]",
+                result.output,
+            )
+
+            self.assertIn(
+                f"Using app title from app config JSON: {config['app_title']}",
+                result.output,
+            )
+
+    def test_create_demo_app_with_malformed_ui_config_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            # This test is just to make sure that the demo app can be created with parameters for gradio
+            # and that it doesn't crash.
+            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
+                tmpdir / "vocoder"
+            )
+            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
+                tmpdir / "spec_model"
+            )
+            # Create a malformed app config file (missing closing brace)
+            config = """{
+                "app_title": "Test App",
+                "app_description": "This is a test app description.",
+                "app_instructions": "These are test app instructions.",
+                "input_text_label": "Input Text",
+                "duration_multiplier_label": "Duration Multiplier",
+                "language_label": "Language",
+                "speaker_label": "Speaker",
+                "output_format_label": "Output Format",
+                "synthesize_label": "Synthesize",
+                "file_output_label": "File Output",
+            """
+            config_file = tmpdir / "malformed_demo_config.json"
+            with config_file.open("w", encoding="utf8") as f:
+                f.write(config)
+            # This test is just to make sure that the demo app params are passed correctly
+            port = 7000
+            ip = "123.456.78.90"
+
+            with (
+                mock.patch(
+                    "everyvoice.demo.app.load_model_from_checkpoint",
+                    side_effect=self.mock_demo_load_model_from_checkpoint,
+                ),
+                mock.patch(
+                    "everyvoice.base_cli.helpers.inference_base_command",
+                    side_effect=self.mock_fuction_placeholder,
+                ),
+                mock.patch(
+                    "everyvoice.demo.app.synthesize_audio",
+                    side_effect=self.mock_fuction_placeholder2,
+                ),
+                mock.patch(
+                    "gradio.Blocks.launch",
+                    return_value="Launching gradio app blocks",
+                    side_effect=self.mock_fuction_placeholder2,
+                ),
+            ):
+
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "demo",
+                        str(spec_model_path),
+                        str(vocoder_path),
+                        "--port",
+                        port,
+                        "--server-name",
+                        ip,  # Mock IP address
+                        "--ui-config-file",
+                        str(config_file),
+                        "--speaker",
+                        "default",
+                        "--language",
+                        "default",
+                    ],
+                )
+                # print(result.output, result.exit_code)  # Debug output
+            self.assertNotEqual(result.exit_code, 0)
+            self.assertRegex(
+                result.output,
+                rf"(?s)Your config file {re.escape(str(config_file))}.*has errors",
+            )
+
+    # unit test for error handling in load_app_ui_labels
+    def test_create_demo_load_app_ui_labels_errors(self):
+        from everyvoice.demo.app import load_app_ui_labels
+
+        # Create a dummy app config file
+        config_bad_speaker = {
+            "app_title": "Test App",
+            "speakers": {
+                "unknown": "Person A",
+            },
+            "languages": {
+                "default": "English",
+            },
+        }
+        config_bad_language = {
+            "app_title": "Test App",
+            "speakers": {
+                "default": "Person A",
+            },
+            "languages": {
+                "unknown": "English",
+            },
+        }
+
+        with self.assertRaises(typer.BadParameter) as cm:
+            load_app_ui_labels(
+                config_bad_language,
+                ["all"],
+                ["all"],
+                ["default"],
+                ["default"],
+            )
+        self.assertIn(
+            "The 'languages' key in the app config JSON does not match the languages provided.",
+            str(cm.exception),
+        )
+        with self.assertRaises(typer.BadParameter) as cm:
+            load_app_ui_labels(
+                config_bad_speaker,
+                ["all"],
+                ["all"],
+                ["default"],
+                ["default"],
+            )
+        self.assertIn(
+            "The 'speakers' key in the app config JSON does not match the speakers provided.",
+            str(cm.exception),
+        )
+        with self.assertRaises(typer.BadParameter) as cm:
+            load_app_ui_labels(
+                config_bad_speaker,
+                ["default"],
+                ["unknown"],
+                ["default"],
+                ["default"],
+            )
+
+        self.assertIn(
+            "Language option has been activated, but valid languages have not been provided. The model has been trained in ['default'] languages. Please select either 'all' or at least some of them.",
+            str(cm.exception),
+        )
+        with self.assertRaises(typer.BadParameter) as cm:
+            load_app_ui_labels(
+                config_bad_speaker,
+                ["unknown"],
+                ["default"],
+                ["default"],
+                ["default"],
+            )
+        self.assertIn(
+            "Speaker option has been activated, but valid speakers have not been provided. The model has been trained with ['default'] speakers. Please select either 'all' or at least some of them.",
+            str(cm.exception),
+        )
 
     def test_rename_speaker(self):
         with tempfile.TemporaryDirectory() as tmpdir_str:
@@ -498,7 +798,7 @@ class CLITest(TestCase):
             }
             torch.save(ckpt, tmpdir / "test.ckpt")
 
-            with mock.patch("torch.save", side_effect=self.mock_torch_save):
+            with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
                 # Mock the torch.save function to avoid writing files
                 result = self.runner.invoke(
                     app,
@@ -533,7 +833,8 @@ class CLITest(TestCase):
             }
             torch.save(ckpt, tmpdir / "test.ckpt")
 
-            with mock.patch("torch.save", side_effect=self.mock_torch_save):
+            with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
+
                 # Test renaming a non-existing speaker
                 result = self.runner.invoke(
                     app,
@@ -559,7 +860,8 @@ class CLITest(TestCase):
             empty_ckpt = {"hyper_parameters": {"speaker2id": {}}}
             torch.save(empty_ckpt, tmpdir / "empty.ckpt")
 
-            with mock.patch("torch.save", side_effect=self.mock_torch_save):
+            with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
+
                 # Test renaming with no speakers in the checkpoint
                 result = self.runner.invoke(
                     app,

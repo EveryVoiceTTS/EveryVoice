@@ -2,6 +2,7 @@ import json
 import platform
 import subprocess
 import sys
+import tempfile
 from enum import Enum
 from io import TextIOWrapper
 from pathlib import Path
@@ -708,6 +709,31 @@ def demo(
         "-n",
         help="The server name to run the demo on. This is useful if you want to run the demo on a specific IP address.",
     ),
+    ui_config_file: Optional[Path] = typer.Option(
+        None,
+        "--ui-config-file",
+        "-C",
+        file_okay=True,
+        dir_okay=False,
+        exists=True,
+        help="""A path to a configuration file that will be used to override parts of the default configuration for the demo UI. This is useful if you want to override some of the text in the UI.
+        The config file should be a valid JSON FORMAT. The expected optional values and types are:
+
+            "app_title": string,
+            "app_description": string,
+            "app_instructions": string,
+            "languages": dict ["id":"name"],
+            "speakers":  dict ["id":"name"],
+            "input_text_label": string,
+            "duration_multiplier_label": string,
+            "language_label": string,
+            "speaker_label": string,
+            "output_format_label":string,
+            "synthesize_label": string,
+            "file_output_label": string
+
+        """,
+    ),
     **kwargs,
 ):
     if allowlist and denylist:
@@ -717,6 +743,7 @@ def demo(
 
     allowlist_data = []
     denylist_data = []
+    ui_config_json: dict | None = None
 
     if allowlist:
         with open(allowlist) as f:
@@ -740,6 +767,18 @@ def demo(
     print(f"  - Port: {port}")
     print(f"  - Share: {share}")
     print(f"  - Server Name: {server_name}")
+    if ui_config_file:
+        print(f"  - UI Config file path: {ui_config_file}")
+        with open(ui_config_file) as f:
+            try:
+                ui_config_json = json.load(f)
+                print("\t config loaded")
+            except Exception as e:
+                raise typer.BadParameter(
+                    f"Your config file {ui_config_file} has errors\n {e}"
+                )
+    else:
+        print("  - UI Config file path: None")
 
     with spinner():
         from everyvoice.demo.app import create_demo_app
@@ -754,10 +793,19 @@ def demo(
             accelerator=accelerator,
             allowlist=allowlist_data,
             denylist=denylist_data,
+            app_ui_config=ui_config_json,
             **kwargs,
         )
 
-    demo.launch(share=share, server_port=port, server_name=server_name)
+    demo.launch(
+        share=share,
+        server_port=port,
+        server_name=server_name,
+        allowed_paths=[
+            output_dir,
+            tempfile.gettempdir(),
+        ],  # explicitly give permission to gradio to write to the output directory and temp directory
+    )
 
 
 @app.command(hidden=True)
