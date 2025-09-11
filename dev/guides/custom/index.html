@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.17">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.19">
     
     
       
@@ -1063,6 +1063,30 @@ EveryVoice is compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint
 <div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>demo<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
 </code></pre></div>
 <p>And an interactive demo will be available at <a href="http://localhost:7260">http://localhost:7260</a></p>
+<p>Please consult the demo help for more information on how to use the demo: <code>everyvoice demo --help</code>.</p>
+<p>You can provide a custom json configuration file to override parts of the user interface the demo by using the <code>--ui-config-file</code> or <code>-C</code> flag, e.g. <code>everyvoice demo --ui-config-file=my_config.json  logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt</code>.</p>
+<p>This user interface configuration can provide a custom title (<code>app_title</code>), and custom labels for other UI elements as well as display for the languages and speakers. See sample below:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;app_title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;My Custom TTS Demo&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;app_description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;This is a custom text-to-speech demo for my language.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;app_instructions&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Type your text in the box below and click &#39;Generate speech&#39; to generate it spoken in the selected language and by the selected speaker.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;languages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;en&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;English&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;fr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;French&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;speakers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;speaker1&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Speaker One&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;speaker2&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Speaker Two&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;input_text_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Input Text&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;duration_multiplier_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Duration Multiplier&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;language_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Language&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;speaker_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Speaker&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;output_format_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Output Format&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;synthesize_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Synthesize&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;file_output_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;File Output&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
 <h2 id="optional-evaluation">Optional: Evaluation<a class="headerlink" href="#optional-evaluation" title="Permanent link">&para;</a></h2>
 <p>If you want to evaluate the model you just built, you can make use of the <code>everyvoice evaluate</code> command. In order to use it, you have to first generate some audio (see step 9) and then you can evaluate either a single file with <code>everyvoice evaluate -f your_file.wav</code> or a directory of audio files with <code>everyvoice evaluate -d path_to_wavs/</code>. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in <a href="https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680">this</a> paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: <code>everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav</code>. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.</p>
 <p>Please refer to <code>everyvoice evaluate --help</code> for more information.</p>
