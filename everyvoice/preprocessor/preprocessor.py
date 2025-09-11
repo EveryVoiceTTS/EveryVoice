@@ -65,6 +65,7 @@ class Preprocessor:
     ):
         self.config = config
         self.counters = Counters(Manager())
+        self.multichannel_files_list: list[str] = []
         self.cpus = 0
         self.pitch_scaler = Scaler()
         self.energy_scaler = Scaler()
@@ -146,6 +147,18 @@ class Preprocessor:
             Tensor: (audio as a Tensor, sampling rate)
         """
         audio, sr, seconds = self.load_audio(wav_path)
+
+        # Check if audio has more than 2 channels
+        if audio.shape[0] > 2:
+            logger.warning(
+                f"Audio file '{wav_path}' has {audio.shape[0]} channels. "
+                f"EveryVoice only supports mono (1 channel) or stereo (2 channel) audio files. "
+                f"Please convert your audio to mono or stereo before preprocessing - we will skip this file"
+            )
+            if update_counters:
+                self.counters.increment("multichannel_files")
+            self.multichannel_files_list.append(str(wav_path))
+            return None, None
 
         if seconds > self.audio_config.max_audio_length:
             logger.warning(
@@ -346,13 +359,23 @@ class Preprocessor:
             ["audio_empty", self.counters.value("audio_empty")],
             ["audio_too_short", self.counters.value("audio_too_short")],
             ["audio_too_long", self.counters.value("audio_too_long")],
+            ["multichannel_files", self.counters.value("multichannel_files")],
             ["duration", self.print_duration()],
         ]
         if audio_only:
             table = audio_1 + audio_2
         else:
             table = audio_1 + others + audio_2
-        return tabulate(table, headers, tablefmt=tablefmt)
+
+        report_text = tabulate(table, headers, tablefmt=tablefmt)
+
+        # Add multichannel files section if any exist
+        if self.multichannel_files_list:
+            report_text += f"\n\nMultichannel Audio Files ({len(self.multichannel_files_list)} total):\n"
+            for multichannel_file in self.multichannel_files_list:
+                report_text += f"  - {multichannel_file}\n"
+
+        return report_text
 
     def get_speaker_and_language(self, item):
         """Unless the dataset already has values for speaker and language, set them to 'default'"""
@@ -1074,6 +1097,20 @@ class Preprocessor:
                     with open(self.save_dir / "summary.txt", "w", encoding="utf8") as f:
                         f.write(report)
                         f.write("\n")
+
+                    # Save multichannel files list to a separate file
+                    if self.multichannel_files_list:
+                        with open(
+                            self.save_dir / "multichannel_files.txt",
+                            "w",
+                            encoding="utf8",
+                        ) as f:
+                            f.write(
+                                f"Multichannel Audio Files ({len(self.multichannel_files_list)} total):\n"
+                            )
+                            f.write("=" * 50 + "\n")
+                            for multichannel_file in self.multichannel_files_list:
+                                f.write(f"{multichannel_file}\n")
                     rich_print("Partial report showing only audio statistics:")
                     rich_print(report)
                 else:
