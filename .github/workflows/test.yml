@@ -156,6 +156,10 @@ jobs:
           miniforge-version: latest
           conda-remove-defaults: true
       - run: conda install -y -c conda-forge sox ffmpeg
+      - uses: actions/cache@v4  # enable caching for pre-commit
+        with:
+          path: ~/Library/Caches/pip
+          key: pip-macos-${{ matrix.python-version }}
       - run: pip install -e .[dev]
       - run: python --version
       - run: pip freeze
