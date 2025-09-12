@@ -1,4 +1,6 @@
 name: Run Tests
+permissions:
+  contents: read
 on:
   - push
   - pull_request
@@ -11,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
+      contents: write  # for pre-commit-ci/lite-action
       pull-requests: write
     steps:
       - name: Checkout repository and submodules
@@ -35,6 +38,10 @@ jobs:
           # Only run pre-commit on EV files themselves, not on submodules
           # See https://github.com/EveryVoiceTTS/EveryVoice/issues/555
           exclude_submodules: true
+      - uses: actions/cache@v4  # enable caching for pre-commit
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Custom replacement for pre-commit/action
         # pre-commit/action is not compatible with conda-incubator/setup-miniconda because it sets the shell wrong.
         run: python -m pre_commit run --show-diff-on-failure --color=always --files ${{ steps.file_changes.outputs.all_changed_files }}
