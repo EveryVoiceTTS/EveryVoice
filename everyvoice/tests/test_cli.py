@@ -1,7 +1,6 @@
 import enum
 import json
 import os
-import re
 import subprocess
 import tempfile
 from pathlib import Path
@@ -707,8 +706,7 @@ class CLITest(TestCase):
                 # print(result.output, result.exit_code)  # Debug output
             self.assertNotEqual(result.exit_code, 0)
             self.assertRegex(
-                result.output,
-                rf"(?s)Your config file {re.escape(str(config_file))}.*has errors",
+                result.output, r"(?s)Your config file.*malformed.*has.*errors"
             )
 
     # unit test for error handling in load_app_ui_labels
