@@ -1,0 +1,66 @@
+name: Run Matrix Tests
+
+on:
+  workflow_call:
+  workflow_dispatch:
+  push:
+    branches: main
+
+permissions:
+  contents: read
+
+jobs:
+  matrix-ubuntu:
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+      - uses: FedericoCarboni/setup-ffmpeg@v2
+      - run: sudo apt-get install sox libsox-dev
+      - name: Install dependencies and EveryVoice itself
+        run: |
+          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
+          pip install -e .[dev]
+      - run: pip freeze
+      - run: pip list
+      - run: cd everyvoice && python run_tests.py dev
+
+  matrix-macos:
+    timeout-minutes: 30
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    runs-on: macos-latest
+    defaults:
+      run:
+        # Required for conda
+        shell: bash -l {0}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - name: Set up conda
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+          miniforge-version: latest
+          conda-remove-defaults: true
+      - run: conda install -y -c conda-forge sox ffmpeg
+      - uses: actions/cache@v4  # enable caching for pre-commit
+        with:
+          path: ~/Library/Caches/pip
+          key: pip-macos-${{ matrix.python-version }}
+      - run: pip install -e .[dev]
+      - run: python --version
+      - run: pip freeze
+      - run: pip list
+      - run: cd everyvoice && python run_tests.py dev
