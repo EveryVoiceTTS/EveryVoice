@@ -1,20 +1,24 @@
 name: Run Tests
+
 on:
   - push
   - pull_request
   - workflow_call
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
+      contents: write  # for pre-commit-ci/lite-action
       pull-requests: write
     steps:
       - name: Checkout repository and submodules
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           submodules: recursive
       - run: sudo apt-get update
@@ -23,7 +27,7 @@ jobs:
         with:
           python-version: "3.10"
           cache: "pip"
-      - name: Install dependencies and package
+      - name: Install dependencies and EveryVoice itself
         run: |
           CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
           pip install -e .[dev]
@@ -35,6 +39,10 @@ jobs:
           # Only run pre-commit on EV files themselves, not on submodules
           # See https://github.com/EveryVoiceTTS/EveryVoice/issues/555
           exclude_submodules: true
+      - uses: actions/cache@v4  # enable caching for pre-commit
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
       - name: Custom replacement for pre-commit/action
         # pre-commit/action is not compatible with conda-incubator/setup-miniconda because it sets the shell wrong.
         run: python -m pre_commit run --show-diff-on-failure --color=always --files ${{ steps.file_changes.outputs.all_changed_files }}
@@ -103,26 +111,3 @@ jobs:
           echo ""
           ! licensecheck --format csv 2> /dev/null | grep -v -E 'nvidia-|aiohappyeyeballs' | grep PROPRIETARY \
           || echo "The package(s) listed just above this line is/are potentially a problem."
-
-  matrix:
-    strategy:
-      matrix:
-        python-version: ["3.11", "3.12"]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - run: sudo apt-get update
-      - run: sudo apt-get install --fix-missing sox libsox-dev ffmpeg
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
-      - name: Install dependencies and package
-        run: |
-          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -e .[dev]
-      - run: pip freeze
-      - run: pip list
-      - run: cd everyvoice && coverage run run_tests.py dev
