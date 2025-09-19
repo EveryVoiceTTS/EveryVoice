@@ -30,6 +30,8 @@
   - 'no'
 - - Select Language Step
   - '[und]: my language isn''t here'
+- - Custom G2P Step
+  - 0
 - - Wavs Dir Step
   - wavs
 - - Validate Wavs Step
