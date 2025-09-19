@@ -14,11 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      contents: write  # for pre-commit-ci/lite-action
+      contents: read
       pull-requests: write
     steps:
-      - name: Checkout repository and submodules
-        uses: actions/checkout@v5
+      - uses: actions/checkout@v5
         with:
           submodules: recursive
       - run: sudo apt-get update
@@ -33,21 +32,6 @@ jobs:
           pip install -e .[dev]
       - run: pip freeze
       - run: pip list
-      - uses: tj-actions/changed-files@v45
-        id: file_changes
-        with:
-          # Only run pre-commit on EV files themselves, not on submodules
-          # See https://github.com/EveryVoiceTTS/EveryVoice/issues/555
-          exclude_submodules: true
-      - uses: actions/cache@v4  # enable caching for pre-commit
-        with:
-          path: ~/.cache/pre-commit
-          key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
-      - name: Custom replacement for pre-commit/action
-        # pre-commit/action is not compatible with conda-incubator/setup-miniconda because it sets the shell wrong.
-        run: python -m pre_commit run --show-diff-on-failure --color=always --files ${{ steps.file_changes.outputs.all_changed_files }}
-      - uses: pre-commit-ci/lite-action@v1.0.2
-        if: always()
       - name: Run tests
         id: tests
         continue-on-error: true
@@ -97,9 +81,45 @@ jobs:
           preformatted: true
           message-path: import-message.txt
 
-      # Automated due diligence: Make sure we don't introduce dependencies with incompatible licenses.
-      # But: Ignore packages where auto analysis does not work but manual analysis says OK.
-      # And: Ignore nvidia-*-cu12 packages used by the GPU back-end: OTHER/PROPRIETARY LICENSE
+  # Run pre-commit and update a PR automatically if possible
+  pre-commit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write  # for pre-commit-ci/lite-action
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
+      - run: pip install pre-commit
+      - uses: tj-actions/changed-files@v45
+        id: file_changes
+        with:
+          # Only run pre-commit on EV files themselves, not on submodules
+          # See https://github.com/EveryVoiceTTS/EveryVoice/issues/555
+          exclude_submodules: true
+      - uses: actions/cache@v4  # enable caching for pre-commit
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Custom replacement for pre-commit/action
+        # pre-commit/action is not compatible with conda-incubator/setup-miniconda because it sets the shell wrong.
+        run: python -m pre_commit run --show-diff-on-failure --color=always --files ${{ steps.file_changes.outputs.all_changed_files }}
+      - uses: pre-commit-ci/lite-action@v1.1.0
+        if: always()
+
+  # Automated due diligence: Make sure we don't introduce dependencies with incompatible licenses.
+  # But: Ignore packages where auto analysis does not work but manual analysis says OK.
+  # And: Ignore nvidia-*-cu12 packages used by the GPU back-end: OTHER/PROPRIETARY LICENSE
+  licensecheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: recursive
       - run: pip install licensecheck --no-warn-conflicts
       - name: Run license check overall
         run: |
