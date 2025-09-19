@@ -96,18 +96,18 @@ jobs:
         with:
           preformatted: true
           message-path: import-message.txt
-      - name: Check licenses
-        run: |
-          pip install licensecheck --no-warn-conflicts
-          # Make sure we don't have or introduce dependencies with incompatible licenses.
-          # Ignore packages where auto analysis does not work but manual analysis says OK.
-          # Ignore nvidia-*-cu12 packages used by the GPU back-end: OTHER/PROPRIETARY LICENSE
-          licensecheck --zero \
-              --ignore-packages text-unidecode pympi-ling pyworld pysdtw audioread \
-              --ignore-licenses OTHER/PROPRIETARY \
-          || echo "Package(s) listed with an X above is/are potentially a problem."
 
-          # Only nvidia's and aiohappyeyeballs's proprietary licenses are OK.
-          echo ""
-          ! licensecheck --format csv 2> /dev/null | grep -v -E 'nvidia-|aiohappyeyeballs' | grep PROPRIETARY \
-          || echo "The package(s) listed just above this line is/are potentially a problem."
+      # Automated due diligence: Make sure we don't introduce dependencies with incompatible licenses.
+      # But: Ignore packages where auto analysis does not work but manual analysis says OK.
+      # And: Ignore nvidia-*-cu12 packages used by the GPU back-end: OTHER/PROPRIETARY LICENSE
+      - run: pip install licensecheck --no-warn-conflicts
+      - name: Run license check overall
+        run: |
+          licensecheck --requirements-paths pyproject.toml --zero \
+            --ignore-packages text-unidecode pympi-ling pyworld pyworld-prebuilt pysdtw audioread anytree gradio \
+            --ignore-licenses OTHER/PROPRIETARY || \
+          ! echo "Package(s) listed with an X above is/are potentially a problem. Please review their licenses for compatibility with EveryVoice."
+      - name: Make sure the PROPRIETARY packages are the known ones
+        run: |
+          ! licensecheck --requirements-paths pyproject.toml --format csv 2> /dev/null | grep -v -E 'nvidia-|aiohappyeyeballs' | grep PROPRIETARY || \
+          ! echo "Package(s) listed above is/are potentially a problem. Please review their licenses for compatibility with EveryVoice."
