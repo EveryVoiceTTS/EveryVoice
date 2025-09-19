@@ -11,9 +11,11 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: true
 jobs:
- docs:
+  docs:
     # Create latest docs
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # to push to gh-pages branch
     steps:
       - uses: actions/checkout@v5
         with:

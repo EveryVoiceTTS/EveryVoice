@@ -10,6 +10,9 @@ on:
     tags:
       - v[0-9]+.**
 
+permissions:
+  contents: read
+
 jobs:
   test:
     uses: ./.github/workflows/test.yml
@@ -90,6 +93,8 @@ jobs:
     needs:
       - github-release
       - build
+    permissions:
+      contents: write  # to deploy docs to gh-pages branch
     steps:
       - uses: actions/checkout@v5
         with:
