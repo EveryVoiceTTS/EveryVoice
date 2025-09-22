@@ -37,6 +37,8 @@
   - 'no'
 - - Select Language Step
   - '[eng]: English'
+- - Custom G2P Step
+  - 0
 - - Wavs Dir Step
   - ../regress-lj-60/wavs
 - - Validate Wavs Step
@@ -69,6 +71,8 @@
   - 'no'
 - - Select Language Step
   - '[und]: my language isn''t here'
+- - Custom G2P Step
+  - 0
 - - Wavs Dir Step
   - ../regress-si-full/wavs
 - - Validate Wavs Step
@@ -110,6 +114,8 @@
   - 'no'
 - - Select Language Step
   - '[und]: my language isn''t here'
+- - Custom G2P Step
+  - 0
 - - Wavs Dir Step
   - ../regress-xh-full/wavs
 - - Validate Wavs Step
