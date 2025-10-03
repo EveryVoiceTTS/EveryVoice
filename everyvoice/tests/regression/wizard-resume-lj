@@ -35,6 +35,8 @@
   - 'no'
 - - Select Language Step
   - '[eng]: English'
+- - Custom G2P Step
+  - 0
 - - Wavs Dir Step
   - wavs
 - - Validate Wavs Step
