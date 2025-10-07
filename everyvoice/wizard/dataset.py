@@ -46,15 +46,32 @@ class DatasetNameStep(Step):
         ).unsafe_ask()
 
     def validate(self, response):
+        # non empty test
         if len(response) == 0:
             rich_print("Sorry, your dataset needs a name.")
             return False
+
+        # slug safety test
         slug = slugify(response)
         if not slug == response:
             rich_print(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."
             )
             return False
+
+        # uniqueness test
+        existing_names = [
+            dataset.get(StepNames.dataset_name_step.value, "")
+            for key, dataset in self.root.state.items()
+            if key.startswith("dataset_")
+        ]
+        existing_names = list(filter(None, existing_names))
+        if response in existing_names:
+            rich_print(
+                f"Sorry, you already have another dataset called '{response}' in your project. Please choose unique names.\nDataset names so far: {existing_names}",
+            )
+            return False
+
         return True
 
     def effect(self):
@@ -304,7 +321,6 @@ class ValidateWavsStep(Step):
 
     def wav_file_early_validation(self) -> int:
         """Look for missing wav files and return the error count"""
-        assert self.state is not None  # fixes mypy errors
         wavs_dir = Path(self.state[StepNames.wavs_dir_step])
         files_not_found = []
         MAX_SAMPLES = 1000

@@ -34,6 +34,7 @@ from everyvoice.tests.stubs import (
     patch_menu_prompt,
     patch_questionary,
     silence_c_stderr,
+    silence_c_stdout,
 )
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.wizard import StepNames as SN
@@ -493,6 +494,27 @@ class WizardTest(WizardTestBase):
         self.assertIn("is not valid", output[1])
         self.assertIn("finished the configuration", "".join(output[2:]))
         self.assertTrue(step.completed)
+
+    def test_unique_dataset_name(self):
+        tour = Tour(
+            name="non-unique",
+            steps=[
+                dataset.DatasetNameStep(state_subset="dataset_0"),
+                dataset.DatasetNameStep(state_subset="dataset_1"),
+                dataset.DatasetNameStep(state_subset="dataset_2"),
+            ],
+        )
+        with patch_questionary("set1"), silence_c_stdout():
+            tour.steps[0].run()
+        self.assertEqual(tour.state["dataset_0"][SN.dataset_name_step], "set1")
+        with patch_questionary(("set1", "set2")), capture_stdout() as out:
+            tour.steps[1].run()
+        self.assertIn("Please choose unique", flatten_log(out.getvalue()))
+        self.assertEqual(tour.state["dataset_1"][SN.dataset_name_step], "set2")
+        with patch_questionary(("set1", "set2", "set3")), capture_stdout() as out:
+            tour.steps[2].run()
+        self.assertIn("Please choose unique", flatten_log(out.getvalue()))
+        self.assertEqual(tour.state["dataset_2"][SN.dataset_name_step], "set3")
 
     def test_speaker_name(self):
         step = dataset.AddSpeakerStep()
