@@ -297,7 +297,10 @@ class QuestionaryStub:
 class patch_questionary:
     """Shortcut for monkey patching questionary everywhere
 
-    Args: See QuestionaryStub"""
+    Args:
+        responses: the (sequence of) answers the user is simulated to provide
+        ask_ok: if True, allow calling .ask(), which is an error otherwise
+    """
 
     def __init__(self, responses: Path | str | Sequence, ask_ok: bool = False):
         self.responses = responses

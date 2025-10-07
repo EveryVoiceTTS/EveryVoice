@@ -45,15 +45,36 @@ class DatasetNameStep(Step):
         ).unsafe_ask()
 
     def validate(self, response):
+        # non empty
         if len(response) == 0:
             rich_print("Sorry, your dataset needs a name.")
             return False
+
+        # slug safe
         slug = slugify(response)
         if not slug == response:
             rich_print(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."
             )
             return False
+
+        # unique
+        existing_names = (
+            [
+                dataset.get(StepNames.dataset_name_step.value, "")
+                for key, dataset in self.root.state.items()
+                if key.startswith("dataset_")
+            ]
+            if self.root and self.root.state
+            else []
+        )
+        existing_names = list(filter(None, existing_names))
+        if response in existing_names:
+            rich_print(
+                f"Sorry, you already have another dataset called '{response}' in your project. Please choose unique names.\nDataset names so far: {existing_names}",
+            )
+            return False
+
         return True
 
     def effect(self):
