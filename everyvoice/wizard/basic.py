@@ -306,7 +306,7 @@ class ConfigFormatStep(Step):
 
             datasets.append(
                 Dataset(
-                    label=dataset,
+                    label=dataset_name,
                     data_dir=wavs_dir,
                     filelist=new_filelist_path,
                     filelist_loader=filelist_loader,

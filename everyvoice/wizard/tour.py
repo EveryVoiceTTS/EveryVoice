@@ -134,6 +134,8 @@ class Step(_Step, NodeMixinWithNavigation):
         """Prompt the user and save the response to the response attribute.
         If this method returns something truthy, continue, otherwise ask the prompt again.
         """
+        if self._state is None:
+            self._state = State()  # for unit testing
         if saved_response is not None:
             self.response = saved_response
         else:
