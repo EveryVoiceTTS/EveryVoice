@@ -86,10 +86,10 @@ class SubsampleTest(TestCase):
             app, [str(self.metadata_path), str(self.wavs_path), "-d", "7", "-f", "txt"]
         )
         self.assertNotEqual(result.exit_code, 0)
-        self.assertRegex(result.stdout, r"Invalid value for")
+        self.assertIn("Invalid value for", result.stdout)
         self.assertRegex(
             result.stdout,
-            r"txt is not one of psv tsv csv festival".replace(" ", r"[\s\S]*"),
+            r"(?s)txt is not one of psv tsv csv festival".replace(" ", r".*"),
         )
 
         # Festival format with speaker id is incompatible
