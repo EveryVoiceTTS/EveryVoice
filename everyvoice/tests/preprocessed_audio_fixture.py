@@ -7,9 +7,10 @@ from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.preprocessor import Preprocessor
-from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.stubs import capture_stderr, capture_stdout, mute_logger
 from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
+
+from .basic_test_case import BasicTestCase
+from .stubs import capture_stderr, capture_stdout, mute_logger
 
 
 class PreprocessedAudioFixture:

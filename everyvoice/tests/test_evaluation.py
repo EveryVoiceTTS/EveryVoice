@@ -4,7 +4,8 @@ from everyvoice.evaluation import (
     load_squim_objective_model,
     load_squim_subjective_model,
 )
-from everyvoice.tests.basic_test_case import BasicTestCase
+
+from .basic_test_case import BasicTestCase
 
 
 class EvaluationTest(BasicTestCase):

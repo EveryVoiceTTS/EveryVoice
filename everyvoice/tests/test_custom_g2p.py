@@ -9,14 +9,6 @@ from pydantic import ValidationError
 
 import everyvoice
 from everyvoice.config.text_config import TextConfig
-from everyvoice.tests.stubs import (
-    Say,
-    mute_logger,
-    null_patch,
-    patch_logger,
-    patch_menu_prompt,
-    patch_questionary,
-)
 from everyvoice.text.phonemizer import (
     AVAILABLE_G2P_ENGINES,
     DEFAULT_G2P,
@@ -26,6 +18,14 @@ from everyvoice.text.phonemizer import (
 )
 from everyvoice.wizard import basic, dataset
 
+from .stubs import (
+    Say,
+    mute_logger,
+    null_patch,
+    patch_logger,
+    patch_menu_prompt,
+    patch_questionary,
+)
 from .test_wizard import RecursiveAnswers, StepAndAnswer, WizardTestBase
 
 

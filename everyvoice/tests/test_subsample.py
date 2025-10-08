@@ -3,7 +3,7 @@ from unittest import TestCase
 
 from typer.testing import CliRunner
 
-from everyvoice.tests.regression.subsample import app
+from .regression.subsample import app
 
 
 class SubsampleTest(TestCase):

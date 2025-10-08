@@ -9,8 +9,6 @@ from pydantic import ValidationError
 from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
-from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.stubs import silence_c_stderr
 from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
@@ -22,6 +20,9 @@ from everyvoice.utils import (
     lower,
     nfc_normalize,
 )
+
+from .basic_test_case import BasicTestCase
+from .stubs import silence_c_stderr
 
 
 class TextTest(BasicTestCase):

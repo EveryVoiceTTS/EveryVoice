@@ -22,7 +22,13 @@ from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
 
 from everyvoice._version import VERSION
-from everyvoice.tests.stubs import (
+from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
+from everyvoice.wizard import StepNames as SN
+from everyvoice.wizard import basic, dataset, prompts, utils
+from everyvoice.wizard.main_tour import get_main_wizard_tour
+from everyvoice.wizard.tour import State, Step, Tour
+
+from .stubs import (
     Say,
     capture_stderr,
     capture_stdout,
@@ -32,11 +38,6 @@ from everyvoice.tests.stubs import (
     patch_questionary,
     silence_c_stderr,
 )
-from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
-from everyvoice.wizard import StepNames as SN
-from everyvoice.wizard import basic, dataset, prompts, utils
-from everyvoice.wizard.main_tour import get_main_wizard_tour
-from everyvoice.wizard.tour import State, Step, Tour
 
 CONTACT_INFO_STATE = State()
 CONTACT_INFO_STATE[SN.contact_name_step.value] = "Test Name"

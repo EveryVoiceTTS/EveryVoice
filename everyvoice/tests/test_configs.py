@@ -30,8 +30,6 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
     HiFiGANModelConfig,
     HiFiGANTrainingConfig,
 )
-from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.stubs import mute_logger, silence_c_stderr
 from everyvoice.utils import (
     expand_config_string_syntax,
     load_config_from_json_or_yaml_path,
@@ -44,6 +42,9 @@ from everyvoice.wizard import (
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
     TEXT_TO_WAV_CONFIG_FILENAME_PREFIX,
 )
+
+from .basic_test_case import BasicTestCase
+from .stubs import mute_logger, silence_c_stderr
 
 
 def _writer_helper(model, filename):

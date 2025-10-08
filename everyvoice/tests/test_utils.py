@@ -18,9 +18,10 @@ from everyvoice.config.validation_helpers import (
     path_is_a_directory,
     relative_to_absolute_path,
 )
-from everyvoice.tests.stubs import capture_logs, patch_logger, silence_c_stderr
 from everyvoice.utils import write_filelist
 from everyvoice.utils.heavy import get_device_from_accelerator
+
+from .stubs import capture_logs, patch_logger, silence_c_stderr
 
 
 class VersionTest(TestCase):

@@ -5,12 +5,13 @@ from unittest import TestCase
 import yaml
 from anytree import PreOrderIter
 
-from everyvoice.tests.stubs import capture_stdout, temp_chdir
-from everyvoice.tests.test_wizard import CONTACT_INFO_STATE
 from everyvoice.wizard import StepNames as SN
 from everyvoice.wizard.basic import ConfigFormatStep
 from everyvoice.wizard.tour import State
 from everyvoice.wizard.utils import EnumDict, NodeMixinWithNavigation
+
+from .stubs import capture_stdout, temp_chdir
+from .test_wizard import CONTACT_INFO_STATE
 
 
 class WavFileDirectoryRelativePathTest(TestCase):

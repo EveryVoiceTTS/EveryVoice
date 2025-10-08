@@ -12,10 +12,11 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     HiFiGANDataModule,
     SpecDataset,
 )
-from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
-from everyvoice.tests.stubs import mute_logger
 from everyvoice.utils import filter_dataset_based_on_target_text_representation_level
+
+from .basic_test_case import BasicTestCase
+from .preprocessed_audio_fixture import PreprocessedAudioFixture
+from .stubs import mute_logger
 
 
 class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
