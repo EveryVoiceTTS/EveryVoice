@@ -1,4 +1,7 @@
 # Adapted from https://github.com/ufoym/imbalanced-dataset-sampler
+# MIT License
+# Copyright (c) 2018 Ming
+# Copyright (c) 2019-2025 National Research Council Canada for changes to adapt the code to EveryVoice
 
 from typing import Callable, Optional
 
