@@ -13,7 +13,8 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import HiFiGAN
-from everyvoice.tests.stubs import silence_c_stderr
+
+from .stubs import silence_c_stderr
 
 
 def get_stubbed_vocoder(tmp_dir: Path) -> tuple[HiFiGAN, Path]:
