@@ -39,7 +39,12 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
-from everyvoice.tests.stubs import capture_logs, capture_stdout, silence_c_stderr
+from everyvoice.tests.stubs import (
+    capture_logs,
+    capture_stdout,
+    flatten_log,
+    silence_c_stderr,
+)
 from everyvoice.wizard import (
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
@@ -317,9 +322,9 @@ class CLITest(TestCase):
                 app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
             )
         self.assertEqual(result.exit_code, 0)
-        self.assertRegex(
-            result.stdout,
-            r"(?s)This command has been renamed to `everyvoice.*checkpoint.*inspect`",
+        self.assertIn(
+            "This command has been renamed to `everyvoice checkpoint inspect`",
+            flatten_log(result.stdout),
         )
 
     def test_inspect_checkpoint_help(self):
@@ -432,7 +437,6 @@ class CLITest(TestCase):
 
     def mock_create_demo_app(self, *_args, **_kwargs):
         class MockCreateDemoApp:
-
             def launch(self, *_args, **_kwargs):
                 print(f"  - Launch Port: {_kwargs['server_port']}")
                 print(f"  - Launch Share: {_kwargs['share']}")
@@ -596,7 +600,6 @@ class CLITest(TestCase):
                     side_effect=self.mock_fuction_placeholder2,
                 ),
             ):
-
                 result = self.runner.invoke(
                     app,
                     [
@@ -684,7 +687,6 @@ class CLITest(TestCase):
                     side_effect=self.mock_fuction_placeholder2,
                 ),
             ):
-
                 result = self.runner.invoke(
                     app,
                     [
@@ -832,7 +834,6 @@ class CLITest(TestCase):
             torch.save(ckpt, tmpdir / "test.ckpt")
 
             with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
-
                 # Test renaming a non-existing speaker
                 result = self.runner.invoke(
                     app,
@@ -859,7 +860,6 @@ class CLITest(TestCase):
             torch.save(empty_ckpt, tmpdir / "empty.ckpt")
 
             with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
-
                 # Test renaming with no speakers in the checkpoint
                 result = self.runner.invoke(
                     app,
