@@ -21,11 +21,10 @@ from everyvoice.utils import (
     nfc_normalize,
 )
 
-from .basic_test_case import BasicTestCase
-from .stubs import silence_c_stderr
+from .stubs import TEST_CONTACT, silence_c_stderr
 
 
-class TextTest(BasicTestCase):
+class TextTest(TestCase):
     """Basic test for text input configuration"""
 
     def setUp(self) -> None:
@@ -123,7 +122,7 @@ class TextTest(BasicTestCase):
 
     def test_phonological_features(self):
         moh_config = FeaturePredictionConfig(
-            contact=self.contact,
+            contact=TEST_CONTACT,
             text=TextConfig(
                 cleaners=[collapse_whitespace, lower, nfc_normalize],
                 symbols=Symbols(

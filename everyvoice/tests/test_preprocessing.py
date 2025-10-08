@@ -3,6 +3,7 @@ import shutil
 import tempfile
 from math import sqrt
 from pathlib import Path
+from unittest import TestCase
 
 import torch
 import torchaudio
@@ -21,9 +22,10 @@ from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.utils import generic_psv_filelist_reader
 
-from .basic_test_case import BasicTestCase
 from .preprocessed_audio_fixture import PreprocessedAudioFixture
 from .stubs import (
+    TEST_CONTACT,
+    TEST_DATA_DIR,
     capture_stderr,
     capture_stdout,
     monkeypatch,
@@ -32,10 +34,10 @@ from .stubs import (
 )
 
 
-class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
+class PreprocessingTest(PreprocessedAudioFixture, TestCase):
     """Unit tests for preprocessing steps"""
 
-    filelist = generic_psv_filelist_reader(BasicTestCase.data_dir / "metadata.psv")
+    filelist = generic_psv_filelist_reader(TEST_DATA_DIR / "metadata.psv")
 
     def test_read_filelist(self):
         self.assertEqual(self.filelist[0]["basename"], "LJ050-0269")
@@ -52,9 +54,9 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
     def test_remove_silence(self):
         audio_path_with_silence = str(
-            self.data_dir / ("440tone-with-leading-trailing-silence.wav")
+            TEST_DATA_DIR / ("440tone-with-leading-trailing-silence.wav")
         )
-        config = FeaturePredictionConfig(contact=self.contact)
+        config = FeaturePredictionConfig(contact=TEST_CONTACT)
         sox_effects = config.preprocessing.source_data[0].sox_effects + [
             [
                 "silence",
@@ -105,13 +107,13 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     def test_process_empty_audio(self):
         for fn in ["empty.wav", "zeros.wav"]:
             with mute_logger("everyvoice.preprocessor.preprocessor"):
-                audio, sr = self.preprocessor.process_audio(self.data_dir / fn)
+                audio, sr = self.preprocessor.process_audio(TEST_DATA_DIR / fn)
             self.assertEqual(audio, None)
             self.assertEqual(sr, None)
 
     def test_multichannel_audio_skipped(self):
         """Test that audio files with more than 2 channels are skipped gracefully"""
-        multichannel_audio_path = self.data_dir / "multichannel_test.wav"
+        multichannel_audio_path = TEST_DATA_DIR / "multichannel_test.wav"
 
         with mute_logger("everyvoice.preprocessor.preprocessor"):
             audio, sr = self.preprocessor.process_audio(
@@ -134,7 +136,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         """Test that multichannel files appear in the report"""
         # Get the current count before processing
         initial_count = self.preprocessor.counters.value("multichannel_files")
-        multichannel_audio_path = self.data_dir / "multichannel_test.wav"
+        multichannel_audio_path = TEST_DATA_DIR / "multichannel_test.wav"
 
         # Process the multichannel file to add it to the list
         with mute_logger("everyvoice.preprocessor.preprocessor"):
@@ -168,7 +170,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         from pathlib import Path
 
         # Add some multichannel files to the preprocessor
-        multichannel_path = self.data_dir / "multichannel_test.wav"
+        multichannel_path = TEST_DATA_DIR / "multichannel_test.wav"
 
         # Process the multichannel file to populate the list
         with mute_logger("everyvoice.preprocessor.preprocessor"):
@@ -207,7 +209,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         preprocessor = Preprocessor(self.fp_config)
 
         # Add a multichannel file to trigger the file output code
-        multichannel_path = self.data_dir / "multichannel_test.wav"
+        multichannel_path = TEST_DATA_DIR / "multichannel_test.wav"
         with mute_logger("everyvoice.preprocessor.preprocessor"):
             preprocessor.process_audio(multichannel_path, hop_size=256)
 
@@ -243,7 +245,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     def test_audio_too_long_condition(self):
         """Test that audio files longer than max_audio_length are skipped"""
         # Use the long test audio file (12 seconds, longer than default 11.0 limit)
-        long_audio_path = self.data_dir / "long_audio_test.wav"
+        long_audio_path = TEST_DATA_DIR / "long_audio_test.wav"
 
         with mute_logger("everyvoice.preprocessor.preprocessor"):
             audio, sr = self.preprocessor.process_audio(long_audio_path, hop_size=256)
@@ -282,12 +284,12 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             test_wavs_dir.mkdir()
             # Copy a valid audio file
             shutil.copy2(
-                self.data_dir / "lj" / "wavs" / "LJ050-0269.wav",
+                TEST_DATA_DIR / "lj" / "wavs" / "LJ050-0269.wav",
                 test_wavs_dir / "LJ050-0269.wav",
             )
             # Copy multichannel file
             shutil.copy2(
-                self.data_dir / "multichannel_test.wav",
+                TEST_DATA_DIR / "multichannel_test.wav",
                 test_wavs_dir / "multichannel_test.wav",
             )
 
@@ -357,13 +359,13 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
     def test_spectral_feats(self):
         linear_vocoder_config = VocoderConfig(
-            contact=self.contact,
+            contact=TEST_CONTACT,
             preprocessing=PreprocessingConfig(
                 audio=AudioConfig(spec_type=AudioSpecTypeEnum.linear)
             ),
         )
         complex_vocoder_config = VocoderConfig(
-            contact=self.contact,
+            contact=TEST_CONTACT,
             preprocessing=PreprocessingConfig(
                 audio=AudioConfig(spec_type=AudioSpecTypeEnum.raw)
             ),
@@ -378,7 +380,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             )
 
             # ming024_feats = np.load(
-            #     self.data_dir
+            #     DATA_DIR
             #     / "ming024"
             #     / ("eng-LJSpeech-mel-" + entry["basename"] + ".npy")
             # )
@@ -409,7 +411,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
     def test_bad_pitch(self):
         """Some files don't have any pitch values so we should make sure we handle these properly"""
         pyworld_config = FeaturePredictionConfig(
-            contact=self.contact, preprocessing=PreprocessingConfig()
+            contact=TEST_CONTACT, preprocessing=PreprocessingConfig()
         )
         preprocessor_pyworld = Preprocessor(pyworld_config)
         audio = torch.zeros(22050)
@@ -423,7 +425,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
     def test_pitch(self):
         pyworld_config = VocoderConfig(
-            contact=self.contact, preprocessing=PreprocessingConfig()
+            contact=TEST_CONTACT, preprocessing=PreprocessingConfig()
         )
         preprocessor_pyworld = Preprocessor(pyworld_config)
 
@@ -449,7 +451,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                 audio, self.preprocessor.input_spectral_transform
             )
             # ming024_pitch = np.load(
-            #     self.data_dir
+            #     DATA_DIR
             #     / "ming024"
             #     / ("eng-LJSpeech-pitch-" + entry["basename"] + ".npy")
             # )
@@ -487,7 +489,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                 audio, self.preprocessor.input_spectral_transform
             )
             # ming024_durs = np.load(
-            #     self.data_dir
+            #     DATA_DIR
             #     / "ming024"
             #     / ("eng-LJSpeech-duration-" + entry["basename"] + ".npy")
             # )
@@ -499,7 +501,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
 
     def test_energy(self):
         frame_energy_config = VocoderConfig(
-            contact=self.contact, preprocessing=PreprocessingConfig()
+            contact=TEST_CONTACT, preprocessing=PreprocessingConfig()
         )
         preprocessor = Preprocessor(frame_energy_config)
         for entry in self.filelist[1:]:
@@ -521,7 +523,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             )
             durs = torch.load(dur_path, weights_only=True)
             # ming024_energy = np.load(
-            #     self.data_dir
+            #     DATA_DIR
             #     / "ming024"
             #     / ("eng-LJSpeech-energy-" + entry["basename"] + ".npy")
             # )
@@ -548,17 +550,17 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
             init_context({"writing_config": Path(tempdir)}),
         ):
             characters_eng_filelist = (
-                self.data_dir / "metadata_characters_supported_lang.psv"
+                TEST_DATA_DIR / "metadata_characters_supported_lang.psv"
             )
             characters_default_filelist = (
-                self.data_dir / "metadata_characters_no_supported_lang.psv"
+                TEST_DATA_DIR / "metadata_characters_no_supported_lang.psv"
             )
-            arpabet_filelist = self.data_dir / "metadata_arpabet.psv"
-            phones_filelist = self.data_dir / "metadata_phones.psv"
+            arpabet_filelist = TEST_DATA_DIR / "metadata_arpabet.psv"
+            phones_filelist = TEST_DATA_DIR / "metadata_phones.psv"
             mixed_representation_filelist = (
-                self.data_dir / "metadata_mixed_representation.psv"
+                TEST_DATA_DIR / "metadata_mixed_representation.psv"
             )
-            slash_pipe_filelist = self.data_dir / "metadata_slash_pipe.psv"
+            slash_pipe_filelist = TEST_DATA_DIR / "metadata_slash_pipe.psv"
             fp_config = FeaturePredictionConfig(**self.fp_config.model_dump())
             filelists_to_test = [
                 {
@@ -678,10 +680,10 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         lj_preprocessed = tmpdir / "preprocessed"
         lj_filelist = lj_preprocessed / "filelist.psv"
 
-        fp_config = FeaturePredictionConfig(contact=self.contact)  # type: ignore
-        fp_config.preprocessing.source_data[0].data_dir = self.data_dir / "lj" / "wavs"
+        fp_config = FeaturePredictionConfig(contact=TEST_CONTACT)  # type: ignore
+        fp_config.preprocessing.source_data[0].data_dir = TEST_DATA_DIR / "lj" / "wavs"
 
-        full_filelist = self.data_dir / "metadata.psv"
+        full_filelist = TEST_DATA_DIR / "metadata.psv"
         partial_filelist = tmpdir / "partial-metadata.psv"
         with open(partial_filelist, mode="w", encoding="utf8") as f_out:
             with open(full_filelist, encoding="utf8") as f_in:
@@ -771,7 +773,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
         ) as tmpdir:
             tmpdir = Path(tmpdir)
             fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
-            fp_config.preprocessing.source_data[0].data_dir = self.data_dir
+            fp_config.preprocessing.source_data[0].data_dir = TEST_DATA_DIR
             input_filelist = tmpdir / "empty-metadata.psv"
             with open(input_filelist, mode="w", encoding="utf8") as f:
                 print("basename|raw_text|characters|speaker|language", file=f)
@@ -949,7 +951,7 @@ class PreprocessingTest(PreprocessedAudioFixture, BasicTestCase):
                 self.assertEqual(phone_length_stats["mean"], 98.4)
 
 
-class PreprocessingHierarchyTest(BasicTestCase):
+class PreprocessingHierarchyTest(TestCase):
     def test_hierarchy(self):
         """Unit tests for preprocessing steps"""
 
@@ -960,7 +962,7 @@ class PreprocessingHierarchyTest(BasicTestCase):
             preprocessed_dir = tmpdir / "hierarchy" / "preprocessed"
             filelist = preprocessed_dir / "preprocessed_filelist.psv"
 
-            fp_config = FeaturePredictionConfig(contact=self.contact)
+            fp_config = FeaturePredictionConfig(contact=TEST_CONTACT)
             fp_config.preprocessing.source_data[0].data_dir = wavs_dir
             fp_config.preprocessing.source_data[0].filelist = (
                 data_dir / "hierarchy" / "metadata.psv"

@@ -9,8 +9,13 @@ from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 
-from .basic_test_case import BasicTestCase
-from .stubs import capture_stderr, capture_stdout, mute_logger
+from .stubs import (
+    TEST_CONTACT,
+    TEST_DATA_DIR,
+    capture_stderr,
+    capture_stdout,
+    mute_logger,
+)
 
 
 class PreprocessedAudioFixture:
@@ -22,7 +27,7 @@ class PreprocessedAudioFixture:
     lj_preprocessed = Path(_tempdir.name)
     _preprocess_ran = False
 
-    data_dir = BasicTestCase.data_dir
+    data_dir = TEST_DATA_DIR
     wavs_dir = data_dir / "lj" / "wavs"
     lj_filelist = lj_preprocessed / "preprocessed_filelist.psv"
 
@@ -58,7 +63,7 @@ class PreprocessedAudioFixture:
                 ],
             ),
         ),
-        contact=BasicTestCase.contact,
+        contact=TEST_CONTACT,
     )
 
     preprocessor = Preprocessor(fp_config)
