@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+
 import json
 import numbers
 import tempfile
 from enum import Enum
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, main
 
 import torch
 from pytorch_lightning import Trainer
@@ -22,8 +24,13 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
-from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.stubs import monkeypatch, mute_logger, silence_c_stderr
+from everyvoice.tests.stubs import (
+    TEST_CONTACT,
+    TEST_DATA_DIR,
+    monkeypatch,
+    mute_logger,
+    silence_c_stderr,
+)
 from everyvoice.wizard import (
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
     TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
@@ -61,15 +68,15 @@ def find_non_basic_substructures(structure):
     return [structure]
 
 
-class ModelTest(BasicTestCase):
+class ModelTest(TestCase):
     """Basic test for models"""
 
     def setUp(self) -> None:
         super().setUp()
         self.config = EveryVoiceConfig(
-            contact=self.contact,
+            contact=TEST_CONTACT,
         )
-        self.config_dir = self.data_dir / "relative" / "config"
+        self.config_dir = TEST_DATA_DIR / "relative" / "config"
 
     def test_hparams(self):
         self.hifi_gan = HiFiGAN(self.config.vocoder)
@@ -162,12 +169,12 @@ class ModelTest(BasicTestCase):
         self.assertEqual(result, [Stats, si, DatasetTextRepresentation.characters])
 
 
-class TestLoadingModel(BasicTestCase):
+class TestLoadingModel(TestCase):
     """Test loading models"""
 
     def setUp(self) -> None:
         super().setUp()
-        self.config_dir = self.data_dir / "relative" / "config"
+        self.config_dir = TEST_DATA_DIR / "relative" / "config"
 
     def test_model_is_not_a_feature_prediction(self):
         """
@@ -470,12 +477,12 @@ class TestLoadingModel(BasicTestCase):
                             ModelType.load_from_checkpoint(ckpt_fn)
 
 
-class TestLoadingConfig(BasicTestCase):
+class TestLoadingConfig(TestCase):
     """Test loading configurations"""
 
     def setUp(self) -> None:
         super().setUp()
-        self.config_dir = self.data_dir / "relative" / "config"
+        self.config_dir = TEST_DATA_DIR / "relative" / "config"
         self.configs = (
             (FastSpeech2Config, TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX),
             (HiFiGANConfig, SPEC_TO_WAV_CONFIG_FILENAME_PREFIX),
@@ -529,3 +536,7 @@ class TestVersion(TestCase):
 
         self.assertFalse("10.0" > "9.0")
         self.assertTrue(Version("10.0") > Version("9.0"))
+
+
+if __name__ == "__main__":
+    main()

@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+
+from unittest import TestCase, main
+
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
@@ -12,23 +16,22 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     HiFiGANDataModule,
     SpecDataset,
 )
-from everyvoice.tests.basic_test_case import BasicTestCase
 from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
-from everyvoice.tests.stubs import mute_logger
+from everyvoice.tests.stubs import TEST_CONTACT, mute_logger
 from everyvoice.utils import filter_dataset_based_on_target_text_representation_level
 
 
-class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
+class DataLoaderTest(PreprocessedAudioFixture, TestCase):
     """Basic test for dataloaders"""
 
     def setUp(self) -> None:
         super().setUp()
 
         self.config = EveryVoiceConfig(
-            contact=BasicTestCase.contact,
-            feature_prediction=FeaturePredictionConfig(contact=BasicTestCase.contact),
+            contact=TEST_CONTACT,
+            feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
             vocoder=VocoderConfig(
-                contact=BasicTestCase.contact,
+                contact=TEST_CONTACT,
                 training=HiFiGANTrainingConfig(
                     training_filelist=PreprocessedAudioFixture.lj_preprocessed
                     / "preprocessed_filelist.psv",
@@ -136,3 +139,7 @@ class DataLoaderTest(PreprocessedAudioFixture, BasicTestCase):
         sampler = ImbalancedDatasetSampler(dataset)
         sample = list(sampler)
         self.assertEqual(len(sample), 5)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+
 import re
 import tempfile
 from pathlib import Path
 from typing import Any
-from unittest import TestCase
+from unittest import TestCase, main
 
 import torch
 from pep440 import is_canonical
@@ -276,3 +278,7 @@ class GetDeviceFromAcceleratorTest(TestCase):
 
     def test_unknown_accelerator(self):
         self.assertEqual(get_device_from_accelerator("unknown"), torch.device("cpu"))
+
+
+if __name__ == "__main__":
+    main()

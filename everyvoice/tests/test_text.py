@@ -1,16 +1,17 @@
+#!/usr/bin/env python
+
 import string
 from pathlib import Path
 from typing import Dict, List
 from unicodedata import normalize
-from unittest import TestCase
+from unittest import TestCase, main
 
 from pydantic import ValidationError
 
 from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
-from everyvoice.tests.basic_test_case import BasicTestCase
-from everyvoice.tests.stubs import silence_c_stderr
+from everyvoice.tests.stubs import TEST_CONTACT, silence_c_stderr
 from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
@@ -24,7 +25,7 @@ from everyvoice.utils import (
 )
 
 
-class TextTest(BasicTestCase):
+class TextTest(TestCase):
     """Basic test for text input configuration"""
 
     def setUp(self) -> None:
@@ -122,7 +123,7 @@ class TextTest(BasicTestCase):
 
     def test_phonological_features(self):
         moh_config = FeaturePredictionConfig(
-            contact=self.contact,
+            contact=TEST_CONTACT,
             text=TextConfig(
                 cleaners=[collapse_whitespace, lower, nfc_normalize],
                 symbols=Symbols(
@@ -511,3 +512,7 @@ class TestTextSplit(TestCase):
         self.assertEqual([a, b], chunk_text(text, 50, 200, strong_boundaries="᙮"))
         # Without custom strong boundary
         self.assertEqual([text], chunk_text(text, 50, 200))
+
+
+if __name__ == "__main__":
+    main()

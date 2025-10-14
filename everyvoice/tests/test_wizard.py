@@ -1,7 +1,8 @@
+#!/usr/bin/env python
+
 """Unit tests for the wizard module"""
 
 import os
-import re
 import string
 import sys
 import tempfile
@@ -11,7 +12,7 @@ from pathlib import Path
 from textwrap import dedent
 from types import MethodType
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence
-from unittest import TestCase
+from unittest import TestCase, main
 
 from anytree import PreOrderIter, RenderTree
 from packaging.version import Version
@@ -26,6 +27,7 @@ from everyvoice.tests.stubs import (
     Say,
     capture_stderr,
     capture_stdout,
+    flatten_log,
     monkeypatch,
     null_patch,
     patch_menu_prompt,
@@ -865,9 +867,9 @@ class WizardTest(WizardTestBase):
         # try with: 1/tsv (wrong), 2/csv (wrong), 3/festival (wrong) and finally 0 tsv (right)
         with patch_menu_prompt((1, 2, 3, 0), multi=True) as stdout:
             format_step.run()
-        output = re.sub(r" *\n", " ", stdout.getvalue())
-        self.assertRegex(output, r"does not look like a .*'tsv'".replace(" ", r"\s"))
-        self.assertRegex(output, r"does not look like a .*'csv'".replace(" ", r"\s"))
+        output = flatten_log(stdout.getvalue())
+        self.assertRegex(output, r"does not look like a .*'tsv'")
+        self.assertRegex(output, r"does not look like a .*'csv'")
         self.assertIn("is not in the festival format", output)
         self.assertTrue(format_step.completed)
         # print(format_step.state)
@@ -889,10 +891,10 @@ class WizardTest(WizardTestBase):
         # try with: 0/psv (wrong), 1/tsv (wrong), 2/csv (wrong), and finally 3/festival (right)
         with patch_menu_prompt((0, 1, 2, 3), multi=True) as stdout:
             format_step.run()
-        output = stdout.getvalue().replace(" \n", " ")
-        self.assertRegex(output, r"does not look like a .*'psv'".replace(" ", r"\s"))
-        self.assertRegex(output, r"does not look like a .*'tsv'".replace(" ", r"\s"))
-        self.assertRegex(output, r"does not look like a .*'csv'".replace(" ", r"\s"))
+        output = flatten_log(stdout.getvalue())
+        self.assertRegex(output, r"does not look like a .*'psv'")
+        self.assertRegex(output, r"does not look like a .*'tsv'")
+        self.assertRegex(output, r"does not look like a .*'csv'")
         self.assertTrue(format_step.completed)
         # print(format_step.state)
 
@@ -1893,7 +1895,7 @@ class WizardTest(WizardTestBase):
         ):
             with patch_menu_prompt(2) as output:
                 tour.run()
-            self.assertRegex(output.getvalue(), r"Contact Name: *Jane Doe")
+            self.assertIn("Contact Name: Jane Doe", flatten_log(output.getvalue()))
         self.assertEqual(tour.state, self.trivial_tour_results)
 
     progress_template = dedent(
@@ -1964,9 +1966,10 @@ class WizardTest(WizardTestBase):
             tour = make_trivial_tour()
             with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
-            self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
-            self.assertRegex(out.getvalue(), r"(?s)consider.*updating.*your.*software")
-            self.assertIn("Applying saved response", out.getvalue())
+            output = flatten_log(out.getvalue())
+            self.assertIn("Proceeding anyway", output)
+            self.assertIn("consider updating your software", output)
+            self.assertIn("Applying saved response", output)
             self.assertEqual(tour.state, self.trivial_tour_results)
 
     def test_resume_from_near_past(self):
@@ -1981,9 +1984,10 @@ class WizardTest(WizardTestBase):
             tour = make_trivial_tour()
             with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
-            self.assertRegex(out.getvalue(), r"(?s)expected.*to.*be.*compatible")
-            self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
-            self.assertIn("Applying saved response", out.getvalue())
+            output = flatten_log(out.getvalue())
+            self.assertIn("expected to be compatible", output)
+            self.assertIn("Proceeding anyway", output)
+            self.assertIn("Applying saved response", output)
             self.assertEqual(tour.state, self.trivial_tour_results)
 
     def test_resume_from_far_past(self):
@@ -1996,9 +2000,10 @@ class WizardTest(WizardTestBase):
             tour = make_trivial_tour()
             with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
-            self.assertRegex(out.getvalue(), r"(?s)not.*fully.*compatible")
-            self.assertRegex(out.getvalue(), r"(?s)Proceeding.*anyway")
-            self.assertIn("Applying saved response", out.getvalue())
+            output = flatten_log(out.getvalue())
+            self.assertIn("not fully compatible", output)
+            self.assertIn("Proceeding anyway", output)
+            self.assertIn("Applying saved response", output)
             self.assertEqual(tour.state, self.trivial_tour_results)
 
     def test_resume_with_invalid_progress_files(self):
@@ -2074,7 +2079,7 @@ class WizardTest(WizardTestBase):
                 f.write("".join(progress_lines[1:]))
             with self.assertRaises(SystemExit), capture_stdout() as out:
                 tour.run(resume_from=wrong_software_name)
-            self.assertRegex(out.getvalue(), r"(?s)it.*is.*for.*software")
+            self.assertIn("it is for software", flatten_log(out.getvalue()))
 
     def test_control_c_exit(self):
         # Ctrl-C plus option 4 (Exit) exits
@@ -2116,3 +2121,7 @@ class WizardTest(WizardTestBase):
         for step, response in zip(tour.steps, responses[:-1]):
             # When not the current step:
             self.assertRegex(out.getvalue(), f"'{step.name}'.*: .*'{response}'")
+
+
+if __name__ == "__main__":
+    main()

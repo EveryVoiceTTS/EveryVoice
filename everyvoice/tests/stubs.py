@@ -1,6 +1,7 @@
 import io
 import logging
 import os
+import re
 import sys
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -9,7 +10,13 @@ from typing import Any, Generator, Sequence, Union
 from loguru import logger
 
 from everyvoice import wizard
+from everyvoice.config.shared_types import ContactInformation
 from everyvoice.wizard import basic, dataset, prompts, tour
+
+TEST_DATA_DIR = Path(__file__).parent / "data"
+TEST_CONTACT = ContactInformation(
+    contact_name="Test Runner", contact_email="info@everyvoice.ca"
+)
 
 
 class monkeypatch:
@@ -373,3 +380,14 @@ def silence_c_stderr():
         os.close(stderr_fd)
     else:
         yield
+
+
+def flatten_log(log_output: str) -> str:
+    """Replace newlines and other sequences of whitespace by a single space.
+
+    Usage: self.assertIn("some text", flatten_log(captured_output))
+
+    Avoids having to use self.assertRegex everywhere just because of rich or pretty
+    printing of messages over multiple lines.
+    """
+    return re.sub(r"\s+", " ", log_output)

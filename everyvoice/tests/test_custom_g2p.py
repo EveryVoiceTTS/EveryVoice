@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+
 """Unit tests for using custom g2p functions"""
 
 import tempfile
 from pathlib import Path
 from textwrap import dedent
-from unittest import TestCase
+from unittest import TestCase, main
 
 from pydantic import ValidationError
 
@@ -17,6 +19,7 @@ from everyvoice.tests.stubs import (
     patch_menu_prompt,
     patch_questionary,
 )
+from everyvoice.tests.test_wizard import RecursiveAnswers, StepAndAnswer, WizardTestBase
 from everyvoice.text.phonemizer import (
     AVAILABLE_G2P_ENGINES,
     DEFAULT_G2P,
@@ -25,8 +28,6 @@ from everyvoice.text.phonemizer import (
     make_default_g2p_engines,
 )
 from everyvoice.wizard import basic, dataset
-
-from .test_wizard import RecursiveAnswers, StepAndAnswer, WizardTestBase
 
 
 class TestG2p(TestCase):
@@ -567,3 +568,7 @@ class CustomG2pTest(WizardTestBase):
                 ),
                 "With no g2p engine, the phones column is simply absent",
             )
+
+
+if __name__ == "__main__":
+    main()
