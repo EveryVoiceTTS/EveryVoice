@@ -214,7 +214,7 @@ r() {
 set -o errexit
 
 if [[ $USE_UV ]]; then
-    r uv venv --managed-python --python="$PYTHON_VERSION" "$ENV_PREFIX"
+    r uv venv --python-preference=only-managed --python="$PYTHON_VERSION" "$ENV_PREFIX"
     r source "$ENV_PREFIX"/*/activate
 
     if [[ $CUDA_TAG ]]; then
