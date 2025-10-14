@@ -1,6 +1,6 @@
 import importlib
 from pathlib import Path
-from typing import Annotated, Dict
+from typing import Annotated
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -125,6 +125,19 @@ class Symbols(BaseModel):
         return self
 
 
+def get_label_from_symbol_key(key: str) -> str | None:
+    """Given a symbol key like dataset1_phones or punctuation, return the dataset label
+    if key matches *_phones or *_characters where * is the label, or else None"""
+    last_underscore = key.rfind("_")
+    if last_underscore >= 1 and key[last_underscore + 1 :] in (
+        "phones",
+        "characters",
+    ):
+        return key[:last_underscore]
+    else:
+        return None
+
+
 Language = Annotated[
     str,
     Field(
@@ -195,10 +208,27 @@ def load_custom_g2p_engine(lang_id: str, qualified_g2p_func_name: str) -> G2PCal
     return validate_g2p_engine_signature(getattr(module, function_name))
 
 
+DEFAULT_CLEANERS: list[PossiblySerializedCallable] = [collapse_whitespace, strip_text]
+
+
 class TextConfig(ConfigModel):
     symbols: Symbols = Field(default_factory=Symbols)
-    to_replace: Dict[str, str] = {}  # Happens before cleaners
-    cleaners: list[PossiblySerializedCallable] = [collapse_whitespace, strip_text]
+    to_replace: dict[str, str] = Field(
+        {},
+        title="Global text replacements",
+        description="Map of match->replacement to apply on training and run-time text, before cleaners are applied",
+    )
+    cleaners: list[PossiblySerializedCallable] = Field(
+        DEFAULT_CLEANERS,
+        title="Global cleaners",
+        description="List of cleaners to apply to all datasets and run-time data",
+    )
+    dataset_to_replace: dict[str, dict[str, str]] = Field(
+        {}, title="Dataset-specific text replacements"
+    )
+    dataset_cleaners: dict[str, list[PossiblySerializedCallable]] = Field(
+        {}, title="Dataset-specific cleaners"
+    )
     g2p_engines: G2P_Engines = Field(
         default={},
         title="External G2P",
@@ -217,6 +247,22 @@ class TextConfig(ConfigModel):
         examples=["""{'eng': {'strong': '!?.', 'weak': ':;,'}}'"""],
     )
 
+    def get_cleaners(
+        self, dataset_label: str | None
+    ) -> list[PossiblySerializedCallable]:
+        """Get the cleaners to apply to a given dataset"""
+        if dataset_label is None or dataset_label not in self.dataset_cleaners:
+            return self.cleaners
+        else:
+            return self.dataset_cleaners[dataset_label]
+
+    def get_to_replace(self, dataset_label: str | None) -> dict[str, str]:
+        """Get the to_replace filters to apply to a given dataset"""
+        if dataset_label is None or dataset_label not in self.dataset_to_replace:
+            return self.to_replace
+        else:
+            return self.dataset_to_replace[dataset_label]
+
     @model_validator(mode="after")
     def clean_symbols(self) -> Self:
         """We should apply all cleaners to the symbols
@@ -226,15 +272,18 @@ class TextConfig(ConfigModel):
         """
         for k, v in self.symbols:
             if k not in ["punctuation", "silence"]:
-                normalized = [
-                    normalize_text_helper(x, self.to_replace, self.cleaners) for x in v
-                ]
+                dataset_label = get_label_from_symbol_key(k)
+                cleaners = self.get_cleaners(dataset_label)
+                to_replace = self.get_to_replace(dataset_label)
+                normalized = [normalize_text_helper(x, to_replace, cleaners) for x in v]
+                setattr(self.symbols, k, normalized)
+
                 if "" in normalized or len(normalized) != len(set(normalized)):
                     logger.warning(
                         f"Normalization created a duplicate or inserted '' in {k}={normalized}. "
                         "Please check your shared-text config for problems."
                     )
-                setattr(self.symbols, k, normalized)
+
         return self
 
     @model_validator(mode="after")
