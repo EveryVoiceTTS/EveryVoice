@@ -1845,15 +1845,39 @@
             "type": "string"
           },
           "default": {},
-          "title": "To Replace",
+          "description": "Map of match->replacement to apply on training and run-time text, before cleaners are applied",
+          "title": "Global text replacements",
           "type": "object"
         },
         "cleaners": {
+          "description": "List of cleaners to apply to all datasets and run-time data",
           "items": {
             "type": "string"
           },
-          "title": "Cleaners",
+          "title": "Global cleaners",
           "type": "array"
+        },
+        "dataset_to_replace": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "default": {},
+          "title": "Dataset-specific text replacements",
+          "type": "object"
+        },
+        "dataset_cleaners": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "default": {},
+          "title": "Dataset-specific cleaners",
+          "type": "object"
         },
         "g2p_engines": {
           "additionalProperties": {
