@@ -1,4 +1,6 @@
-from unittest import TestCase
+#!/usr/bin/env python
+
+from unittest import TestCase, main
 
 from everyvoice.evaluation import (
     calculate_objective_metrics_from_single_path,
@@ -26,3 +28,7 @@ class EvaluationTest(TestCase):
         self.assertLess(stoi, 1)
         self.assertEqual(round(pesq, 2), 3.88)
         self.assertEqual(round(si_sdr, 2), 28.64)
+
+
+if __name__ == "__main__":
+    main()

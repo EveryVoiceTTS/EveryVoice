@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+
 import doctest
-from unittest import TestCase
+from unittest import TestCase, main
 
 import everyvoice.demo.app
 import everyvoice.text
@@ -21,3 +23,7 @@ class RunDocTests(TestCase):
             ):
                 results = doctest.testmod(module_with_doctests)
                 self.assertFalse(results.failed, results)
+
+
+if __name__ == "__main__":
+    main()

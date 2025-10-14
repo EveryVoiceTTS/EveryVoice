@@ -1,6 +1,8 @@
+#!/usr/bin/env python
+
 import tempfile
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, main
 
 import yaml
 from anytree import PreOrderIter
@@ -308,3 +310,7 @@ class TestNodeMixin(TestCase):
 
         for next, prev in zip(forward_order, [None] + forward_order[:-1]):
             self.assertEqual(next.prev(), prev)
+
+
+if __name__ == "__main__":
+    main()

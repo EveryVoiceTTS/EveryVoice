@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+
 """Unit tests for using custom g2p functions"""
 
 import tempfile
 from pathlib import Path
 from textwrap import dedent
-from unittest import TestCase
+from unittest import TestCase, main
 
 from pydantic import ValidationError
 
@@ -567,3 +569,7 @@ class CustomG2pTest(WizardTestBase):
                 ),
                 "With no g2p engine, the phones column is simply absent",
             )
+
+
+if __name__ == "__main__":
+    main()

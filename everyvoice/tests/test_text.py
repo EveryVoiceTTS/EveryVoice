@@ -1,8 +1,10 @@
+#!/usr/bin/env python
+
 import string
 from pathlib import Path
 from typing import Dict, List
 from unicodedata import normalize
-from unittest import TestCase
+from unittest import TestCase, main
 
 from pydantic import ValidationError
 
@@ -510,3 +512,7 @@ class TestTextSplit(TestCase):
         self.assertEqual([a, b], chunk_text(text, 50, 200, strong_boundaries="᙮"))
         # Without custom strong boundary
         self.assertEqual([text], chunk_text(text, 50, 200))
+
+
+if __name__ == "__main__":
+    main()

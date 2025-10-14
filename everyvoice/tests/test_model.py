@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+
 import json
 import numbers
 import tempfile
 from enum import Enum
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, main
 
 import torch
 from pytorch_lightning import Trainer
@@ -534,3 +536,7 @@ class TestVersion(TestCase):
 
         self.assertFalse("10.0" > "9.0")
         self.assertTrue(Version("10.0") > Version("9.0"))
+
+
+if __name__ == "__main__":
+    main()

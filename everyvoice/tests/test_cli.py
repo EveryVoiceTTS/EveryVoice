@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import enum
 import json
 import os
@@ -5,7 +7,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import TestCase, mock
+from unittest import TestCase, main, mock
 
 import jsonschema
 import typer
@@ -912,3 +914,7 @@ class TestBaseCLIHelper(TestCase):
                     config.training.logger.name,
                     config_reloaded["training"]["logger"]["name"],
                 )
+
+
+if __name__ == "__main__":
+    main()

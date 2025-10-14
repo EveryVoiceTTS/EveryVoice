@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+
 import json
 import time
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Callable
-from unittest import TestCase
+from unittest import TestCase, main
 
 import yaml
 from pydantic import ValidationError
@@ -644,3 +646,7 @@ class HiFiGANTrainingConfigTest(TestCase):
             r"Input should be 'original' or 'wgan' \[type=enum, input_value='BAD', input_type=str\]",
         ):
             HiFiGANTrainingConfig(gan_type="BAD")
+
+
+if __name__ == "__main__":
+    main()

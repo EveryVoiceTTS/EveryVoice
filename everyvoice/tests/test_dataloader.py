@@ -1,4 +1,6 @@
-from unittest import TestCase
+#!/usr/bin/env python
+
+from unittest import TestCase, main
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.dataloader import BaseDataModule
@@ -137,3 +139,7 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
         sampler = ImbalancedDatasetSampler(dataset)
         sample = list(sampler)
         self.assertEqual(len(sample), 5)
+
+
+if __name__ == "__main__":
+    main()

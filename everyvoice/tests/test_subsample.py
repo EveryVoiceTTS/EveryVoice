@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, main
 
 from typer.testing import CliRunner
 
@@ -138,3 +140,7 @@ class SubsampleTest(TestCase):
             result.stdout,
             r"A \.wav file could not be found".replace(" ", r"[\s\S]*"),
         )
+
+
+if __name__ == "__main__":
+    main()

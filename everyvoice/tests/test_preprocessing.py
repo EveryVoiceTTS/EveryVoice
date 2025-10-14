@@ -1,9 +1,11 @@
+#!/usr/bin/env python
+
 import os
 import shutil
 import tempfile
 from math import sqrt
 from pathlib import Path
-from unittest import TestCase
+from unittest import TestCase, main
 
 import torch
 import torchaudio
@@ -1002,3 +1004,7 @@ class PreprocessingHierarchyTest(TestCase):
                     else list(tmpdir.glob(f"**/{t}/LJ050/*.pt"))
                 )
                 self.assertEqual(len(files), 5)
+
+
+if __name__ == "__main__":
+    main()

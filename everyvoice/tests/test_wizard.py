@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """Unit tests for the wizard module"""
 
 import os
@@ -10,7 +12,7 @@ from pathlib import Path
 from textwrap import dedent
 from types import MethodType
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence
-from unittest import TestCase
+from unittest import TestCase, main
 
 from anytree import PreOrderIter, RenderTree
 from packaging.version import Version
@@ -2119,3 +2121,7 @@ class WizardTest(WizardTestBase):
         for step, response in zip(tour.steps, responses[:-1]):
             # When not the current step:
             self.assertRegex(out.getvalue(), f"'{step.name}'.*: .*'{response}'")
+
+
+if __name__ == "__main__":
+    main()
