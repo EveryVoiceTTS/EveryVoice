@@ -31,6 +31,8 @@ from everyvoice.tests.stubs import (
     monkeypatch,
     mute_logger,
     patch_logger,
+    silence_c_stderr,
+    silence_c_stdout,
 )
 from everyvoice.utils import generic_psv_filelist_reader
 
@@ -306,7 +308,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             preprocessor = Preprocessor(test_config)
 
             # Run the preprocess method with just audio processing
-            with mute_logger("everyvoice.preprocessor.preprocessor"):
+            with silence_c_stdout(), silence_c_stderr():
                 preprocessor.preprocess(
                     output_path=str(save_dir / "filelist.psv"),
                     cpus=1,

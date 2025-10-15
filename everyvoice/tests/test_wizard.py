@@ -160,7 +160,8 @@ class WizardTestBase(TestCase):
             for step_and_answer in steps_and_answers:
                 step = step_and_answer.step
                 # saved_monkey = copy(step_and_answer.monkey)
-                print("Step:", step.name, file=sys.stderr)
+                if debug:
+                    print("Step:", step.name, file=sys.stderr)
                 with step_and_answer.monkey:
                     step.run()
 
@@ -170,7 +171,8 @@ class WizardTestBase(TestCase):
                     step.undo()
                     self.assertNotEqual(state, step.state)
                     # with saved_monkey:
-                    print(repr(step_and_answer.monkey), file=sys.stderr)
+                    if debug:
+                        print(repr(step_and_answer.monkey), file=sys.stderr)
                     with step_and_answer.monkey:
                         step.run()
                     self.assertEqual(

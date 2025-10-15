@@ -46,6 +46,7 @@ from everyvoice.tests.stubs import (
     capture_stdout,
     flatten_log,
     silence_c_stderr,
+    silence_c_stdout,
 )
 from everyvoice.wizard import (
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
@@ -422,16 +423,17 @@ class CLITest(TestCase):
             self.assertIn("Unknown output format 'foo'", str(cm.exception))
 
     def test_g2p(self):
-        result = self.runner.invoke(
-            app,
-            [
-                "g2p",
-                "abc",
-                str(self.data_dir / Path("text.txt")),
-                "--config",
-                str(self.config_dir / Path("everyvoice-shared-text.yaml")),
-            ],
-        )
+        with silence_c_stderr():
+            result = self.runner.invoke(
+                app,
+                [
+                    "g2p",
+                    "abc",
+                    str(self.data_dir / Path("text.txt")),
+                    "--config",
+                    str(self.config_dir / Path("everyvoice-shared-text.yaml")),
+                ],
+            )
 
         self.assertEqual(result.exit_code, 0)
         self.assertIn("['hello', 'world']", result.stdout)
@@ -737,7 +739,7 @@ class CLITest(TestCase):
             },
         }
 
-        with self.assertRaises(typer.BadParameter) as cm:
+        with self.assertRaises(typer.BadParameter) as cm, silence_c_stdout():
             load_app_ui_labels(
                 config_bad_language,
                 ["all"],
@@ -761,7 +763,7 @@ class CLITest(TestCase):
             "The 'speakers' key in the app config JSON does not match the speakers provided.",
             str(cm.exception),
         )
-        with self.assertRaises(typer.BadParameter) as cm:
+        with self.assertRaises(typer.BadParameter) as cm, silence_c_stdout():
             load_app_ui_labels(
                 config_bad_speaker,
                 ["default"],
@@ -774,7 +776,7 @@ class CLITest(TestCase):
             "Language option has been activated, but valid languages have not been provided. The model has been trained in ['default'] languages. Please select either 'all' or at least some of them.",
             str(cm.exception),
         )
-        with self.assertRaises(typer.BadParameter) as cm:
+        with self.assertRaises(typer.BadParameter) as cm, silence_c_stdout():
             load_app_ui_labels(
                 config_bad_speaker,
                 ["unknown"],
