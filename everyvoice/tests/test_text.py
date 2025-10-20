@@ -239,7 +239,7 @@ class TextTest(TestCase):
             normalize("NFC", text),
         )
         self.assertNotEqual(
-            self.base_text_processor.apply_cleaners(text), normalize("NFC", text)
+            self.base_text_processor.normalize_text(text), normalize("NFC", text)
         )
 
     def test_missing_symbol(self):

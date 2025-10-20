@@ -352,7 +352,7 @@ class ConfigFormatStep(Step):
             + text_config.symbols.punctuation.colons
         )
         text_config.boundaries = {
-            lang: LanguageBoundaries(**{"strong": strong, "weak": weak})
+            lang: LanguageBoundaries(strong=strong, weak=weak)
             for lang in language_codes
         }
         text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
