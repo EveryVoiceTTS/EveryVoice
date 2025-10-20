@@ -518,7 +518,7 @@ class Preprocessor:
         return path
 
     def process_one_audio(
-        self, item: dict, data_dir, sox_effects: list[list]
+        self, item: dict, data_dir, sox_effects: list[list], dataset_label: str
     ) -> Optional[dict]:
         """Process one audio item
 
@@ -534,6 +534,7 @@ class Preprocessor:
             return None
 
         item = self.get_speaker_and_language(item)
+        item["label"] = dataset_label
         input_audio_save_path = self.create_path(
             item, "audio", f"audio-{self.input_sampling_rate}.wav"
         )
@@ -620,7 +621,9 @@ class Preprocessor:
                         backend="loky",
                         batch_size=batch_size,
                     )(
-                        delayed(self.process_one_audio)(item, data_dir, sox_effects)
+                        delayed(self.process_one_audio)(
+                            item, data_dir, sox_effects, dataset.label
+                        )
                         for item in filelist
                     )
                 filtered_filelist.extend(
@@ -628,7 +631,9 @@ class Preprocessor:
                 )
             else:
                 for item in tqdm(filelist, desc="Processing Audio on 1 CPU"):
-                    processed_item = self.process_one_audio(item, data_dir, sox_effects)
+                    processed_item = self.process_one_audio(
+                        item, data_dir, sox_effects, dataset.label
+                    )
                     if processed_item is not None:
                         filtered_filelist.append(processed_item)
         return filtered_filelist
@@ -785,6 +790,7 @@ class Preprocessor:
                 "You must have a valid TextProcessor in order to calculate text."
             )
         characters: Optional[str] = None
+        dataset_label = item.get("label", None)
         phones: Optional[str] = None
         phone_tokens: Optional[list[int]] = None
         character_tokens: Optional[list[int]] = None
@@ -798,6 +804,7 @@ class Preprocessor:
                 text=ARPABET_TO_IPA_TRANSDUCER(
                     item[DatasetTextRepresentation.arpabet.value]
                 ).output_string,
+                dataset_label=dataset_label,
                 quiet=True,
                 apply_g2p=False,
             )
@@ -807,6 +814,7 @@ class Preprocessor:
         if DatasetTextRepresentation.characters.value in item:
             tokens = text_processor.encode_text(
                 text=item[DatasetTextRepresentation.characters.value],
+                dataset_label=dataset_label,
                 apply_g2p=False,
                 encode_as_phonological_features=False,
                 quiet=True,
@@ -821,6 +829,7 @@ class Preprocessor:
             ):
                 tokens = text_processor.encode_text(
                     text=item[DatasetTextRepresentation.characters.value],
+                    dataset_label=dataset_label,
                     apply_g2p=True,
                     lang_id=item["language"],
                     encode_as_phonological_features=False,
@@ -832,6 +841,7 @@ class Preprocessor:
         if DatasetTextRepresentation.ipa_phones.value in item:
             tokens = text_processor.encode_text(
                 text=item[DatasetTextRepresentation.ipa_phones.value],
+                dataset_label=dataset_label,
                 apply_g2p=False,
                 encode_as_phonological_features=False,
                 quiet=True,
