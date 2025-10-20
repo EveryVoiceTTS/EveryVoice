@@ -995,7 +995,7 @@ class TextProcessingStep(Step):
         return True
 
     def effect(self):
-        from everyvoice.config.text_config import TextConfig
+        from everyvoice.config.text_config import DEFAULT_CLEANERS
 
         self.saved_state = {}
         # Get Text Index
@@ -1007,7 +1007,7 @@ class TextProcessingStep(Step):
                 self.state[StepNames.filelist_text_representation_step]
             )
             # Process global cleaners
-            global_cleaners = TextConfig().cleaners
+            global_cleaners = DEFAULT_CLEANERS
             for cleaner in global_cleaners:
                 for i in tqdm(
                     range(len(self.state["filelist_data_list"])),
@@ -1029,7 +1029,7 @@ class TextProcessingStep(Step):
         else:
             self.saved_state["filelist_data"] = deepcopy(self.state["filelist_data"])
             # Process global cleaners
-            global_cleaners = TextConfig().cleaners
+            global_cleaners = DEFAULT_CLEANERS
             for cleaner in global_cleaners:
                 for item in tqdm(
                     self.state["filelist_data"],

@@ -14,7 +14,12 @@ from everyvoice.config.shared_types import (
     LoggerConfig,
     init_context,
 )
-from everyvoice.config.text_config import LanguageBoundaries
+from everyvoice.config.text_config import (
+    DEFAULT_CLEANERS,
+    LanguageBoundaries,
+    Symbols,
+    TextConfig,
+)
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.text.utils import is_sentence_final
 from everyvoice.utils import generic_psv_filelist_reader, slugify, write_filelist
@@ -32,7 +37,12 @@ from everyvoice.wizard.prompts import (
     get_response_from_menu_prompt,
 )
 from everyvoice.wizard.tour import Step
-from everyvoice.wizard.utils import escape, sanitize_paths, write_dict_to_config
+from everyvoice.wizard.utils import (
+    escape,
+    ordered_intersection,
+    sanitize_paths,
+    write_dict_to_config,
+)
 
 
 class NameStep(Step):
@@ -211,7 +221,6 @@ class ConfigFormatStep(Step):
         return response in ("yaml", "json")
 
     def effect(self) -> None:
-        from everyvoice.config.text_config import Symbols, TextConfig
         from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
         from everyvoice.model.feature_prediction.config import (
             FastSpeech2ModelConfig,
@@ -241,22 +250,19 @@ class ConfigFormatStep(Step):
         multilingual = False
         cache_speaker = None
         cache_language = None
-        global_cleaners = (
-            []
-        )  # TODO: this should be fixed by https://github.com/EveryVoiceTTS/EveryVoice/issues/359
+        dataset_cleaners = {}
         for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
             dataset_state = self.state[dataset]
+            # Get the name of the dataset, which is going to be its label
+            dataset_name = dataset_state[StepNames.dataset_name_step]
             # Add Cleaners
-            # TODO: these should really be dataset-specific cleaners, not global cleaners
-            # so this should be fixed by https://github.com/EveryVoiceTTS/EveryVoice/issues/359
             if dataset_state.get(StepNames.text_processing_step):
-                global_cleaners += [
+                dataset_cleaners[dataset_name] = DEFAULT_CLEANERS + [
                     TextProcessingStep.process_lookup[x]["fn"]
                     for x in dataset_state[StepNames.text_processing_step]
                 ]
             # Gather Symbols for Text Configuration
             # rename keys based on dataset name:
-            dataset_name = dataset_state[StepNames.dataset_name_step]
             dataset_symbols = {
                 f"{dataset_name}_{k}": v
                 for k, v in dataset_state[StepNames.symbol_set_step].items()
@@ -315,11 +321,17 @@ class ConfigFormatStep(Step):
                 )
             )
 
+        if dataset_cleaners:
+            global_cleaners = ordered_intersection(dataset_cleaners.values())
+        else:
+            global_cleaners = DEFAULT_CLEANERS
+
         text_config = TextConfig(
             symbols=Symbols(**symbols),
             g2p_engines=self.state.get("custom_g2p", {}),
+            cleaners=global_cleaners,
+            dataset_cleaners=dataset_cleaners,
         )
-        text_config.cleaners += global_cleaners
         language_codes = sorted(
             set(row["language"] for row in dataset_state["filelist_data"])
         )
