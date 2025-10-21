@@ -116,7 +116,7 @@ class Preprocessor:
                 f"Spectral feature specification '{self.audio_config.spec_type}' is not supported. Please edit your config file."
             )
 
-    def load_audio(self, audio_path: Path) -> tuple[torch.Tensor, int, float]:
+    def load_audio(self, audio_path: str | Path) -> tuple[torch.Tensor, int, float]:
         """
         Load an audio file and calculate its duration.
 
@@ -131,7 +131,7 @@ class Preprocessor:
 
     def process_audio(
         self,
-        wav_path: Path,
+        wav_path: str | Path,
         normalize=True,
         resample_rate=None,
         sox_effects=None,
@@ -388,6 +388,8 @@ class Preprocessor:
     def compute_stats(
         self, energy=True, pitch=True, char_length=True, phone_length=True
     ) -> tuple[Optional[Scaler], Optional[Scaler], Optional[Scaler], Optional[Scaler]]:
+        energy_scaler, pitch_scaler = None, None
+        char_length_scaler, phone_length_scaler = None, None
         # Determine whether parallel processing is necessary
         if self.cpus > 1:
             parallel = Parallel(n_jobs=self.cpus, backend="loky", batch_size=500)
@@ -453,12 +455,8 @@ class Preprocessor:
                 for line in tqdm(filelist, desc="Gathering phone length values"):
                     phone_length_data = torch.tensor([len(line["phones"])], dtype=float)
                     phone_length_scaler.append(phone_length_data)
-        return (
-            energy_scaler if energy else energy,
-            pitch_scaler if pitch else pitch,
-            char_length_scaler if char_length else char_length,
-            phone_length_scaler if phone_length else phone_length,
-        )
+
+        return energy_scaler, pitch_scaler, char_length_scaler, phone_length_scaler
 
     def normalize_stats(self, energy_scaler: Scaler, pitch_scaler: Scaler):
         """Normalize pitch and energy to unit variance"""
@@ -703,6 +701,8 @@ class Preprocessor:
                 f"{DatasetTextRepresentation.characters.value}-attn-prior.pt",
             )
             process_characters = True
+            if character_attn_prior_path.exists() and not self.overwrite:
+                process_characters = False
         if phone_tokens:
             phone_attn_prior_path = self.create_path(
                 item,
@@ -710,14 +710,8 @@ class Preprocessor:
                 f"{DatasetTextRepresentation.ipa_phones.value}-attn-prior.pt",
             )
             process_phones = True
-        if (
-            process_characters
-            and character_attn_prior_path.exists()
-            and not self.overwrite
-        ):
-            process_characters = False
-        if process_phones and phone_attn_prior_path.exists() and not self.overwrite:
-            process_phones = False
+            if phone_attn_prior_path.exists() and not self.overwrite:
+                process_phones = False
         if not process_phones and not process_characters:
             return
         binomial_interpolator = BetaBinomialInterpolator()
@@ -729,6 +723,7 @@ class Preprocessor:
         )
         input_spec = torch.load(input_spec_path, weights_only=True)
         if process_phones:
+            assert phone_tokens is not None
             phone_attn_prior = torch.from_numpy(
                 binomial_interpolator(input_spec.size(1), len(phone_tokens))
             )
@@ -736,6 +731,7 @@ class Preprocessor:
             assert len(phone_tokens) == phone_attn_prior.size(1)
             save_tensor(phone_attn_prior, phone_attn_prior_path)
         if process_characters:
+            assert character_tokens is not None
             character_attn_prior = torch.from_numpy(
                 binomial_interpolator(input_spec.size(1), len(character_tokens))
             )

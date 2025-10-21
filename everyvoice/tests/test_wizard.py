@@ -6,6 +6,7 @@ import os
 import string
 import sys
 import tempfile
+from contextlib import AbstractContextManager
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
@@ -49,7 +50,7 @@ class RecursiveAnswers(NamedTuple):
     """Recursive answer for StepAndAnswer.children_answers, see StepAndAnswer
     documentation for a description of the fields here."""
 
-    answer_or_monkey: Say | Callable
+    answer_or_monkey: Say | AbstractContextManager
     children_answers: Optional[list["RecursiveAnswers"]] = None
 
 
@@ -67,7 +68,7 @@ class StepAndAnswer(NamedTuple):
     """
 
     step: Step
-    answer_or_monkey: Say | Callable
+    answer_or_monkey: Say | AbstractContextManager
     children_answers: Optional[list[RecursiveAnswers]] = None
 
     @property
