@@ -3,6 +3,7 @@ import string
 import subprocess
 import sys
 from functools import partial
+from pathlib import Path
 from unicodedata import normalize
 
 import gradio as gr
@@ -11,7 +12,7 @@ import typer
 from loguru import logger
 
 from everyvoice.cli import AllowedDemoOutputFormats
-from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
+from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
     synthesize_helper,
 )
@@ -54,7 +55,7 @@ def synthesize_audio(
     device,
     allowlist,
     denylist,
-    output_dir=None,
+    output_dir: Path,
     include_file_output=True,
 ):
     if text == "":
@@ -93,7 +94,7 @@ def synthesize_audio(
         global_step=text_to_spec_model.config.training.max_steps,
         vocoder_global_step=vocoder_model.config.training.max_steps,
         output_type=(output_format, SynthesizeOutputFormats.wav),
-        text_representation=TargetTrainingTextRepresentationLevel.characters,
+        text_representation=DatasetTextRepresentation.characters,
         output_dir=output_dir,
         speaker=speaker,
         duration_control=duration_control,
@@ -461,7 +462,7 @@ def create_demo_app(
     languages: list[str],
     speakers: list[str],
     outputs: list,  # list[str | AllowedDemoOutputFormats]
-    output_dir: os.PathLike,
+    output_dir: Path,
     accelerator: str,
     allowlist: list[str] = [],
     denylist: list[str] = [],

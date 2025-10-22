@@ -232,7 +232,7 @@ class WizardTest(WizardTestBase):
         self.assertTrue(config_step.validate("yaml"))
         self.assertTrue(config_step.validate("json"))
         with tempfile.TemporaryDirectory() as tmpdirname:
-            config_step.state = State()
+            config_step._state = State()
             config_step.state[SN.output_step.value] = tmpdirname
             config_step.state[SN.name_step.value] = config_step.name
             config_step.state.update(CONTACT_INFO_STATE)
@@ -1044,8 +1044,8 @@ class WizardTest(WizardTestBase):
 
     def test_with_language_column(self):
         data_dir = Path(__file__).parent / "data"
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             tour, _ = self.monkey_run_tour(
                 "tour with language column",
                 [
@@ -1125,8 +1125,8 @@ class WizardTest(WizardTestBase):
             self.assertIn("multispeaker: true", text_to_spec_config)
 
     def test_no_header_line(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             with open(tmpdir / "filelist.psv", "w", encoding="utf8") as f:
                 f.write("f1|foo bar|Joe\nf2|bar baz|Joe\nf3|baz foo|Joe\n")
             for basename in ("f1", "f2", "f3"):
@@ -1221,8 +1221,8 @@ class WizardTest(WizardTestBase):
             self.assertIn("multispeaker: false", text_to_spec_config)
 
     def test_running_out_of_columns(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             with open(tmpdir / "filelist.psv", "w", encoding="utf8") as f:
                 f.write("basename|text\nf1|foo bar\nf2|bar baz\nf3|baz foo\n")
             for basename in ("f1", "f2", "f3"):
@@ -1394,8 +1394,8 @@ class WizardTest(WizardTestBase):
         self.assertEqual(step.response, str(path))
 
     def test_festival(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             with open(tmpdir / "filelist.txt", "w", encoding="utf8") as f:
                 f.write(
                     "\n".join(
@@ -1505,8 +1505,8 @@ class WizardTest(WizardTestBase):
 
         Makes sure that multilingual and multispeaker parameters of config are set to true when two monolingual and monospeaker datasets are provided with different specified languages and speakers.
         """
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             with open(tmpdir / "filelist1.psv", "w", encoding="utf8") as f:
                 f.write(
                     "\n".join(
@@ -1678,8 +1678,8 @@ class WizardTest(WizardTestBase):
 
         Makes sure that multilingual and multispeaker parameters of config are set to false when two monolingual and monospeaker datasets are provided with the specified languages and speakers which are the same.
         """
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             with open(tmpdir / "filelist1.psv", "w", encoding="utf8") as f:
                 f.write(
                     "\n".join(

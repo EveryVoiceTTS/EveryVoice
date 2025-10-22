@@ -557,7 +557,7 @@ class CLITest(TestCase):
             )
 
             # Create a dummy app config file
-            config = {
+            config: dict = {
                 "app_title": "Test App",
                 "app_description": "This is a test app description.",
                 "app_instructions": "These are test app instructions.",
@@ -860,7 +860,7 @@ class CLITest(TestCase):
             tmpdir = Path(tmpdir_str)
 
             # Create an empty checkpoint file
-            empty_ckpt = {"hyper_parameters": {"speaker2id": {}}}
+            empty_ckpt: dict = {"hyper_parameters": {"speaker2id": {}}}
             torch.save(empty_ckpt, tmpdir / "empty.ckpt")
 
             with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
@@ -883,10 +883,10 @@ class CLITest(TestCase):
 class TestBaseCLIHelper(TestCase):
     def test_save_configuration_to_log_dir(self):
         with (
-            TemporaryDirectory(ignore_cleanup_errors=True) as tempdir,
+            TemporaryDirectory(ignore_cleanup_errors=True) as tempdir_s,
             silence_c_stderr(),
         ):
-            tempdir = Path(tempdir)
+            tempdir = Path(tempdir_s)
             config = FastSpeech2Config(
                 contact=ContactInformation(
                     contact_name="Test Runner", contact_email="info@everyvoice.ca"

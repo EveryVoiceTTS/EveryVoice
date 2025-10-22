@@ -141,7 +141,7 @@ def capture_stderr():
 
 
 @contextmanager
-def temp_chdir(path: Path) -> Generator[None, None, None]:
+def temp_chdir(path: str | Path) -> Generator[None, None, None]:
     """Context manager to temporarily change the current working directory.
 
     Args:

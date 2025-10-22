@@ -3,6 +3,7 @@ import os
 import random
 import sys
 from copy import copy, deepcopy
+from enum import Enum
 from pathlib import Path
 from typing import Sequence
 
@@ -418,13 +419,13 @@ class HeaderStep(Step):
     DEFAULT_NAME = StepNames.text_header_step
     REVERSIBLE = True
 
-    def __init__(self, name: str, prompt_text: str, header_name: str, **kwargs):
+    def __init__(self, name: str | Enum, prompt_text: str, header_name: str, **kwargs):
         super(HeaderStep, self).__init__(name=name, **kwargs)
         self.prompt_text = prompt_text
         self.header_name = header_name
 
     def prompt(self):
-        selected_headers = self.state.get("selected_headers", [])
+        selected_headers: list[int] = self.state.get("selected_headers", [])
         choice_indices = [
             x
             for x in range(len(self.state["filelist_headers"]))
