@@ -95,17 +95,37 @@ class Step(_Step, NodeMixinWithNavigation):
         if name is None:
             name = getattr(self, "DEFAULT_NAME", "default step name missing")
         name = name.value if isinstance(name, Enum) else name
-        super().__init__(name)
+        super().__init__(name)  # pyright: ignore
         self.response = None
         self.completed = False
         self.default = default
         self.parent = parent
         self.state_subset = state_subset
         # state will be added when the Step is added to a Tour
-        self.state: Optional[State] = None
+        self._state: Optional[State] = None
         # tour will be added when the Step is added to a Tour
-        self.tour: Optional[Tour] = None
+        self._tour: Optional[Tour] = None
         self._validation_failures = 0
+
+    @property
+    def state(self) -> State:
+        if self._state is None:
+            raise RuntimeError(
+                "A step must be added to a Tour before calling step.state"
+            )
+        return self._state
+
+    @property
+    def tour(self) -> "Tour":
+        if self._tour is None:
+            raise RuntimeError(
+                "A step must be added to a Tour before calling step.tour"
+            )
+        return self._tour
+
+    @property
+    def trace(self) -> bool:
+        return self._tour is not None and self._tour.trace
 
     def __repr__(self) -> str:
         return f"{self.name}: {super().__repr__()}"
@@ -119,13 +139,13 @@ class Step(_Step, NodeMixinWithNavigation):
         else:
             self.response = self.prompt()
         self.response = self.sanitize_input(self.response)
-        if self.tour is not None and self.tour.trace:
+        if self.trace:
             rich_print(escape(f"{self.name}: '{self.response}'"))
         if self.validate(self.response):
             self.completed = True
             try:
-                if self.state is not None:
-                    self.state[self.name] = self.response
+                if self._state is not None:
+                    self._state[self.name] = self.response
                 return self.response
             finally:
                 self.effect()
@@ -145,8 +165,7 @@ class Step(_Step, NodeMixinWithNavigation):
         """
         self.response = None  # reset the response
         self.completed = False  # reset the completion flag
-        if self.state:
-            self.state.pop(self.name, None)  # remove the state entry for the step
+        self.state.pop(self.name, None)  # remove the state entry for the step
         self.children = ()  # remove any children added by the step
         if saved_state := getattr(self, "saved_state", None):
             # restore the saved state if it exists
@@ -155,7 +174,7 @@ class Step(_Step, NodeMixinWithNavigation):
                     self.state.pop(key, None)
                 else:
                     self.state[key] = value
-            del self.saved_state
+            del self.saved_state  # pyright: ignore
 
 
 class RootStep(Step):
@@ -190,7 +209,7 @@ class Tour:
         self.trace = trace
         self.debug_state = debug_state
         self.root = RootStep()
-        self.root.tour = self
+        self.root._tour = self
         self.determine_state(self.root, self.state)
         self.add_steps(steps, self.root)
 
@@ -199,9 +218,9 @@ class Tour:
         if step.state_subset is not None:
             if step.state_subset not in state:
                 state[step.state_subset] = State()
-            step.state = state[step.state_subset]
+            step._state = state[step.state_subset]
         else:
-            step.state = state
+            step._state = state
 
     def remove_dataset(self, state_subset: str):
         """Remove a dataset from the tour by state_subset"""
@@ -230,10 +249,10 @@ class Tour:
             parent: The parent to add the step to
         """
         self.determine_state(step, self.state)
-        step.tour = self
-        children = list(parent.children)
+        step._tour = self
+        children: list[Step] = list(parent.children)
         children.insert(0, step)
-        parent.children = children
+        parent.children = children  # type: ignore[assignment]
 
     def keyboard_interrupt_action(self, node):
         """Handle a keyboard interrupt by asking the user what to do"""

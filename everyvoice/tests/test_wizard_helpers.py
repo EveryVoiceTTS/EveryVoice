@@ -85,7 +85,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
         )
         self.config = ConfigFormatStep()
         self.config.response = "yaml"
-        self.config.state = state
+        self.config._state = state
 
     def test_wav_file_directory_local(self):
         """
