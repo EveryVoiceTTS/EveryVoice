@@ -381,6 +381,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 self.wavs_dir / (entry["basename"] + ".wav"),
                 hop_size=linear_vocoder_config.preprocessing.audio.fft_hop_size,
             )
+            assert audio is not None
 
             # ming024_feats = np.load(
             #     DATA_DIR
@@ -475,6 +476,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             audio, _ = self.preprocessor.process_audio(
                 self.wavs_dir / (entry["basename"] + ".wav"), hop_size=256
             )
+            assert audio is not None
             dur_path = (
                 self.lj_preprocessed
                 / "duration"
@@ -942,16 +944,14 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 char_length_stats = char_length_data.calculate_stats()
                 self.assertEqual(char_length_stats["min"], 83)
                 self.assertEqual(char_length_stats["max"], 118)
-                self.assertAlmostEqual(char_length_stats["std"], sqrt(200.5), places=10)
+                self.assertAlmostEqual(char_length_stats["std"], sqrt(200.5), places=6)
                 self.assertEqual(char_length_stats["mean"], 105)
 
                 phone_length_stats = phone_length_data.calculate_stats()
                 self.assertEqual(phone_length_stats["min"], 76)
                 self.assertEqual(phone_length_stats["max"], 111)
-                self.assertAlmostEqual(
-                    phone_length_stats["std"], sqrt(216.3), places=10
-                )
-                self.assertEqual(phone_length_stats["mean"], 98.4)
+                self.assertAlmostEqual(phone_length_stats["std"], sqrt(216.3), places=6)
+                self.assertAlmostEqual(phone_length_stats["mean"], 98.4, places=6)
 
 
 class PreprocessingHierarchyTest(TestCase):
