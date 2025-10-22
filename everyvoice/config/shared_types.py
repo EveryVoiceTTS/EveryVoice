@@ -152,23 +152,23 @@ class LoggerConfig(PartialLoadConfig):
     """
 
     name: str = Field(
-        "BaseExperiment",
+        default="BaseExperiment",
         title="Experiment Name",
         description="The name of the experiment. The structure of your logs will be <name> / <version> / <sub_dir>.",
     )
 
     save_dir: PossiblyRelativePathMustExist = Field(
-        Path("./logs_and_checkpoints"),
+        default=Path("./logs_and_checkpoints"),
         description="The directory to save your checkpoints and logs to.",
     )
 
     sub_dir_callable: PossiblySerializedCallable = Field(
-        get_current_time,
+        default=get_current_time,
         description="The function that generates a string to call your runs - by default this is a timestamp. The structure of your logs will be <name> / <version> / <sub_dir> where <sub_dir> is a timestamp.",
     )
 
     version: str = Field(
-        "base",
+        default="base",
         description="The version of your experiment. The structure of your logs will be <name> / <version> / <sub_dir>.",
     )
 
@@ -179,48 +179,54 @@ class LoggerConfig(PartialLoadConfig):
 
 class BaseTrainingConfig(PartialLoadConfig):
     batch_size: int = Field(
-        16,
+        default=16,
         description="The number of samples to include in each batch when training. If you are running out of memory, consider lowering your batch_size.",
     )
-    save_top_k_ckpts: int = Field(5, description="The number of checkpoints to save.")
+    save_top_k_ckpts: int = Field(
+        default=5, description="The number of checkpoints to save."
+    )
     # According to
     # [ModelCheckpoint](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html#lightning.pytorch.callbacks.ModelCheckpoint),
     # ckpt_epochs and ckpt_steps must be None or non-negative.
     # 0 is the same as None, and disables checkpointing
     ckpt_steps: Union[Annotated[int, Field(ge=0)], None] = Field(
-        None,
+        default=None,
         description="The interval (in steps) for saving a checkpoint. By default checkpoints are saved every epoch using the 'ckpt_epochs' hyperparameter",
     )
     ckpt_epochs: Union[Annotated[int, Field(ge=0)], None] = Field(
-        1,
+        default=1,
         description="The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
     )
     val_check_interval: Union[int, float, None] = Field(
-        500,
+        default=500,
         description="How often to check the validation set."
         " Pass a float in the range [0.0, 1.0] to check after a fraction of the training epoch."
         " Pass an int to check after a fixed number of training batches.",
     )
     check_val_every_n_epoch: Optional[int] = Field(
-        None,
+        default=None,
         description="Run validation after every n epochs. Defaults to 1, but if you have a small dataset you should change this to be larger to speed up training",
     )
-    max_epochs: int = Field(1000, description="Stop training after this many epochs")
-    max_steps: int = Field(100000, description="Stop training after this many steps")
+    max_epochs: int = Field(
+        default=1000, description="Stop training after this many epochs"
+    )
+    max_steps: int = Field(
+        default=100000, description="Stop training after this many steps"
+    )
     finetune_checkpoint: Union[PossiblyRelativePath, None] = Field(
-        None,
+        default=None,
         description="Automatically resume training from a checkpoint loaded from this path.",
     )
     training_filelist: PossiblyRelativePath = Field(
-        Path("./path/to/your/preprocessed/training_filelist.psv"),
+        default=Path("./path/to/your/preprocessed/training_filelist.psv"),
         description="The path to a filelist containing samples belonging to your training set.",
     )
     validation_filelist: PossiblyRelativePath = Field(
-        Path("./path/to/your/preprocessed/validation_filelist.psv"),
+        default=Path("./path/to/your/preprocessed/validation_filelist.psv"),
         description="The path to a filelist containing samples belonging to your validation set.",
     )
     filelist_loader: PossiblySerializedCallable = Field(
-        generic_psv_filelist_reader,
+        default=generic_psv_filelist_reader,
         description="Advanced. The function to use to load the filelist.",
     )
     logger: LoggerConfig = Field(
@@ -228,11 +234,11 @@ class BaseTrainingConfig(PartialLoadConfig):
         description="The configuration for the logger.",
     )
     val_data_workers: int = Field(
-        0,
+        default=0,
         description="The number of CPU workers to use when loading data during validation.",
     )
     train_data_workers: int = Field(
-        4,
+        default=4,
         description="The number of CPU workers to use when loading data during training.",
     )
 
@@ -265,9 +271,11 @@ class BaseModelWithContact(PartialLoadConfig):
 
 
 class BaseOptimizer(ConfigModel):
-    learning_rate: float = Field(1e-4, description="The initial learning rate to use")
+    learning_rate: float = Field(
+        default=1e-4, description="The initial learning rate to use"
+    )
     eps: float = Field(
-        1e-8,
+        default=1e-8,
         description="Advanced. The value of optimizer constant Epsilon, used for numerical stability.",
     )
     weight_decay: float = 0.01
@@ -275,34 +283,34 @@ class BaseOptimizer(ConfigModel):
 
 class RMSOptimizer(BaseOptimizer):
     alpha: float = Field(
-        0.99,
+        default=0.99,
         description="Advanced. The value of RMSProp optimizer alpha smoothing constant.",
     )
-    name: str = Field("rms", description="The name of the optimizer to use.")
+    name: str = Field(default="rms", description="The name of the optimizer to use.")
 
 
 class AdamOptimizer(BaseOptimizer):
     betas: Tuple[float, float] = Field(
-        (0.9, 0.98),
+        default=(0.9, 0.98),
         description="Advanced. The values of the Adam Optimizer beta coefficients.",
     )
-    name: str = Field("adam", description="The name of the optimizer to use.")
+    name: str = Field(default="adam", description="The name of the optimizer to use.")
 
 
 class AdamWOptimizer(BaseOptimizer):
     betas: Tuple[float, float] = Field(
-        (0.9, 0.98),
+        default=(0.9, 0.98),
         description="Advanced. The values of the AdamW Optimizer beta coefficients.",
     )
-    name: str = Field("adamw", description="The name of the optimizer to use.")
+    name: str = Field(default="adamw", description="The name of the optimizer to use.")
 
 
 class NoamOptimizer(AdamOptimizer):
     warmup_steps: int = Field(
-        1000,
+        default=1000,
         description="The number of steps to increase the learning rate before starting to decrease it.",
     )
-    name: str = Field("noam", description="The name of the optimizer to use.")
+    name: str = Field(default="noam", description="The name of the optimizer to use.")
 
 
 G2PCallable = Callable[[str], list[str]]
