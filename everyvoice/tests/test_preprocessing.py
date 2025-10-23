@@ -9,16 +9,21 @@ from unittest import TestCase, main
 
 import torch
 import torchaudio
+import yaml
 from pydantic_core._pydantic_core import ValidationError
 from torch import float32
+from typer.testing import CliRunner
 
 import everyvoice.preprocessor
+import everyvoice.tests.stubs as stubs
+from everyvoice.cli import app
 from everyvoice.config.preprocessing_config import (
     AudioConfig,
     AudioSpecTypeEnum,
     PreprocessingConfig,
 )
 from everyvoice.config.shared_types import init_context
+from everyvoice.config.text_config import TextConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor
@@ -28,9 +33,7 @@ from everyvoice.tests.stubs import (
     TEST_DATA_DIR,
     capture_stderr,
     capture_stdout,
-    monkeypatch,
     mute_logger,
-    patch_logger,
     silence_c_stderr,
     silence_c_stdout,
 )
@@ -685,7 +688,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         lj_preprocessed = tmpdir / "preprocessed"
         lj_filelist = lj_preprocessed / "filelist.psv"
 
-        fp_config = FeaturePredictionConfig(contact=TEST_CONTACT)  # type: ignore
+        fp_config = FeaturePredictionConfig(contact=TEST_CONTACT)
         fp_config.preprocessing.source_data[0].data_dir = TEST_DATA_DIR / "lj" / "wavs"
 
         full_filelist = TEST_DATA_DIR / "metadata.psv"
@@ -700,6 +703,46 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
         to_process = ("audio", "energy", "pitch", "attn", "text", "spec")
         return (fp_config, lj_filelist, full_filelist, partial_filelist, to_process)
+
+    def test_mixed_cleaners(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="test_diff_clean", dir=".") as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
+            # tmpdir = Path("./mixed-cleaners-dir")  # for inspecting the results
+            with stubs.temp_chdir(tmpdir):
+                runner = CliRunner()
+                os.symlink(TEST_DATA_DIR, "./data")
+                result = runner.invoke(
+                    app, ["new-project", "--resume-from", "data/mixed-cleaners-resume"]
+                )
+                if result.exit_code != 0 or stubs.VERBOSE_OVERRIDE:
+                    print(result.output)
+                self.assertEqual(result.exit_code, 0)
+                os.chdir("mixed-cleaners")
+                with open(
+                    "config/everyvoice-shared-text.yaml", "r", encoding="utf8"
+                ) as f:
+                    text_config = TextConfig(**yaml.load(f, Loader=yaml.FullLoader))
+                    symbols = text_config.symbols.all_except_punctuation
+                    for character in ("é", "É", "é"):  # nfc(é), nfc(É), nfd(é)
+                        self.assertIn(character, symbols)
+                with silence_c_stderr():
+                    result = runner.invoke(
+                        app, ["preprocess", "config/everyvoice-text-to-spec.yaml"]
+                    )
+                if result.exit_code != 0 or stubs.VERBOSE_OVERRIDE:
+                    print(result.output)
+                self.assertEqual(result.exit_code, 0)
+                filelist = generic_psv_filelist_reader("preprocessed/filelist.psv")
+                self.assertEqual(filelist[4]["label"], "lowercase-only")
+                self.assertIn("/é/", filelist[4]["character_tokens"])  # lower NFD only
+                self.assertNotIn("/é/", filelist[4]["character_tokens"])  # not NFC
+                self.assertNotIn("/É/", filelist[4]["character_tokens"])  # not upper
+                self.assertEqual(filelist[8]["label"], "nfc-only")
+                self.assertIn("/é/", filelist[8]["character_tokens"])  # lower NFC
+                self.assertNotIn("/é/", filelist[8]["character_tokens"])  # not NFD
+                self.assertEqual(filelist[9]["label"], "nfc-only")
+                self.assertIn("/É/", filelist[9]["character_tokens"])  # upper NFC
+                self.assertNotIn("/É/", filelist[9]["character_tokens"])  # not NFD
 
     def test_incremental_preprocess(self):
         with tempfile.TemporaryDirectory(
@@ -810,9 +853,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 )
 
             def fail_config_lock(config_object, element, value, message):
-                with monkeypatch(config_object, element, value):
+                with stubs.monkeypatch(config_object, element, value):
                     with self.assertRaises(SystemExit):
-                        with patch_logger(
+                        with stubs.patch_logger(
                             everyvoice.preprocessor.preprocessor
                         ) as logger:
                             with self.assertLogs(logger) as logs:
