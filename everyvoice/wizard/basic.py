@@ -487,7 +487,7 @@ class ConfigFormatStep(Step):
             Panel(
                 f"You've finished configuring your dataset. Your files are located at {config_dir.absolute()}",
                 title="Congratulations 🎉",
-                subtitle="Next Steps Documentation: https://docs.everyvoice.ca/guides",
+                subtitle="Next Steps Documentation: https://docs.everyvoice.ca/stable/guides",
                 border_style=Style(color="#0B4F19"),
             )
         )
