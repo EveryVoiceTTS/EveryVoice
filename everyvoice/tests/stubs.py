@@ -5,6 +5,7 @@ import re
 import sys
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
+from types import ModuleType
 from typing import Any, Generator, Sequence
 
 from loguru import logger
@@ -55,7 +56,7 @@ class patch_logger:
         logger (logging.Logger): patched logger, e.g., for use in self.assertLogs(logger)
     """
 
-    def __init__(self, module, level: int = logging.INFO):
+    def __init__(self, module: ModuleType, level: int = logging.INFO):
         self.monkey = monkeypatch(module, "logger", logging.getLogger("UnitTesting"))
         self.level = level
 

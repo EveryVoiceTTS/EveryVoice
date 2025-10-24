@@ -16,7 +16,7 @@ from glob import glob
 from multiprocessing import Manager
 from pathlib import Path
 from textwrap import dedent
-from typing import Callable, Optional
+from typing import Callable, Optional, Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -1071,7 +1071,7 @@ class Preprocessor:
         self,
         output_path="filelist.psv",
         cpus=min(5, mp.cpu_count()),
-        to_process: list[str] = [],
+        to_process: Sequence[str] = [],
         overwrite=False,
         debug=False,
     ):
