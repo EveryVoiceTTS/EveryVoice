@@ -214,20 +214,20 @@ DEFAULT_CLEANERS: list[PossiblySerializedCallable] = [collapse_whitespace, strip
 class TextConfig(ConfigModel):
     symbols: Symbols = Field(default_factory=Symbols)
     to_replace: dict[str, str] = Field(
-        {},
+        default={},
         title="Global text replacements",
         description="Map of match->replacement to apply on training and run-time text, before cleaners are applied",
     )
     cleaners: list[PossiblySerializedCallable] = Field(
-        DEFAULT_CLEANERS,
+        default=DEFAULT_CLEANERS,
         title="Global cleaners",
         description="List of cleaners to apply to all datasets and run-time data",
     )
     dataset_to_replace: dict[str, dict[str, str]] = Field(
-        {}, title="Dataset-specific text replacements"
+        default={}, title="Dataset-specific text replacements"
     )
     dataset_cleaners: dict[str, list[PossiblySerializedCallable]] = Field(
-        {}, title="Dataset-specific cleaners"
+        default={}, title="Dataset-specific cleaners"
     )
     g2p_engines: G2P_Engines = Field(
         default={},
