@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, List, Optional, Union
+from typing import Annotated, Optional, Union
 
 from annotated_types import Ge, Le
 from pydantic import Field, FilePath, ValidationInfo, field_validator, model_validator
@@ -150,7 +150,7 @@ class PreprocessingConfig(PartialLoadConfig):
     path_to_audio_config_file: Optional[FilePath] = Field(
         default=None, description="The path to an audio configuration file."
     )
-    source_data: List[Dataset] = Field(
+    source_data: list[Dataset] = Field(
         default_factory=lambda: [
             Dataset(permissions_obtained=True)
         ],  # The default factory doesn't actually point to any data, so we can treat it as having permissions obtained

@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Dict, Iterable, Sequence, Tuple, Union
+from typing import Iterable, Sequence, Union
 
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
@@ -9,7 +9,7 @@ LookupTable = dict[str, int]
 
 def lookuptables_from_config(
     config: Union[EveryVoiceConfig, FeaturePredictionConfig]
-) -> Tuple[LookupTable, LookupTable]:
+) -> tuple[LookupTable, LookupTable]:
     """ """
     train_dataset = config.training.filelist_loader(config.training.training_filelist)
     val_dataset = config.training.filelist_loader(config.training.validation_filelist)
@@ -18,8 +18,8 @@ def lookuptables_from_config(
 
 
 def lookuptables_from_data(
-    data: Iterable[Sequence[Dict[str, str]]]
-) -> Tuple[LookupTable, LookupTable]:
+    data: Iterable[Sequence[dict[str, str]]]
+) -> tuple[LookupTable, LookupTable]:
     """ """
     languages = set(d["language"] for d in chain(*data) if "language" in d)
     lang2id = {language: i for i, language in enumerate(sorted(languages))}
@@ -30,7 +30,7 @@ def lookuptables_from_data(
     return lang2id, speaker2id
 
 
-def build_lookup(items: Sequence[Dict[str, str]], key: str) -> Dict[str, int]:
+def build_lookup(items: Sequence[dict[str, str]], key: str) -> dict[str, int]:
     """
     Create a lookup table from a list of entries and a key into those entries.
     """

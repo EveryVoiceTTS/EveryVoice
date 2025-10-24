@@ -11,7 +11,7 @@ import tempfile
 import textwrap
 from pathlib import Path
 from pprint import pformat
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 import yaml
 from deepdiff import DeepDiff
@@ -78,7 +78,7 @@ def load_config_base_command(
         type[HiFiGANConfig],
     ],
     # Must include the above in model-specific command
-    config_args: List[str],
+    config_args: list[str],
     config_file: Path,
 ):
 
@@ -119,9 +119,9 @@ def preprocess_base_command(
         type[FastSpeech2Config],
         type[HiFiGANConfig],
     ],
-    steps: List[str],
+    steps: list[str],
     # Must include the above in model-specific command
-    config_args: List[str],
+    config_args: list[str],
     config_file: Path,
     cpus: Optional[int],
     overwrite: bool,
@@ -181,7 +181,7 @@ def train_base_command(
     model: Union[type[EveryVoice], type[FastSpeech2], type[HiFiGAN]],
     monitor: str,
     # Must include the above in model-specific command
-    config_args: List[str],
+    config_args: list[str],
     config_file: Path,
     accelerator: str,
     devices: str,
@@ -368,7 +368,7 @@ def train_base_command(
 
 def inference_base_command(
     model: FastSpeech2,
-    config_args: List[str],
+    config_args: list[str],
 ):
     config = model.config
     update_config_from_cli_args(config_args, config)
