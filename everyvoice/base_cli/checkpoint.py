@@ -7,7 +7,7 @@ import warnings
 from collections import defaultdict
 from json import JSONEncoder
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 
 import typer
 from typing_extensions import Annotated
@@ -40,7 +40,7 @@ class CheckpointEncoder(JSONEncoder):
 def summarize_statedict(ckpt: dict) -> dict:
     if "state_dict" not in ckpt:
         return {}
-    model_keys: Dict[str, int] = defaultdict(int)
+    model_keys: dict[str, int] = defaultdict(int)
     for k, v in sorted(ckpt["state_dict"].items()):
         main_key = k.split(".")[0]
         model_keys[main_key] += v.numel()
@@ -49,7 +49,7 @@ def summarize_statedict(ckpt: dict) -> dict:
     return model_keys
 
 
-def load_checkpoint(model_path: Path, minimal=True) -> Dict[str, Any]:
+def load_checkpoint(model_path: Path, minimal=True) -> dict[str, Any]:
     """
     Loads a checkpoint and performs minor clean up of the checkpoint.
     Removes the `optimizer_states`'s `state` and `param_groups`'s `params`.

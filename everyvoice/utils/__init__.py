@@ -8,7 +8,7 @@ from datetime import datetime
 from functools import partial
 from itertools import islice
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, Optional
 from unicodedata import normalize
 
 import yaml
@@ -162,7 +162,7 @@ def expand_config_string_syntax(config_arg: str) -> dict:
     return config_dict
 
 
-def update_config_from_cli_args(arg_list: List[str], original_config):
+def update_config_from_cli_args(arg_list: list[str], original_config):
     if arg_list is None or not arg_list:
         return original_config
     for arg in arg_list:

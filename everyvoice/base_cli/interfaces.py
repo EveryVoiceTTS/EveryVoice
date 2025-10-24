@@ -6,7 +6,7 @@
 """
 import multiprocessing as mp
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import typer
 
@@ -19,7 +19,7 @@ def load_config_base_command_interface(
         file_okay=True,
         help="The path to your model configuration file.",
     ),
-    config_args: List[str] = typer.Option(None, "--config", "-c"),
+    config_args: list[str] = typer.Option(None, "--config", "-c"),
 ):
     pass
 
@@ -32,7 +32,7 @@ def preprocess_base_command_interface(
         file_okay=True,
         help="The path to your model configuration file.",
     ),
-    config_args: List[str] = typer.Option(
+    config_args: list[str] = typer.Option(
         None, "-c", "--config-args", help="Override the configuration."
     ),
     cpus: Optional[int] = typer.Option(
@@ -60,7 +60,7 @@ def train_base_command_interface(
         file_okay=True,
         help="The path to your model configuration file.",
     ),
-    config_args: List[str] = typer.Option(
+    config_args: list[str] = typer.Option(
         None, "-c", "--config-args", help="Overwrite the configuration"
     ),
     accelerator: str = typer.Option(
@@ -86,6 +86,6 @@ def train_base_command_interface(
 
 
 def inference_base_command_interface(
-    config_args: List[str] = typer.Option(None, "--config", "-c"),
+    config_args: list[str] = typer.Option(None, "--config", "-c"),
 ):
     pass
