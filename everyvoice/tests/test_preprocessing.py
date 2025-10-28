@@ -944,16 +944,14 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 char_length_stats = char_length_data.calculate_stats()
                 self.assertEqual(char_length_stats["min"], 83)
                 self.assertEqual(char_length_stats["max"], 118)
-                self.assertAlmostEqual(char_length_stats["std"], sqrt(200.5), places=10)
+                self.assertAlmostEqual(char_length_stats["std"], sqrt(200.5), places=4)
                 self.assertEqual(char_length_stats["mean"], 105)
 
                 phone_length_stats = phone_length_data.calculate_stats()
                 self.assertEqual(phone_length_stats["min"], 76)
                 self.assertEqual(phone_length_stats["max"], 111)
-                self.assertAlmostEqual(
-                    phone_length_stats["std"], sqrt(216.3), places=10
-                )
-                self.assertEqual(phone_length_stats["mean"], 98.4)
+                self.assertAlmostEqual(phone_length_stats["std"], sqrt(216.3), places=4)
+                self.assertAlmostEqual(phone_length_stats["mean"], 98.4, places=4)
 
 
 class PreprocessingHierarchyTest(TestCase):

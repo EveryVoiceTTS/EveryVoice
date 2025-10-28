@@ -447,13 +447,15 @@ class Preprocessor:
                 print("Gathering character length values")
                 for line in filelist:
                     char_length_data = torch.tensor(
-                        [len(line["characters"])], dtype=float
+                        [len(line["characters"])], dtype=torch.float32
                     )
                     char_length_scaler.append(char_length_data)
             if phone_length:
                 phone_length_scaler = Scaler()
                 for line in tqdm(filelist, desc="Gathering phone length values"):
-                    phone_length_data = torch.tensor([len(line["phones"])], dtype=float)
+                    phone_length_data = torch.tensor(
+                        [len(line["phones"])], dtype=torch.float32
+                    )
                     phone_length_scaler.append(phone_length_data)
 
         return energy_scaler, pitch_scaler, char_length_scaler, phone_length_scaler
