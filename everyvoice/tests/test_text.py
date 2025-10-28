@@ -2,7 +2,6 @@
 
 import string
 from pathlib import Path
-from typing import Dict, List
 from unicodedata import normalize
 from unittest import TestCase, main
 
@@ -336,7 +335,7 @@ class LookupTablesTest(TestCase):
         Test a datasest that has no language.
         """
 
-        def remove_language(data: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        def remove_language(data: list[dict[str, str]]) -> list[dict[str, str]]:
             for d in data:
                 del d["language"]
             return data
@@ -364,7 +363,7 @@ class LookupTablesTest(TestCase):
         Test a datasest that has no speaker.
         """
 
-        def remove_speaker(data: List[Dict[str, str]]) -> List[Dict[str, str]]:
+        def remove_speaker(data: list[dict[str, str]]) -> list[dict[str, str]]:
             for d in data:
                 del d["speaker"]
             return data

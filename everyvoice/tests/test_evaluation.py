@@ -8,13 +8,14 @@ from everyvoice.evaluation import (
     load_squim_objective_model,
     load_squim_subjective_model,
 )
-from everyvoice.tests.stubs import TEST_DATA_DIR
+from everyvoice.tests.stubs import TEST_DATA_DIR, silence_c_stderr
 
 
 class EvaluationTest(TestCase):
     def test_squim_evaluation(self):
-        model, sr = load_squim_objective_model()
-        subj_model, subj_sr = load_squim_subjective_model()
+        with silence_c_stderr():
+            model, sr = load_squim_objective_model()
+            subj_model, subj_sr = load_squim_subjective_model()
         stoi, pesq, si_sdr = calculate_objective_metrics_from_single_path(
             TEST_DATA_DIR / "LJ010-0008.wav", model, sr
         )

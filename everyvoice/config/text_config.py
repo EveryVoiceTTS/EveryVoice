@@ -19,43 +19,44 @@ from everyvoice.utils import (
 
 class Punctuation(BaseModel):
     exclamations: list[str] = Field(
-        ["!", "¡"],  # TODO: consider how to handle utt final punctuation like ! ? and .
+        # TODO: consider how to handle utt final punctuation like ! ? and .
+        default=["!", "¡"],
         description="Exclamation punctuation symbols used in your datasets. Replaces these symbols with <EXCL> internally.",
     )
     question_symbols: list[str] = Field(
-        ["?", "¿"],
+        default=["?", "¿"],
         description="Question/interrogative punctuation symbols used in your datasets. Replaces these symbols with <QINT> internally.",
     )
     quotemarks: list[str] = Field(
-        ['"', "'", "“", "”", "«", "»"],
+        default=['"', "'", "“", "”", "«", "»"],
         description="Quotemark punctuation symbols used in your datasets. Replaces these symbols with <QUOTE> internally.",
     )
     parentheses: list[str] = Field(
-        ["(", ")", "[", "]", "{", "}"],
+        default=["(", ")", "[", "]", "{", "}"],
         description="Punctuation symbols indicating parentheses, brackets, or braces. Replaces these symbols with <PAREN> internally.",
     )
     periods: list[str] = Field(
-        ["."],
+        default=["."],
         description="Punctuation symbols indicating a 'period' used in your datasets. Replaces these symbols with <PERIOD> internally.",
     )
     colons: list[str] = Field(
-        [":"],
+        default=[":"],
         description="Punctuation symbols indicating a 'colon' used in your datasets. Replaces these symbols with <COLON> internally.",
     )
     semi_colons: list[str] = Field(
-        [";"],
+        default=[";"],
         description="Punctuation symbols indicating a 'semi-colon' used in your datasets. Replaces these symbols with <SEMICOL> internally.",
     )
     hyphens: list[str] = Field(
-        ["-", "—", "*"],
+        default=["-", "—", "*"],
         description="Punctuation symbols indicating a 'hyphen' used in your datasets. * is a hyphen by default since unidecode decodes middle-dot punctuation as an asterisk. Replaces these symbols with <HYPHEN> internally.",
     )
     commas: list[str] = Field(
-        [","],
+        default=[","],
         description="Punctuation symbols indicating a 'comma' used in your datasets. Replaces these symbols with <COMMA> internally.",
     )
     ellipses: list[str] = Field(
-        ["…"],
+        default=["…"],
         description="Punctuation symbols indicating ellipses used in your datasets. Replaces these symbols with <EPS> internally.",
     )
 
@@ -78,7 +79,7 @@ class Punctuation(BaseModel):
 
 class Symbols(BaseModel):
     silence: list[str] = Field(
-        ["<SIL>"], description="The symbol(s) used to indicate silence."
+        default=["<SIL>"], description="The symbol(s) used to indicate silence."
     )
     punctuation: Punctuation = Field(
         default_factory=Punctuation,
@@ -146,11 +147,11 @@ G2P_Engines = Annotated[
 
 class LanguageBoundaries(BaseModel):
     strong: str = Field(
-        "!?.",
+        default="!?.",
         description="All characters that constitute strong boundaries, for one language.",
     )
     weak: str = Field(
-        ":;,",
+        default=":;,",
         description="All characters that constitute strong boundaries, for one language.",
     )
 
@@ -183,8 +184,8 @@ def validate_g2p_engine_signature(g2p_func: G2PCallable) -> G2PCallable:
 
 def load_custom_g2p_engine(lang_id: str, qualified_g2p_func_name: str) -> G2PCallable:
     # Load the user provided G2P Engine.
+    module_name, _, function_name = qualified_g2p_func_name.rpartition(".")
     try:
-        module_name, _, function_name = qualified_g2p_func_name.rpartition(".")
         module = importlib.import_module(module_name)
     except ModuleNotFoundError:
         error_message = f"Invalid G2P engine module `{module_name}` for `{lang_id}`"
@@ -199,18 +200,18 @@ class TextConfig(ConfigModel):
     to_replace: Dict[str, str] = {}  # Happens before cleaners
     cleaners: list[PossiblySerializedCallable] = [collapse_whitespace, strip_text]
     g2p_engines: G2P_Engines = Field(
-        {},
+        default={},
         title="External G2P",
         description="User defined or external G2P engines.\nSee https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P.",
         examples=["""{"fr": "everyvoice_plugin_g2p4example.g2p"}"""],
     )
     split_text: bool = Field(
-        True,
+        default=True,
         title="Split Text",
         description="Whether or not to perform text splitting (also referred to as text chunking) at inference time. Instead of synthesizing an entire utterance, the utterance will be split into smaller chunks and re-combined after synthesis. This can lead to more natural synthesis for long-form (i.e. paragraph) synthesis.",
     )
     boundaries: dict[Language, LanguageBoundaries] = Field(
-        {},
+        default={},
         title="Boundaries",
         description="Strong and Weak boundaries on which text splitting is to be performed, for every language.",
         examples=["""{'eng': {'strong': '!?.', 'weak': ':;,'}}'"""],

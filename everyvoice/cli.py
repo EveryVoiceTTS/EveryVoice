@@ -7,7 +7,7 @@ from enum import Enum
 from io import TextIOWrapper
 from pathlib import Path
 from textwrap import dedent
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any, Optional
 
 import typer
 from merge_args import merge_args
@@ -665,13 +665,13 @@ def demo(
         dir_okay=False,
         help="A plain text file containing a list of words or utterances to disallow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are allowed. IMPORTANT: there are many ways to 'hack' the denylist that we do not protect against. We suggest using the 'allowlist' instead for maximum security if you know the full list of utterances you want to allow synthesis for.",
     ),
-    languages: List[str] = typer.Option(
+    languages: list[str] = typer.Option(
         ["all"],
         "--language",
         "-l",
         help="Specify languages to be included in the demo. Must be supported by your model. Example: everyvoice demo TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --language eng --language fin",
     ),
-    speakers: List[str] = typer.Option(
+    speakers: list[str] = typer.Option(
         ["all"],
         "--speaker",
         "-s",

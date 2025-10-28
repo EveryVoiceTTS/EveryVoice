@@ -210,7 +210,7 @@ class ConfigFormatStep(Step):
     def validate(self, response):
         return response in ("yaml", "json")
 
-    def effect(self):
+    def effect(self) -> None:
         from everyvoice.config.text_config import Symbols, TextConfig
         from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
         from everyvoice.model.feature_prediction.config import (
@@ -218,6 +218,7 @@ class ConfigFormatStep(Step):
             FeaturePredictionConfig,
         )
 
+        assert self.state is not None
         output_path = (
             Path(self.state[StepNames.output_step]) / self.state[StepNames.name_step]
         ).expanduser()

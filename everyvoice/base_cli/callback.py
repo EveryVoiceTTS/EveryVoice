@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import pytorch_lightning as pl
 from pytorch_lightning.callbacks import Callback
@@ -16,7 +16,7 @@ class ResetValidationDataloaderCallback(Callback):
         self,
         trainer: "pl.Trainer",
         pl_module: "pl.LightningModule",
-        checkpoint: Dict[str, Any],
+        checkpoint: dict[str, Any],
     ) -> None:
         batch_progress = trainer.fit_loop.epoch_loop.val_loop.batch_progress
         batch_progress.reset()

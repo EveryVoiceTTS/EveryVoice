@@ -46,6 +46,7 @@ from everyvoice.tests.stubs import (
     capture_stdout,
     flatten_log,
     silence_c_stderr,
+    silence_c_stdout,
 )
 from everyvoice.wizard import (
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
@@ -422,16 +423,17 @@ class CLITest(TestCase):
             self.assertIn("Unknown output format 'foo'", str(cm.exception))
 
     def test_g2p(self):
-        result = self.runner.invoke(
-            app,
-            [
-                "g2p",
-                "abc",
-                str(self.data_dir / Path("text.txt")),
-                "--config",
-                str(self.config_dir / Path("everyvoice-shared-text.yaml")),
-            ],
-        )
+        with silence_c_stderr():
+            result = self.runner.invoke(
+                app,
+                [
+                    "g2p",
+                    "abc",
+                    str(self.data_dir / Path("text.txt")),
+                    "--config",
+                    str(self.config_dir / Path("everyvoice-shared-text.yaml")),
+                ],
+            )
 
         self.assertEqual(result.exit_code, 0)
         self.assertIn("['hello', 'world']", result.stdout)
@@ -555,7 +557,7 @@ class CLITest(TestCase):
             )
 
             # Create a dummy app config file
-            config = {
+            config: dict = {
                 "app_title": "Test App",
                 "app_description": "This is a test app description.",
                 "app_instructions": "These are test app instructions.",
@@ -737,7 +739,7 @@ class CLITest(TestCase):
             },
         }
 
-        with self.assertRaises(typer.BadParameter) as cm:
+        with self.assertRaises(typer.BadParameter) as cm, silence_c_stdout():
             load_app_ui_labels(
                 config_bad_language,
                 ["all"],
@@ -761,7 +763,7 @@ class CLITest(TestCase):
             "The 'speakers' key in the app config JSON does not match the speakers provided.",
             str(cm.exception),
         )
-        with self.assertRaises(typer.BadParameter) as cm:
+        with self.assertRaises(typer.BadParameter) as cm, silence_c_stdout():
             load_app_ui_labels(
                 config_bad_speaker,
                 ["default"],
@@ -774,7 +776,7 @@ class CLITest(TestCase):
             "Language option has been activated, but valid languages have not been provided. The model has been trained in ['default'] languages. Please select either 'all' or at least some of them.",
             str(cm.exception),
         )
-        with self.assertRaises(typer.BadParameter) as cm:
+        with self.assertRaises(typer.BadParameter) as cm, silence_c_stdout():
             load_app_ui_labels(
                 config_bad_speaker,
                 ["unknown"],
@@ -858,7 +860,7 @@ class CLITest(TestCase):
             tmpdir = Path(tmpdir_str)
 
             # Create an empty checkpoint file
-            empty_ckpt = {"hyper_parameters": {"speaker2id": {}}}
+            empty_ckpt: dict = {"hyper_parameters": {"speaker2id": {}}}
             torch.save(empty_ckpt, tmpdir / "empty.ckpt")
 
             with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
@@ -881,10 +883,10 @@ class CLITest(TestCase):
 class TestBaseCLIHelper(TestCase):
     def test_save_configuration_to_log_dir(self):
         with (
-            TemporaryDirectory(ignore_cleanup_errors=True) as tempdir,
+            TemporaryDirectory(ignore_cleanup_errors=True) as tempdir_s,
             silence_c_stderr(),
         ):
-            tempdir = Path(tempdir)
+            tempdir = Path(tempdir_s)
             config = FastSpeech2Config(
                 contact=ContactInformation(
                     contact_name="Test Runner", contact_email="info@everyvoice.ca"

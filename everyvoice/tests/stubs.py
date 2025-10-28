@@ -5,7 +5,8 @@ import re
 import sys
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
-from typing import Any, Generator, Sequence, Union
+from types import ModuleType
+from typing import Any, Generator, Sequence
 
 from loguru import logger
 
@@ -55,7 +56,7 @@ class patch_logger:
         logger (logging.Logger): patched logger, e.g., for use in self.assertLogs(logger)
     """
 
-    def __init__(self, module, level: int = logging.INFO):
+    def __init__(self, module: ModuleType, level: int = logging.INFO):
         self.monkey = monkeypatch(module, "logger", logging.getLogger("UnitTesting"))
         self.level = level
 
@@ -112,7 +113,7 @@ class capture_stdout:
         stdout (io.StringIO): captured stdout
     """
 
-    def __enter__(self):
+    def __enter__(self) -> io.StringIO:
         self.monkey = redirect_stdout(io.StringIO())
         return self.monkey.__enter__()
 
@@ -141,7 +142,7 @@ def capture_stderr():
 
 
 @contextmanager
-def temp_chdir(path: Path) -> Generator[None, None, None]:
+def temp_chdir(path: str | Path) -> Generator[None, None, None]:
     """Context manager to temporarily change the current working directory.
 
     Args:
@@ -155,13 +156,16 @@ def temp_chdir(path: Path) -> Generator[None, None, None]:
         os.chdir(cwd)
 
 
+ResponseIndexType = int | tuple[int, ...] | BaseException
+
+
 class patch_menu_prompt:
     """Context manager to simulate what option(s) the user selects in a simple_term_menu.
 
     Args:
         response_index: the user's choice as a zero-based index for a
             single-option menu, or the list of indices for a multi-option
-            menu
+            menu; if a response is an exception, it is raised rather than returned
         multi: if True, response_index is a list of response_indices used one
             after the other each time a new simple_term_menu is instantiated
 
@@ -169,7 +173,11 @@ class patch_menu_prompt:
         stdout (io.StringIO): captured stdout stream.
     """
 
-    def __init__(self, response_index: Union[int, list], multi=False):
+    def __init__(
+        self,
+        response_index: ResponseIndexType | Sequence[ResponseIndexType],
+        multi=False,
+    ):
         self.response_index = response_index
         self.multi = multi
 
@@ -177,7 +185,7 @@ class patch_menu_prompt:
         multi = f", multi={self.multi}" if self.multi else ""
         return f"{self.__class__.__name__}(response_index={self.response_index}{multi})"
 
-    def __enter__(self):
+    def __enter__(self) -> io.StringIO:
         self.monkey1 = monkeypatch(
             prompts,
             "simple_term_menu",
@@ -207,7 +215,7 @@ class Say:
     """Mock callable that returns response (if multi=False) or each value in
     response in turn (if multi=True) when it is called."""
 
-    def __init__(self, response, multi=False) -> None:
+    def __init__(self, response: Any | Sequence[Any], multi: bool = False) -> None:
         self.response = response
         self.last_index = -1
         self.multi = multi
@@ -218,6 +226,7 @@ class Say:
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         if self.multi:
+            assert isinstance(self.response, Sequence), "multi requires seq of response"
             self.last_index += 1
             response = self.response[self.last_index]
         else:
@@ -228,17 +237,24 @@ class Say:
 
 
 class SimpleTermMenuStub:
-    """Stub class for the simple_term_menu module."""
+    """Stub class for the simple_term_menu module.
 
-    def __init__(self, response: Union[int, list[int]], multi=False):
-        """Constructor
+    Args:
+        response: the index or indices the user will be simulated to choose;
+                  if a response is an exception, it is raised rather than returned
+        multi (bool): if True, response must be a list of responses instead of just
+                        one, and each will be given in turn each time the terminal
+                        menu is invoked
+    """
 
-        Args:
-            response: the index or indices the user will be simulated to choose
-        """
+    def __init__(
+        self,
+        response_index: ResponseIndexType | Sequence[ResponseIndexType],
+        multi: bool = False,
+    ):
         self.multi = multi
         self.last_index = -1
-        self.response = response
+        self.response_index = response_index
 
     def TerminalMenu(self, *args, **kwargs):
         if not kwargs.get("raise_error_on_interrupt", False):  # pragma: no cover
@@ -249,26 +265,30 @@ class SimpleTermMenuStub:
 
     def show(self):
         if self.multi:
-            print("term stub", self.last_index, self.response[self.last_index + 1])
+            assert isinstance(
+                self.response_index, Sequence
+            ), "multi requires seq of response"
+            print(
+                "term stub", self.last_index, self.response_index[self.last_index + 1]
+            )
             self.last_index += 1
-            response = self.response[self.last_index]
+            response_index = self.response_index[self.last_index]
         else:
-            response = self.response
-        if isinstance(response, BaseException):
-            raise response
-        return response
+            response_index = self.response_index
+        if isinstance(response_index, BaseException):
+            raise response_index
+        return response_index
 
 
 class QuestionaryStub:
-    """Stub class for the questionary module"""
+    """Stub class for the questionary module
+
+    Args:
+        responses: the (sequence of) answers the user is simulated to provide
+        ask_ok (bool): if True, allow calling .ask(), which is an error otherwise
+    """
 
     def __init__(self, responses: Path | str | Sequence, ask_ok: bool = False) -> None:
-        """Constructor
-
-        Args:
-            responses: the (sequence of) answers the user is simulated to provide
-            ask_ok: if True, allow calling .ask(), which is an error otherwise
-        """
         self.last_index = -1
         self.responses: Sequence
         self.ask_ok = ask_ok
@@ -304,7 +324,10 @@ class QuestionaryStub:
 class patch_questionary:
     """Shortcut for monkey patching questionary everywhere
 
-    Args: See QuestionaryStub"""
+    Args:
+        responses: the (sequence of) answers the user is simulated to provide
+        ask_ok: if True, allow calling .ask(), which is an error otherwise
+    """
 
     def __init__(self, responses: Path | str | Sequence, ask_ok: bool = False):
         self.responses = responses

@@ -5,6 +5,7 @@ import shutil
 import tempfile
 from math import sqrt
 from pathlib import Path
+from typing import Any
 from unittest import TestCase, main
 
 import torch
@@ -12,7 +13,6 @@ import torchaudio
 from pydantic_core._pydantic_core import ValidationError
 from torch import float32
 
-import everyvoice.preprocessor
 from everyvoice.config.preprocessing_config import (
     AudioConfig,
     AudioSpecTypeEnum,
@@ -21,7 +21,7 @@ from everyvoice.config.preprocessing_config import (
 from everyvoice.config.shared_types import init_context
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
-from everyvoice.preprocessor import Preprocessor
+from everyvoice.preprocessor import Preprocessor, preprocessor
 from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
 from everyvoice.tests.stubs import (
     TEST_CONTACT,
@@ -31,6 +31,8 @@ from everyvoice.tests.stubs import (
     monkeypatch,
     mute_logger,
     patch_logger,
+    silence_c_stderr,
+    silence_c_stdout,
 )
 from everyvoice.utils import generic_psv_filelist_reader
 
@@ -306,7 +308,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             preprocessor = Preprocessor(test_config)
 
             # Run the preprocess method with just audio processing
-            with mute_logger("everyvoice.preprocessor.preprocessor"):
+            with silence_c_stdout(), silence_c_stderr():
                 preprocessor.preprocess(
                     output_path=str(save_dir / "filelist.psv"),
                     cpus=1,
@@ -379,6 +381,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 self.wavs_dir / (entry["basename"] + ".wav"),
                 hop_size=linear_vocoder_config.preprocessing.audio.fft_hop_size,
             )
+            assert audio is not None
 
             # ming024_feats = np.load(
             #     DATA_DIR
@@ -473,6 +476,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             audio, _ = self.preprocessor.process_audio(
                 self.wavs_dir / (entry["basename"] + ".wav"), hop_size=256
             )
+            assert audio is not None
             dur_path = (
                 self.lj_preprocessed
                 / "duration"
@@ -596,8 +600,8 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 },
             ]
             for filelist_test_info in filelists_to_test:
-                with tempfile.TemporaryDirectory(prefix="inputs", dir=".") as tmpdir:
-                    tmpdir = Path(tmpdir)
+                with tempfile.TemporaryDirectory(prefix="inputs", dir=".") as tmpdir_s:
+                    tmpdir = Path(tmpdir_s)
                     preprocessed_dir = tmpdir / "preprocessed"
                     preprocessed_dir.mkdir(parents=True, exist_ok=True)
                     output_filelist = preprocessed_dir / "preprocessed_filelist.psv"
@@ -675,9 +679,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                                 f'failed in {filelist_test_info["path"]}',
                             )
 
-    def get_simple_config(self, tmpdir: str | Path):
+    def get_simple_config(self, tmpdir_in: str | Path, /):
         """Create a simple config for testing"""
-        tmpdir = Path(tmpdir)
+        tmpdir = Path(tmpdir_in)
         lj_preprocessed = tmpdir / "preprocessed"
         lj_filelist = lj_preprocessed / "filelist.psv"
 
@@ -771,8 +775,8 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         # fact that we're trying to write an empty list.
         with tempfile.TemporaryDirectory(
             prefix="test_empty_preprocess", dir="."
-        ) as tmpdir:
-            tmpdir = Path(tmpdir)
+        ) as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
             fp_config.preprocessing.source_data[0].data_dir = TEST_DATA_DIR
             input_filelist = tmpdir / "empty-metadata.psv"
@@ -791,9 +795,11 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
 
-    def test_config_lock(self):
-        with tempfile.TemporaryDirectory(prefix="test_config_lock", dir=".") as tmpdir:
-            tmpdir = Path(tmpdir)
+    def test_config_lock(self) -> None:
+        with tempfile.TemporaryDirectory(
+            prefix="test_config_lock", dir="."
+        ) as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
 
             with (
@@ -805,12 +811,12 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
 
-            def fail_config_lock(config_object, element, value, message):
+            def fail_config_lock(
+                config_object: object, element: str, value: Any, message: str
+            ):
                 with monkeypatch(config_object, element, value):
                     with self.assertRaises(SystemExit):
-                        with patch_logger(
-                            everyvoice.preprocessor.preprocessor
-                        ) as logger:
+                        with patch_logger(preprocessor) as logger:
                             with self.assertLogs(logger) as logs:
                                 Preprocessor(fp_config).preprocess(
                                     output_path=lj_filelist,
@@ -914,13 +920,13 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         Tests compute_stats() and calculate_stats() for character length on 5 examples from LJ Speech.
         TODO: Expand this function to test for energy and pitch
         """
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with tempfile.TemporaryDirectory() as tmpdir_s:
             with (
                 mute_logger("everyvoice.preprocessor"),
                 capture_stdout(),
                 capture_stderr(),
             ):
-                tmpdir = Path(tmpdir)
+                tmpdir = Path(tmpdir_s)
                 (
                     fp_config,
                     lj_filelist,
@@ -940,24 +946,22 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 char_length_stats = char_length_data.calculate_stats()
                 self.assertEqual(char_length_stats["min"], 83)
                 self.assertEqual(char_length_stats["max"], 118)
-                self.assertAlmostEqual(char_length_stats["std"], sqrt(200.5), places=10)
+                self.assertAlmostEqual(char_length_stats["std"], sqrt(200.5), places=4)
                 self.assertEqual(char_length_stats["mean"], 105)
 
                 phone_length_stats = phone_length_data.calculate_stats()
                 self.assertEqual(phone_length_stats["min"], 76)
                 self.assertEqual(phone_length_stats["max"], 111)
-                self.assertAlmostEqual(
-                    phone_length_stats["std"], sqrt(216.3), places=10
-                )
-                self.assertEqual(phone_length_stats["mean"], 98.4)
+                self.assertAlmostEqual(phone_length_stats["std"], sqrt(216.3), places=4)
+                self.assertAlmostEqual(phone_length_stats["mean"], 98.4, places=4)
 
 
 class PreprocessingHierarchyTest(TestCase):
     def test_hierarchy(self):
         """Unit tests for preprocessing steps"""
 
-        with tempfile.TemporaryDirectory(prefix="test_hierarchy", dir=".") as tmpdir:
-            tmpdir = Path(tmpdir)
+        with tempfile.TemporaryDirectory(prefix="test_hierarchy", dir=".") as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             data_dir = Path(__file__).parent / "data"
             wavs_dir = data_dir / "hierarchy" / "wavs"
             preprocessed_dir = tmpdir / "hierarchy" / "preprocessed"

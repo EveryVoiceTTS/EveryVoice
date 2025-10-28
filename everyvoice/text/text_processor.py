@@ -481,8 +481,8 @@ class TextProcessor:
     def decode_tokens(
         self,
         sequence: list[int],
-        join_character=CHARACTER_JOINER,
-        joiner_substitution=JOINER_SUBSTITUTION,
+        join_character: Optional[str] = CHARACTER_JOINER,
+        joiner_substitution: Optional[str] = JOINER_SUBSTITUTION,
     ) -> str | list[str]:
         """Decode a sequence of encoded phone or character tokens into a sequence of strings
 
