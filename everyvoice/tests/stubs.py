@@ -155,13 +155,16 @@ def temp_chdir(path: Path) -> Generator[None, None, None]:
         os.chdir(cwd)
 
 
+ResponseIndexType = int | tuple[int, ...] | BaseException
+
+
 class patch_menu_prompt:
     """Context manager to simulate what option(s) the user selects in a simple_term_menu.
 
     Args:
         response_index: the user's choice as a zero-based index for a
             single-option menu, or the list of indices for a multi-option
-            menu
+            menu; if a response is an exception, it is raised rather than returned
         multi: if True, response_index is a list of response_indices used one
             after the other each time a new simple_term_menu is instantiated
 
@@ -171,7 +174,7 @@ class patch_menu_prompt:
 
     def __init__(
         self,
-        response_index: int | tuple[int, ...] | list[int] | list[tuple[int, ...]],
+        response_index: ResponseIndexType | Sequence[ResponseIndexType],
         multi=False,
     ):
         self.response_index = response_index
@@ -236,7 +239,8 @@ class SimpleTermMenuStub:
     """Stub class for the simple_term_menu module.
 
     Args:
-        response: the index or indices the user will be simulated to choose
+        response: the index or indices the user will be simulated to choose;
+                  if a response is an exception, it is raised rather than returned
         multi (bool): if True, response must be a list of responses instead of just
                         one, and each will be given in turn each time the terminal
                         menu is invoked
@@ -244,12 +248,12 @@ class SimpleTermMenuStub:
 
     def __init__(
         self,
-        response: int | tuple[int, ...] | Sequence[int] | Sequence[tuple[int, ...]],
+        response_index: ResponseIndexType | Sequence[ResponseIndexType],
         multi: bool = False,
     ):
         self.multi = multi
         self.last_index = -1
-        self.response = response
+        self.response_index = response_index
 
     def TerminalMenu(self, *args, **kwargs):
         if not kwargs.get("raise_error_on_interrupt", False):  # pragma: no cover
@@ -260,15 +264,19 @@ class SimpleTermMenuStub:
 
     def show(self):
         if self.multi:
-            assert isinstance(self.response, Sequence), "multi requires seq of response"
-            print("term stub", self.last_index, self.response[self.last_index + 1])
+            assert isinstance(
+                self.response_index, Sequence
+            ), "multi requires seq of response"
+            print(
+                "term stub", self.last_index, self.response_index[self.last_index + 1]
+            )
             self.last_index += 1
-            response = self.response[self.last_index]
+            response_index = self.response_index[self.last_index]
         else:
-            response = self.response
-        if isinstance(response, BaseException):
-            raise response
-        return response
+            response_index = self.response_index
+        if isinstance(response_index, BaseException):
+            raise response_index
+        return response_index
 
 
 class QuestionaryStub:

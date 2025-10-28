@@ -183,8 +183,8 @@ def validate_g2p_engine_signature(g2p_func: G2PCallable) -> G2PCallable:
 
 def load_custom_g2p_engine(lang_id: str, qualified_g2p_func_name: str) -> G2PCallable:
     # Load the user provided G2P Engine.
+    module_name, _, function_name = qualified_g2p_func_name.rpartition(".")
     try:
-        module_name, _, function_name = qualified_g2p_func_name.rpartition(".")
         module = importlib.import_module(module_name)
     except ModuleNotFoundError:
         error_message = f"Invalid G2P engine module `{module_name}` for `{lang_id}`"

@@ -381,6 +381,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 self.wavs_dir / (entry["basename"] + ".wav"),
                 hop_size=linear_vocoder_config.preprocessing.audio.fft_hop_size,
             )
+            assert audio is not None
 
             # ming024_feats = np.load(
             #     DATA_DIR
@@ -475,6 +476,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             audio, _ = self.preprocessor.process_audio(
                 self.wavs_dir / (entry["basename"] + ".wav"), hop_size=256
             )
+            assert audio is not None
             dur_path = (
                 self.lj_preprocessed
                 / "duration"

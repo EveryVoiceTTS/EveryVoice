@@ -651,7 +651,7 @@ class WizardTest(WizardTestBase):
         text_processing_step = find_step(SN.text_processing_step, tour.steps)
         # 0 is lowercase, 1 is NFC Normalization, select none
         with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
-            with patch_menu_prompt(None):
+            with patch_menu_prompt(()):
                 text_processing_step.run()
         self.assertEqual(
             text_processing_step.state["filelist_data_list"][3][2],
@@ -1193,7 +1193,7 @@ class WizardTest(WizardTestBase):
                     ),
                     StepAndAnswer(
                         dataset.SoxEffectsStep(state_subset="dataset_0"),
-                        patch_menu_prompt(None),
+                        patch_menu_prompt(()),
                     ),
                     StepAndAnswer(
                         dataset.DatasetNameStep(state_subset="dataset_0"),

@@ -16,7 +16,7 @@ from glob import glob
 from multiprocessing import Manager
 from pathlib import Path
 from textwrap import dedent
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -458,7 +458,9 @@ class Preprocessor:
 
         return energy_scaler, pitch_scaler, char_length_scaler, phone_length_scaler
 
-    def normalize_stats(self, energy_scaler: Scaler, pitch_scaler: Scaler):
+    def normalize_stats(
+        self, energy_scaler: Optional[Scaler], pitch_scaler: Optional[Scaler]
+    ):
         """Normalize pitch and energy to unit variance"""
         # Note: this function is IO bound, because it is a tight loop writing small files.
         # Attempts to parallelize it make it much slower, even with only 2 threads.
@@ -910,12 +912,20 @@ class Preprocessor:
             save_tensor(input_spec, input_spec_path)
         return input_spec, output_spec
 
-    def get_process_fn(self, process):
+    def get_process_fn(self, process) -> Callable:
         if process == "text":
+            if self.text_processor is None:
+                raise NotImplementedError(
+                    "You must have a valid TextProcessor in order to calculate text."
+                )
             return functools.partial(
                 self.process_text, text_processor=self.text_processor, use_pfs=False
             )
         if process == "pfs":
+            if self.text_processor is None:
+                raise NotImplementedError(
+                    "You must have a valid TextProcessor in order to calculate pfs."
+                )
             return functools.partial(
                 self.process_text, text_processor=self.text_processor, use_pfs=True
             )
@@ -927,6 +937,7 @@ class Preprocessor:
             return functools.partial(self.process_spec)
         if process == "attn":
             return self.process_attn_prior
+        raise ValueError(f"Unknown process type {process}")
 
     def load_filelist(self, path: Path):
         try:
@@ -1058,7 +1069,7 @@ class Preprocessor:
         self,
         output_path="filelist.psv",
         cpus=min(5, mp.cpu_count()),
-        to_process=list[str],
+        to_process: list[str] = [],
         overwrite=False,
         debug=False,
     ):
@@ -1120,6 +1131,7 @@ class Preprocessor:
                 # We split out the "text" step to issue the missing symbol warnings
                 filelist = self.load_filelist(processed_filelist)
                 process_fn = self.get_process_fn(process)
+                assert self.text_processor is not None
                 missing_symbols_before = Counter(self.text_processor.missing_symbols)
                 for i, f in tqdm(
                     enumerate(filelist), desc=f"Processing {process} on 1 CPU"
