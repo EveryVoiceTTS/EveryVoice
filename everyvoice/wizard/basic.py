@@ -247,10 +247,9 @@ class ConfigFormatStep(Step):
         # Text Configuration
         symbols = {}
         multispeaker = False
-        multilingual = False
         cache_speaker = None
-        cache_language = None
-        dataset_cleaners = {}
+        dataset_cleaners: dict[str, list] = {}  # map label->cleaners
+        dataset_langs: dict[str, list[str]] = {}  # map label->lang codes
         for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
             dataset_state = self.state[dataset]
             # Get the name of the dataset, which is going to be its label
@@ -261,6 +260,10 @@ class ConfigFormatStep(Step):
                     TextProcessingStep.process_lookup[x]["fn"]
                     for x in dataset_state[StepNames.text_processing_step]
                 ]
+            # Gather languages for per-language cleaner config and determining multilingual
+            dataset_langs[dataset_name] = sorted(
+                set(item["language"] for item in dataset_state["filelist_data"])
+            )
             # Gather Symbols for Text Configuration
             # rename keys based on dataset name:
             dataset_symbols = {
@@ -268,20 +271,12 @@ class ConfigFormatStep(Step):
                 for k, v in dataset_state[StepNames.symbol_set_step].items()
             }
             symbols.update(dataset_symbols)
-            # Check if the filelists has more than one distinct speaker or language and adjust Config corrspondingly
-            if not multilingual:
-                for item in dataset_state["filelist_data"]:
-                    if (
-                        item["language"] != cache_language
-                        and cache_language is not None
-                    ):
-                        multilingual = True
-                    if cache_language is None:
-                        cache_language = item["language"]
+            # Check if the filelists has more than one distinct speaker and adjust Config corrspondingly
             if not multispeaker:
                 for item in dataset_state["filelist_data"]:
                     if item["speaker"] != cache_speaker and cache_speaker is not None:
                         multispeaker = True
+                        break
                     if cache_speaker is None:
                         cache_speaker = item["speaker"]
             # Dataset Configs
@@ -326,14 +321,38 @@ class ConfigFormatStep(Step):
         else:
             global_cleaners = DEFAULT_CLEANERS
 
+        # In the wizard, we initialize the language-specific cleaners for each
+        # language in the data based as the intersection of the dataset cleaners
+        # for datasets containing that language.
+        language_codes = sorted(
+            set(lang for langs in dataset_langs.values() for lang in langs)
+        )
+        multilingual = len(language_codes) > 1
+        language_cleaners: dict[str, list] = {}
+        for lang in language_codes:
+            datasets_containing_lang = [
+                label for label, langs in dataset_langs.items() if lang in langs
+            ]
+            language_cleaners[lang] = ordered_intersection(
+                dataset_cleaners[label] for label in datasets_containing_lang
+            )
+
+        # Remove redundant cleaner definitions to make the output config leaner
+        # and easier to read.
+        for label, cleaners in list(dataset_cleaners.items()):
+            langs = dataset_langs[label]
+            if all(cleaners == language_cleaners[lang] for lang in langs):
+                del dataset_cleaners[label]
+        for lang, cleaners in list(language_cleaners.items()):
+            if cleaners == global_cleaners:
+                del language_cleaners[lang]
+
         text_config = TextConfig(
             symbols=Symbols(**symbols),
             g2p_engines=self.state.get("custom_g2p", {}),
             cleaners=global_cleaners,
+            language_cleaners=language_cleaners,
             dataset_cleaners=dataset_cleaners,
-        )
-        language_codes = sorted(
-            set(row["language"] for row in dataset_state["filelist_data"])
         )
         strong: str = "".join(
             [
