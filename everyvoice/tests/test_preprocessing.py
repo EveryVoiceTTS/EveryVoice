@@ -929,7 +929,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             config = PreprocessingConfig(train_split=1.1)
             self.assertIn("Input should be less than or equal to 1", cout.getvalue())
 
-    def test_no_speaker(self):
+    def test_no_speaker(self) -> None:
         """Exercise getting the default speaker and languages during preprocessing"""
         # This doesn't really happen anymore because the wizard inserts speaker_0 by
         # default, or the user's selected default speaker name, and the wizard inserts
@@ -958,7 +958,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             {"item": "foo", "speaker": "baz", "language": "bar"},
         )
 
-    def test_stats(self):
+    def test_stats(self) -> None:
         """
         Tests compute_stats() and calculate_stats() for character length on 5 examples from LJ Speech.
         TODO: Expand this function to test for energy and pitch
@@ -986,12 +986,14 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 _, _, char_length_data, phone_length_data = preprocessor.compute_stats(
                     energy=False, pitch=False, char_length=True, phone_length=True
                 )
+                assert char_length_data is not None
                 char_length_stats = char_length_data.calculate_stats()
                 self.assertEqual(char_length_stats["min"], 83)
                 self.assertEqual(char_length_stats["max"], 118)
                 self.assertAlmostEqual(char_length_stats["std"], sqrt(200.5), places=4)
                 self.assertEqual(char_length_stats["mean"], 105)
 
+                assert phone_length_data is not None
                 phone_length_stats = phone_length_data.calculate_stats()
                 self.assertEqual(phone_length_stats["min"], 76)
                 self.assertEqual(phone_length_stats["max"], 111)

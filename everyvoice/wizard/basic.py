@@ -220,7 +220,7 @@ class ConfigFormatStep(Step):
     def validate(self, response):
         return response in ("yaml", "json")
 
-    def effect(self) -> None:
+    def effect(self):
         from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
         from everyvoice.model.feature_prediction.config import (
             FastSpeech2ModelConfig,
@@ -255,11 +255,10 @@ class ConfigFormatStep(Step):
             # Get the name of the dataset, which is going to be its label
             dataset_name = dataset_state[StepNames.dataset_name_step]
             # Add Cleaners
-            if dataset_state.get(StepNames.text_processing_step):
-                dataset_cleaners[dataset_name] = DEFAULT_CLEANERS + [
-                    TextProcessingStep.process_lookup[x]["fn"]
-                    for x in dataset_state[StepNames.text_processing_step]
-                ]
+            dataset_cleaners[dataset_name] = DEFAULT_CLEANERS + [
+                TextProcessingStep.process_lookup[x]["fn"]
+                for x in dataset_state.get(StepNames.text_processing_step, [])
+            ]
             # Gather languages for per-language cleaner config and determining multilingual
             dataset_langs[dataset_name] = sorted(
                 set(item["language"] for item in dataset_state["filelist_data"])
@@ -554,5 +553,5 @@ class MoreDatasetsStep(Step):
     def undo(self):
         if self.response == "yes":
             # delete the dataset from the state
-            self.tour.remove_dataset(self.children[0].state_subset)
+            self.tour.remove_dataset(self.children[0].state_subset)  # type: ignore[misc]
         super().undo()

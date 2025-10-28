@@ -1,7 +1,7 @@
 import sys
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 
 import questionary
 import yaml
@@ -96,7 +96,7 @@ class Step(_Step, NodeMixinWithNavigation):
             name = getattr(self, "DEFAULT_NAME", "default step name missing")
         name = name.value if isinstance(name, Enum) else name
         super().__init__(name)  # pyright: ignore
-        self.response = None
+        self.response: Any = None
         self.completed = False
         self.default = default
         self.parent = parent

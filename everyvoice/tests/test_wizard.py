@@ -1522,7 +1522,7 @@ class WizardTest(WizardTestBase):
             ]
             self.assertListEqual(output_filelist, expected_filelist)
 
-    def test_multilingual_multispeaker_true_config(self):
+    def test_multilingual_multispeaker_true_config(self) -> None:
         """
         Test mismatched multi-monolingual and multi-monospeaker datasets.
 
@@ -1720,7 +1720,7 @@ class WizardTest(WizardTestBase):
                 ],
             )
 
-    def test_multilingual_multispeaker_false_config(self):
+    def test_multilingual_multispeaker_false_config(self) -> None:
         """
         Test matched multi-monospeaker and multi-monolingual datasets.
 

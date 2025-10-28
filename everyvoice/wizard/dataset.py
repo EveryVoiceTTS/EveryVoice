@@ -5,7 +5,7 @@ import sys
 from copy import copy, deepcopy
 from enum import Enum
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 import questionary
 from rich import print as rich_print
@@ -455,6 +455,7 @@ class HeaderStep(Step):
             choices=choices,
             return_indices=True,
         )
+        assert isinstance(response, int)
         return choice_indices[response]
 
     def validate(self, response):
@@ -799,7 +800,7 @@ class CustomG2PStep(Step):
             else:
                 set_a_custom = "Change the custom"
                 try:
-                    current = current.__module__ + "." + current.__name__
+                    current = current.__module__ + "." + current.__name__  # type: ignore
                 except Exception as e:  # pragma: no cover
                     print(e)
                     current = "unknown"
@@ -983,18 +984,18 @@ class TextProcessingStep(Step):
         1: {"fn": nfc_normalize, "desc": "NFC Normalization"},
     }
 
-    def prompt(self):
+    def prompt(self) -> list[int]:
         return get_response_from_menu_prompt(
             prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step]}? See https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html for information about NFC normalization.",
-            choices=([process["desc"] for process in self.process_lookup.values()]),
+            choices=([process["desc"] for process in self.process_lookup.values()]),  # type: ignore
             multi=True,
             return_indices=True,
         )
 
-    def validate(self, response):
+    def validate(self, response: Any):
         return True
 
-    def effect(self):
+    def effect(self) -> None:
         from everyvoice.config.text_config import DEFAULT_CLEANERS
 
         self.saved_state = {}
@@ -1025,7 +1026,7 @@ class TextProcessingStep(Step):
                 ):
                     self.state["filelist_data_list"][i][text_index] = process_fn(
                         self.state["filelist_data_list"][i][text_index]
-                    )
+                    )  # type: ignore
         else:
             self.saved_state["filelist_data"] = deepcopy(self.state["filelist_data"])
             # Process global cleaners
@@ -1054,7 +1055,7 @@ class TextProcessingStep(Step):
                             item[
                                 self.state[StepNames.filelist_text_representation_step]
                             ]
-                        )
+                        )  # type: ignore
                     )
 
 
