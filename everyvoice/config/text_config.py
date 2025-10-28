@@ -216,18 +216,32 @@ class TextConfig(ConfigModel):
     to_replace: dict[str, str] = Field(
         default={},
         title="Global text replacements",
-        description="Map of match->replacement to apply on training and run-time text, before cleaners are applied",
+        description="Map of match->replacement to apply on training and run-time text, before cleaners are applied. Superceded by language_to_replace when processing text in a language which has language-specific text replacements, which are in turn superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.",
+    )
+    language_to_replace: dict[str, dict[str, str]] = Field(
+        default={},
+        title="Language-specific text replacements",
+        description="Map from language code to text replacement maps. Supercedes the global text replacements when defined for a given language. Superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.",
+    )
+    dataset_to_replace: dict[str, dict[str, str]] = Field(
+        default={},
+        title="Dataset-specific text replacements.",
+        description="Map from dataset label to replacement maps. Supercedes both the global text replacements and language_to_replace when defined for a given dataset.",
     )
     cleaners: list[PossiblySerializedCallable] = Field(
         default=DEFAULT_CLEANERS,
         title="Global cleaners",
-        description="List of cleaners to apply to all datasets and run-time data",
+        description="List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.",
     )
-    dataset_to_replace: dict[str, dict[str, str]] = Field(
-        default={}, title="Dataset-specific text replacements"
+    language_cleaners: dict[str, list[PossiblySerializedCallable]] = Field(
+        default={},
+        title="Language-specific cleaners",
+        description="Map from language code to cleaner lists. Supercedes the global cleaners when defined for a given language. Superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.",
     )
     dataset_cleaners: dict[str, list[PossiblySerializedCallable]] = Field(
-        default={}, title="Dataset-specific cleaners"
+        default={},
+        title="Dataset-specific cleaners",
+        description="Map from dataset label to cleaner lists. Supercedes both the global cleaners and language_cleaners when defined for a given dataset.",
     )
     g2p_engines: G2P_Engines = Field(
         default={},
