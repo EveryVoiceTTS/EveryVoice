@@ -7,6 +7,10 @@
 CUDA_VERSION=12.6
 PYTHON_VERSION=3.12
 
+version_gt() {
+    test "$(echo "$@" | tr " " "\n" | sort -V | head -n 1)" != "$1"
+}
+
 usage() {
     cat <<==EOF== >&2
 
@@ -214,7 +218,8 @@ r() {
 set -o errexit
 
 if [[ $USE_UV ]]; then
-    r uv venv --python-preference=only-managed --python="$PYTHON_VERSION" "$ENV_PREFIX"
+    version_gt "$(uv --version | sed 's|uv ||')"  "0.6.8" || { echo "Update your uv to a version >= 0.6.8" >&2 ; exit 3; }
+    r uv venv --managed-python --python="$PYTHON_VERSION" "$ENV_PREFIX"
     r source "$ENV_PREFIX"/*/activate
 
     if [[ $CUDA_TAG ]]; then
