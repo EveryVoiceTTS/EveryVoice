@@ -23,7 +23,7 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
   - With Conda, `conda install ffmpeg` is reliable.
   - Or, use the official bundles from https://www.ffmpeg.org/download.html
 
-- Install `torch` and `torchaudio` version 2.1.0 for your platform and CUDA version: follow the instructions at https://pytorch.org/get-started/locally/ but specify `torch==2.1.0 torchaudio==2.1.0` in the install command and remove `torchvision`.
+- Install `torch` and `torchaudio` version 2.8.0 for your platform and CUDA version: follow the instructions at https://pytorch.org/get-started/locally/ but specify `torch==2.8.0 torchaudio==2.8.0` in the install command and remove `torchvision`.
 
 - Run `pip install everyvoice`
 
@@ -65,10 +65,12 @@ Read the full [EveryVoice documentation](https://docs.everyvoice.ca/).
 In particular, read the [Guides](https://docs.everyvoice.ca/latest/guides/) to get familiar with the whole process.
 
 To build and view the documentation locally:
+
 ```
 pip install -e '.[docs]'
 mkdocs serve
 ```
+
 and browse to http://127.0.0.1:8000/.
 
 ## Contributing
@@ -122,17 +124,18 @@ To publish a new version of the project, follow these steps:
 
 6. **Tag the Release**
    After merging:
+
    ```bash
    git tag -a -m vX.Y.Z vX.Y.Z
    git push 'vX.Y.Z'
    ```
 
 7. **Update SchemaStore (for Major/Minor bumps)**
-    Once the CI has built and released your version, if you bumped a major or minor version:
+   Once the CI has built and released your version, if you bumped a major or minor version:
 
-    Submit a PR to [SchemaStore](https://github.com/SchemaStore/schemastore) to update the schema reference.
+   Submit a PR to [SchemaStore](https://github.com/SchemaStore/schemastore) to update the schema reference.
 
-    The only file you need to change is: `src/api/json/catalog.json`
+   The only file you need to change is: `src/api/json/catalog.json`
 
 ## Acknowledgements
 
@@ -149,8 +152,9 @@ Many thanks to:
 ## Tests
 
 There are many ways to run the unit tests, if you installed EveryVoice from source:
- - Run all the dev tests: `everyvoice/run_tests.py dev` or `everyvoice test dev`
- - Run the tests with verbose logs: `everyvoice/run_tests.py --verbose dev`
- - Show the names of the other suites you can run: `everyvoice/run_tests.py -h`
- - Run all the tests in one test file: `python -m unittest everyvoice/tests/test_<somefilename>.py`
- - Run one specific test case: `python -m unittest everyvoice.tests.<filename>.<class_name>.<function_name>`
+
+- Run all the dev tests: `everyvoice/run_tests.py dev` or `everyvoice test dev`
+- Run the tests with verbose logs: `everyvoice/run_tests.py --verbose dev`
+- Show the names of the other suites you can run: `everyvoice/run_tests.py -h`
+- Run all the tests in one test file: `python -m unittest everyvoice/tests/test_<somefilename>.py`
+- Run one specific test case: `python -m unittest everyvoice.tests.<filename>.<class_name>.<function_name>`
