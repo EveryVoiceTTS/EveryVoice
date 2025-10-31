@@ -5,7 +5,7 @@ import sys
 from copy import copy, deepcopy
 from enum import Enum
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 import questionary
 from rich import print as rich_print
@@ -46,15 +46,32 @@ class DatasetNameStep(Step):
         ).unsafe_ask()
 
     def validate(self, response):
+        # non empty test
         if len(response) == 0:
             rich_print("Sorry, your dataset needs a name.")
             return False
+
+        # slug safety test
         slug = slugify(response)
         if not slug == response:
             rich_print(
                 f"Sorry, your name: '{response}' is not valid, since it will be used to create a file and special characters are not permitted in filenames. Please re-type something like {slug} instead."
             )
             return False
+
+        # uniqueness test
+        existing_names = [
+            dataset.get(StepNames.dataset_name_step.value, "")
+            for key, dataset in self.root.state.items()
+            if key.startswith("dataset_")
+        ]
+        existing_names = list(filter(None, existing_names))
+        if response in existing_names:
+            rich_print(
+                f"Sorry, you already have another dataset called '{response}' in your project. Please choose unique names.\nDataset names so far: {existing_names}",
+            )
+            return False
+
         return True
 
     def effect(self):
@@ -304,7 +321,6 @@ class ValidateWavsStep(Step):
 
     def wav_file_early_validation(self) -> int:
         """Look for missing wav files and return the error count"""
-        assert self.state is not None  # fixes mypy errors
         wavs_dir = Path(self.state[StepNames.wavs_dir_step])
         files_not_found = []
         MAX_SAMPLES = 1000
@@ -439,6 +455,7 @@ class HeaderStep(Step):
             choices=choices,
             return_indices=True,
         )
+        assert isinstance(response, int)
         return choice_indices[response]
 
     def validate(self, response):
@@ -783,7 +800,7 @@ class CustomG2PStep(Step):
             else:
                 set_a_custom = "Change the custom"
                 try:
-                    current = current.__module__ + "." + current.__name__
+                    current = current.__module__ + "." + current.__name__  # type: ignore
                 except Exception as e:  # pragma: no cover
                     print(e)
                     current = "unknown"
@@ -967,19 +984,19 @@ class TextProcessingStep(Step):
         1: {"fn": nfc_normalize, "desc": "NFC Normalization"},
     }
 
-    def prompt(self):
+    def prompt(self) -> list[int]:
         return get_response_from_menu_prompt(
             prompt_text=f"Which of the following text transformations would like to apply to your dataset's {self.state[StepNames.filelist_text_representation_step]}? See https://withblue.ink/2019/03/11/why-you-need-to-normalize-unicode-strings.html for information about NFC normalization.",
-            choices=([process["desc"] for process in self.process_lookup.values()]),
+            choices=([process["desc"] for process in self.process_lookup.values()]),  # type: ignore
             multi=True,
             return_indices=True,
         )
 
-    def validate(self, response):
+    def validate(self, response: Any):
         return True
 
-    def effect(self):
-        from everyvoice.config.text_config import TextConfig
+    def effect(self) -> None:
+        from everyvoice.config.text_config import DEFAULT_CLEANERS
 
         self.saved_state = {}
         # Get Text Index
@@ -991,7 +1008,7 @@ class TextProcessingStep(Step):
                 self.state[StepNames.filelist_text_representation_step]
             )
             # Process global cleaners
-            global_cleaners = TextConfig().cleaners
+            global_cleaners = DEFAULT_CLEANERS
             for cleaner in global_cleaners:
                 for i in tqdm(
                     range(len(self.state["filelist_data_list"])),
@@ -1009,11 +1026,11 @@ class TextProcessingStep(Step):
                 ):
                     self.state["filelist_data_list"][i][text_index] = process_fn(
                         self.state["filelist_data_list"][i][text_index]
-                    )
+                    )  # type: ignore
         else:
             self.saved_state["filelist_data"] = deepcopy(self.state["filelist_data"])
             # Process global cleaners
-            global_cleaners = TextConfig().cleaners
+            global_cleaners = DEFAULT_CLEANERS
             for cleaner in global_cleaners:
                 for item in tqdm(
                     self.state["filelist_data"],
@@ -1038,7 +1055,7 @@ class TextProcessingStep(Step):
                             item[
                                 self.state[StepNames.filelist_text_representation_step]
                             ]
-                        )
+                        )  # type: ignore
                     )
 
 

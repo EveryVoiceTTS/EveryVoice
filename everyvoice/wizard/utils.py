@@ -241,3 +241,36 @@ def escape(text):
         return rich.markup.escape(text)
     else:
         return text
+
+
+def ordered_intersection(sets: Iterable[Iterable]) -> list:
+    """Calculate the intersection of multiple sets, preserving the order of
+    items from the first set.
+
+    >>> ordered_intersection(())
+    []
+
+    >>> ordered_intersection(([3, 2, 1], (2, 3, 4), {3, 0, 2}))
+    [3, 2]
+
+    >>> ordered_intersection([["asdf", "qwer", "zxcv"]])
+    ['asdf', 'qwer', 'zxcv']
+
+    >>> ordered_intersection([("asdf", "qwer", "zxcv", "asdf", "qwer")])
+    ['asdf', 'qwer', 'zxcv']
+
+    >>> ordered_intersection(["asdf", "fdsa", "xdsc"])
+    ['s', 'd']
+    """
+
+    set_iter = iter(sets)
+    try:
+        set_0 = next(set_iter)
+    except StopIteration:
+        return []
+
+    intersection = list(dict.fromkeys(set_0).keys())  # ordered unique list from set_0
+    for next_set in set_iter:
+        next_set_values = set(next_set)
+        intersection = [value for value in intersection if value in next_set_values]
+    return intersection
