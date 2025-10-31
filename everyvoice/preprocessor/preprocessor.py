@@ -816,6 +816,7 @@ class Preprocessor:
                 text=item[DatasetTextRepresentation.characters.value],
                 dataset_label=dataset_label,
                 apply_g2p=False,
+                lang_id=item["language"],
                 encode_as_phonological_features=False,
                 quiet=True,
             )

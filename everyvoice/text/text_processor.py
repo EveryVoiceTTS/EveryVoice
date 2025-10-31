@@ -183,6 +183,7 @@ class TextProcessor:
         apply_replace_rules: bool = True,
         apply_cleaners: bool = True,
         dataset_label: Optional[str] = None,
+        lang_id: Optional[str] = None,
     ) -> str:
         """Normalize text by applying replace rules and all defined cleaners
 
@@ -207,8 +208,8 @@ class TextProcessor:
         """
         return normalize_text_helper(
             text,
-            self.config.get_to_replace(dataset_label),
-            self.config.get_cleaners(dataset_label),
+            self.config.get_to_replace(dataset_label=dataset_label, lang_id=lang_id),
+            self.config.get_cleaners(dataset_label=dataset_label, lang_id=lang_id),
             apply_cleaners=apply_cleaners,
             apply_replace_rules=apply_replace_rules,
         )
@@ -354,7 +355,9 @@ class TextProcessor:
             )
 
         if normalize_text:
-            text = self.normalize_text(text, dataset_label=dataset_label)
+            text = self.normalize_text(
+                text, dataset_label=dataset_label, lang_id=lang_id
+            )
         if apply_g2p and lang_id is not None:
             tokens = self.apply_g2p_and_tokenization(
                 normalized_text=text,

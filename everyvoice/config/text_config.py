@@ -262,20 +262,32 @@ class TextConfig(ConfigModel):
     )
 
     def get_cleaners(
-        self, dataset_label: str | None
+        self, *, lang_id: str | None = None, dataset_label: str | None = None
     ) -> list[PossiblySerializedCallable]:
-        """Get the cleaners to apply to a given dataset"""
-        if dataset_label is None or dataset_label not in self.dataset_cleaners:
-            return self.cleaners
-        else:
-            return self.dataset_cleaners[dataset_label]
+        """Get the cleaners to apply to a given dataset and language
 
-    def get_to_replace(self, dataset_label: str | None) -> dict[str, str]:
-        """Get the to_replace filters to apply to a given dataset"""
-        if dataset_label is None or dataset_label not in self.dataset_to_replace:
-            return self.to_replace
+        Dataset has top precendence, then language, falling back to global cleaners
+        """
+        if dataset_label is not None and dataset_label in self.dataset_cleaners:
+            return self.dataset_cleaners[dataset_label]
+        elif lang_id is not None and lang_id in self.language_cleaners:
+            return self.language_cleaners[lang_id]
         else:
+            return self.cleaners
+
+    def get_to_replace(
+        self, *, lang_id: str | None = None, dataset_label: str | None = None
+    ) -> dict[str, str]:
+        """Get the to_replace filters to apply to a given dataset and language
+
+        Dataset has top precendence, then language, falling back to global cleaners
+        """
+        if dataset_label is not None and dataset_label in self.dataset_to_replace:
             return self.dataset_to_replace[dataset_label]
+        elif lang_id is not None and lang_id in self.language_to_replace:
+            return self.language_to_replace[lang_id]
+        else:
+            return self.to_replace
 
     @model_validator(mode="after")
     def clean_symbols(self) -> Self:
@@ -287,8 +299,8 @@ class TextConfig(ConfigModel):
         for k, v in self.symbols:
             if k not in ["punctuation", "silence"]:
                 dataset_label = get_label_from_symbol_key(k)
-                cleaners = self.get_cleaners(dataset_label)
-                to_replace = self.get_to_replace(dataset_label)
+                cleaners = self.get_cleaners(dataset_label=dataset_label)
+                to_replace = self.get_to_replace(dataset_label=dataset_label)
                 normalized = [normalize_text_helper(x, to_replace, cleaners) for x in v]
                 setattr(self.symbols, k, normalized)
 

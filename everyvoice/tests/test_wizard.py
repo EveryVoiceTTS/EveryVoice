@@ -1704,20 +1704,34 @@ class WizardTest(WizardTestBase):
                 ["everyvoice.utils.collapse_whitespace", "everyvoice.utils.strip_text"],
             )
             self.assertEqual(
-                text_config["dataset_cleaners"]["dataset0"],
-                [
-                    "everyvoice.utils.collapse_whitespace",
-                    "everyvoice.utils.strip_text",
-                    "everyvoice.utils.lower",
-                ],
+                text_config["dataset_cleaners"],
+                {
+                    "dataset0": [
+                        "everyvoice.utils.collapse_whitespace",
+                        "everyvoice.utils.strip_text",
+                        "everyvoice.utils.lower",
+                    ],
+                    "dataset1": [
+                        "everyvoice.utils.collapse_whitespace",
+                        "everyvoice.utils.strip_text",
+                        "everyvoice.utils.nfc_normalize",
+                    ],
+                },
             )
             self.assertEqual(
-                text_config["dataset_cleaners"]["dataset1"],
-                [
-                    "everyvoice.utils.collapse_whitespace",
-                    "everyvoice.utils.strip_text",
-                    "everyvoice.utils.nfc_normalize",
-                ],
+                text_config["language_cleaners"],
+                {
+                    "eng": [
+                        "everyvoice.utils.collapse_whitespace",
+                        "everyvoice.utils.strip_text",
+                        "everyvoice.utils.lower",
+                    ],
+                    "und": [
+                        "everyvoice.utils.collapse_whitespace",
+                        "everyvoice.utils.strip_text",
+                        "everyvoice.utils.nfc_normalize",
+                    ],
+                },
             )
 
     def test_multilingual_multispeaker_false_config(self) -> None:

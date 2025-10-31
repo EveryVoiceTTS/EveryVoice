@@ -338,13 +338,18 @@ class ConfigFormatStep(Step):
 
         # Remove redundant cleaner definitions to make the output config leaner
         # and easier to read.
-        for label, cleaners in list(dataset_cleaners.items()):
-            langs = dataset_langs[label]
-            if all(cleaners == language_cleaners[lang] for lang in langs):
-                del dataset_cleaners[label]
-        for lang, cleaners in list(language_cleaners.items()):
-            if cleaners == global_cleaners:
-                del language_cleaners[lang]
+        for cleaners in language_cleaners.values():
+            if cleaners != global_cleaners:
+                break  # found a non-redundant language cleaner -- keep them all
+        else:
+            language_cleaners.clear()  # all language cleaners are redundant
+
+            # when language cleaners are all redundant, consider removing dataset cleaners too
+            for cleaners in dataset_cleaners.values():
+                if cleaners != global_cleaners:
+                    break  # found a non-redundant dataset cleaner -- keep them all
+            else:
+                dataset_cleaners.clear()  # all dataset cleaners are redundant
 
         text_config = TextConfig(
             symbols=Symbols(**symbols),
