@@ -987,11 +987,16 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     output_path=lj_filelist, cpus=1, to_process=("audio",)
                 )
 
-            # Check that missing_files.txt was created
-            missing_files_path = tmpdir / "preprocessed" / "missing_files.txt"
-            self.assertTrue(missing_files_path.exists())
+            # Check that missing_files_*.txt was created (with timestamp)
+            missing_files_list = list(
+                (tmpdir / "preprocessed").glob("missing_files_*.txt")
+            )
+            self.assertEqual(
+                len(missing_files_list), 1, "Should have exactly one missing_files file"
+            )
+            missing_files_path = missing_files_list[0]
 
-            # Check contents of missing_files.txt
+            # Check contents of missing_files_*.txt
             with open(missing_files_path, "r", encoding="utf8") as f:
                 content = f.read()
 
@@ -1028,9 +1033,13 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     output_path=lj_filelist, cpus=1, to_process=("audio",)
                 )
 
-            # Check that missing_files.txt was NOT created
-            missing_files_path = tmpdir / "preprocessed" / "missing_files.txt"
-            self.assertFalse(missing_files_path.exists())
+            # Check that missing_files_*.txt was NOT created
+            missing_files_list = list(
+                (tmpdir / "preprocessed").glob("missing_files_*.txt")
+            )
+            self.assertEqual(
+                len(missing_files_list), 0, "Should have no missing_files files"
+            )
 
             # Check that summary doesn't mention missing files
             summary_path = tmpdir / "preprocessed" / "summary.txt"
@@ -1099,9 +1108,14 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     output_path=lj_filelist, cpus=1, to_process=("audio",)
                 )
 
-            # Check missing_files.txt created correctly
-            missing_files_path = tmpdir / "preprocessed" / "missing_files.txt"
-            self.assertTrue(missing_files_path.exists())
+            # Check missing_files_*.txt created correctly (with timestamp)
+            missing_files_list = list(
+                (tmpdir / "preprocessed").glob("missing_files_*.txt")
+            )
+            self.assertEqual(
+                len(missing_files_list), 1, "Should have exactly one missing_files file"
+            )
+            missing_files_path = missing_files_list[0]
 
             with open(missing_files_path, "r", encoding="utf8") as f:
                 content = f.read()
@@ -1121,24 +1135,36 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
     def test_no_audio_files_warning(self):
         """Test that warning is shown when no audio files are processed"""
-        preprocessor = Preprocessor(FeaturePredictionConfig(contact=self.contact))
-
-        # Duration counter is already 0 by default, no need to set it
-        # Verify it's 0
-        self.assertEqual(preprocessor.counters.value("duration"), 0)
-
-        # Create a simple report scenario that triggers the warning
-        with tempfile.TemporaryDirectory(prefix="test_warning", dir=".") as tmpdir:
+        with tempfile.TemporaryDirectory(
+            prefix="test_no_audio_warning", dir="."
+        ) as tmpdir:
             tmpdir = Path(tmpdir)
-            preprocessor.save_dir = tmpdir
+            fp_config, lj_filelist, _, _, _ = self.get_simple_config(tmpdir)
 
-            # Simulate the preprocess method's report generation
-            if "audio" in ("audio",):
-                report = "Here is a report:\n" + preprocessor.report()
-                if not preprocessor.counters.value("duration"):
-                    report += "\n\nWARNING: No audio files were processed."
+            # Create a filelist with only files that will be filtered out (empty audio)
+            # Empty audio files are filtered out which results in an empty filelist
+            # and causes SystemExit before the warning can be generated.
+            # So we test that empty audio files properly trigger the exit condition.
+            empty_audio_filelist = tmpdir / "empty-audio-metadata.psv"
+            with open(empty_audio_filelist, mode="w", encoding="utf8") as f:
+                print("basename|raw_text|characters|speaker|language", file=f)
+                # Use empty.wav which exists but will be filtered out
+                print("empty|test text|test text|speaker1|en", file=f)
 
-            self.assertIn("WARNING: No audio files were processed.", report)
+            fp_config.preprocessing.source_data[0].filelist = empty_audio_filelist
+            fp_config.preprocessing.source_data[0].data_dir = self.data_dir
+
+            # When all files are filtered out, preprocessor exits with an error
+            # This is the expected behavior when no valid audio files can be processed
+            with (
+                self.assertRaises(SystemExit),
+                capture_stdout(),
+                capture_stderr(),
+                mute_logger("everyvoice.preprocessor"),
+            ):
+                Preprocessor(fp_config).preprocess(
+                    output_path=lj_filelist, cpus=1, to_process=("audio",)
+                )
 
 
 class PreprocessingHierarchyTest(TestCase):

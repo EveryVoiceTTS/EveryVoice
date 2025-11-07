@@ -12,6 +12,7 @@ import os
 import random
 import sys
 from collections import Counter
+from datetime import datetime
 from glob import glob
 from multiprocessing import Manager
 from pathlib import Path
@@ -1133,10 +1134,12 @@ class Preprocessor:
                             for multichannel_file in self.multichannel_files_list:
                                 f.write(f"{multichannel_file}\n")
 
-                    # Save missing files list to a separate file
+                    # Save missing files list to a separate file with timestamp
                     if self.missing_files_list:
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        missing_files_filename = f"missing_files_{timestamp}.txt"
                         with open(
-                            self.save_dir / "missing_files.txt", "w", encoding="utf8"
+                            self.save_dir / missing_files_filename, "w", encoding="utf8"
                         ) as f:
                             f.write(
                                 f"Missing Audio Files ({len(self.missing_files_list)} total):\n"
