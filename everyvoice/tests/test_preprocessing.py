@@ -1052,7 +1052,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
     def test_missing_files_spec_processing(self):
         """Test missing files detected in process_spec method"""
-        preprocessor = Preprocessor(FeaturePredictionConfig(contact=self.contact))
+        preprocessor = Preprocessor(FeaturePredictionConfig(contact=TEST_CONTACT))
 
         # Test with non-existent audio file
         fake_item = {"basename": "nonexistent", "speaker": "test", "language": "en"}
@@ -1066,7 +1066,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
     def test_missing_files_report_formatting(self):
         """Test report method includes missing files section with correct formatting"""
-        preprocessor = Preprocessor(FeaturePredictionConfig(contact=self.contact))
+        preprocessor = Preprocessor(FeaturePredictionConfig(contact=TEST_CONTACT))
 
         # Manually add missing files to test report formatting
         preprocessor.missing_files_list = [
@@ -1123,7 +1123,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
     def test_empty_missing_files_list_report(self):
         """Test report method when no missing files exist"""
-        preprocessor = Preprocessor(FeaturePredictionConfig(contact=self.contact))
+        preprocessor = Preprocessor(FeaturePredictionConfig(contact=TEST_CONTACT))
 
         # Empty missing files list (default state)
         self.assertEqual(len(preprocessor.missing_files_list), 0)
