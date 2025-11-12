@@ -1,0 +1,80 @@
+- - EveryVoice Wizard
+  - 0.4.0
+- - Root
+  - null
+- - Name Step
+  - mixed-cleaners
+- - Contact Name Step
+  - EveryVoice Tester
+- - Contact Email Step
+  - info@everyvoice.ca
+- - Output Path Step
+  - .
+- - Filelist Step
+  - data/nfd-mixed-case.psv
+- - Dataset Permission Step
+  - Yes, I do have permission to use this data.
+- - Filelist Format Step
+  - psv
+- - Filelist Text Representation Step
+  - characters
+- - Text Processing Step
+  - - 0
+- - Data Has Speaker Step
+  - 'no'
+- - Know Speaker Step
+  - 'no'
+- - Data Has Language Step
+  - 'no'
+- - Select Language Step
+  - '[und]: my language isn''t here, use the default undetermined mapping'
+- - Custom G2P Step
+  - 0
+- - Wavs Dir Step
+  - data/lj/wavs
+- - Validate Wavs Step
+  - OK
+- - Symbol-Set Step
+  - true
+- - SoX Effects Step
+  - - 0
+    - 1
+    - 2
+- - Dataset Name Step
+  - lowercase-only
+- - More Datasets Step
+  - 'yes'
+- - Filelist Step
+  - data/nfd-mixed-case.psv
+- - Dataset Permission Step
+  - Yes, I do have permission to use this data.
+- - Filelist Format Step
+  - psv
+- - Filelist Text Representation Step
+  - characters
+- - Text Processing Step
+  - - 1
+- - Data Has Speaker Step
+  - 'no'
+- - Know Speaker Step
+  - 'no'
+- - Data Has Language Step
+  - 'no'
+- - Select Language Step
+  - '[und]: my language isn''t here, use the default undetermined mapping'
+- - Custom G2P Step
+  - 0
+- - Wavs Dir Step
+  - data/lj/wavs
+- - Validate Wavs Step
+  - OK
+- - Symbol-Set Step
+  - true
+- - SoX Effects Step
+  - []
+- - Dataset Name Step
+  - nfc-only
+- - More Datasets Step
+  - 'no'
+- - Config Format Step
+  - 'yaml'

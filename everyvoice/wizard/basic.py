@@ -14,7 +14,12 @@ from everyvoice.config.shared_types import (
     LoggerConfig,
     init_context,
 )
-from everyvoice.config.text_config import LanguageBoundaries
+from everyvoice.config.text_config import (
+    DEFAULT_CLEANERS,
+    LanguageBoundaries,
+    Symbols,
+    TextConfig,
+)
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.text.utils import is_sentence_final
 from everyvoice.utils import generic_psv_filelist_reader, slugify, write_filelist
@@ -32,7 +37,12 @@ from everyvoice.wizard.prompts import (
     get_response_from_menu_prompt,
 )
 from everyvoice.wizard.tour import Step
-from everyvoice.wizard.utils import escape, sanitize_paths, write_dict_to_config
+from everyvoice.wizard.utils import (
+    escape,
+    ordered_intersection,
+    sanitize_paths,
+    write_dict_to_config,
+)
 
 
 class NameStep(Step):
@@ -210,8 +220,7 @@ class ConfigFormatStep(Step):
     def validate(self, response):
         return response in ("yaml", "json")
 
-    def effect(self) -> None:
-        from everyvoice.config.text_config import Symbols, TextConfig
+    def effect(self):
         from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
         from everyvoice.model.feature_prediction.config import (
             FastSpeech2ModelConfig,
@@ -238,44 +247,35 @@ class ConfigFormatStep(Step):
         # Text Configuration
         symbols = {}
         multispeaker = False
-        multilingual = False
         cache_speaker = None
-        cache_language = None
-        global_cleaners = (
-            []
-        )  # TODO: this should be fixed by https://github.com/EveryVoiceTTS/EveryVoice/issues/359
+        dataset_cleaners: dict[str, list] = {}  # map label->cleaners
+        dataset_langs: dict[str, list[str]] = {}  # map label->lang codes
         for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
             dataset_state = self.state[dataset]
+            # Get the name of the dataset, which is going to be its label
+            dataset_name = dataset_state[StepNames.dataset_name_step]
             # Add Cleaners
-            # TODO: these should really be dataset-specific cleaners, not global cleaners
-            # so this should be fixed by https://github.com/EveryVoiceTTS/EveryVoice/issues/359
-            if dataset_state.get(StepNames.text_processing_step):
-                global_cleaners += [
-                    TextProcessingStep.process_lookup[x]["fn"]
-                    for x in dataset_state[StepNames.text_processing_step]
-                ]
+            dataset_cleaners[dataset_name] = DEFAULT_CLEANERS + [
+                TextProcessingStep.process_lookup[x]["fn"]
+                for x in dataset_state.get(StepNames.text_processing_step, [])
+            ]
+            # Gather languages for per-language cleaner config and determining multilingual
+            dataset_langs[dataset_name] = sorted(
+                set(item["language"] for item in dataset_state["filelist_data"])
+            )
             # Gather Symbols for Text Configuration
             # rename keys based on dataset name:
-            dataset_name = dataset_state[StepNames.dataset_name_step]
             dataset_symbols = {
                 f"{dataset_name}_{k}": v
                 for k, v in dataset_state[StepNames.symbol_set_step].items()
             }
             symbols.update(dataset_symbols)
-            # Check if the filelists has more than one distinct speaker or language and adjust Config corrspondingly
-            if not multilingual:
-                for item in dataset_state["filelist_data"]:
-                    if (
-                        item["language"] != cache_language
-                        and cache_language is not None
-                    ):
-                        multilingual = True
-                    if cache_language is None:
-                        cache_language = item["language"]
+            # Check if the filelists has more than one distinct speaker and adjust Config corrspondingly
             if not multispeaker:
                 for item in dataset_state["filelist_data"]:
                     if item["speaker"] != cache_speaker and cache_speaker is not None:
                         multispeaker = True
+                        break
                     if cache_speaker is None:
                         cache_speaker = item["speaker"]
             # Dataset Configs
@@ -306,7 +306,7 @@ class ConfigFormatStep(Step):
 
             datasets.append(
                 Dataset(
-                    label=dataset,
+                    label=dataset_name,
                     data_dir=wavs_dir,
                     filelist=new_filelist_path,
                     filelist_loader=filelist_loader,
@@ -315,13 +315,48 @@ class ConfigFormatStep(Step):
                 )
             )
 
+        if dataset_cleaners:
+            global_cleaners = ordered_intersection(dataset_cleaners.values())
+        else:
+            global_cleaners = DEFAULT_CLEANERS
+
+        # In the wizard, we initialize the language-specific cleaners for each
+        # language in the data based as the intersection of the dataset cleaners
+        # for datasets containing that language.
+        language_codes = sorted(
+            set(lang for langs in dataset_langs.values() for lang in langs)
+        )
+        multilingual = len(language_codes) > 1
+        language_cleaners: dict[str, list] = {}
+        for lang in language_codes:
+            datasets_containing_lang = [
+                label for label, langs in dataset_langs.items() if lang in langs
+            ]
+            language_cleaners[lang] = ordered_intersection(
+                dataset_cleaners[label] for label in datasets_containing_lang
+            )
+
+        # Remove redundant cleaner definitions to make the output config leaner
+        # and easier to read.
+        for cleaners in language_cleaners.values():
+            if cleaners != global_cleaners:
+                break  # found a non-redundant language cleaner -- keep them all
+        else:
+            language_cleaners.clear()  # all language cleaners are redundant
+
+            # when language cleaners are all redundant, consider removing dataset cleaners too
+            for cleaners in dataset_cleaners.values():
+                if cleaners != global_cleaners:
+                    break  # found a non-redundant dataset cleaner -- keep them all
+            else:
+                dataset_cleaners.clear()  # all dataset cleaners are redundant
+
         text_config = TextConfig(
             symbols=Symbols(**symbols),
             g2p_engines=self.state.get("custom_g2p", {}),
-        )
-        text_config.cleaners += global_cleaners
-        language_codes = sorted(
-            set(row["language"] for row in dataset_state["filelist_data"])
+            cleaners=global_cleaners,
+            language_cleaners=language_cleaners,
+            dataset_cleaners=dataset_cleaners,
         )
         strong: str = "".join(
             [
@@ -340,7 +375,7 @@ class ConfigFormatStep(Step):
             + text_config.symbols.punctuation.colons
         )
         text_config.boundaries = {
-            lang: LanguageBoundaries(**{"strong": strong, "weak": weak})
+            lang: LanguageBoundaries(strong=strong, weak=weak)
             for lang in language_codes
         }
         text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
@@ -475,7 +510,7 @@ class ConfigFormatStep(Step):
             Panel(
                 f"You've finished configuring your dataset. Your files are located at {config_dir.absolute()}",
                 title="Congratulations 🎉",
-                subtitle="Next Steps Documentation: https://docs.everyvoice.ca/guides",
+                subtitle="Next Steps Documentation: https://docs.everyvoice.ca/stable/guides",
                 border_style=Style(color="#0B4F19"),
             )
         )
@@ -523,5 +558,5 @@ class MoreDatasetsStep(Step):
     def undo(self):
         if self.response == "yes":
             # delete the dataset from the state
-            self.tour.remove_dataset(self.children[0].state_subset)
+            self.tour.remove_dataset(self.children[0].state_subset)  # type: ignore[misc]
         super().undo()

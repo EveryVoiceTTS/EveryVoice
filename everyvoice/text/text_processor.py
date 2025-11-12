@@ -14,12 +14,7 @@ from everyvoice.text.features import (
     PhonologicalFeatureCalculator,
 )
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES, get_g2p_engine
-from everyvoice.text.utils import (
-    apply_cleaners_helper,
-    apply_to_replace_helper,
-    normalize_text_helper,
-    symbol_sorter,
-)
+from everyvoice.text.utils import normalize_text_helper, symbol_sorter
 
 PAD_SYMBOL = "\x80"
 CHARACTER_JOINER = "/"
@@ -107,14 +102,14 @@ class TextProcessor:
         symbols = self.config.symbols.all_except_punctuation
         symbols |= set(self.punctuation_internal_hash.values())
         symbols |= self.config.symbols.punctuation.all
-        # TODO: do I need to clean the symbols? How to do this if datasets have
-        #       their own cleaners?
+        # Note: the TextConfig.clean_symbols() validator applies dataset specific
+        # cleaners to symbols if defined, global ones otherwise, so normalization has
+        # already been done before we get here.
         _hardcoded_internal_symbols = [self._pad_symbol, " "]
         self.symbols = symbol_sorter(
             list(symbols - set(_hardcoded_internal_symbols)),
             hardcoded_initial_symbols=_hardcoded_internal_symbols,
         )
-        self.to_replace = config.to_replace
         self.missing_symbols: Counter[str] = Counter()
 
         # Mappings from symbol to numeric ID and vice versa
@@ -139,13 +134,13 @@ class TextProcessor:
         )
 
     def get_missing_symbols(
-        self, text: str, normalize_text=True, quiet=False
+        self, normalized_text: str, quiet: bool = False
     ) -> list[str]:
         """Helper function to return a list of symbols missing from configuration.
 
         Args:
-            text (str): text to find missing symbols in
-            normalize_text (bool, optional): whether to normalize text first. Defaults to True.
+            normalized_text (str): text to find missing symbols in, must already be normalized
+            quiet (bool, optional): if set, don't issue warnings about each missing symbol
 
         Returns:
             list[str]: a list of missing symbols in the text. globs all adjacent missing symbols together
@@ -154,12 +149,12 @@ class TextProcessor:
         >>> tp.get_missing_symbols(' ç -- &', quiet=True)
         ['ç', '&']
         """
-        if normalize_text:
-            text = self.normalize_text(text)
-        for symbol in (missing_tokens := self._missing_symbol_finder.tokenize(text)):
+        for symbol in (
+            missing_tokens := self._missing_symbol_finder.tokenize(normalized_text)
+        ):
             if not quiet:
                 logger.warning(
-                    f"Symbol '{symbol}' occurs in the text '{text}' but was not declared in your configuration so it is being ignored."
+                    f"Symbol '{symbol}' occurs in the text '{normalized_text}' but was not declared in your configuration so it is being ignored."
                 )
             self.missing_symbols[symbol] += 1
         return missing_tokens
@@ -182,44 +177,21 @@ class TextProcessor:
             for token in tokenized_text
         ]
 
-    def apply_replacement_rules(self, text: str) -> str:
-        """Given some text and a list of replacement operations in the form of input/output key value pairs,
-           return the transformed text.
-        Args:
-            text (str): The text to be converted
-        Returns:
-            str: the replaced text
-
-        >>> tp = TextProcessor(TextConfig(to_replace={'a': 'b'}))
-        >>> tp.apply_replacement_rules('a')
-        'b'
-        """
-        return apply_to_replace_helper(text, self.to_replace)
-
-    def apply_cleaners(self, text: str) -> str:
-        """Converts some text to cleaned text
-
-        Args:
-            text (str): The text to be converted
-        Returns:
-            str: the replaced text
-
-        >>> from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
-        >>> tp = TextProcessor(TextConfig(cleaners=[collapse_whitespace, lower, nfc_normalize]))
-        >>> tp.apply_cleaners('HELLO\u0301')
-        'helló'
-        """
-        return apply_cleaners_helper(text, self.config.cleaners)
-
     def normalize_text(
-        self, text: str, apply_replace_rules=True, apply_cleaners=True
+        self,
+        text: str,
+        apply_replace_rules: bool = True,
+        apply_cleaners: bool = True,
+        dataset_label: Optional[str] = None,
+        lang_id: Optional[str] = None,
     ) -> str:
         """Normalize text by applying replace rules and all defined cleaners
 
         Args:
             text (str): un-normalized text
-            apply_replace_rules (bool, optional): Whether to apply replace rules. Defaults to True.
-            apply_cleaners (bool, optional): Whether to apply cleaners. Defaults to True.
+            apply_replace_rules (bool): Whether to apply replace rules. Defaults to True.
+            apply_cleaners (bool): Whether to apply cleaners. Defaults to True.
+            dataset_label (str, optional): if provided, use the cleaners and replace rules for that dataset
 
         Returns:
             str: normalized text ready to be tokenized
@@ -228,11 +200,16 @@ class TextProcessor:
         >>> tp = TextProcessor(TextConfig(cleaners=[collapse_whitespace, lower, nfc_normalize]))
         >>> tp.normalize_text('HELLO\u0301!')
         'helló!'
+        >>> tp = TextProcessor(TextConfig(cleaners=[lower], to_replace={"H": "J"}))
+        >>> tp.normalize_text('HELLO!', apply_replace_rules=False, apply_cleaners=True)
+        'hello!'
+        >>> tp.normalize_text('HELLO!', apply_replace_rules=True, apply_cleaners=False)
+        'JELLO!'
         """
         return normalize_text_helper(
             text,
-            self.to_replace,
-            self.config.cleaners,
+            self.config.get_to_replace(dataset_label=dataset_label, lang_id=lang_id),
+            self.config.get_cleaners(dataset_label=dataset_label, lang_id=lang_id),
             apply_cleaners=apply_cleaners,
             apply_replace_rules=apply_replace_rules,
         )
@@ -339,6 +316,7 @@ class TextProcessor:
         lang_id: Optional[str] = None,
         quiet: bool = False,
         find_missing: bool = True,
+        dataset_label: Optional[str] = None,
     ) -> list[int] | npt.NDArray[np.float32]:
         """Converts a string of text to a sequence of IDs corresponding to the symbols in the text.
         Args:
@@ -377,7 +355,9 @@ class TextProcessor:
             )
 
         if normalize_text:
-            text = self.normalize_text(text)
+            text = self.normalize_text(
+                text, dataset_label=dataset_label, lang_id=lang_id
+            )
         if apply_g2p and lang_id is not None:
             tokens = self.apply_g2p_and_tokenization(
                 normalized_text=text,

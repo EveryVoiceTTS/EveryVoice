@@ -1,6 +1,6 @@
 import importlib
 from pathlib import Path
-from typing import Annotated, Dict
+from typing import Annotated
 
 from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -125,6 +125,19 @@ class Symbols(BaseModel):
         return self
 
 
+def get_label_from_symbol_key(key: str) -> str | None:
+    """Given a symbol key like dataset1_phones or punctuation, return the dataset label
+    if key matches *_phones or *_characters where * is the label, or else None"""
+    last_underscore = key.rfind("_")
+    if last_underscore >= 1 and key[last_underscore + 1 :] in (
+        "phones",
+        "characters",
+    ):
+        return key[:last_underscore]
+    else:
+        return None
+
+
 Language = Annotated[
     str,
     Field(
@@ -195,10 +208,41 @@ def load_custom_g2p_engine(lang_id: str, qualified_g2p_func_name: str) -> G2PCal
     return validate_g2p_engine_signature(getattr(module, function_name))
 
 
+DEFAULT_CLEANERS: list[PossiblySerializedCallable] = [collapse_whitespace, strip_text]
+
+
 class TextConfig(ConfigModel):
     symbols: Symbols = Field(default_factory=Symbols)
-    to_replace: Dict[str, str] = {}  # Happens before cleaners
-    cleaners: list[PossiblySerializedCallable] = [collapse_whitespace, strip_text]
+    to_replace: dict[str, str] = Field(
+        default={},
+        title="Global text replacements",
+        description="Map of match-to-replacement to apply on training and run-time text, before cleaners are applied. Superceded by language_to_replace when processing text in a language which has language-specific text replacements, which are in turn superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.",
+    )
+    language_to_replace: dict[str, dict[str, str]] = Field(
+        default={},
+        title="Language-specific text replacements",
+        description="Map from language code to text replacement maps. Supercedes the global text replacements when defined for a given language. Superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.",
+    )
+    dataset_to_replace: dict[str, dict[str, str]] = Field(
+        default={},
+        title="Dataset-specific text replacements.",
+        description="Map from dataset label to replacement maps. Supercedes both the global text replacements and language_to_replace when defined for a given dataset.",
+    )
+    cleaners: list[PossiblySerializedCallable] = Field(
+        default=DEFAULT_CLEANERS,
+        title="Global cleaners",
+        description="List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.",
+    )
+    language_cleaners: dict[str, list[PossiblySerializedCallable]] = Field(
+        default={},
+        title="Language-specific cleaners",
+        description="Map from language code to cleaner lists. Supercedes the global cleaners when defined for a given language. Superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.",
+    )
+    dataset_cleaners: dict[str, list[PossiblySerializedCallable]] = Field(
+        default={},
+        title="Dataset-specific cleaners",
+        description="Map from dataset label to cleaner lists. Supercedes both the global cleaners and language_cleaners when defined for a given dataset.",
+    )
     g2p_engines: G2P_Engines = Field(
         default={},
         title="External G2P",
@@ -217,6 +261,34 @@ class TextConfig(ConfigModel):
         examples=["""{'eng': {'strong': '!?.', 'weak': ':;,'}}'"""],
     )
 
+    def get_cleaners(
+        self, *, lang_id: str | None = None, dataset_label: str | None = None
+    ) -> list[PossiblySerializedCallable]:
+        """Get the cleaners to apply to a given dataset and language
+
+        Dataset has top precendence, then language, falling back to global cleaners
+        """
+        if dataset_label is not None and dataset_label in self.dataset_cleaners:
+            return self.dataset_cleaners[dataset_label]
+        elif lang_id is not None and lang_id in self.language_cleaners:
+            return self.language_cleaners[lang_id]
+        else:
+            return self.cleaners
+
+    def get_to_replace(
+        self, *, lang_id: str | None = None, dataset_label: str | None = None
+    ) -> dict[str, str]:
+        """Get the to_replace filters to apply to a given dataset and language
+
+        Dataset has top precendence, then language, falling back to global cleaners
+        """
+        if dataset_label is not None and dataset_label in self.dataset_to_replace:
+            return self.dataset_to_replace[dataset_label]
+        elif lang_id is not None and lang_id in self.language_to_replace:
+            return self.language_to_replace[lang_id]
+        else:
+            return self.to_replace
+
     @model_validator(mode="after")
     def clean_symbols(self) -> Self:
         """We should apply all cleaners to the symbols
@@ -226,15 +298,18 @@ class TextConfig(ConfigModel):
         """
         for k, v in self.symbols:
             if k not in ["punctuation", "silence"]:
-                normalized = [
-                    normalize_text_helper(x, self.to_replace, self.cleaners) for x in v
-                ]
+                dataset_label = get_label_from_symbol_key(k)
+                cleaners = self.get_cleaners(dataset_label=dataset_label)
+                to_replace = self.get_to_replace(dataset_label=dataset_label)
+                normalized = [normalize_text_helper(x, to_replace, cleaners) for x in v]
+                setattr(self.symbols, k, normalized)
+
                 if "" in normalized or len(normalized) != len(set(normalized)):
                     logger.warning(
                         f"Normalization created a duplicate or inserted '' in {k}={normalized}. "
                         "Please check your shared-text config for problems."
                     )
-                setattr(self.symbols, k, normalized)
+
         return self
 
     @model_validator(mode="after")

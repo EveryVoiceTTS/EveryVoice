@@ -6,6 +6,7 @@ from unittest import TestCase, main
 import everyvoice.demo.app
 import everyvoice.text
 import everyvoice.utils
+import everyvoice.wizard.utils
 
 
 class RunDocTests(TestCase):
@@ -17,6 +18,7 @@ class RunDocTests(TestCase):
             everyvoice.text.text_processor,
             everyvoice.text.utils,
             everyvoice.utils,
+            everyvoice.wizard.utils,
         ):
             with self.subTest(
                 "Running doctests in", module=module_with_doctests.__name__

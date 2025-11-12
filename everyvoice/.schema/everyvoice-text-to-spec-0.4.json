@@ -896,15 +896,65 @@
             "type": "string"
           },
           "default": {},
-          "title": "To Replace",
+          "description": "Map of match-to-replacement to apply on training and run-time text, before cleaners are applied. Superceded by language_to_replace when processing text in a language which has language-specific text replacements, which are in turn superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.",
+          "title": "Global text replacements",
+          "type": "object"
+        },
+        "language_to_replace": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "default": {},
+          "description": "Map from language code to text replacement maps. Supercedes the global text replacements when defined for a given language. Superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.",
+          "title": "Language-specific text replacements",
+          "type": "object"
+        },
+        "dataset_to_replace": {
+          "additionalProperties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "default": {},
+          "description": "Map from dataset label to replacement maps. Supercedes both the global text replacements and language_to_replace when defined for a given dataset.",
+          "title": "Dataset-specific text replacements.",
           "type": "object"
         },
         "cleaners": {
+          "description": "List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.",
           "items": {
             "type": "string"
           },
-          "title": "Cleaners",
+          "title": "Global cleaners",
           "type": "array"
+        },
+        "language_cleaners": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "default": {},
+          "description": "Map from language code to cleaner lists. Supercedes the global cleaners when defined for a given language. Superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.",
+          "title": "Language-specific cleaners",
+          "type": "object"
+        },
+        "dataset_cleaners": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "default": {},
+          "description": "Map from dataset label to cleaner lists. Supercedes both the global cleaners and language_cleaners when defined for a given dataset.",
+          "title": "Dataset-specific cleaners",
+          "type": "object"
         },
         "g2p_engines": {
           "additionalProperties": {

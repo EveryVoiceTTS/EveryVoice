@@ -15,6 +15,7 @@ from types import MethodType
 from typing import Callable, Iterable, NamedTuple, Optional, Sequence
 from unittest import TestCase, main
 
+import yaml
 from anytree import PreOrderIter, RenderTree
 from packaging.version import Version
 
@@ -34,6 +35,7 @@ from everyvoice.tests.stubs import (
     patch_menu_prompt,
     patch_questionary,
     silence_c_stderr,
+    silence_c_stdout,
 )
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.wizard import StepNames as SN
@@ -493,6 +495,27 @@ class WizardTest(WizardTestBase):
         self.assertIn("is not valid", output[1])
         self.assertIn("finished the configuration", "".join(output[2:]))
         self.assertTrue(step.completed)
+
+    def test_unique_dataset_name(self):
+        tour = Tour(
+            name="non-unique",
+            steps=[
+                dataset.DatasetNameStep(state_subset="dataset_0"),
+                dataset.DatasetNameStep(state_subset="dataset_1"),
+                dataset.DatasetNameStep(state_subset="dataset_2"),
+            ],
+        )
+        with patch_questionary("set1"), silence_c_stdout():
+            tour.steps[0].run()
+        self.assertEqual(tour.state["dataset_0"][SN.dataset_name_step], "set1")
+        with patch_questionary(("set1", "set2")), capture_stdout() as out:
+            tour.steps[1].run()
+        self.assertIn("Please choose unique", flatten_log(out.getvalue()))
+        self.assertEqual(tour.state["dataset_1"][SN.dataset_name_step], "set2")
+        with patch_questionary(("set1", "set2", "set3")), capture_stdout() as out:
+            tour.steps[2].run()
+        self.assertIn("Please choose unique", flatten_log(out.getvalue()))
+        self.assertEqual(tour.state["dataset_2"][SN.dataset_name_step], "set3")
 
     def test_speaker_name(self):
         step = dataset.AddSpeakerStep()
@@ -1499,7 +1522,7 @@ class WizardTest(WizardTestBase):
             ]
             self.assertListEqual(output_filelist, expected_filelist)
 
-    def test_multilingual_multispeaker_true_config(self):
+    def test_multilingual_multispeaker_true_config(self) -> None:
         """
         Test mismatched multi-monolingual and multi-monospeaker datasets.
 
@@ -1540,9 +1563,7 @@ class WizardTest(WizardTestBase):
                     children_answers=[
                         RecursiveAnswers(patch_menu_prompt(3)),  # festival format
                         RecursiveAnswers(patch_menu_prompt(0)),  # characters
-                        RecursiveAnswers(
-                            patch_menu_prompt(())
-                        ),  # no text preprocessing
+                        RecursiveAnswers(patch_menu_prompt((1,))),  # nfc text prepro
                         RecursiveAnswers(
                             null_patch(),  # no speaker column Q for festival format
                             children_answers=[
@@ -1616,7 +1637,7 @@ class WizardTest(WizardTestBase):
                 ),
                 StepAndAnswer(
                     dataset.TextProcessingStep(state_subset="dataset_0"),
-                    patch_menu_prompt(()),
+                    patch_menu_prompt((0,)),  # lowercase text prepro
                 ),
                 StepAndAnswer(
                     dataset.SymbolSetStep(state_subset="dataset_0"),
@@ -1672,7 +1693,48 @@ class WizardTest(WizardTestBase):
             self.assertIn("multilingual: true", text_to_spec_config)
             self.assertIn("multispeaker: true", text_to_spec_config)
 
-    def test_multilingual_multispeaker_false_config(self):
+            # Assertions about dataset-specific and global cleaners
+            with open(
+                tmpdir / "out/project/config/everyvoice-shared-text.yaml",
+                encoding="utf8",
+            ) as f:
+                text_config = yaml.load(f, Loader=yaml.FullLoader)
+            self.assertEqual(
+                text_config["cleaners"],
+                ["everyvoice.utils.collapse_whitespace", "everyvoice.utils.strip_text"],
+            )
+            self.assertEqual(
+                text_config["dataset_cleaners"],
+                {
+                    "dataset0": [
+                        "everyvoice.utils.collapse_whitespace",
+                        "everyvoice.utils.strip_text",
+                        "everyvoice.utils.lower",
+                    ],
+                    "dataset1": [
+                        "everyvoice.utils.collapse_whitespace",
+                        "everyvoice.utils.strip_text",
+                        "everyvoice.utils.nfc_normalize",
+                    ],
+                },
+            )
+            self.assertEqual(
+                text_config["language_cleaners"],
+                {
+                    "eng": [
+                        "everyvoice.utils.collapse_whitespace",
+                        "everyvoice.utils.strip_text",
+                        "everyvoice.utils.lower",
+                    ],
+                    "und": [
+                        "everyvoice.utils.collapse_whitespace",
+                        "everyvoice.utils.strip_text",
+                        "everyvoice.utils.nfc_normalize",
+                    ],
+                },
+            )
+
+    def test_multilingual_multispeaker_false_config(self) -> None:
         """
         Test matched multi-monospeaker and multi-monolingual datasets.
 
