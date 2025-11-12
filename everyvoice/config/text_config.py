@@ -216,7 +216,7 @@ class TextConfig(ConfigModel):
     to_replace: dict[str, str] = Field(
         default={},
         title="Global text replacements",
-        description="Map of match->replacement to apply on training and run-time text, before cleaners are applied. Superceded by language_to_replace when processing text in a language which has language-specific text replacements, which are in turn superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.",
+        description="Map of match-to-replacement to apply on training and run-time text, before cleaners are applied. Superceded by language_to_replace when processing text in a language which has language-specific text replacements, which are in turn superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.",
     )
     language_to_replace: dict[str, dict[str, str]] = Field(
         default={},

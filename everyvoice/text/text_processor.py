@@ -200,11 +200,11 @@ class TextProcessor:
         >>> tp = TextProcessor(TextConfig(cleaners=[collapse_whitespace, lower, nfc_normalize]))
         >>> tp.normalize_text('HELLO\u0301!')
         'helló!'
-        >>> tp.normalize_text('HELLO\u0301!', apply_replace_rules=False, apply_cleaners=True)
-        'helló!'
-        >>> tp = TextProcessor(TextConfig(to_replace={'a': 'b'}))
-        >>> tp.normalize_text('a', apply_replace_rules=True, apply_cleaners=False)
-        'b'
+        >>> tp = TextProcessor(TextConfig(cleaners=[lower], to_replace={"H": "J"}))
+        >>> tp.normalize_text('HELLO!', apply_replace_rules=False, apply_cleaners=True)
+        'hello!'
+        >>> tp.normalize_text('HELLO!', apply_replace_rules=True, apply_cleaners=False)
+        'JELLO!'
         """
         return normalize_text_helper(
             text,
