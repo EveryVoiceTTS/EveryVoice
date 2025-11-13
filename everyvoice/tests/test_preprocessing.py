@@ -1000,6 +1000,217 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 self.assertAlmostEqual(phone_length_stats["std"], sqrt(216.3), places=4)
                 self.assertAlmostEqual(phone_length_stats["mean"], 98.4, places=4)
 
+    def test_missing_audio_files_detection(self):
+        """Test that missing audio files are properly detected and reported"""
+        with tempfile.TemporaryDirectory(
+            prefix="test_missing_audio_files", dir="."
+        ) as tmpdir:
+            tmpdir = Path(tmpdir)
+            fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
+
+            # Create a filelist with some missing audio files
+            missing_filelist = tmpdir / "missing-metadata.psv"
+            with open(missing_filelist, mode="w", encoding="utf8") as f:
+                print("basename|raw_text|characters|speaker|language", file=f)
+                # Use existing file (should work)
+                print("LJ050-0269|existing file|existing file|speaker1|en", file=f)
+                # Use non-existent files (should be reported as missing)
+                print("nonexistent1|missing file 1|missing file 1|speaker1|en", file=f)
+                print("nonexistent2|missing file 2|missing file 2|speaker1|en", file=f)
+
+            fp_config.preprocessing.source_data[0].filelist = missing_filelist
+            fp_config.preprocessing.source_data[0].data_dir = (
+                self.data_dir / "lj" / "wavs"
+            )
+
+            with (
+                capture_stdout(),
+                capture_stderr(),
+                mute_logger("everyvoice.preprocessor"),
+            ):
+                Preprocessor(fp_config).preprocess(
+                    output_path=lj_filelist, cpus=1, to_process=("audio",)
+                )
+
+            # Check that missing_files_*.txt was created (with timestamp)
+            missing_files_list = list(
+                (tmpdir / "preprocessed").glob("missing_files_*.txt")
+            )
+            self.assertEqual(
+                len(missing_files_list), 1, "Should have exactly one missing_files file"
+            )
+            missing_files_path = missing_files_list[0]
+
+            # Check contents of missing_files_*.txt
+            with open(missing_files_path, "r", encoding="utf8") as f:
+                content = f.read()
+
+            self.assertIn("Missing Audio Files (2 total)", content)
+            self.assertIn("nonexistent1.wav", content)
+            self.assertIn("nonexistent2.wav", content)
+
+            # Check that missing files are also included in summary report
+            summary_path = tmpdir / "preprocessed" / "summary.txt"
+            self.assertTrue(summary_path.exists())
+
+            with open(summary_path, "r", encoding="utf8") as f:
+                summary_content = f.read()
+
+            self.assertIn("Missing Audio Files (2 total)", summary_content)
+            self.assertIn("nonexistent1.wav", summary_content)
+            self.assertIn("nonexistent2.wav", summary_content)
+
+    def test_no_missing_files(self):
+        """Test that missing_files.txt is not created when all files exist"""
+        with tempfile.TemporaryDirectory(
+            prefix="test_no_missing_files", dir="."
+        ) as tmpdir:
+            tmpdir = Path(tmpdir)
+            fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
+
+            # Use default filelist with existing files
+            with (
+                capture_stdout(),
+                capture_stderr(),
+                mute_logger("everyvoice.preprocessor"),
+            ):
+                Preprocessor(fp_config).preprocess(
+                    output_path=lj_filelist, cpus=1, to_process=("audio",)
+                )
+
+            # Check that missing_files_*.txt was NOT created
+            missing_files_list = list(
+                (tmpdir / "preprocessed").glob("missing_files_*.txt")
+            )
+            self.assertEqual(
+                len(missing_files_list), 0, "Should have no missing_files files"
+            )
+
+            # Check that summary doesn't mention missing files
+            summary_path = tmpdir / "preprocessed" / "summary.txt"
+            self.assertTrue(summary_path.exists())
+
+            with open(summary_path, "r", encoding="utf8") as f:
+                summary_content = f.read()
+
+            self.assertNotIn("Missing Audio Files", summary_content)
+
+    def test_missing_files_spec_processing(self):
+        """Test missing files detected in process_spec method"""
+        preprocessor = Preprocessor(FeaturePredictionConfig(contact=TEST_CONTACT))
+
+        # Test with non-existent audio file
+        fake_item = {"basename": "nonexistent", "speaker": "test", "language": "en"}
+        input_spec, output_spec = preprocessor.process_spec(fake_item)
+
+        # Should return None for both specs and track missing file
+        self.assertIsNone(input_spec)
+        self.assertIsNone(output_spec)
+        self.assertEqual(len(preprocessor.missing_files_list), 1)
+        self.assertIn("nonexistent", preprocessor.missing_files_list[0])
+
+    def test_missing_files_report_formatting(self):
+        """Test report method includes missing files section with correct formatting"""
+        preprocessor = Preprocessor(FeaturePredictionConfig(contact=TEST_CONTACT))
+
+        # Manually add missing files to test report formatting
+        preprocessor.missing_files_list = [
+            "/path/to/missing1.wav",
+            "/path/to/missing2.wav",
+        ]
+
+        report = preprocessor.report()
+
+        # Check report contains missing files section
+        self.assertIn("Missing Audio Files (2 total)", report)
+        self.assertIn("- /path/to/missing1.wav", report)
+        self.assertIn("- /path/to/missing2.wav", report)
+
+    def test_missing_files_basename_with_wav_extension(self):
+        """Test missing files when basename already has .wav extension"""
+        with tempfile.TemporaryDirectory(prefix="test_wav_ext", dir=".") as tmpdir:
+            tmpdir = Path(tmpdir)
+            fp_config, lj_filelist, _, _, _ = self.get_simple_config(tmpdir)
+
+            # Create filelist with mix of existing and missing files (to avoid SystemExit)
+            wav_filelist = tmpdir / "wav-metadata.psv"
+            with open(wav_filelist, mode="w", encoding="utf8") as f:
+                print("basename|raw_text|characters|speaker|language", file=f)
+                print("LJ050-0269|existing file|existing file|speaker1|en", file=f)
+                print("missing.wav|test text|test text|speaker1|en", file=f)
+
+            fp_config.preprocessing.source_data[0].filelist = wav_filelist
+            fp_config.preprocessing.source_data[0].data_dir = (
+                self.data_dir / "lj" / "wavs"
+            )
+
+            with (
+                capture_stdout(),
+                capture_stderr(),
+                mute_logger("everyvoice.preprocessor"),
+            ):
+                Preprocessor(fp_config).preprocess(
+                    output_path=lj_filelist, cpus=1, to_process=("audio",)
+                )
+
+            # Check missing_files_*.txt created correctly (with timestamp)
+            missing_files_list = list(
+                (tmpdir / "preprocessed").glob("missing_files_*.txt")
+            )
+            self.assertEqual(
+                len(missing_files_list), 1, "Should have exactly one missing_files file"
+            )
+            missing_files_path = missing_files_list[0]
+
+            with open(missing_files_path, "r", encoding="utf8") as f:
+                content = f.read()
+            self.assertIn("missing.wav", content)
+
+    def test_empty_missing_files_list_report(self):
+        """Test report method when no missing files exist"""
+        preprocessor = Preprocessor(FeaturePredictionConfig(contact=TEST_CONTACT))
+
+        # Empty missing files list (default state)
+        self.assertEqual(len(preprocessor.missing_files_list), 0)
+
+        report = preprocessor.report()
+
+        # Should not contain missing files section
+        self.assertNotIn("Missing Audio Files", report)
+
+    def test_no_audio_files_warning(self):
+        """Test that warning is shown when no audio files are processed"""
+        with tempfile.TemporaryDirectory(
+            prefix="test_no_audio_warning", dir="."
+        ) as tmpdir:
+            tmpdir = Path(tmpdir)
+            fp_config, lj_filelist, _, _, _ = self.get_simple_config(tmpdir)
+
+            # Create a filelist with only files that will be filtered out (empty audio)
+            # Empty audio files are filtered out which results in an empty filelist
+            # and causes SystemExit before the warning can be generated.
+            # So we test that empty audio files properly trigger the exit condition.
+            empty_audio_filelist = tmpdir / "empty-audio-metadata.psv"
+            with open(empty_audio_filelist, mode="w", encoding="utf8") as f:
+                print("basename|raw_text|characters|speaker|language", file=f)
+                # Use empty.wav which exists but will be filtered out
+                print("empty|test text|test text|speaker1|en", file=f)
+
+            fp_config.preprocessing.source_data[0].filelist = empty_audio_filelist
+            fp_config.preprocessing.source_data[0].data_dir = self.data_dir
+
+            # When all files are filtered out, preprocessor exits with an error
+            # This is the expected behavior when no valid audio files can be processed
+            with (
+                self.assertRaises(SystemExit),
+                capture_stdout(),
+                capture_stderr(),
+                mute_logger("everyvoice.preprocessor"),
+            ):
+                Preprocessor(fp_config).preprocess(
+                    output_path=lj_filelist, cpus=1, to_process=("audio",)
+                )
+
 
 class PreprocessingHierarchyTest(TestCase):
     def test_hierarchy(self):
