@@ -48,6 +48,10 @@ dependencies = [
   "anytree>=2.12.1",
   "click<8.2.0",
   "einops==0.5.0",
+  # FastAPI 0.119.0 removes Pydantic v1 support but somehow breaks Pydantic 2.7 compatibility
+  # We don't directly use fastapi but we indirectly depend on it through gradio and readalongs
+  # and we need to pin it to avoid breaking loading EveryVoice models.
+  "fastapi<0.119.0",
   "g2p~=2.0",
   "gradio>=5.9.1",
   "grapheme>=0.6.0",

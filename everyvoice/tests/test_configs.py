@@ -36,7 +36,6 @@ from everyvoice.tests.stubs import (
     TEST_CONTACT,
     TEST_DATA_DIR,
     mute_logger,
-    silence_c_stderr,
 )
 from everyvoice.utils import (
     expand_config_string_syntax,
@@ -379,7 +378,7 @@ class LoadConfigTest(TestCase):
             self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
             self.assertFalse(Path(training["training_filelist"]).is_absolute())
             self.assertFalse(Path(training["validation_filelist"]).is_absolute())
-        with silence_c_stderr():
+        with mute_logger("everyvoice.configs.text_config"):
             config = FeaturePredictionConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
         self.assertEqual(config.preprocessing.dataset, self.DATASET_NAME)
@@ -425,7 +424,7 @@ class LoadConfigTest(TestCase):
             self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
             self.assertFalse(Path(training["training_filelist"]).is_absolute())
             self.assertFalse(Path(training["validation_filelist"]).is_absolute())
-        with silence_c_stderr():
+        with mute_logger("everyvoice.config.text_config"):
             config = EveryVoiceConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
         self.assertTrue(isinstance(config, EveryVoiceConfig))
