@@ -104,11 +104,12 @@ jobs:
       - name: Determine changed files
         id: file_changes
         run: |
+          echo "event_name: ${{ github.event_name }}"
           case '${{ github.event_name }}' in
             pull_request)
-              echo "CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.sha }})" >> $GITHUB_OUTPUT ;;
+              echo "CHANGED_FILES='$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.sha }})'" >> $GITHUB_OUTPUT ;;
             push)
-              echo "CHANGED_FILES=$(git diff --name-only HEAD~1...HEAD)" >> $GITHUB_OUTPUT ;;
+              echo "CHANGED_FILES='$(git diff --name-only HEAD~1...HEAD)'" >> $GITHUB_OUTPUT ;;
             *)
               echo "CHANGED_FILES=''" >> $GITHUB_OUTPUT ;;
           esac
