@@ -114,6 +114,7 @@ jobs:
   # Automated due diligence: Make sure we don't introduce dependencies with incompatible licenses.
   # But: Ignore packages where auto analysis does not work but manual analysis says OK.
   # And: Ignore nvidia-*-cu12 packages used by the GPU back-end: OTHER/PROPRIETARY LICENSE
+  # And: llvmlite crashes licensecheck at the moment, but its license is OK so skip it.
   licensecheck:
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -128,6 +129,7 @@ jobs:
         run: |
           licensecheck --requirements-paths pyproject.toml --zero \
             --ignore-packages text-unidecode pympi-ling pyworld pyworld-prebuilt pysdtw audioread anytree gradio \
+            --skip-dependencies llvmlite \
             --ignore-licenses OTHER/PROPRIETARY || \
           ! echo "Package(s) listed with an X above is/are potentially a problem. Please review their licenses for compatibility with EveryVoice."
       - name: Make sure the PROPRIETARY packages are the known ones
