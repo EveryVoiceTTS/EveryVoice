@@ -107,10 +107,14 @@ jobs:
           echo "event_name: ${{ github.event_name }}"
           case '${{ github.event_name }}' in
             pull_request)
+              echo base.sha ${{ github.event.pull_request.base.sha }} head.sha ${{ github.sha }}
+              git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.sha }}
               echo "CHANGED_FILES='$(git diff --name-only ${{ github.event.pull_request.base.sha }}...${{ github.sha }})'" >> $GITHUB_OUTPUT ;;
             push)
+              git diff --name-only HEAD~1...HEAD
               echo "CHANGED_FILES='$(git diff --name-only HEAD~1...HEAD)'" >> $GITHUB_OUTPUT ;;
             *)
+              echo other leave it empty
               echo "CHANGED_FILES=''" >> $GITHUB_OUTPUT ;;
           esac
           echo "Changed files: $CHANGED_FILES"
