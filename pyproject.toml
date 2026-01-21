@@ -52,9 +52,13 @@ dependencies = [
   # We don't directly use fastapi but we indirectly depend on it through gradio and readalongs
   # and we need to pin it to avoid breaking loading EveryVoice models.
   "fastapi<0.119.0",
-  "g2p~=2.0",
+  "g2p>=2.3.1,<3",
   "gradio>=5.9.1",
   "grapheme>=0.6.0",
+  # We have used the panphon 0.20 phonological feature definition from the beginning.
+  # Changing to 0.21 is a breaking change because it affects model inputs
+  # TODO: determine if we should instead bump to 0.21, at the risk of invalidation PFS models trained before.
+  "ilt-panphon==0.20.1",
   "ipatok>=0.4.1",
   "librosa==0.11.0",
   "lightning>=2.1.0",
@@ -65,7 +69,6 @@ dependencies = [
   "numpy<2",                       # torch < 2.4.1 requires numpy < 2 but fails to declare it
   "packaging>=22.0",
   "pandas~=2.0",
-  "panphon==0.20.0",
   "protobuf~=4.25",                # https://github.com/EveryVoiceTTS/EveryVoice/issues/387
   "pycountry==22.3.5",
   "pydantic[email]>=2.4.2,<2.8.0",
