@@ -170,12 +170,18 @@ def _diagnostic_conda() -> None:
 
 @app.callback(invoke_without_command=True)
 def main(
-    version: Optional[bool] = typer.Option(
-        None, "--version", "-v", help="Print the version of EveryVoice and exit."
-    ),
-    diagnostic: Optional[bool] = typer.Option(
-        None, "--diagnostic", "-d", help="Print diagnostic information and exit."
-    ),
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version", "-v", help="Print the version of EveryVoice and exit."
+        ),
+    ] = False,
+    diagnostic: Annotated[
+        bool,
+        typer.Option(
+            "--diagnostic", "-d", help="Print diagnostic information and exit."
+        ),
+    ] = False,
 ):
     """The top-level function that gets called first"""
     if version:
@@ -212,32 +218,38 @@ def main(
     """,
 )
 def evaluate(
-    audio_file: Optional[Path] = typer.Option(
-        None,
-        "--audio-file",
-        "-f",
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        help="The path to a single audio file for evaluation.",
-    ),
-    audio_directory: Optional[Path] = typer.Option(
-        None,
-        "--audio-directory",
-        "-d",
-        file_okay=False,
-        dir_okay=True,
-        help="The directory where multiple audio files are located for evaluation",
-    ),
-    non_matching_reference: Optional[Path] = typer.Option(
-        None,
-        "--non-matching-reference",
-        "-r",
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        help="The path to a Non Mathing Reference audio file, required for MOS prediction.",
-    ),
+    audio_file: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--audio-file",
+            "-f",
+            exists=True,
+            dir_okay=False,
+            file_okay=True,
+            help="The path to a single audio file for evaluation.",
+        ),
+    ] = None,
+    audio_directory: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--audio-directory",
+            "-d",
+            file_okay=False,
+            dir_okay=True,
+            help="The directory where multiple audio files are located for evaluation",
+        ),
+    ] = None,
+    non_matching_reference: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--non-matching-reference",
+            "-r",
+            exists=True,
+            dir_okay=False,
+            file_okay=True,
+            help="The path to a Non Mathing Reference audio file, required for MOS prediction.",
+        ),
+    ] = None,
 ):
     from tabulate import tabulate
     from tqdm import tqdm
@@ -412,21 +424,23 @@ app.add_typer(
 """,
 )
 def new_project(
-    trace: bool = typer.Option(
-        False, help="Enable question tree trace mode.", hidden=True
-    ),
-    debug_state: bool = typer.Option(
-        False, help="Enable wizard state debug/trace mode.", hidden=True
-    ),
-    resume_from: Optional[Path] = typer.Option(
-        None,
-        "--resume-from",
-        "-r",
-        exists=True,
-        dir_okay=False,
-        file_okay=True,
-        help="Resume from previously saved progress.",
-    ),
+    trace: Annotated[
+        bool, typer.Option(help="Enable question tree trace mode.", hidden=True)
+    ] = False,
+    debug_state: Annotated[
+        bool, typer.Option(help="Enable wizard state debug/trace mode.", hidden=True)
+    ] = False,
+    resume_from: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--resume-from",
+            "-r",
+            exists=True,
+            dir_okay=False,
+            file_okay=True,
+            help="Resume from previously saved progress.",
+        ),
+    ] = None,
 ):
     from everyvoice.wizard.main_tour import get_main_wizard_tour
 
@@ -638,33 +652,44 @@ AllowedDemoOutputFormats = Enum(  # type: ignore
 @app.command()
 @merge_args(inference_base_command_interface)
 def demo(
-    text_to_spec_model: Path = typer.Argument(
-        ...,
-        file_okay=True,
-        exists=True,
-        dir_okay=False,
-        help="The path to a trained text-to-spec (i.e., feature prediction) EveryVoice model.",
-    ),
-    spec_to_wav_model: Path = typer.Argument(
-        ...,
-        help="The path to a trained vocoder.",
-        dir_okay=False,
-        file_okay=True,
-    ),
-    allowlist: Path = typer.Option(
-        None,
-        "--allowlist",
-        file_okay=True,
-        dir_okay=False,
-        help="A plain text file containing a list of words or utterances to allow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are disallowed.",
-    ),
-    denylist: Path = typer.Option(
-        None,
-        "--denylist",
-        file_okay=True,
-        dir_okay=False,
-        help="A plain text file containing a list of words or utterances to disallow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are allowed. IMPORTANT: there are many ways to 'hack' the denylist that we do not protect against. We suggest using the 'allowlist' instead for maximum security if you know the full list of utterances you want to allow synthesis for.",
-    ),
+    text_to_spec_model: Annotated[
+        Path,
+        typer.Argument(
+            exists=True,
+            dir_okay=False,
+            file_okay=True,
+            help="The path to a trained text-to-spec (i.e., feature prediction) EveryVoice model.",
+        ),
+    ],
+    spec_to_wav_model: Annotated[
+        Path,
+        typer.Argument(
+            help="The path to a trained vocoder.",
+            exists=True,
+            dir_okay=False,
+            file_okay=True,
+        ),
+    ],
+    allowlist: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--allowlist",
+            exists=True,
+            dir_okay=False,
+            file_okay=True,
+            help="A plain text file containing a list of words or utterances to allow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are disallowed.",
+        ),
+    ] = None,
+    denylist: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--denylist",
+            exists=True,
+            dir_okay=False,
+            file_okay=True,
+            help="A plain text file containing a list of words or utterances to disallow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are allowed. IMPORTANT: there are many ways to 'hack' the denylist that we do not protect against. We suggest using the 'allowlist' instead for maximum security if you know the full list of utterances you want to allow synthesis for.",
+        ),
+    ] = None,
     languages: list[str] = typer.Option(
         ["all"],
         "--language",
@@ -709,14 +734,15 @@ def demo(
         "-n",
         help="The server name to run the demo on. This is useful if you want to run the demo on a specific IP address.",
     ),
-    ui_config_file: Optional[Path] = typer.Option(
-        None,
-        "--ui-config-file",
-        "-C",
-        file_okay=True,
-        dir_okay=False,
-        exists=True,
-        help="""A path to a configuration file that will be used to override parts of the default configuration for the demo UI. This is useful if you want to override some of the text in the UI.
+    ui_config_file: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--ui-config-file",
+            "-C",
+            exists=True,
+            dir_okay=False,
+            file_okay=True,
+            help="""A path to a configuration file that will be used to override parts of the default configuration for the demo UI. This is useful if you want to override some of the text in the UI.
         The config file should be a valid JSON FORMAT. The expected optional values and types are:
 
             "app_title": string,
@@ -733,7 +759,8 @@ def demo(
             "file_output_label": string
 
         """,
-    ),
+        ),
+    ] = None,
     **kwargs,
 ):
     if allowlist and denylist:
@@ -801,23 +828,23 @@ def demo(
         share=share,
         server_port=port,
         server_name=server_name,
-        allowed_paths=[
-            output_dir,
-            tempfile.gettempdir(),
-        ],  # explicitly give permission to gradio to write to the output directory and temp directory
+        # explicitly give permission to gradio to write to the output directory and temp directory
+        allowed_paths=[str(output_dir), tempfile.gettempdir()],
     )
 
 
 @app.command(hidden=True)
 def update_schemas(
-    out_dir: Path = typer.Option(
-        None,
-        "-o",
-        "--out-dir",
-        file_okay=False,
-        dir_okay=True,
-        exists=True,
-    ),
+    out_dir: Annotated[
+        Optional[Path],
+        typer.Option(
+            "-o",
+            "--out-dir",
+            file_okay=False,
+            dir_okay=True,
+            exists=True,
+        ),
+    ] = None,
 ):
     """Update the JSON Schemas. This is hidden because you shouldn't be calling this unless you are
     a developer for EveryVoice. Note: Pydantic will raise some Warnings related to the Callable fields
@@ -862,7 +889,7 @@ def update_schemas(
 
 @app.command()
 def g2p(
-    lang_id: Annotated[str, typer.Argument(help="lang id")],
+    lang_id: Annotated[str, typer.Argument(help="language id")],
     # Ignoring mypy since class FileText(io.TextIOWrapper)
     input_file: Annotated[typer.FileText, typer.Argument()] = TextIOWrapper(
         sys.stdin.buffer,
@@ -870,7 +897,7 @@ def g2p(
     ),  # type: ignore[assignment]
     config: Annotated[
         Optional[Path],
-        typer.Option(help="full to path to everyvoice-shared-text.yaml"),
+        typer.Option(help="path to everyvoice-shared-text.yaml"),
     ] = None,
 ):
     """
