@@ -75,6 +75,7 @@ class TyperGroupOrderAsDeclared(typer.core.TyperGroup):
 
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
+    no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="markdown",
     cls=TyperGroupOrderAsDeclared,
@@ -348,6 +349,7 @@ class ModelTypes(str, Enum):
 # Add the export commands
 export_group = typer.Typer(
     pretty_exceptions_show_locals=False,
+    no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="markdown",
     cls=TyperGroupOrderAsDeclared,
@@ -373,6 +375,7 @@ app.add_typer(
 # Add the segment commands
 segment_group = typer.Typer(
     pretty_exceptions_show_locals=False,
+    no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="markdown",
     cls=TyperGroupOrderAsDeclared,
@@ -508,6 +511,7 @@ app.command(
 # Add the train commands
 train_group = typer.Typer(
     pretty_exceptions_show_locals=False,
+    no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="markdown",
     cls=TyperGroupOrderAsDeclared,
@@ -547,6 +551,7 @@ app.add_typer(
 # Add synthesize commands
 synthesize_group = typer.Typer(
     pretty_exceptions_show_locals=False,
+    no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="markdown",
     cls=TyperGroupOrderAsDeclared,
@@ -576,6 +581,7 @@ app.add_typer(
 # Add the checkpoint commands
 checkpoint_group = typer.Typer(
     pretty_exceptions_show_locals=False,
+    no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
     rich_markup_mode="markdown",
     cls=TyperGroupOrderAsDeclared,
