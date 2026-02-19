@@ -792,9 +792,12 @@ class Preprocessor:
         Returns:
             tuple[Optional[str], Optional[str], Optional[npt.NDArray[np.float32]]]|tuple[Optional[list[int]], Optional[list[int]], Optional[npt.NDArray[np.float32]]]: if encode_as_string is true, returns an optional characters string, an optional phones string, and an optional multi-hot phonological feature vector. if encode_as_string is false, returns a list of ints for characters and phones
         """
-        if specific_text_representation is not None:
+        if specific_text_representation not in (
+            None,
+            TargetTrainingTextRepresentationLevel.characters,
+        ):
             raise NotImplementedError(
-                "Sorry 'specific_text_representation' isn't implemented yet, please set it to None."
+                "Sorry 'specific_text_representation' is only implemented for characters, please set it to None or characters."
             )  # TODO: refactor so that you don't *need* to generate all possible representations, to make synthesis faster.
         if text_processor is None:
             raise NotImplementedError(
@@ -810,6 +813,8 @@ class Preprocessor:
         if (
             DatasetTextRepresentation.arpabet.value in item
             and DatasetTextRepresentation.ipa_phones.value not in item
+            and specific_text_representation
+            != TargetTrainingTextRepresentationLevel.characters
         ):
             tokens = text_processor.encode_text(
                 text=ARPABET_TO_IPA_TRANSDUCER(
@@ -838,6 +843,8 @@ class Preprocessor:
             if (
                 item["language"] in AVAILABLE_G2P_ENGINES
                 and DatasetTextRepresentation.ipa_phones.value not in item
+                and specific_text_representation
+                != TargetTrainingTextRepresentationLevel.characters
             ):
                 tokens = text_processor.encode_text(
                     text=item[DatasetTextRepresentation.characters.value],
@@ -849,23 +856,27 @@ class Preprocessor:
                 )
                 assert isinstance(tokens, list)
                 phone_tokens = tokens
-        # if dataset is phones
-        if DatasetTextRepresentation.ipa_phones.value in item:
-            tokens = text_processor.encode_text(
-                text=item[DatasetTextRepresentation.ipa_phones.value],
-                dataset_label=dataset_label,
-                apply_g2p=False,
-                encode_as_phonological_features=False,
-                quiet=True,
-            )
-            assert isinstance(tokens, list)
-            phone_tokens = tokens
-        # calculate pfs
-        if phone_tokens and use_pfs:
-            pfs = text_processor.calculate_phonological_features(
-                text_processor.token_sequence_to_text_sequence(phone_tokens),
-                apply_punctuation_rules=True,
-            )
+        if (
+            specific_text_representation
+            != TargetTrainingTextRepresentationLevel.characters
+        ):
+            # if dataset is phones
+            if DatasetTextRepresentation.ipa_phones.value in item:
+                tokens = text_processor.encode_text(
+                    text=item[DatasetTextRepresentation.ipa_phones.value],
+                    dataset_label=dataset_label,
+                    apply_g2p=False,
+                    encode_as_phonological_features=False,
+                    quiet=True,
+                )
+                assert isinstance(tokens, list)
+                phone_tokens = tokens
+            # calculate pfs
+            if phone_tokens and use_pfs:
+                pfs = text_processor.calculate_phonological_features(
+                    text_processor.token_sequence_to_text_sequence(phone_tokens),
+                    apply_punctuation_rules=True,
+                )
         # encode to string
         if encode_as_string:
             if phone_tokens is not None:
