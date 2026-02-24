@@ -969,39 +969,23 @@ def get_text_config_from_config_or_model(config: Optional[Path], model: Optional
 def check_text_config(
     config: Annotated[
         Optional[Path],
-        typer.Option(
-            help="path to text config, i.e., everyvoice-shared-text.yaml",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
+        typer_file_option(
+            help="path to text config, i.e., everyvoice-shared-text.yaml"
         ),
     ] = None,
     model: Annotated[
         Optional[Path],
-        typer.Option(
-            help="path to a model whose text config will be used",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-        ),
+        typer_file_option(help="path to a model whose text config will be used"),
     ] = None,
     text_file: Annotated[
         Optional[Path],
-        typer.Option(
-            help="path to a plain text file to check",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-        ),
+        typer_file_option(),
+        typer.Option(help="path to a plain text file to check"),
+        # typer_file_option(help="path to a plain text file to check"),
     ] = None,
     psv_file: Annotated[
         Optional[Path],
-        typer.Option(
-            help="path to a psv file to check",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-        ),
+        typer_file_option(help="path to a psv file to check"),
     ] = None,
     language: Annotated[
         Optional[str],
