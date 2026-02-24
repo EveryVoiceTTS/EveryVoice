@@ -1082,17 +1082,10 @@ class SoxEffectsStep(Step):
         audio_effects = {
             0: [["norm", "-3.0"]],
             1: [
-                [
-                    "silence",
-                    "1",
-                    "0.1",
-                    "0.1%",
-                ],
+                ["silence", "1", "0.1", "0.1%"],
                 ["reverse"],  # reverse the clip to trim silence from end
                 ["silence", "1", "0.1", "0.1%"],
-                [
-                    "reverse"
-                ],  # reverse the clip again to revert to the right direction :)
+                ["reverse"],  # reverse the clip back :)
             ],
             2: [["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"]],
         }

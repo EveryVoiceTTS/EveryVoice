@@ -16,7 +16,12 @@ from rich.panel import Panel
 
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect, rename_speaker
-from everyvoice.base_cli.interfaces import inference_base_command_interface
+from everyvoice.base_cli.interfaces import (
+    inference_base_command_interface,
+    typer_directory_option,
+    typer_file_argument,
+    typer_file_option,
+)
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
     ALIGN_SINGLE_SHORT_HELP,
@@ -221,33 +226,25 @@ def main(
 def evaluate(
     audio_file: Annotated[
         Optional[Path],
-        typer.Option(
+        typer_file_option(
             "--audio-file",
             "-f",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
             help="The path to a single audio file for evaluation.",
         ),
     ] = None,
     audio_directory: Annotated[
         Optional[Path],
-        typer.Option(
+        typer_directory_option(
             "--audio-directory",
             "-d",
-            file_okay=False,
-            dir_okay=True,
             help="The directory where multiple audio files are located for evaluation",
         ),
     ] = None,
     non_matching_reference: Annotated[
         Optional[Path],
-        typer.Option(
+        typer_file_option(
             "--non-matching-reference",
             "-r",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
             help="The path to a Non Mathing Reference audio file, required for MOS prediction.",
         ),
     ] = None,
@@ -435,12 +432,9 @@ def new_project(
     ] = False,
     resume_from: Annotated[
         Optional[Path],
-        typer.Option(
+        typer_file_option(
             "--resume-from",
             "-r",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
             help="Resume from previously saved progress.",
         ),
     ] = None,
@@ -660,39 +654,24 @@ AllowedDemoOutputFormats = Enum(  # type: ignore
 def demo(
     text_to_spec_model: Annotated[
         Path,
-        typer.Argument(
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-            help="The path to a trained text-to-spec (i.e., feature prediction) EveryVoice model.",
+        typer_file_argument(
+            help="The path to a trained text-to-spec (i.e., feature prediction) EveryVoice model."
         ),
     ],
     spec_to_wav_model: Annotated[
-        Path,
-        typer.Argument(
-            help="The path to a trained vocoder.",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-        ),
+        Path, typer_file_argument(help="The path to a trained vocoder.")
     ],
     allowlist: Annotated[
         Optional[Path],
-        typer.Option(
+        typer_file_option(
             "--allowlist",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
             help="A plain text file containing a list of words or utterances to allow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are disallowed.",
         ),
     ] = None,
     denylist: Annotated[
         Optional[Path],
-        typer.Option(
+        typer_file_option(
             "--denylist",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
             help="A plain text file containing a list of words or utterances to disallow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are allowed. IMPORTANT: there are many ways to 'hack' the denylist that we do not protect against. We suggest using the 'allowlist' instead for maximum security if you know the full list of utterances you want to allow synthesis for.",
         ),
     ] = None,
@@ -714,12 +693,11 @@ def demo(
         "-O",
         help="Specify output formats to be included in the demo. Example: everyvoice demo TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --output-format wav --output-format readalong-html",
     ),
-    output_dir: Path = typer.Option(
+    output_dir: Path = typer_directory_option(
         "synthesis_output",
         "--output-dir",
         "-o",
-        file_okay=False,
-        dir_okay=True,
+        exists=False,
         help="The directory where your synthesized audio should be written",
     ),
     accelerator: str = typer.Option(
@@ -742,12 +720,9 @@ def demo(
     ),
     ui_config_file: Annotated[
         Optional[Path],
-        typer.Option(
+        typer_file_option(
             "--ui-config-file",
             "-C",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
             help="""A path to a configuration file that will be used to override parts of the default configuration for the demo UI. This is useful if you want to override some of the text in the UI.
         The config file should be a valid JSON FORMAT. The expected optional values and types are:
 
@@ -843,13 +818,7 @@ def demo(
 def update_schemas(
     out_dir: Annotated[
         Optional[Path],
-        typer.Option(
-            "-o",
-            "--out-dir",
-            file_okay=False,
-            dir_okay=True,
-            exists=True,
-        ),
+        typer_directory_option("-o", "--out-dir"),
     ] = None,
 ):
     """Update the JSON Schemas. This is hidden because you shouldn't be calling this unless you are
@@ -902,8 +871,7 @@ def g2p(
         encoding="utf-8",
     ),  # type: ignore[assignment]
     config: Annotated[
-        Optional[Path],
-        typer.Option(help="path to everyvoice-shared-text.yaml"),
+        Optional[Path], typer.Option(help="path to everyvoice-shared-text.yaml")
     ] = None,
 ):
     """
