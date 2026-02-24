@@ -11,6 +11,16 @@ from typing import Annotated, Any, Optional
 import typer
 
 
+def typer_file_option(*args, **kwargs) -> Any:
+    """Shorthard for setting the typer option parameters to get an existing file."""
+    return typer.Option(*args, exists=True, dir_okay=False, file_okay=True, **kwargs)
+
+
+def typer_file_argument(*args, **kwargs) -> Any:
+    """Shorthard for setting the typer argument parameters to get an existing file."""
+    return typer.Argument(*args, exists=True, dir_okay=False, file_okay=True, **kwargs)
+
+
 def load_config_base_command_interface(
     config_file: Annotated[
         Path,

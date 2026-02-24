@@ -16,7 +16,10 @@ from rich.panel import Panel
 
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect, rename_speaker
-from everyvoice.base_cli.interfaces import inference_base_command_interface
+from everyvoice.base_cli.interfaces import (
+    inference_base_command_interface,
+    typer_file_option,
+)
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
     ALIGN_SINGLE_SHORT_HELP,
@@ -201,11 +204,6 @@ def main(
             print("Unable to get installed package versions")
 
         sys.exit(0)
-
-
-def typer_file_option(*args, **kwargs) -> Any:
-    """Shorthard for setting the typer option parameters to get an existing file."""
-    return typer.Option(*args, exists=True, dir_okay=False, file_okay=True, **kwargs)
 
 
 @app.command(
