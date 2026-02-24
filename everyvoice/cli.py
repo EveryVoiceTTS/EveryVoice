@@ -18,6 +18,7 @@ from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect, rename_speaker
 from everyvoice.base_cli.interfaces import (
     inference_base_command_interface,
+    typer_file_argument,
     typer_file_option,
 )
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
@@ -654,21 +655,13 @@ AllowedDemoOutputFormats = Enum(  # type: ignore
 def demo(
     text_to_spec_model: Annotated[
         Path,
-        typer.Argument(
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-            help="The path to a trained text-to-spec (i.e., feature prediction) EveryVoice model.",
+        typer_file_argument(
+            help="The path to a trained text-to-spec (i.e., feature prediction) EveryVoice model."
         ),
     ],
     spec_to_wav_model: Annotated[
         Path,
-        typer.Argument(
-            help="The path to a trained vocoder.",
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-        ),
+        typer_file_argument(help="The path to a trained vocoder."),
     ],
     allowlist: Annotated[
         Optional[Path],

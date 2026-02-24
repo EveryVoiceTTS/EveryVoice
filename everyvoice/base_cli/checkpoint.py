@@ -12,6 +12,8 @@ from typing import Any
 import typer
 from typing_extensions import Annotated
 
+from .interfaces import typer_file_argument
+
 app = typer.Typer(
     pretty_exceptions_show_locals=False,
     help="Extract checkpoint's hyperparameters.",
@@ -89,12 +91,7 @@ def load_checkpoint(model_path: Path, minimal=True) -> dict[str, Any]:
 def inspect(
     model_path: Annotated[
         Path,
-        typer.Argument(
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-            help="The path to your model checkpoint file.",
-        ),
+        typer_file_argument(help="The path to your model checkpoint file."),
     ],
     show_config: Annotated[
         bool,
@@ -184,24 +181,15 @@ def inspect(
 def rename_speaker(
     model_path: Annotated[
         Path,
-        typer.Argument(
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-            help="The path to your model checkpoint file.",
-        ),
+        typer_file_argument(help="The path to your model checkpoint file."),
     ],
     old_speaker_name: Annotated[
         str,
-        typer.Argument(
-            help="The name of the speaker to rename.",
-        ),
+        typer.Argument(help="The name of the speaker to rename."),
     ],
     new_speaker_name: Annotated[
         str,
-        typer.Argument(
-            help="The new name for the speaker.",
-        ),
+        typer.Argument(help="The new name for the speaker."),
     ],
 ):
     """

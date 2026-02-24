@@ -24,12 +24,7 @@ def typer_file_argument(*args, **kwargs) -> Any:
 def load_config_base_command_interface(
     config_file: Annotated[
         Path,
-        typer.Argument(
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-            help="The path to your model configuration file.",
-        ),
+        typer_file_argument(help="The path to your model configuration file."),
     ],
     config_args: list[str] = typer.Option(None, "--config", "-c"),
 ):
@@ -39,12 +34,7 @@ def load_config_base_command_interface(
 def preprocess_base_command_interface(
     config_file: Annotated[
         Path,
-        typer.Argument(
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-            help="The path to your model configuration file.",
-        ),
+        typer_file_argument(help="The path to your model configuration file."),
     ],
     config_args: Annotated[
         list[str],
@@ -76,12 +66,7 @@ def preprocess_base_command_interface(
 def train_base_command_interface(
     config_file: Annotated[
         Path,
-        typer.Argument(
-            exists=True,
-            dir_okay=False,
-            file_okay=True,
-            help="The path to your model configuration file.",
-        ),
+        typer_file_argument(help="The path to your model configuration file."),
     ],
     config_args: Annotated[
         list[str],
