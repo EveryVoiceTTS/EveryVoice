@@ -90,8 +90,7 @@ def load_checkpoint(model_path: Path, minimal=True) -> dict[str, Any]:
 @app.command()
 def inspect(
     model_path: Annotated[
-        Path,
-        typer_file_argument(help="The path to your model checkpoint file."),
+        Path, typer_file_argument(help="The path to your model checkpoint file.")
     ],
     show_config: Annotated[
         bool,
@@ -180,16 +179,13 @@ def inspect(
 @app.command()
 def rename_speaker(
     model_path: Annotated[
-        Path,
-        typer_file_argument(help="The path to your model checkpoint file."),
+        Path, typer_file_argument(help="The path to your model checkpoint file.")
     ],
     old_speaker_name: Annotated[
-        str,
-        typer.Argument(help="The name of the speaker to rename."),
+        str, typer.Argument(help="The name of the speaker to rename.")
     ],
     new_speaker_name: Annotated[
-        str,
-        typer.Argument(help="The new name for the speaker."),
+        str, typer.Argument(help="The new name for the speaker.")
     ],
 ):
     """

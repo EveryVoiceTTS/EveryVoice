@@ -660,8 +660,7 @@ def demo(
         ),
     ],
     spec_to_wav_model: Annotated[
-        Path,
-        typer_file_argument(help="The path to a trained vocoder."),
+        Path, typer_file_argument(help="The path to a trained vocoder.")
     ],
     allowlist: Annotated[
         Optional[Path],
@@ -880,8 +879,7 @@ def g2p(
         encoding="utf-8",
     ),  # type: ignore[assignment]
     config: Annotated[
-        Optional[Path],
-        typer.Option(help="path to everyvoice-shared-text.yaml"),
+        Optional[Path], typer.Option(help="path to everyvoice-shared-text.yaml")
     ] = None,
 ):
     """
