@@ -5,20 +5,24 @@ there should be no body as the union of these signatures and the model-specific 
 will be called with.
 """
 import multiprocessing as mp
+from functools import partial
 from pathlib import Path
-from typing import Annotated, Any, Optional
+from typing import Annotated
 
 import typer
 
+"""Shorthand for setting the typer option parameters to get an existing file."""
+typer_file_option = partial(typer.Option, exists=True, dir_okay=False, file_okay=True)
 
-def typer_file_option(*args, **kwargs) -> Any:
-    """Shorthard for setting the typer option parameters to get an existing file."""
-    return typer.Option(*args, exists=True, dir_okay=False, file_okay=True, **kwargs)
+"""Shorthand for setting the tyhper option parameters to get an existing directory"""
+typer_directory_option = partial(
+    typer.Option, exists=True, dir_okay=True, file_okay=False
+)
 
-
-def typer_file_argument(*args, **kwargs) -> Any:
-    """Shorthard for setting the typer argument parameters to get an existing file."""
-    return typer.Argument(*args, exists=True, dir_okay=False, file_okay=True, **kwargs)
+"""Shorthand for setting the typer argument parameters to get an existing file."""
+typer_file_argument = partial(
+    typer.Argument, exists=True, dir_okay=False, file_okay=True
+)
 
 
 def load_config_base_command_interface(
@@ -41,7 +45,7 @@ def preprocess_base_command_interface(
         typer.Option("-c", "--config-args", help="Override the configuration."),
     ] = [],
     cpus: Annotated[
-        Optional[int],
+        int | None,
         typer.Option(
             "-C",
             "--cpus",
