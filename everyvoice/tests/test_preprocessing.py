@@ -1253,7 +1253,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 audiofile, tmpdir / "output3.wav", many_effects[1:]
             )
             self.assertTrue((tmpdir / "output3.wav").exists())
-            os.system(f"ls -la {tmpdir}")
+            # os.system(f"ls -la {tmpdir}")
 
 
 class PreprocessingHierarchyTest(TestCase):
