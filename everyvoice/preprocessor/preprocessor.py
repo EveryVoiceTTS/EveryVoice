@@ -8,7 +8,6 @@
 import functools
 import json
 import multiprocessing as mp
-import os
 import random
 import sys
 from collections import Counter
@@ -16,7 +15,6 @@ from datetime import datetime
 from glob import glob
 from multiprocessing import Manager
 from pathlib import Path
-from textwrap import dedent
 from typing import Callable, Optional, Sequence
 
 import numpy as np
@@ -30,7 +28,6 @@ from rich.panel import Panel
 from rich.style import Style
 from tabulate import tabulate
 from torchaudio.functional import resample
-from torchaudio.sox_effects import apply_effects_tensor
 from tqdm import tqdm
 
 from everyvoice.config.type_definitions import (
@@ -40,8 +37,6 @@ from everyvoice.config.type_definitions import (
 from everyvoice.exceptions import ConfigError
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
-from everyvoice.preprocessor.attention_prior import BetaBinomialInterpolator
-from everyvoice.preprocessor.helpers import Counters, Scaler, save_tensor, save_wav
 from everyvoice.text.arpabet import ARPABET_TO_IPA_TRANSDUCER
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.text.text_processor import TextProcessor
@@ -56,10 +51,19 @@ from everyvoice.utils.heavy import (
     get_spectral_transform,
 )
 
+from .attention_prior import BetaBinomialInterpolator
+from .helpers import (
+    Counters,
+    Scaler,
+    SoxError,
+    apply_sox_effects_to_tensor,
+    load_audio,
+    save_tensor,
+    save_wav,
+)
+
 
 class Preprocessor:
-    _warned_about_windows = False
-
     def __init__(
         self,
         config: FeaturePredictionConfig | VocoderConfig,
@@ -118,19 +122,6 @@ class Preprocessor:
                 f"Spectral feature specification '{self.audio_config.spec_type}' is not supported. Please edit your config file."
             )
 
-    def load_audio(self, audio_path: str | Path) -> tuple[torch.Tensor, int, float]:
-        """
-        Load an audio file and calculate its duration.
-
-        Args:
-            audio_path: path to audio file
-
-        Returns: (audio as a Tensor, sampling rate, duration in seconds)
-        """
-        audio, sr = torchaudio.load(str(audio_path))
-        seconds = len(audio[0]) / sr
-        return audio, sr, seconds
-
     def process_audio(
         self,
         wav_path: str | Path,
@@ -148,7 +139,7 @@ class Preprocessor:
         Returns:
             Tensor: (audio as a Tensor, sampling rate)
         """
-        audio, sr, seconds = self.load_audio(wav_path)
+        audio, sr, seconds = load_audio(wav_path)
 
         # Check if audio has more than 2 channels
         if audio.shape[0] > 2:
@@ -188,31 +179,13 @@ class Preprocessor:
             return None, None
 
         if sox_effects:
-            if os.name == "nt":  # pragma: no cover
-                WINDOWS_WARNING = dedent(
-                    """
-                    SoX effects are not supported on Windows. Please run preprocess on a MacOS or Linux.
-                    To ignore this error for development purposes, set the EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS
-                    environment variable. But be aware that if you do so, your audio will not be preprocessed
-                    correctly and your models will not be good.
-                    """
-                )
-                if os.environ.get("EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS", False):
-                    if not Preprocessor._warned_about_windows:
-                        logger.warning(
-                            WINDOWS_WARNING
-                            + "\nContinuing anyway since EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS is set."
-                        )
-                        Preprocessor._warned_about_windows = True
-                else:
-                    logger.error(WINDOWS_WARNING)
-                    sys.exit(1)
-            else:
-                audio, sr = apply_effects_tensor(
-                    audio,
-                    sr,
-                    sox_effects,
-                )
+            try:
+                audio, sr, seconds = apply_sox_effects_to_tensor(wav_path, sox_effects)
+            except SoxError as e:
+                logger.warning(f"Sox error: {e}")
+                if update_counters:
+                    self.counters.increment("sox_error")
+                return None, None
 
         if resample_rate is not None and resample_rate != sr:
             audio = resample(audio, sr, resample_rate)
@@ -557,7 +530,7 @@ class Preprocessor:
             and output_audio_save_path.exists()
             and not self.overwrite
         ):
-            audio, sr, seconds = self.load_audio(audio_path)
+            audio, sr, seconds = load_audio(audio_path)
             self.counters.increment("previously_processed_files")
             self.counters.increment("duration", seconds)
             return item
@@ -677,7 +650,7 @@ class Preprocessor:
         audio_path = self.create_path(
             item, "audio", f"audio-{self.input_sampling_rate}.wav"
         )
-        audio, _, _ = self.load_audio(audio_path)
+        audio, _, _ = load_audio(audio_path)
         pitch = self.extract_pitch(audio)
         if (
             isinstance(self.config, FeaturePredictionConfig)
@@ -911,7 +884,7 @@ class Preprocessor:
                 f"spec-{self.output_sampling_rate}-{self.audio_config.spec_type}.pt",
             )
             if not output_spec_path.exists() or self.overwrite:
-                output_audio, _, _ = self.load_audio(output_audio_path)
+                output_audio, _, _ = load_audio(output_audio_path)
                 output_audio = output_audio.squeeze()
                 # limit the number of frames to be equal to the number of
                 # available full frames from the audio (equal to fft_hop_size * sampling rate change, if we are upsampling)
@@ -924,7 +897,7 @@ class Preprocessor:
                 save_tensor(output_spec, output_spec_path)
 
         if not input_spec_path.exists() or self.overwrite:
-            input_audio, _, _ = self.load_audio(input_audio_path)
+            input_audio, _, _ = load_audio(input_audio_path)
             input_audio = input_audio.squeeze()
             # limit the number of frames to be equal to the number of
             # available full frames from the audio

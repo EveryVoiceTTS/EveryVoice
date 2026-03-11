@@ -137,6 +137,7 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
             use_segments=True,
         )
         sampler = ImbalancedDatasetSampler(dataset)
+        print(sampler.weights)
         sample = list(sampler)
         self.assertEqual(len(sample), 5)
 
