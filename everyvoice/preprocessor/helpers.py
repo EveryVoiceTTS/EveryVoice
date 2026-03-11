@@ -154,14 +154,15 @@ def apply_sox_effects_to_file(
 
     # sox actually takes a flattened list of effects each followed by its arguments
     command_line = sum([["sox", str(infile), str(outfile)], *effects], start=[])
-    print(command_line)
+    # print(command_line)
     result = subprocess.run(command_line, capture_output=True)
-    print(result.returncode, len(result.stdout), result.stderr)
-    error_log = (result.stderr).decode("utf8")
-    if result.returncode == 1:
-        raise SoxError(f"Error in list of sox effects: {error_log}")
-    elif result.returncode != 0:
-        raise SoxError(f"Error applying sox effects to '{infile}': {error_log}")
+    # print(result.returncode, len(result.stdout), result.stderr)
+    if result.returncode != 0:
+        error_log = result.stderr.decode("utf8")
+        if result.returncode == 1:
+            raise SoxError(f"Error in list of sox effects: {error_log}")
+        else:
+            raise SoxError(f"Error applying sox effects to '{infile}': {error_log}")
 
 
 _warned_about_windows = False
