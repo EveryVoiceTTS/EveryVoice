@@ -138,19 +138,9 @@ def get_label_from_symbol_key(key: str) -> str | None:
         return None
 
 
-Language = Annotated[
-    str,
-    Field(
-        title="Language ID",
-        examples=["fr"],
-    ),
-]
+Language = Annotated[str, Field(title="Language ID", examples=["fr"])]
 G2P_py_module = Annotated[
-    str,
-    Field(
-        title="Module path",
-        examples=["everyvoice_plugin_g2p4example.g2p"],
-    ),
+    str, Field(title="Module path", examples=["everyvoice_plugin_g2p4example.g2p"])
 ]
 G2P_Engines = Annotated[
     dict[Language, G2P_py_module],

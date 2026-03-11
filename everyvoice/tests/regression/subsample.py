@@ -3,6 +3,7 @@
 import sys
 from enum import Enum
 from os.path import join
+from typing import Annotated
 
 import typer
 from pydub import AudioSegment
@@ -23,25 +24,27 @@ class MetadataFileFormat(str, Enum):
 def subsample(
     metadata_path: str,
     wavs_path: str,
-    has_header: bool = typer.Option(
-        False,
-        "--header",
-        help="Whether or not the first line of the metadata document is a header row with column names.",
-    ),
-    duration: int = typer.Option(
-        ...,
-        "-d",
-        "--duration",
-        help="Requested minimum duration of subsample in seconds.",
-    ),
-    format: MetadataFileFormat = typer.Option(
-        ..., "-f", "--format", help="Metadata file format."
-    ),
+    duration: Annotated[
+        int,
+        typer.Option(
+            "-d",
+            "--duration",
+            help="Requested minimum duration of subsample in seconds.",
+        ),
+    ],
+    format: Annotated[
+        MetadataFileFormat, typer.Option("-f", "--format", help="Metadata file format.")
+    ],
     basename: int = typer.Option(
         0,
         "-b",
         "--basename",
         help="Column number of the .wav file basename. Columns are zero-indexed.",
+    ),
+    has_header: bool = typer.Option(
+        False,
+        "--header",
+        help="Whether or not the first line of the metadata document is a header row with column names.",
     ),
     speaker: int = typer.Option(
         -1,
