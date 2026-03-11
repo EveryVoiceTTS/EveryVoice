@@ -112,3 +112,29 @@ class Counters:
     def value(self, counter):
         with self._lock:
             return self.__getattribute__("_" + counter).value
+
+
+class SoxError(Exception):
+    pass
+
+
+def apply_sox_effects_file(
+    infile: str | Path, outfile: str | Path, effects: list[list[str]]
+):
+    """Use the `sox` command line utility to apply effects to infile, writing to outfile.
+
+    Warning: overwrites outfile if it already exists.
+    Warning: the extension given to outfile is significant, as sox will convert to the
+             converting file type, so make sure your expension is ".wav" unless you
+             really mean to use a different format
+    """
+    import subprocess
+
+    # sox actually takes a flattened list of effects each followed by its arguments
+    command_line = sum([["sox", str(infile), str(outfile)], *effects], start=[])
+    result = subprocess.run(command_line, capture_output=True)
+    print(result.returncode, result.stdout, result.stderr)
+    if result.returncode != 0:
+        error_log = (result.stdout + result.stderr).decode("utf8")
+        print(error_log)
+        raise SoxError(f"Error applying sox effects to '{infile}': {error_log}")
