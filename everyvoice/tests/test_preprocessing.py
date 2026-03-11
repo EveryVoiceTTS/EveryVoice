@@ -1211,6 +1211,26 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     output_path=lj_filelist, cpus=1, to_process=("audio",)
                 )
 
+    def test_sox_effects(self) -> None:
+        from everyvoice.preprocessor.helpers import SoxError, apply_sox_effects_file
+
+        many_effects = [
+            ["norm", "-3.0"],
+            ["silence", "1", "0.1", "0.1%"],
+            ["reverse"],
+            ["silence", "1", "0.1", "0.1%"],
+            ["reverse"],
+            ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
+        ]
+        with self.assertRaises(SoxError):
+            apply_sox_effects_file("does not exist", "delme-foo", many_effects)
+        with self.assertRaises(SoxError):
+            apply_sox_effects_file(
+                TEST_DATA_DIR / "lj/wavs/LJ050-0269.wav",
+                "cant/write/here.wav",
+                many_effects,
+            )
+
 
 class PreprocessingHierarchyTest(TestCase):
     def test_hierarchy(self):
