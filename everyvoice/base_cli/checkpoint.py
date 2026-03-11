@@ -33,7 +33,7 @@ class CheckpointEncoder(JSONEncoder):
         if isinstance(obj, torch.Tensor):
             return list(obj.shape)
         elif isinstance(obj, BaseModel):
-            return json.loads(obj.json())
+            return json.loads(obj.model_dump_json())
         return super().default(obj)
 
 
