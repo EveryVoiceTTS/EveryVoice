@@ -65,7 +65,7 @@ dependencies = [
   "loguru==0.6.0",
   "matplotlib~=3.9.0",
   "merge-args",
-  "nltk==3.9.1",
+  "nltk==3.9.3",
   "numpy<2",                       # torch < 2.4.1 requires numpy < 2 but fails to declare it
   "packaging>=22.0",
   "pandas~=2.0",
