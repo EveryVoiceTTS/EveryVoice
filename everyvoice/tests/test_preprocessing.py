@@ -1211,6 +1211,50 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     output_path=lj_filelist, cpus=1, to_process=("audio",)
                 )
 
+    def test_sox_effects(self) -> None:
+        from everyvoice.preprocessor.helpers import SoxError, apply_sox_effects_to_file
+
+        many_effects = [
+            ["norm", "-3.0"],
+            ["silence", "1", "0.1", "0.1%"],
+            ["reverse"],
+            ["silence", "1", "0.1", "0.1%"],
+            ["reverse"],
+            ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
+        ]
+        with self.assertRaises(SoxError):
+            apply_sox_effects_to_file("does not exist", "delme-foo", many_effects)
+        audiofile = TEST_DATA_DIR / "lj/wavs/LJ050-0269.wav"
+        with self.assertRaises(SoxError):
+            apply_sox_effects_to_file(audiofile, "cant/write/here.wav", many_effects)
+        with tempfile.TemporaryDirectory(prefix="sox_effects_", dir=".") as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
+
+            with self.assertRaises(SoxError):
+                apply_sox_effects_to_file(
+                    audiofile,
+                    tmpdir / "error1.wav",
+                    [["norm", "-3.0"], ["reverse"], ["notasoxcommand"]],
+                )
+            with self.assertRaises(SoxError):
+                apply_sox_effects_to_file(
+                    audiofile,
+                    tmpdir / "error2.wav",
+                    [["norm", "-3.0", "1", "2"], ["reverse"]],
+                )
+
+            apply_sox_effects_to_file(audiofile, tmpdir / "output1.wav", many_effects)
+            self.assertTrue((tmpdir / "output1.wav").exists())
+            apply_sox_effects_to_file(
+                audiofile, tmpdir / "output2.wav", many_effects[:-1]
+            )
+            self.assertTrue((tmpdir / "output2.wav").exists())
+            apply_sox_effects_to_file(
+                audiofile, tmpdir / "output3.wav", many_effects[1:]
+            )
+            self.assertTrue((tmpdir / "output3.wav").exists())
+            # os.system(f"ls -la {tmpdir}")
+
 
 class PreprocessingHierarchyTest(TestCase):
     def test_hierarchy(self):
