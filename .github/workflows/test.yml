@@ -101,7 +101,7 @@ jobs:
           # Only run pre-commit on EV files themselves, not on submodules
           # See https://github.com/EveryVoiceTTS/EveryVoice/issues/555
           exclude_submodules: true
-      - uses: actions/cache@v4  # enable caching for pre-commit
+      - uses: actions/cache@v5  # enable caching for pre-commit
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-3|${{ env.pythonLocation }}|${{ hashFiles('.pre-commit-config.yaml') }}
