@@ -335,6 +335,7 @@ class Preprocessor:
             ["audio_too_short", self.counters.value("audio_too_short")],
             ["audio_too_long", self.counters.value("audio_too_long")],
             ["multichannel_files", self.counters.value("multichannel_files")],
+            ["sox_error", self.counters.value("sox_error")],
             ["duration", self.print_duration()],
         ]
         if audio_only:
