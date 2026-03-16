@@ -230,7 +230,11 @@ class DirectoryPathMustExistTest(TestCase):
             # Note: since dir.path is NOT replaced with an absolute it
             # shouldn't exist because it was created relative to the context's
             # path.
-            self.assertFalse(dir.path.exists())
+            self.assertFalse(
+                dir.path.exists(),
+                f"Directory {dir.path} should not have been created in the current directory. "
+                + "If it still exists, please delete it before re-running the tests.",
+            )
 
     def test_path_already_exists(self):
         path = Path(__file__).parent / "data"
