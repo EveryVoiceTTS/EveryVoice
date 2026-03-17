@@ -68,7 +68,7 @@ def subsample(
         raise typer.BadParameter("Festival formatted files cannot have a speaker id.")
 
     # Open metadata file
-    f = open(metadata_path)
+    f = open(metadata_path, encoding="utf8")
     file = f.readlines()
 
     # Read metadata file
