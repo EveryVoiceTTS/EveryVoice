@@ -155,10 +155,15 @@ def apply_sox_effects_to_file(
     # sox actually takes a flattened list of effects each followed by its arguments
     command_line = sum([["sox", str(infile), str(outfile)], *effects], start=[])
     # print(command_line)
-    result = subprocess.run(command_line, capture_output=True)
+
+    try:
+        result = subprocess.run(command_line, capture_output=True)
+    except FileNotFoundError as e:
+        raise Exception("Please make sure the sox executable is on your PATH") from e
+
     # print(result.returncode, len(result.stdout), result.stderr)
     if result.returncode != 0:
-        error_log = result.stderr.decode("utf8")
+        error_log = result.stderr.decode()
         if result.returncode == 1:
             raise SoxError(f"Error in list of sox effects: {error_log}")
         else:
