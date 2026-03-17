@@ -200,3 +200,10 @@ files = "everyvoice"
 ignore_missing_imports = true
 plugins = ["pydantic.mypy", "numpy.typing.mypy_plugin"]
 check_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = [
+  "everyvoice/tests",
+  "everyvoice/model/feature_prediction/FastSpeech2_lightning/fs2/tests",
+  "everyvoice/model/aligner/wav2vec2aligner/aligner/tests",
+]
