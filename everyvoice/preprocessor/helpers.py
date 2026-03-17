@@ -1,13 +1,9 @@
-import os
-import sys
 import tempfile
 from multiprocessing import managers
 from pathlib import Path
-from textwrap import dedent
 
 import torch
 import torchaudio
-from loguru import logger
 
 
 def load_audio(audio_path: str | Path) -> tuple[torch.Tensor, int, float]:
@@ -170,9 +166,6 @@ def apply_sox_effects_to_file(
             raise SoxError(f"Error applying sox effects to '{infile}': {error_log}")
 
 
-_warned_about_windows = False
-
-
 def apply_sox_effects_to_tensor(
     infile: str | Path, effects: list[list[str]]
 ) -> tuple[torch.Tensor, int, float]:
@@ -180,28 +173,6 @@ def apply_sox_effects_to_tensor(
 
     Returns: (audio as a Tensor, result sampling rate, result duration in seconds)
     """
-    if os.name == "nt":  # pragma: no cover
-        WINDOWS_WARNING = dedent(
-            """
-            SoX effects are not supported on Windows. Please run preprocess on a MacOS or Linux.
-            To ignore this error for development purposes, set the EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS
-            environment variable. But be aware that if you do so, your audio will not be preprocessed
-            correctly and your models will not be good.
-            """
-        )
-        global _warned_about_windows
-        if os.environ.get("EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS", False):
-            if not _warned_about_windows:
-                logger.warning(
-                    WINDOWS_WARNING
-                    + "\nContinuing anyway since EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS is set."
-                )
-                _warned_about_windows = True
-            return load_audio(infile)
-        else:
-            logger.error(WINDOWS_WARNING)
-            sys.exit(1)
-
     try:
         outfile = tempfile.NamedTemporaryFile(
             delete=False, prefix="sox_input_", suffix=".wav"
