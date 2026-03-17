@@ -113,6 +113,14 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             self.assertEqual(audio, None)
             self.assertEqual(sr, None)
 
+    def test_too_short(self) -> None:
+        # too-short.wav is only .28s long, shorter than our minimum .4s
+        with mute_logger("everyvoice.preprocessor.preprocessor"):
+            audio, sr = self.preprocessor.process_audio(TEST_DATA_DIR / "too-short.wav")
+        self.assertEqual(audio, None)
+        self.assertEqual(sr, None)
+        self.assertEqual(self.preprocessor.counters.value("audio_too_short"), 1)
+
     def test_process_bad_sox_effects(self) -> None:
         sox_errors_before = self.preprocessor.counters.value("sox_error")
         for audiofile in "LJ050-0269.wav", "LJ050-0270.wav":
