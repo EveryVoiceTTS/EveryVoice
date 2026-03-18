@@ -57,8 +57,8 @@ dependencies = [
   "grapheme>=0.6.0",
   # We have used the panphon 0.20 phonological feature definition from the beginning.
   # Changing to 0.21 is a breaking change because it affects model inputs
-  # TODO: determine if we should instead bump to 0.21, at the risk of invalidation PFS models trained before.
-  "ilt-panphon==0.20.1",
+  # TODO: determine if we should instead bump to 0.21, at the risk of invalidating PFS models trained before.
+  "ilt-panphon>=0.20.1,<0.21",
   "ipatok>=0.4.1",
   "librosa==0.11.0",
   "lightning>=2.1.0",
