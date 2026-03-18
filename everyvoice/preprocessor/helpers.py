@@ -1,8 +1,23 @@
+import tempfile
 from multiprocessing import managers
 from pathlib import Path
 
 import torch
 import torchaudio
+
+
+def load_audio(audio_path: str | Path) -> tuple[torch.Tensor, int, float]:
+    """
+    Load an audio file and calculate its duration.
+
+    Args:
+        audio_path: path to audio file
+
+    Returns: (audio as a Tensor, sampling rate, duration in seconds)
+    """
+    audio, sr = torchaudio.load(str(audio_path))
+    seconds = len(audio[0]) / sr
+    return audio, sr, seconds
 
 
 def save_tensor(tensor: torch.Tensor, path: str | Path):
@@ -104,6 +119,7 @@ class Counters:
         self._multichannel_files = manager.Value("l", 0)
         self._skipped_processes = manager.Value("l", 0)
         self._missing_files = manager.Value("l", 0)
+        self._sox_error = manager.Value("l", 0)
 
     def increment(self, counter: str, increment: int | float = 1):
         with self._lock:
@@ -112,3 +128,60 @@ class Counters:
     def value(self, counter):
         with self._lock:
             return self.__getattribute__("_" + counter).value
+
+
+class SoxError(Exception):
+    pass
+
+
+def apply_sox_effects_to_file(
+    infile: str | Path, outfile: str | Path, effects: list[list[str]]
+):
+    """Use the `sox` command line utility to apply effects to infile, writing to outfile.
+
+    Warning: overwrites outfile if it already exists.
+    Warning: the extension given to outfile is significant, as sox will convert to the
+             converting file type, so make sure your expension is ".wav" unless you
+             really mean to use a different format
+
+    raises: SoxError in case of problem
+    """
+    import subprocess
+
+    # sox actually takes a flattened list of effects each followed by its arguments
+    command_line = sum([["sox", str(infile), str(outfile)], *effects], start=[])
+    # print(command_line)
+
+    try:
+        result = subprocess.run(command_line, capture_output=True)
+    except FileNotFoundError as e:
+        raise Exception("Please make sure the sox executable is on your PATH") from e
+
+    # print(result.returncode, len(result.stdout), result.stderr)
+    if result.returncode != 0:
+        error_log = result.stderr.decode()
+        if result.returncode == 1:
+            raise SoxError(f"Error in list of sox effects: {error_log}")
+        else:
+            raise SoxError(f"Error applying sox effects to '{infile}': {error_log}")
+
+
+def apply_sox_effects_to_tensor(
+    infile: str | Path, effects: list[list[str]]
+) -> tuple[torch.Tensor, int, float]:
+    """Use the `sox` command line utility to apply effects to infile, returning results as a Tensor
+
+    Returns: (audio as a Tensor, result sampling rate, result duration in seconds)
+    """
+    try:
+        outfile = tempfile.NamedTemporaryFile(
+            delete=False, prefix="sox_input_", suffix=".wav"
+        )
+        outfile_name = outfile.name
+        outfile.close()
+
+        apply_sox_effects_to_file(infile, outfile_name, effects)
+        return load_audio(outfile_name)
+
+    finally:
+        Path(outfile_name).unlink()

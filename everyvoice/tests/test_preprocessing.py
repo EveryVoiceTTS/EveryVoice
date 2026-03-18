@@ -27,6 +27,7 @@ from everyvoice.config.text_config import TextConfig
 from everyvoice.model.e2e.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor, preprocessor
+from everyvoice.preprocessor.helpers import SoxError, apply_sox_effects_to_file
 from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
 from everyvoice.tests.stubs import (
     TEST_CONTACT,
@@ -64,12 +65,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         )
         config = FeaturePredictionConfig(contact=TEST_CONTACT)
         sox_effects = config.preprocessing.source_data[0].sox_effects + [
-            [
-                "silence",
-                "1",
-                "0.1",
-                "0.1%",
-            ],
+            ["silence", "1", "0.1", "0.1%"],
             ["reverse"],  # reverse the clip to trim silence from end
             ["silence", "1", "0.1", "0.1%"],
             ["reverse"],  # reverse the clip again to revert to the right direction :)
@@ -110,12 +106,37 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 msg="Should be about half a second of silence removed from the beginning and end when resampled too",
             )
 
-    def test_process_empty_audio(self):
-        for fn in ["empty.wav", "zeros.wav"]:
+    def test_process_empty_audio(self) -> None:
+        for audiofile in ["empty.wav", "zeros.wav"]:
             with mute_logger("everyvoice.preprocessor.preprocessor"):
-                audio, sr = self.preprocessor.process_audio(TEST_DATA_DIR / fn)
+                audio, sr = self.preprocessor.process_audio(TEST_DATA_DIR / audiofile)
             self.assertEqual(audio, None)
             self.assertEqual(sr, None)
+
+    def test_too_short(self) -> None:
+        # too-short.wav is only .28s long, shorter than our minimum .4s
+        with mute_logger("everyvoice.preprocessor.preprocessor"):
+            audio, sr = self.preprocessor.process_audio(TEST_DATA_DIR / "too-short.wav")
+        self.assertEqual(audio, None)
+        self.assertEqual(sr, None)
+        self.assertEqual(self.preprocessor.counters.value("audio_too_short"), 1)
+
+    def test_process_bad_sox_effects(self) -> None:
+        sox_errors_before = self.preprocessor.counters.value("sox_error")
+        for audiofile in "LJ050-0269.wav", "LJ050-0270.wav":
+            with mute_logger("everyvoice.preprocessor.preprocessor"):
+                _ = self.preprocessor.process_audio(
+                    TEST_DATA_DIR / "lj/wavs" / audiofile,
+                    sox_effects=[
+                        ["reverse"],
+                        ["silence", "1", "0.1", "0.1%"],
+                        ["not_a_sox_command"],
+                        ["reverse"],
+                    ],
+                )
+        self.assertEqual(
+            self.preprocessor.counters.value("sox_error"), sox_errors_before + 2
+        )
 
     def test_multichannel_audio_skipped(self):
         """Test that audio files with more than 2 channels are skipped gracefully"""
@@ -1210,6 +1231,81 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=("audio",)
                 )
+
+
+class TestSoxEffects(TestCase):
+    many_effects = [
+        ["norm", "-3.0"],
+        ["silence", "1", "0.1", "0.1%"],
+        ["reverse"],
+        ["silence", "1", "0.1", "0.1%"],
+        ["reverse"],
+        ["silence", "1", "0.1", "1.0%", "-1", "0.4", "1%"],
+    ]
+    audiofile = TEST_DATA_DIR / "lj/wavs/LJ050-0269.wav"
+
+    def test_file_errors(self) -> None:
+        with self.assertRaises(SoxError):
+            apply_sox_effects_to_file("does not exist", "delme-foo", self.many_effects)
+        with self.assertRaises(SoxError):
+            apply_sox_effects_to_file(
+                self.audiofile, "cant/write/here.wav", self.many_effects
+            )
+
+    def test_sox_not_installed(self) -> None:
+        # We pretend sox is not installed by clearing the PATH temporarily
+        saved_path = os.environ["PATH"]
+        try:
+            os.environ["PATH"] = ""
+            with self.assertRaises(Exception) as cm:
+                apply_sox_effects_to_file(self.audiofile, "nodir/nosox.wav", [])
+            self.assertIn(
+                "Please make sure the sox executable is on your PATH",
+                str(cm.exception),
+            )
+        finally:
+            os.environ["PATH"] = saved_path
+
+    def test_effect_errors(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="sox_effects_", dir=".") as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
+
+            with self.assertRaises(SoxError):
+                apply_sox_effects_to_file(
+                    self.audiofile,
+                    tmpdir / "error1.wav",
+                    [["norm", "-3.0"], ["reverse"], ["notasoxcommand"]],
+                )
+            with self.assertRaises(SoxError):
+                apply_sox_effects_to_file(
+                    self.audiofile,
+                    tmpdir / "error2.wav",
+                    [["norm", "-3.0", "1", "2"], ["reverse"]],
+                )
+
+    def test_working_call1(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="sox_effects_", dir=".") as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
+            apply_sox_effects_to_file(
+                self.audiofile, tmpdir / "output1.wav", self.many_effects
+            )
+            self.assertTrue((tmpdir / "output1.wav").exists())
+
+    def test_working_call2(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="sox_effects_", dir=".") as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
+            apply_sox_effects_to_file(
+                self.audiofile, tmpdir / "output2.wav", self.many_effects[:-1]
+            )
+            self.assertTrue((tmpdir / "output2.wav").exists())
+
+    def test_working_call3(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="sox_effects_", dir=".") as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
+            apply_sox_effects_to_file(
+                self.audiofile, tmpdir / "output3.wav", self.many_effects[1:]
+            )
+            self.assertTrue((tmpdir / "output3.wav").exists())
 
 
 class PreprocessingHierarchyTest(TestCase):
