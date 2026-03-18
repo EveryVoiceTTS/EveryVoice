@@ -17,7 +17,7 @@ jobs:
         python-version: ["3.11", "3.12"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       - uses: actions/setup-python@v6
@@ -47,7 +47,7 @@ jobs:
         # Required for conda
         shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
       - name: Set up conda
