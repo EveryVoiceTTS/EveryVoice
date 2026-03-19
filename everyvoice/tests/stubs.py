@@ -366,9 +366,10 @@ def silence_c_stdout():
     address our narrow needs, namely to silence stdout in a context manager.
 
     Warning: disabled on Windows, where it causes silent crashes.
+    Warning: not compatible with pytest
     """
 
-    if not VERBOSE_OVERRIDE and os.name != "nt":
+    if not VERBOSE_OVERRIDE and os.name != "nt" and "pytest" not in sys.modules:
         stdout_fileno = sys.stdout.fileno()
         stdout_save = os.dup(stdout_fileno)
         stdout_fd = os.open(os.devnull, os.O_RDWR)
@@ -394,9 +395,10 @@ def silence_c_stderr():
     address our narrow needs, namely to silence stderr in a context manager.
 
     Warning: disabled on Windows, where it causes silent crashes.
+    Warning: not compatible with pytest
     """
 
-    if not VERBOSE_OVERRIDE and os.name != "nt":
+    if not VERBOSE_OVERRIDE and os.name != "nt" and "pytest" not in sys.modules:
         stderr_fileno = sys.stderr.fileno()
         stderr_save = os.dup(stderr_fileno)
         stderr_fd = os.open(os.devnull, os.O_RDWR)
