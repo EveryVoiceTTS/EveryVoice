@@ -269,6 +269,7 @@
           "type": "string"
         },
         "filelist_loader": {
+          "default": "everyvoice.utils.generic_psv_filelist_reader",
           "description": "Advanced. The file-loader function to use to load your dataset's filelist.",
           "title": "Filelist Loader",
           "type": "string"
@@ -378,6 +379,7 @@
           "type": "array"
         },
         "activation_function": {
+          "default": "everyvoice.utils.original_hifigan_leaky_relu",
           "description": "The activation function to use.",
           "title": "Activation Function",
           "type": "string"
@@ -543,6 +545,7 @@
           "type": "string"
         },
         "filelist_loader": {
+          "default": "everyvoice.utils.generic_psv_filelist_reader",
           "description": "Advanced. The function to use to load the filelist.",
           "title": "Filelist Loader",
           "type": "string"
@@ -638,6 +641,7 @@
           "type": "string"
         },
         "sub_dir_callable": {
+          "default": "everyvoice.utils.get_current_time",
           "description": "The function that generates a string to call your runs - by default this is a timestamp. The structure of your logs will be <name> / <version> / <sub_dir> where <sub_dir> is a timestamp.",
           "title": "Sub Dir Callable",
           "type": "string"

@@ -213,6 +213,7 @@
           "type": "string"
         },
         "filelist_loader": {
+          "default": "everyvoice.utils.generic_psv_filelist_reader",
           "description": "Advanced. The file-loader function to use to load your dataset's filelist.",
           "title": "Filelist Loader",
           "type": "string"
@@ -432,6 +433,7 @@
           "type": "string"
         },
         "filelist_loader": {
+          "default": "everyvoice.utils.generic_psv_filelist_reader",
           "description": "Advanced. The function to use to load the filelist.",
           "title": "Filelist Loader",
           "type": "string"
@@ -584,6 +586,7 @@
           "type": "string"
         },
         "sub_dir_callable": {
+          "default": "everyvoice.utils.get_current_time",
           "description": "The function that generates a string to call your runs - by default this is a timestamp. The structure of your logs will be <name> / <version> / <sub_dir> where <sub_dir> is a timestamp.",
           "title": "Sub Dir Callable",
           "type": "string"
@@ -925,8 +928,13 @@
           "type": "object"
         },
         "cleaners": {
+          "default": [
+            "everyvoice.utils.collapse_whitespace",
+            "everyvoice.utils.strip_text"
+          ],
           "description": "List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.",
           "items": {
+            "default": "everyvoice.utils.generic_psv_filelist_reader",
             "type": "string"
           },
           "title": "Global cleaners",
@@ -935,6 +943,7 @@
         "language_cleaners": {
           "additionalProperties": {
             "items": {
+              "default": "everyvoice.utils.generic_psv_filelist_reader",
               "type": "string"
             },
             "type": "array"
@@ -947,6 +956,7 @@
         "dataset_cleaners": {
           "additionalProperties": {
             "items": {
+              "default": "everyvoice.utils.generic_psv_filelist_reader",
               "type": "string"
             },
             "type": "array"
