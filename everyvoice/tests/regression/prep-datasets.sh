@@ -10,6 +10,7 @@ SGILE_DATASET_ROOT=${SGILE_DATASET_ROOT:-$HOME/sgile/data}
 
 DURATIONS="20 60 180 full"
 
+# Source: https://keithito.com/LJ-Speech-Dataset
 LJ_SPEECH_DATASET=$SGILE_DATASET_ROOT/LJSpeech-1.1
 
 for duration in $DURATIONS; do
@@ -35,6 +36,7 @@ cp "$EVERYVOICE_REGRESS_ROOT"/run-demo-app-lj-full.sh regress-lj-full/run-demo-a
 cp "$EVERYVOICE_REGRESS_ROOT"/test-demo-app-lj-full.py regress-lj-full/test-demo-app.py
 cp "$EVERYVOICE_REGRESS_ROOT"/wait-for-demo-app.py "$dir"/wait-for-demo-app.py
 
+# Source: https://openslr.org/30
 SinhalaTTS=$SGILE_DATASET_ROOT/SinhalaTTS
 for duration in $DURATIONS; do
     dir=regress-si-$duration
@@ -59,6 +61,7 @@ for duration in $DURATIONS; do
     echo "අක-ෂර" > "$dir"/test2.txt
 done
 
+# Source: https://openslr.org/32
 isiXhosa=$SGILE_DATASET_ROOT/OpenSLR32-four-South-Afican-languages/xh_za/za/xho
 for duration in $DURATIONS; do
     dir=regress-xh-$duration
