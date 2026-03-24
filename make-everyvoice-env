@@ -262,8 +262,8 @@ if [[ ! -f .git/hooks/commit-msg ]]; then
     fi
 fi
 # Try to install pre-commit and gitlint hooks in the submodules but don't complain on failure
-git submodule foreach 'pre-commit install || true' >& /dev/null || true
-git submodule foreach 'gitlint install-hook || true' >& /dev/null || true
+git submodule foreach 'test -f $(cat .git|cut -f2 -d" ")/hooks/pre-commit || pre-commit install || true' >& /dev/null || true
+git submodule foreach 'test -f $(cat .git|cut -f2 -d" ")/hooks/commit-msg || gitlint install-hook || true' >& /dev/null || true
 
 echo ""
 echo "SUCCESS!"
