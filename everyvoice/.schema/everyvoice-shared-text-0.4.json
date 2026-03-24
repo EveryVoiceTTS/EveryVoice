@@ -215,8 +215,13 @@
       "type": "object"
     },
     "cleaners": {
+      "default": [
+        "everyvoice.utils.collapse_whitespace",
+        "everyvoice.utils.strip_text"
+      ],
       "description": "List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.",
       "items": {
+        "default": "everyvoice.utils.generic_psv_filelist_reader",
         "type": "string"
       },
       "title": "Global cleaners",
@@ -225,6 +230,7 @@
     "language_cleaners": {
       "additionalProperties": {
         "items": {
+          "default": "everyvoice.utils.generic_psv_filelist_reader",
           "type": "string"
         },
         "type": "array"
@@ -237,6 +243,7 @@
     "dataset_cleaners": {
       "additionalProperties": {
         "items": {
+          "default": "everyvoice.utils.generic_psv_filelist_reader",
           "type": "string"
         },
         "type": "array"

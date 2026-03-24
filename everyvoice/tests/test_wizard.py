@@ -95,9 +95,9 @@ def find_step(name: Enum, steps: Sequence[Step | list[Step]]):
     raise IndexError(f"Step {name} not found.")  # pragma: no cover
 
 
-class TestStep(Step):
-    """A Step subclass that allows specified the effect, prompt and validate
-    methods in the constructor."""
+class StepStub(Step):
+    """A Step subclass that allows specifying the effect, prompt and validate
+    methods in the constructor, for test purposes."""
 
     def __init__(
         self,
@@ -217,8 +217,8 @@ class WizardTest(WizardTestBase):
 
     def test_implementation_missing(self):
         nothing_step = Step(name="Dummy Step")
-        no_validate_step = TestStep(name="Dummy Step", prompt_method=lambda: "test")
-        no_prompt_step = TestStep(name="Dummy Step", validate_method=lambda: True)
+        no_validate_step = StepStub(name="Dummy Step", prompt_method=lambda: "test")
+        no_prompt_step = StepStub(name="Dummy Step", validate_method=lambda: True)
         for step in [nothing_step, no_validate_step, no_prompt_step]:
             with self.assertRaises(NotImplementedError):
                 step.run()
@@ -284,7 +284,7 @@ class WizardTest(WizardTestBase):
             )
 
     def test_access_response(self):
-        root_step = TestStep(
+        root_step = StepStub(
             name="Dummy Step",
             prompt_method=lambda: "foo",
             validate_method=lambda x: True,
@@ -295,7 +295,7 @@ class WizardTest(WizardTestBase):
             if self.parent.response + x == "foobar":
                 return True
 
-        second_step = TestStep(
+        second_step = StepStub(
             name="Dummy Step 2", prompt_method=lambda: "bar", parent=root_step
         )
         second_step.validate = MethodType(validate, second_step)

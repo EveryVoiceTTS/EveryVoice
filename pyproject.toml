@@ -63,10 +63,9 @@ dependencies = [
   "librosa==0.11.0",
   "lightning>=2.1.0",
   "loguru==0.6.0",
-  "matplotlib~=3.9.0",
+  "matplotlib>=3.9.0",
   "merge-args",
   "nltk==3.9.3",
-  "numpy<2",                       # torch < 2.4.1 requires numpy < 2 but fails to declare it
   "packaging>=22.0",
   "pandas~=2.0",
   "protobuf~=4.25",                # https://github.com/EveryVoiceTTS/EveryVoice/issues/387
@@ -77,7 +76,7 @@ dependencies = [
   "pyworld-prebuilt==0.3.4.4",
   "PyYAML>=6.0",
   "readalongs>=1.2.0",
-  "questionary==1.10.0",
+  "questionary>=2.0.0",
   "simple-term-menu==1.5.2",
   "tabulate==0.9.0",
   "tensorboard>=2.14.1",
@@ -101,6 +100,7 @@ torch = [
 dev = [
   "black~=24.3",
   "coverage",
+  "chardet<6", # requests<=2.32.5 not compat with chardet>=6, remove this on next requests release
   "diff-cover",
   "flake8>=4.0.1",
   "gitlint-core>=0.19.0",
@@ -111,10 +111,15 @@ dev = [
   "types-requests>=2.27.11",
   "types-setuptools>=57.4.9",
   "types-tabulate==0.9.0",
-  "types-tqdm>=4.64,<5.0",
+  "types-tqdm>=4.66",
   "everyvoice[test]",
 ]
-test = ["jsonschema>=4.17.3", "pep440>=0.1.2", "playwright>=1.52.0"]
+test = [
+  "jsonschema>=4.17.3",
+  "pep440>=0.1.2",
+  "playwright>=1.52.0",
+  "pytest",
+]
 docs = [
   "mkdocs>=1.5.2",
   "mkdocs-click>=0.8.0",
@@ -206,4 +211,7 @@ testpaths = [
   "everyvoice/tests",
   "everyvoice/model/feature_prediction/FastSpeech2_lightning/fs2/tests",
   "everyvoice/model/aligner/wav2vec2aligner/aligner/tests",
+]
+filterwarnings = [
+  "ignore:Can't initialize NVML:UserWarning",
 ]

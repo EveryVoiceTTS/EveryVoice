@@ -146,6 +146,7 @@
           "type": "string"
         },
         "filelist_loader": {
+          "default": "everyvoice.utils.generic_psv_filelist_reader",
           "description": "Advanced. The file-loader function to use to load your dataset's filelist.",
           "title": "Filelist Loader",
           "type": "string"

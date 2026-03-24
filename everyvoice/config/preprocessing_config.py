@@ -12,10 +12,7 @@ from everyvoice.config.utils import (
     PossiblySerializedCallable,
     load_partials,
 )
-from everyvoice.utils import (
-    generic_psv_filelist_reader,
-    load_config_from_json_or_yaml_path,
-)
+from everyvoice.utils import load_config_from_json_or_yaml_path
 
 
 class AudioSpecTypeEnum(str, Enum):
@@ -104,15 +101,18 @@ class Dataset(PartialLoadConfig):
         validate_default=True,
     )
     data_dir: PossiblyRelativePath = Field(
-        default="/please/create/a/path/to/your/dataset/data",  # type: ignore[assignment]
+        default="/please/create/a/path/to/your/dataset/data",
+        validate_default=True,
         description="The path to the directory with your audio files.",
     )
     filelist: PossiblyRelativePath = Field(
-        default="/please/create/a/path/to/your/dataset/filelist",  # type: ignore[assignment]
+        default="/please/create/a/path/to/your/dataset/filelist",
+        validate_default=True,
         description="The path to your dataset's filelist.",
     )
     filelist_loader: PossiblySerializedCallable = Field(
-        default=generic_psv_filelist_reader,
+        default="everyvoice.utils.generic_psv_filelist_reader",
+        validate_default=True,
         description="Advanced. The file-loader function to use to load your dataset's filelist.",
     )
     sox_effects: list = Field(
@@ -141,6 +141,7 @@ class PreprocessingConfig(PartialLoadConfig):
     )
     save_dir: PossiblyRelativePathMustExist = Field(
         default="preprocessed/YourDataSet",  # type: ignore[assignment]
+        validate_default=False,  # don't set to True, it causes spurious dir creation
         description="The directory to save preprocessed files to.",
     )
     audio: AudioConfig = Field(

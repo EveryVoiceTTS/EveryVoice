@@ -8,13 +8,10 @@ from typing_extensions import Self
 
 from everyvoice.config.shared_types import ConfigModel, init_context
 from everyvoice.config.utils import PossiblySerializedCallable
+from everyvoice.config.validation_helpers import string_to_callable
 from everyvoice.text.phonemizer import G2PCallable
 from everyvoice.text.utils import normalize_text_helper
-from everyvoice.utils import (
-    collapse_whitespace,
-    load_config_from_json_or_yaml_path,
-    strip_text,
-)
+from everyvoice.utils import load_config_from_json_or_yaml_path
 
 
 class Punctuation(BaseModel):
@@ -198,7 +195,13 @@ def load_custom_g2p_engine(lang_id: str, qualified_g2p_func_name: str) -> G2PCal
     return validate_g2p_engine_signature(getattr(module, function_name))
 
 
-DEFAULT_CLEANERS: list[PossiblySerializedCallable] = [collapse_whitespace, strip_text]
+DEFAULT_CLEANERS_S = [
+    "everyvoice.utils.collapse_whitespace",
+    "everyvoice.utils.strip_text",
+]
+DEFAULT_CLEANERS: list[PossiblySerializedCallable] = [
+    string_to_callable(cleaner) for cleaner in DEFAULT_CLEANERS_S
+]
 
 
 class TextConfig(ConfigModel):
@@ -219,7 +222,8 @@ class TextConfig(ConfigModel):
         description="Map from dataset label to replacement maps. Supercedes both the global text replacements and language_to_replace when defined for a given dataset.",
     )
     cleaners: list[PossiblySerializedCallable] = Field(
-        default=DEFAULT_CLEANERS,
+        default=DEFAULT_CLEANERS_S,
+        validate_default=True,
         title="Global cleaners",
         description="List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.",
     )

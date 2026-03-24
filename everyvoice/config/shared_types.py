@@ -25,7 +25,6 @@ from everyvoice.config.utils import (
     PossiblyRelativePathMustExist,
     PossiblySerializedCallable,
 )
-from everyvoice.utils import generic_psv_filelist_reader, get_current_time
 
 _init_context_var = ContextVar("_init_context_var", default=None)
 
@@ -158,13 +157,14 @@ class LoggerConfig(PartialLoadConfig):
     )
 
     save_dir: PossiblyRelativePathMustExist = Field(
-        # default for Paths must be str for correctly generating schemas on all platforms
         default="logs_and_checkpoints",  # type: ignore[assignment]
+        validate_default=False,  # keep False: True causes dir creation when we don't want it
         description="The directory to save your checkpoints and logs to.",
     )
 
     sub_dir_callable: PossiblySerializedCallable = Field(
-        default=get_current_time,
+        default="everyvoice.utils.get_current_time",
+        validate_default=True,
         description="The function that generates a string to call your runs - by default this is a timestamp. The structure of your logs will be <name> / <version> / <sub_dir> where <sub_dir> is a timestamp.",
     )
 
@@ -219,15 +219,18 @@ class BaseTrainingConfig(PartialLoadConfig):
         description="Automatically resume training from a checkpoint loaded from this path.",
     )
     training_filelist: PossiblyRelativePath = Field(
-        default="path/to/your/preprocessed/training_filelist.psv",  # type: ignore[assignment]
+        default="path/to/your/preprocessed/training_filelist.psv",
+        validate_default=True,
         description="The path to a filelist containing samples belonging to your training set.",
     )
     validation_filelist: PossiblyRelativePath = Field(
-        default="path/to/your/preprocessed/validation_filelist.psv",  # type: ignore[assignment]
+        default="path/to/your/preprocessed/validation_filelist.psv",
+        validate_default=True,
         description="The path to a filelist containing samples belonging to your validation set.",
     )
     filelist_loader: PossiblySerializedCallable = Field(
-        default=generic_psv_filelist_reader,
+        default="everyvoice.utils.generic_psv_filelist_reader",
+        validate_default=True,
         description="Advanced. The function to use to load the filelist.",
     )
     logger: LoggerConfig = Field(
