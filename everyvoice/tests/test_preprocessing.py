@@ -731,7 +731,18 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             # tmpdir = Path("./mixed-cleaners-dir")  # for inspecting the results
             with stubs.temp_chdir(tmpdir):
                 runner = CliRunner()
-                os.symlink(TEST_DATA_DIR, "./data")
+                if os.name == "nt":
+                    os.mkdir("data")
+                    # (tmpdir / "data/lj").mkdir(parents=True)
+                    shutil.copy(TEST_DATA_DIR / "mixed-cleaners-resume", "data")
+                    shutil.copy(TEST_DATA_DIR / "nfd-mixed-case.psv", "data")
+                    # os.system("ls -la data")
+                    os.mkdir(Path("data/lj"))
+                    shutil.copytree(TEST_DATA_DIR / "lj/wavs", Path("data/lj/wavs"))
+                    # os.system("ls -laR data")
+                else:
+                    os.symlink(TEST_DATA_DIR, "./data")
+
                 result = runner.invoke(
                     app, ["new-project", "--resume-from", "data/mixed-cleaners-resume"]
                 )

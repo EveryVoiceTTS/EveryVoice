@@ -364,9 +364,11 @@ def silence_c_stdout():
 
     Loosely inspired by https://stackoverflow.com/a/24277852, but much simplified to
     address our narrow needs, namely to silence stdout in a context manager.
+
+    Warning: disabled on Windows, where it causes silent crashes.
     """
 
-    if not VERBOSE_OVERRIDE:
+    if not VERBOSE_OVERRIDE and os.name != "nt":
         stdout_fileno = sys.stdout.fileno()
         stdout_save = os.dup(stdout_fileno)
         stdout_fd = os.open(os.devnull, os.O_RDWR)
@@ -390,9 +392,11 @@ def silence_c_stderr():
 
     Loosely inspired by https://stackoverflow.com/a/24277852, but much simplified to
     address our narrow needs, namely to silence stderr in a context manager.
+
+    Warning: disabled on Windows, where it causes silent crashes.
     """
 
-    if not VERBOSE_OVERRIDE:
+    if not VERBOSE_OVERRIDE and os.name != "nt":
         stderr_fileno = sys.stderr.fileno()
         stderr_save = os.dup(stderr_fileno)
         stderr_fd = os.open(os.devnull, os.O_RDWR)

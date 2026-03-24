@@ -104,11 +104,11 @@ class Dataset(PartialLoadConfig):
         validate_default=True,
     )
     data_dir: PossiblyRelativePath = Field(
-        default=Path("/please/create/a/path/to/your/dataset/data"),
+        default="/please/create/a/path/to/your/dataset/data",  # type: ignore[assignment]
         description="The path to the directory with your audio files.",
     )
     filelist: PossiblyRelativePath = Field(
-        default=Path("/please/create/a/path/to/your/dataset/filelist"),
+        default="/please/create/a/path/to/your/dataset/filelist",  # type: ignore[assignment]
         description="The path to your dataset's filelist.",
     )
     filelist_loader: PossiblySerializedCallable = Field(
@@ -140,7 +140,7 @@ class PreprocessingConfig(PartialLoadConfig):
         description="The seed to use when splitting the dataset into train and validation sets.",
     )
     save_dir: PossiblyRelativePathMustExist = Field(
-        default=Path("./preprocessed/YourDataSet"),
+        default="preprocessed/YourDataSet",  # type: ignore[assignment]
         description="The directory to save preprocessed files to.",
     )
     audio: AudioConfig = Field(

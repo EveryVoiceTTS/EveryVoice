@@ -158,7 +158,8 @@ class LoggerConfig(PartialLoadConfig):
     )
 
     save_dir: PossiblyRelativePathMustExist = Field(
-        default=Path("./logs_and_checkpoints"),
+        # default for Paths must be str for correctly generating schemas on all platforms
+        default="logs_and_checkpoints",  # type: ignore[assignment]
         description="The directory to save your checkpoints and logs to.",
     )
 
@@ -218,11 +219,11 @@ class BaseTrainingConfig(PartialLoadConfig):
         description="Automatically resume training from a checkpoint loaded from this path.",
     )
     training_filelist: PossiblyRelativePath = Field(
-        default=Path("./path/to/your/preprocessed/training_filelist.psv"),
+        default="path/to/your/preprocessed/training_filelist.psv",  # type: ignore[assignment]
         description="The path to a filelist containing samples belonging to your training set.",
     )
     validation_filelist: PossiblyRelativePath = Field(
-        default=Path("./path/to/your/preprocessed/validation_filelist.psv"),
+        default="path/to/your/preprocessed/validation_filelist.psv",  # type: ignore[assignment]
         description="The path to a filelist containing samples belonging to your validation set.",
     )
     filelist_loader: PossiblySerializedCallable = Field(
