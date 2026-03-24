@@ -273,4 +273,4 @@ if [[ $USE_UV ]]; then
 else
     echo "Run \"conda activate $ENV2ACTIVATE\" to activate it."
 fi
-echo "Run \"everyvoice/run_tests.py all\" to validate it."
+echo "Run \"pytest\" to validate it."

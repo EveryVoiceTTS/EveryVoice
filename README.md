@@ -149,6 +149,7 @@ Many thanks to:
 ## Tests
 
 There are many ways to run the unit tests, if you installed EveryVoice from source:
+ - Run all the tests with the most concise output: `pytest`
  - Run all the dev tests: `everyvoice/run_tests.py dev` or `everyvoice test dev`
  - Run the tests with verbose logs: `everyvoice/run_tests.py --verbose dev`
  - Show the names of the other suites you can run: `everyvoice/run_tests.py -h`
