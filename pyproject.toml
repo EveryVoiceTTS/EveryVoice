@@ -209,9 +209,11 @@ check_untyped_defs = false
 [tool.pytest.ini_options]
 testpaths = [
   "everyvoice/tests",
-  "everyvoice/model/feature_prediction/FastSpeech2_lightning/fs2/tests",
-  "everyvoice/model/aligner/wav2vec2aligner/aligner/tests",
+  "everyvoice/**/tests",
 ]
 filterwarnings = [
   "ignore:Can't initialize NVML:UserWarning",
+  "ignore:.*use of fork.. may lead to deadlocks in the child.:DeprecationWarning",
+  "ignore:'audioop' is deprecated and slated for removal in Python 3.13:DeprecationWarning",
+  "ignore:.*srun.*:UserWarning",
 ]
