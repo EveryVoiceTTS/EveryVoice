@@ -225,13 +225,6 @@ if [[ $USE_UV ]]; then
     fi
 
     r uv pip install -e .[dev]
-
-    # Validation for libsox-dev
-    if python -c 'from torchaudio.sox_effects import apply_effects_tensor; apply_effects_tensor(None, 172, [])' 2>&1 | grep 'OSError: libsox'; then
-        error_exit "libsox.so not found. This will cause issues with audio pre-processing." \
-                   "Please install sox and its Python bindings, e.g., via libsox-dev, before running EveryVoice." \
-                   "See README.md for instructions, or else use make-everyvoice-env --conda instead of --uv."
-    fi
 else
     r conda create -y "${ENV_OPTION[@]}" python="$PYTHON_VERSION" ffmpeg
     eval "$(conda shell.bash hook)"
