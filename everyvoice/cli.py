@@ -895,7 +895,5 @@ def g2p(
         print(g2p(line))
 
 
-CLICK_APP = typer.main.get_group(app)
-
 if __name__ == "__main__":
     app()

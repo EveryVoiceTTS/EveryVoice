@@ -77,6 +77,7 @@ dependencies = [
   "PyYAML>=6.0",
   "readalongs>=1.2.0",
   "questionary>=2.0.0",
+  "setuptools<80",  # needed for tensorboard us to 2.20.0, should no longer be needed with next version
   "simple-term-menu==1.5.2",
   "tabulate==0.9.0",
   "tensorboard>=2.14.1",
@@ -209,9 +210,11 @@ check_untyped_defs = false
 [tool.pytest.ini_options]
 testpaths = [
   "everyvoice/tests",
-  "everyvoice/model/feature_prediction/FastSpeech2_lightning/fs2/tests",
-  "everyvoice/model/aligner/wav2vec2aligner/aligner/tests",
+  "everyvoice/**/tests",
 ]
 filterwarnings = [
   "ignore:Can't initialize NVML:UserWarning",
+  "ignore:.*use of fork.. may lead to deadlocks in the child.:DeprecationWarning",
+  "ignore:'audioop' is deprecated and slated for removal in Python 3.13:DeprecationWarning",
+  "ignore:.*srun.*:UserWarning",
 ]

@@ -17,7 +17,6 @@ import yaml
 from deepdiff import DeepDiff
 from loguru import logger
 from pydantic import ValidationError
-from tqdm import tqdm
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import InvalidConfiguration
@@ -190,6 +189,8 @@ def train_base_command(
     gradient_clip_val: float | None,
     model_kwargs={},
 ):
+    from tqdm import tqdm
+
     from everyvoice.base_cli.callback import ResetValidationDataloaderCallback
 
     config = load_config_base_command(model_config, config_args, config_file)
