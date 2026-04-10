@@ -2,9 +2,9 @@
 
 import json
 import time
+from collections.abc import Callable
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Callable
 from unittest import TestCase, main
 
 import yaml

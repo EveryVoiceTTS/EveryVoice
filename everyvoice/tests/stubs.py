@@ -3,10 +3,11 @@ import logging
 import os
 import re
 import sys
+from collections.abc import Generator, Sequence
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import ModuleType
-from typing import Any, Generator, Sequence
+from typing import Any
 
 from loguru import logger
 

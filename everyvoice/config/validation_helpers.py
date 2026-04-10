@@ -1,6 +1,7 @@
+from collections.abc import Callable
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Optional
 
 from loguru import logger
 from pydantic import ValidationInfo

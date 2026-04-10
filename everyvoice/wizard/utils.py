@@ -3,10 +3,10 @@ import json
 import os
 import re
 from collections import UserDict
+from collections.abc import Iterable
 from enum import Enum
 from itertools import islice
 from pathlib import Path
-from typing import Iterable
 
 import rich.markup
 import yaml

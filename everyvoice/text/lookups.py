@@ -1,5 +1,6 @@
+from collections.abc import Iterable, Sequence
 from itertools import chain
-from typing import Iterable, Sequence, Union
+from typing import Union
 
 from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig

@@ -3,7 +3,7 @@ Encapsulate the logic for prompting the user for input in a simple terminal wind
 """
 
 import sys
-from typing import Sequence
+from collections.abc import Sequence
 
 import rich
 from questionary import Style

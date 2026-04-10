@@ -1,5 +1,6 @@
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any, Callable, Optional, Sequence
+from typing import Any, Optional
 
 from loguru import logger
 from pydantic import PlainSerializer, WithJsonSchema

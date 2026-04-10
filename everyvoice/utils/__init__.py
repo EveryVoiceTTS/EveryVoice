@@ -3,12 +3,13 @@ import json
 import os
 import re
 import sys
+from collections.abc import Iterable
 from contextlib import contextmanager
 from datetime import datetime
 from functools import partial
 from itertools import islice
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Optional
 from unicodedata import normalize
 
 import yaml
@@ -113,7 +114,7 @@ def check_dataset_size(batch_size: int, number_of_samples: int, name: str):
         sys.exit(1)
 
 
-def return_configs_from_dir(dir: Path) -> Dict[str, Path]:
+def return_configs_from_dir(dir: Path) -> dict[str, Path]:
     return {os.path.basename(path)[:-5]: path for path in dir.glob("*.yaml")}
 
 

@@ -1,6 +1,7 @@
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 
 import pytorch_lightning as pl
 import torch

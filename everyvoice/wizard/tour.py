@@ -1,7 +1,8 @@
 import sys
+from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from typing import Any, Optional, Sequence
+from typing import Any, Optional
 
 import questionary
 import yaml
