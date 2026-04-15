@@ -47,7 +47,8 @@ dependencies = [
   "deepdiff>=6.5.0",
   "anytree>=2.12.1",
   "einops==0.5.0",
-  "g2p>=2.3.1,<3",
+  #"g2p>=2.3.1,<3",
+  "g2p@git+https://github.com/NRC-ILT/g2p.git@dev.ej/relax-click",
   "gradio>=5.9.1",
   "grapheme>=0.6.0",
   # We have used the panphon 0.20 phonological feature definition from the beginning.
@@ -70,7 +71,8 @@ dependencies = [
   "pysdtw==0.0.5",
   "pyworld-prebuilt==0.3.4.4",
   "PyYAML>=6.0",
-  "readalongs>=1.2.0",
+  #"readalongs>=1.2.0",
+  "readalongs@git+https://github.com/ReadAlongs/Studio.git@dev.ej/relax-click",
   "questionary>=2.0.0",
   "setuptools<80",  # needed for tensorboard us to 2.20.0, should no longer be needed with next version
   "simple-term-menu==1.5.2",
@@ -186,6 +188,9 @@ exclude = [
   "setup.py",
   "tests/",
 ]
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.isort]
 known_first_party = "everyvoice"
