@@ -88,9 +88,9 @@ class SubsampleTest(TestCase):
             app, [str(self.metadata_path), str(self.wavs_path), "-d", "7", "-f", "txt"]
         )
         self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("Invalid value for", result.stdout)
+        self.assertIn("Invalid value for", result.output)
         self.assertRegex(
-            result.stdout,
+            result.output,
             r"(?s)txt is not one of psv tsv csv festival".replace(" ", r".*"),
         )
 
@@ -115,7 +115,7 @@ class SubsampleTest(TestCase):
 
         self.assertNotEqual(result.exit_code, 0)
         self.assertRegex(
-            result.stdout,
+            result.output,
             r"Invalid value: Festival formatted files cannot have a speaker id.".replace(
                 " ", r"[\s\S]*"
             ),
@@ -137,7 +137,7 @@ class SubsampleTest(TestCase):
         )
         self.assertNotEqual(result.exit_code, 0)
         self.assertRegex(
-            result.stdout,
+            result.output,
             r"A \.wav file could not be found".replace(" ", r"[\s\S]*"),
         )
 
