@@ -384,6 +384,43 @@ class CLITest(TestCase):
         self.assertIn("It appears to have 0.0 M parameters.", result.stdout)
         self.assertIn("Number of Parameters", result.stdout)
 
+    def test_inspect_not_a_checkpoint(self) -> None:
+        result = self.runner.invoke(app, ["checkpoint", "inspect", os.devnull])
+        assert result.exit_code != 0
+        assert "Error loading checkpoint" in str(result.exception)
+
+    def test_inspect_good_fp_checkpoint(self) -> None:
+        fp_path, _ = self.get_dummy_models()
+        result = self.runner.invoke(app, ["checkpoint", "inspect", str(fp_path)])
+        assert result.exit_code == 0
+        assert "according to its model info: {'name': 'FastSpeech2'" in result.output
+        assert "Trainable params" in result.output
+
+    def test_inspect_good_vocoder_checkpoint(self) -> None:
+        _, vocoder_path = self.get_dummy_models()
+        result = self.runner.invoke(app, ["checkpoint", "inspect", str(vocoder_path)])
+        assert result.exit_code == 0
+        assert "according to its model info: {'name': 'HiFiGAN'" in result.output
+        assert "Trainable params: 83,986,835" in result.output
+
+    def test_export_and_inspect_generator(self) -> None:
+        _, vocoder_path = self.get_dummy_models()
+        with tempfile.TemporaryDirectory(prefix="generator_", dir=".") as tmpdir_str:
+            exported_path = Path(tmpdir_str) / "exported.ckpt"
+            result = self.runner.invoke(
+                app,
+                ["export", "spec-to-wav", "-o", str(exported_path), str(vocoder_path)],
+            )
+            assert result.exit_code == 0
+            assert exported_path.exists()
+
+            result = self.runner.invoke(
+                app, ["checkpoint", "inspect", str(exported_path)]
+            )
+            assert result.exit_code == 0
+            assert "HiFiGANGenerator" in result.output
+            assert "Trainable params: 13,254,034" in result.output
+
     def test_preprocessing_with_wrong_config(self):
         """
         The user should have a friendly message that informs them that they used the wrong config file type.
@@ -611,7 +648,7 @@ class CLITest(TestCase):
         print("mock_fuction_placeholder2 called with kwargs:", kwargs)
         pass
 
-    def test_create_demo_app_with_ui_config_file(self):
+    def test_create_demo_app_with_ui_config_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir_str:
             tmpdir = Path(tmpdir_str)
             # This test is just to make sure that the demo app can be created with parameters for gradio
