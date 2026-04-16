@@ -210,4 +210,5 @@ filterwarnings = [
   "ignore:.*use of fork.. may lead to deadlocks in the child.:DeprecationWarning",
   "ignore:'audioop' is deprecated and slated for removal in Python 3.13:DeprecationWarning",
   "ignore:.*srun.*:UserWarning",
+  "ignore:.*DataLoader.*:UserWarning",
 ]
