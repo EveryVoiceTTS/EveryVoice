@@ -427,6 +427,13 @@ class CLITest(TestCase):
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("Invalid value", result.output)
 
+    EMPTY_DEMO_ARGS: dict[str, Any] = {
+        "languages": [],
+        "speakers": [],
+        "output_dir": None,
+        "accelerator": None,
+    }
+
     def test_create_demo_app_with_errors(self):
         # outputs is the first thing to get checked, because it can be done as
         # a quick check before loading any models.
@@ -434,11 +441,8 @@ class CLITest(TestCase):
             create_demo_app(
                 text_to_spec_model_path=None,
                 spec_to_wav_model_path=None,
-                languages=[],
-                speakers=[],
+                **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
                 outputs=[],
-                output_dir=None,
-                accelerator=None,
             )
         self.assertIn("Empty outputs list", str(cm.exception))
 
@@ -450,13 +454,40 @@ class CLITest(TestCase):
                 create_demo_app(
                     text_to_spec_model_path=None,
                     spec_to_wav_model_path=None,
-                    languages=[],
-                    speakers=[],
+                    **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
                     outputs=outputs,
-                    output_dir=None,
-                    accelerator=None,
                 )
             self.assertIn("Unknown output format 'foo'", str(cm.exception))
+
+    def test_demo_with_bad_models(self) -> None:
+        devnull = Path(os.devnull)
+        with self.assertRaises(ValueError) as cm:
+            create_demo_app(devnull, devnull, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
+        self.assertIn("It does not appear to be a valid checkpoint", str(cm.exception))
+
+        with self.assertRaises(ValueError) as cm:
+            create_demo_app(
+                devnull,
+                self.data_dir / "test.ckpt",
+                **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
+                outputs=["wav"],
+            )
+        self.assertIn("maybe it's not actually a HiFiGAN model", str(cm.exception))
+
+    def test_demo_with_wrong_models(self) -> None:
+        fp_path, vocoder_path = self.get_dummy_models()
+        with self.assertRaises(ValueError) as cm:
+            create_demo_app(fp_path, fp_path, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
+        self.assertIn("maybe it's not actually a HiFiGAN model", str(cm.exception))
+
+        with self.assertRaises(ValueError) as cm:
+            create_demo_app(
+                vocoder_path,
+                vocoder_path,
+                **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
+                outputs=["wav"],
+            )
+        self.assertIn("maybe it's not actually an fs2 model", str(cm.exception))
 
     def test_g2p(self):
         with silence_c_stderr():
