@@ -175,8 +175,9 @@ def validate_g2p_engine_signature(g2p_func: G2PCallable) -> G2PCallable:
     assert (
         sig.parameters[arg_names[0]].annotation is str
     ), "G2P Engine's signature should take a string"
-    assert (
-        sig.return_annotation is typing.List[str]
+    assert sig.return_annotation in (
+        list[str],
+        typing.List[str],  # noqa: UP006 deprecated typing allowed for backwards compat
     ), "G2P Engine's signature should return a list of strings"
 
     return g2p_func

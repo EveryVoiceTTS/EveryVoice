@@ -1,10 +1,10 @@
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any, Callable, Optional, Sequence
+from typing import Annotated, Any, Optional
 
 from loguru import logger
 from pydantic import PlainSerializer, WithJsonSchema
 from pydantic.functional_validators import BeforeValidator
-from typing_extensions import Annotated
 
 from everyvoice.utils import load_config_from_json_or_yaml_path
 

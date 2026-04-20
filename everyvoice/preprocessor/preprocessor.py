@@ -11,11 +11,12 @@ import multiprocessing as mp
 import random
 import sys
 from collections import Counter
+from collections.abc import Callable, Sequence
 from datetime import datetime
 from glob import glob
 from multiprocessing import Manager
 from pathlib import Path
-from typing import Callable, Optional, Sequence
+from typing import Optional
 
 import numpy as np
 import numpy.typing as npt

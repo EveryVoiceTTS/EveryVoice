@@ -6,8 +6,8 @@ import argparse
 import importlib
 import re
 import sys
+from collections.abc import Iterable
 from os.path import dirname
-from typing import Iterable
 from unittest import TestLoader, TestSuite, TextTestRunner
 
 from loguru import logger

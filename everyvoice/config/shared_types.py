@@ -3,12 +3,12 @@ Types shared among all EV modules, though not always super fast to load.
 Tiny type defs that load in milliseconds can go into type_definitions.py.
 """
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Callable, Dict, Iterator, Tuple, Union
+from typing import Annotated, Any, Optional, Union
 
 from pydantic import (
     BaseModel,
@@ -18,7 +18,6 @@ from pydantic import (
     ValidationInfo,
     model_validator,
 )
-from typing_extensions import Annotated, Optional
 
 from everyvoice.config.utils import (
     PossiblyRelativePath,
@@ -30,7 +29,7 @@ _init_context_var = ContextVar("_init_context_var", default=None)
 
 
 @contextmanager
-def init_context(value: Dict[str, Any]) -> Iterator[None]:
+def init_context(value: dict[str, Any]) -> Iterator[None]:
     """
     This context manager is use in tandem with pydantic to pass down a context to validators.
     As described in [Using validation context with BaseModel initialization]
@@ -294,7 +293,7 @@ class RMSOptimizer(BaseOptimizer):
 
 
 class AdamOptimizer(BaseOptimizer):
-    betas: Tuple[float, float] = Field(
+    betas: tuple[float, float] = Field(
         default=(0.9, 0.98),
         description="Advanced. The values of the Adam Optimizer beta coefficients.",
     )
@@ -302,7 +301,7 @@ class AdamOptimizer(BaseOptimizer):
 
 
 class AdamWOptimizer(BaseOptimizer):
-    betas: Tuple[float, float] = Field(
+    betas: tuple[float, float] = Field(
         default=(0.9, 0.98),
         description="Advanced. The values of the AdamW Optimizer beta coefficients.",
     )

@@ -3,7 +3,8 @@
 # Copyright (c) 2018 Ming
 # Copyright (c) 2019-2025 National Research Council Canada for changes to adapt the code to EveryVoice
 
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Optional
 
 import pandas as pd
 import torch

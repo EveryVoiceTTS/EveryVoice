@@ -6,13 +6,14 @@ import os
 import string
 import sys
 import tempfile
+from collections.abc import Callable, Iterable, Sequence
 from contextlib import AbstractContextManager
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
 from textwrap import dedent
 from types import MethodType
-from typing import Callable, Iterable, NamedTuple, Optional, Sequence
+from typing import NamedTuple, Optional
 from unittest import TestCase, main
 
 import yaml

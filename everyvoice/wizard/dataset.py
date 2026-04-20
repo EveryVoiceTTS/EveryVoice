@@ -2,10 +2,11 @@ import glob
 import os
 import random
 import sys
+from collections.abc import Sequence
 from copy import copy, deepcopy
 from enum import Enum
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 import questionary
 from rich import print as rich_print

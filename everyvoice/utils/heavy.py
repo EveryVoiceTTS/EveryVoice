@@ -1,5 +1,4 @@
 import random
-from typing import Tuple
 
 import numpy as np
 import torch
@@ -122,7 +121,7 @@ def get_spectral_transform(
 
 def get_segments(
     t: torch.Tensor, segment_size: int, start=None
-) -> Tuple[torch.Tensor, int]:
+) -> tuple[torch.Tensor, int]:
     """Randomly select a segment from a tensor, if the segment is too short, pad it with zeros
 
     Args:
@@ -131,7 +130,7 @@ def get_segments(
         start (_type_, optional): start at specific input, otherwise random. Defaults to None.
 
     Returns:
-        Tuple[torch.Tensor, int]: the segment plus the start index of the segment
+        tuple[torch.Tensor, int]: the segment plus the start index of the segment
     """
     t_len = t.size(1)
     if t_len >= segment_size:
