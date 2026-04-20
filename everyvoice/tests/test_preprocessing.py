@@ -661,9 +661,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     ]
                     phonological_features = [
                         torch.load(f, weights_only=True)
-                        for f in sorted(
-                            list((output_filelist.parent / "pfs").glob("*.pt"))
-                        )
+                        for f in sorted((output_filelist.parent / "pfs").glob("*.pt"))
                     ]
                     for i, utt_phones in enumerate(phones):
                         # Phonlogical features are derived from phones so they should be of equal length

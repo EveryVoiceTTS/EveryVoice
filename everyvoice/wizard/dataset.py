@@ -1153,11 +1153,11 @@ class SymbolSetStep(Step):
         symbols = {}
         if character_graphemes:
             symbols["characters"] = [
-                x for x in sorted(list(character_graphemes)) if x not in punctuation
+                x for x in sorted(character_graphemes) if x not in punctuation
             ]
         if phone_graphemes:
             symbols["phones"] = [
-                x for x in sorted(list(phone_graphemes)) if x not in punctuation
+                x for x in sorted(phone_graphemes) if x not in punctuation
             ]
         self.state[StepNames.symbol_set_step] = symbols
 
