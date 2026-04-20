@@ -7,10 +7,9 @@ import warnings
 from collections import defaultdict
 from json import JSONEncoder
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 import typer
-from typing_extensions import Annotated
 
 from .interfaces import typer_file_argument
 

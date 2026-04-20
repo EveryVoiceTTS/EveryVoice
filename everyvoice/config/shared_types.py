@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Union
+from typing import Annotated, Any, Optional, Union
 
 from pydantic import (
     BaseModel,
@@ -18,7 +18,6 @@ from pydantic import (
     ValidationInfo,
     model_validator,
 )
-from typing_extensions import Annotated, Optional
 
 from everyvoice.config.utils import (
     PossiblyRelativePath,

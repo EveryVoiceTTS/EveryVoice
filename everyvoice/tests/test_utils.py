@@ -3,14 +3,13 @@
 import re
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 from unittest import TestCase, main
 
 import torch
 from pep440 import is_canonical
 from pydantic import BaseModel
 from pydantic.functional_validators import BeforeValidator
-from typing_extensions import Annotated
 
 import everyvoice.utils
 from everyvoice._version import VERSION
