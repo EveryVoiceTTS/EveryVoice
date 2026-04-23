@@ -170,7 +170,7 @@ jobs:
       - name: Run license check overall
         run: |
           licensecheck --requirements-paths pyproject.toml --zero \
-            --ignore-packages text-unidecode pympi-ling pyworld pyworld-prebuilt pysdtw audioread anytree gradio hf-gradio \
+            --ignore-packages text-unidecode pympi-ling pyworld pyworld-prebuilt audioread anytree gradio hf-gradio \
             --skip-dependencies llvmlite \
             --ignore-licenses OTHER/PROPRIETARY || \
           ! echo "Package(s) listed with an X above is/are potentially a problem. Please review their licenses for compatibility with EveryVoice."
