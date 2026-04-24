@@ -95,6 +95,15 @@ class TestG2p(TestCase):
         with self.assertRaises(NotImplementedError):
             get_g2p_engine("boop")
 
+    def test_unusual_ipa_code(self):
+        # sal-apa goes to sal-ipa instead of sal-apa-ipa
+        sal_apa_g2p = get_g2p_engine("sal-apa")
+        self.assertEqual(sal_apa_g2p("ac"), list("ats"))
+
+        # but iku-sro goes to iku-sro-ipa, not iku-ipa
+        iku_sro_g2p = get_g2p_engine("iku-sro")
+        self.assertEqual(iku_sro_g2p("akaq"), list("akaq"))
+
     def test_phonemizer_normalization(self):
         moh_g2p = get_g2p_engine("moh")
         self.assertEqual(moh_g2p("\u00e9"), ["\u00e9"])

@@ -13,7 +13,7 @@ from everyvoice.config.shared_types import G2PCallable
 DEFAULT_G2P = "DEFAULT_G2P"
 
 
-def make_default_g2p_engines():
+def make_default_g2p_engines() -> dict[str, str | G2PCallable]:
     return {k: DEFAULT_G2P for k in get_arpabet_langs()[0]}
 
 
@@ -32,9 +32,24 @@ AVAILABLE_G2P_ENGINES: dict[str, str | G2PCallable] = make_default_g2p_engines()
 class CachingG2PEngine:
     """caching tokenizing g2p engine"""
 
-    def __init__(self, lang_id):
-        self._cache = {}
-        self.phonemizer = make_g2p(lang_id, f"{lang_id}-ipa")
+    def __init__(self, lang_id: str) -> None:
+        self._cache: dict[str, list[str]] = {}
+        self.phonemizer = make_g2p(lang_id, self.get_ipa_code(lang_id))
+
+    def get_ipa_code(self, lang_id: str) -> str:
+        """Given a lang ID in get_arpabet_langs()[0], find its IPA language code.
+
+        Most languages in the g2p library have a three letter code lll mapped to
+        lll-ipa, but a few do not, e.g., sal-apa -> sal-ipa, oji-syl -> oji-ipa
+
+        Copied from g2p.get_ipa_code(), for compatibility with any version of g2p."""
+
+        from g2p.mappings.langs import LANGS_NETWORK
+
+        if lang_id + "-ipa" in LANGS_NETWORK.nodes:
+            return lang_id + "-ipa"
+        else:
+            return lang_id.split("-", 1)[0] + "-ipa"
 
     def process_one_token(self, input_token: str) -> list[str]:
         """Process one input token, dumbly split on whitespace.
@@ -62,7 +77,7 @@ class CachingG2PEngine:
 
     def __call__(self, normalized_input_text: str) -> list[str]:
         input_tokens = re.split(r"(\s+)", normalized_input_text)
-        output_tokens = []
+        output_tokens: list[str] = []
         for token in input_tokens:
             cached = self._cache.get(token, None)
             if cached is None:
