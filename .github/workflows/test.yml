@@ -26,7 +26,7 @@ jobs:
           packages: sox libsox-dev
       - name: Verify SoX installation
         run: sox --version
-      - uses: FedericoCarboni/setup-ffmpeg@583042d32dd1cabb8bd09df03bde06080da5c87c # v2
+      - uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # @v3.1, with tool cache
       - uses: actions/setup-python@v6
         with:
           python-version: "3.10"
@@ -100,7 +100,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - uses: FedericoCarboni/setup-ffmpeg@583042d32dd1cabb8bd09df03bde06080da5c87c # v2
+      - uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # @v3.1, with tool cache
       - uses: actions/setup-python@v6
         with:
           python-version: "3.10"
