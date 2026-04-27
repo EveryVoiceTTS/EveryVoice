@@ -17,7 +17,7 @@ We recommend using either `conda` or `uv`.
 
 - **uv**: much faster, but manages only the Python dependencies.  [Install uv](https://docs.astral.sh/uv/getting-started/installation/).
 
-If you are able to install sox, libsox-dev and ffmpeg using your OS packages or by other means
+If you are able to install sox and ffmpeg using your OS packages or by other means
 (see [README.md](https://github.com/EveryVoiceTTS/EveryVoice?tab=readme-ov-file#quickstart-from-pypi)),
 you might prefer using uv; otherwise, use conda.
 
@@ -73,7 +73,7 @@ we maintain a script to automate the process and keep it reliable.
 
 === "Using uv"
 
-    - Having installed sox, libsox-dev and ffmpeg (see above), run our automated environment creation script:
+    - Having installed sox and ffmpeg (see above), run our automated environment creation script:
         ```sh
         ./make-everyvoice-env --uv
         source .venv/bin/activate
@@ -95,7 +95,7 @@ we maintain a script to automate the process and keep it reliable.
 
 === "Using uv"
 
-    Install sox, libsox-dev and ffmpeg (see above), then run:
+    Install sox and ffmpeg (see above), then run:
     ```
     uv venv -p 3.12 .venv
     source .venv/bin/activate
