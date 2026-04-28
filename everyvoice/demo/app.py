@@ -445,13 +445,31 @@ def load_model_from_checkpoint(
     """Load the text-to-speech model and vocoder from their respective checkpoints."""
     require_ffmpeg()
     device = get_device_from_accelerator(accelerator)
-    vocoder_ckpt = torch.load(
-        spec_to_wav_model_path, map_location=device, weights_only=True
-    )
-    vocoder_model, vocoder_config = load_hifigan_from_checkpoint(vocoder_ckpt, device)
-    model: FastSpeech2 = FastSpeech2.load_from_checkpoint(text_to_spec_model_path).to(  # type: ignore
-        device
-    )
+    try:
+        vocoder_ckpt = torch.load(
+            spec_to_wav_model_path, map_location=device, weights_only=True
+        )
+    except Exception as e:
+        raise ValueError(
+            f"Error loading HiFiGAN model '{spec_to_wav_model_path}'. It does not appear to be a valid checkpoint."
+        ) from e
+    try:
+        vocoder_model, vocoder_config = load_hifigan_from_checkpoint(
+            vocoder_ckpt, device
+        )
+    except TypeError as e:
+        raise ValueError(
+            f"Error loading HiFiGAN model '{spec_to_wav_model_path}'. Possible causes: maybe it's not actually a HiFiGAN model? maybe it was trained with an incompatible version of EveryVoice?"
+        ) from e
+    try:
+        model: FastSpeech2 = FastSpeech2.load_from_checkpoint(text_to_spec_model_path).to(  # type: ignore
+            device
+        )
+    except TypeError as e:
+        raise ValueError(
+            f"Error loading FastSpeech2 model '{text_to_spec_model_path}'. Possible causes: maybe it's not actually an fs2 model? maybe it was trained with an older or a new version of EveryVoice?"
+        ) from e
+
     model.eval()
     return model, vocoder_model, vocoder_config, device
 

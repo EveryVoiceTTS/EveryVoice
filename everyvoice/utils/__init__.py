@@ -429,7 +429,7 @@ def pydantic_validation_error_shortener(e) -> str:
 
 
 @contextmanager
-def spinner():
+def spinner(message: str = "Loading"):
     """Spinner for slow imports or model loading operations.
 
     Usage:
@@ -441,7 +441,7 @@ def spinner():
 
     interval = 333 if sys.stdout.isatty() else 2000
     with yaspin(
-        spinner=Spinner("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏", interval), text="Loading...", timer=True
+        spinner=Spinner("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏", interval), text=f"{message}...", timer=True
     ) as spinner:
         yield spinner
         spinner.ok("Done")

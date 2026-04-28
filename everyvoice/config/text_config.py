@@ -102,7 +102,7 @@ class Symbols(BaseModel):
         for punctuation in self.punctuation.all:
             if punctuation in self.all_except_punctuation:
                 raise ValueError(
-                    f"Sorry, the symbol '{punctuation}' occurs in both your declared punctuation and in your other symbol set. Please inspect your text configuration and either remove the symbol from the punctuation or other symbol set."
+                    f"Sorry, the symbol '{punctuation}' occurs in both your declared punctuation and in your other symbol set. If you are training a model, please inspect your text configuration and either remove the symbol from the punctuation or other symbol set. If you are trying to use an existing model, it was probably trained with an older version of EveryVoice, please downgrade EveryVoice."
                 )
         return self
 

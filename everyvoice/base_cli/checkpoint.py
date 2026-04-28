@@ -59,7 +59,7 @@ def load_checkpoint(model_path: Path, minimal=True) -> dict[str, Any]:
     import torch
 
     checkpoint = torch.load(
-        str(model_path), map_location=torch.device("cpu"), weights_only=True
+        model_path, map_location=torch.device("cpu"), weights_only=True
     )
 
     if minimal:
@@ -84,6 +84,62 @@ def load_checkpoint(model_path: Path, minimal=True) -> dict[str, Any]:
         if "loops" in checkpoint:
             del checkpoint["loops"]
     return checkpoint
+
+
+def summarize_fs2_model(model_path: Path, checkpoint: dict) -> None:
+    from torchinfo import summary
+
+    from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
+        FastSpeech2,
+    )
+
+    model = FastSpeech2.load_from_checkpoint(model_path)
+    print(summary(model, None, verbose=0))
+
+
+def summarize_hfgl_model(model_path: Path, checkpoint: dict) -> None:
+    from torchinfo import summary
+
+    from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import (
+        HiFiGAN,
+    )
+
+    model = HiFiGAN.load_from_checkpoint(model_path)
+    print(summary(model, None, verbose=0))
+
+
+def summarize_hfgl_generator_model(model_path: Path, checkpoint: dict) -> None:
+    import torch
+    from torchinfo import summary
+
+    from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
+        load_hifigan_from_checkpoint,
+    )
+
+    device = torch.device("cpu")
+    vocoder_model, vocoder_config = load_hifigan_from_checkpoint(checkpoint, device)
+
+    print(summary(vocoder_model, None, verbose=0))
+
+
+def summarize_unknown_model(model_path: Path, checkpoint: dict) -> None:
+    from tabulate import tabulate
+
+    print(
+        "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version."
+    )
+    if sd_summary := summarize_statedict(checkpoint):
+        print(
+            f"We've tried to infer some information from your checkpoint. It appears to have {round(sd_summary['TOTAL'] / 1000000, 2)} M parameters."
+        )
+        print(
+            tabulate(
+                [[k, v] for k, v in sd_summary.items()],
+                tablefmt="rounded_grid",
+                intfmt=",",
+                headers=["LayerName", "Number of Parameters"],
+            )
+        )
 
 
 @app.command()
@@ -115,8 +171,14 @@ def inspect(
     """
 
     if show_config:
+        try:
+            checkpoint = load_checkpoint(model_path, minimal=True)
+        except Exception as e:
+            raise ValueError(
+                f"Error loading checkpoint '{model_path}'. It might have been created with a different version of EveryVoice that is not compatible."
+            ) from e
         config = json.dumps(
-            load_checkpoint(model_path),
+            checkpoint,
             ensure_ascii=False,
             indent=2,
             cls=CheckpointEncoder,
@@ -131,48 +193,41 @@ def inspect(
         print(config)
 
     if show_architecture:
-        from torchinfo import summary
+        checkpoint = load_checkpoint(model_path, minimal=False)
+        if "model_info" in checkpoint:
+            print(
+                "Inspecting checkpoint according to its model info:",
+                checkpoint["model_info"],
+            )
+            model_summarizers = {
+                "FastSpeech2": summarize_fs2_model,
+                "HiFiGAN": summarize_hfgl_model,
+                "HiFiGANGenerator": summarize_hfgl_generator_model,
+            }
+            summarizer = model_summarizers.get(checkpoint["model_info"]["name"], None)
+            if summarizer:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    try:
+                        summarizer(model_path, checkpoint)
+                    except Exception:
+                        summarize_unknown_model(model_path, checkpoint)
+                    return
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            model: Any  # HiFiGAN | FastSpeech2 | dict[str, Any] but no import for speed
-            try:
-                from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import (
-                    HiFiGAN,
-                )
-
-                model = HiFiGAN.load_from_checkpoint(model_path)
-                print(summary(model, None, verbose=0))
-            # NOTE if ANY exception is raise, that means the model couldn't be
-            # loaded and we want to try another config type.  This is to "ask
-            # forgiveness, not permission".
-            except Exception:
+        print("Inspecting unknown model type - trying all known types")
+        for summarizer in (
+            summarize_hfgl_model,
+            summarize_hfgl_generator_model,
+            summarize_fs2_model,
+            summarize_unknown_model,
+        ):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
                 try:
-                    from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
-                        FastSpeech2,
-                    )
-
-                    model = FastSpeech2.load_from_checkpoint(model_path)
-                    print(summary(model, None, verbose=0))
+                    summarizer(model_path, checkpoint)
+                    return
                 except Exception:
-                    from tabulate import tabulate
-
-                    model = load_checkpoint(model_path, minimal=False)
-                    print(
-                        "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version."
-                    )
-                    if sd_summary := summarize_statedict(model):
-                        print(
-                            f"We've tried to infer some information from your checkpoint. It appears to have {round(sd_summary['TOTAL'] / 1000000, 2)} M parameters."
-                        )
-                        print(
-                            tabulate(
-                                [[k, v] for k, v in sd_summary.items()],
-                                tablefmt="rounded_grid",
-                                intfmt=",",
-                                headers=["LayerName", "Number of Parameters"],
-                            )
-                        )
+                    pass
 
 
 @app.command()

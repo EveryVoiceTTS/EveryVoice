@@ -788,9 +788,10 @@ def demo(
     else:
         print("  - UI Config file path: None")
 
-    with spinner():
+    with spinner("Loading software"):
         from everyvoice.demo.app import create_demo_app
 
+    with spinner("Loading models"):
         demo = create_demo_app(
             text_to_spec_model_path=text_to_spec_model,
             spec_to_wav_model_path=spec_to_wav_model,
