@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-from unittest import TestCase, main
+import sys
+from unittest import TestCase
+
+from pytest import main
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.dataloader import BaseDataModule
@@ -143,4 +146,4 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

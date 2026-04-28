@@ -2,12 +2,14 @@
 
 import json
 import numbers
+import sys
 import tempfile
 from enum import Enum
 from pathlib import Path
-from unittest import TestCase, main
+from unittest import TestCase
 
 import torch
+from pytest import main
 from pytorch_lightning import Trainer
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
@@ -539,4 +541,4 @@ class TestVersion(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

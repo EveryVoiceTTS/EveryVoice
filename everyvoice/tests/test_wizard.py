@@ -14,7 +14,7 @@ from pathlib import Path
 from textwrap import dedent
 from types import MethodType
 from typing import NamedTuple, Optional
-from unittest import TestCase, main
+from unittest import TestCase
 
 import yaml
 from anytree import PreOrderIter, RenderTree
@@ -24,6 +24,7 @@ from packaging.version import Version
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
+from pytest import main
 
 from everyvoice._version import VERSION
 from everyvoice.tests.stubs import (
@@ -2190,4 +2191,4 @@ class WizardTest(WizardTestBase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

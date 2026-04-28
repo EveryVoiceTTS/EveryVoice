@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import string
+import sys
 from pathlib import Path
 from unicodedata import normalize
-from unittest import TestCase, main
+from unittest import TestCase
 
 from pydantic import ValidationError
+from pytest import main
 
 from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
@@ -514,4 +516,4 @@ class TestTextSplit(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

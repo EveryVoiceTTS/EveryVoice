@@ -4,17 +4,19 @@ import enum
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-from unittest import TestCase, main, mock
+from unittest import TestCase, mock
 
 import jsonschema
 import typer
 import yaml
 from packaging.version import Version
 from pydantic import ValidationError
+from pytest import main
 from pytorch_lightning import Trainer
 from typer.testing import CliRunner
 from yaml import CLoader as Loader
@@ -95,6 +97,10 @@ class CLITest(TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.class_tmp_dir_obj.cleanup()
+        if hasattr(cls, "dummy_fp_path"):
+            del cls.dummy_fp_path
+        if hasattr(cls, "dummy_vocoder_path"):
+            del cls.dummy_vocoder_path
 
     @classmethod
     def get_dummy_models(cls) -> tuple[Path, Path]:
@@ -687,7 +693,7 @@ class CLITest(TestCase):
             with allowlist_file.open("w", encoding="utf8") as f:
                 f.write("hey\nyes\nword")
             # This test is just to make sure that the demo app params are passed correctly
-            port = 7000
+            port = "7000"
             ip = "123.456.78.90"
 
             with (
@@ -774,7 +780,7 @@ class CLITest(TestCase):
             with config_file.open("w", encoding="utf8") as f:
                 f.write(config)
             # This test is just to make sure that the demo app params are passed correctly
-            port = 7000
+            port = "7000"
             ip = "123.456.78.90"
 
             with (
@@ -1024,4 +1030,4 @@ class TestBaseCLIHelper(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-from unittest import TestCase, main
+import sys
+from unittest import TestCase
+
+from pytest import main
 
 from everyvoice.evaluation import (
     calculate_objective_metrics_from_single_path,
@@ -32,4 +35,4 @@ class EvaluationTest(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

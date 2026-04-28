@@ -1,15 +1,17 @@
 #!/usr/bin/env python
 
 import re
+import sys
 import tempfile
 from pathlib import Path
 from typing import Annotated, Any
-from unittest import TestCase, main
+from unittest import TestCase
 
 import torch
 from pep440 import is_canonical
 from pydantic import BaseModel
 from pydantic.functional_validators import BeforeValidator
+from pytest import main
 
 import everyvoice.utils
 from everyvoice._version import VERSION
@@ -284,4 +286,4 @@ class GetDeviceFromAcceleratorTest(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

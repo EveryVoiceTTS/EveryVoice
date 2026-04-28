@@ -2,16 +2,18 @@
 
 import os
 import shutil
+import sys
 import tempfile
 from math import sqrt
 from pathlib import Path
 from typing import Any
-from unittest import TestCase, main
+from unittest import TestCase
 
 import torch
 import torchaudio
 import yaml
 from pydantic_core._pydantic_core import ValidationError
+from pytest import main
 from torch import float32
 from typer.testing import CliRunner
 
@@ -274,8 +276,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         # Use the long test audio file (12 seconds, longer than default 11.0 limit)
         long_audio_path = TEST_DATA_DIR / "long_audio_test.wav"
 
-        with mute_logger("everyvoice.preprocessor.preprocessor"):
-            audio, sr = self.preprocessor.process_audio(long_audio_path, hop_size=256)
+        audio, sr = self.preprocessor.process_audio(long_audio_path, hop_size=256)
 
         # Should return None, None indicating the file was skipped
         self.assertEqual(audio, None)
@@ -1372,4 +1373,4 @@ class PreprocessingHierarchyTest(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
