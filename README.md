@@ -13,7 +13,7 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
 - Install Python 3.10, 3.11, or 3.12 and create a venv or a conda env for EveryVoice.
 
 - Install `sox`.
-  - On Ubuntu, `sudo apt-get install sox libsox-dev` should work.
+  - On Ubuntu, `sudo apt-get install sox` should work.
   - Other Linux distros should have equivalent packages.
   - With Conda, `conda install sox -c conda-forge` is reliable.
 
