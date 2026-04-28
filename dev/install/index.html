@@ -1181,7 +1181,7 @@ if you have a valid Anaconda license or can get one, <a href="https://docs.conda
 <p><strong>uv</strong>: much faster, but manages only the Python dependencies.  <a href="https://docs.astral.sh/uv/getting-started/installation/">Install uv</a>.</p>
 </li>
 </ul>
-<p>If you are able to install sox, libsox-dev and ffmpeg using your OS packages or by other means
+<p>If you are able to install sox and ffmpeg using your OS packages or by other means
 (see <a href="https://github.com/EveryVoiceTTS/EveryVoice?tab=readme-ov-file#quickstart-from-pypi">README.md</a>),
 you might prefer using uv; otherwise, use conda.</p>
 <h2 id="choosing-your-python-version">Choosing your Python version<a class="headerlink" href="#choosing-your-python-version" title="Permanent link">&para;</a></h2>
@@ -1236,7 +1236,7 @@ conda<span class="w"> </span>activate<span class="w"> </span>EveryVoice
 </div>
 <div class="tabbed-block">
 <ul>
-<li>Having installed sox, libsox-dev and ffmpeg (see above), run our automated environment creation script:
+<li>Having installed sox and ffmpeg (see above), run our automated environment creation script:
     <div class="highlight"><pre><span></span><code>./make-everyvoice-env<span class="w"> </span>--uv
 <span class="nb">source</span><span class="w"> </span>.venv/bin/activate
 </code></pre></div>
@@ -1258,7 +1258,7 @@ pip install -e &#39;.[dev]&#39;
 </code></pre></div>
 </div>
 <div class="tabbed-block">
-<p>Install sox, libsox-dev and ffmpeg (see above), then run:
+<p>Install sox and ffmpeg (see above), then run:
 <div class="highlight"><pre><span></span><code>uv venv -p 3.12 .venv
 source .venv/bin/activate
 uv pip install torch==2.3.1+cu121 torchaudio==2.3.1+cu121 --find-links https://download.pytorch.org/whl/torch_stable.html
