@@ -1524,7 +1524,7 @@ for your data. You can share the TextConfig with any models that need it and onl
         <span class="k">for</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">punctuation</span><span class="o">.</span><span class="n">all</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_except_punctuation</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Sorry, the symbol &#39;</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">&#39; occurs in both your declared punctuation and in your other symbol set. Please inspect your text configuration and either remove the symbol from the punctuation or other symbol set.&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;Sorry, the symbol &#39;</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">&#39; occurs in both your declared punctuation and in your other symbol set. If you are training a model, please inspect your text configuration and either remove the symbol from the punctuation or other symbol set. If you are trying to use an existing model, it was probably trained with an older version of EveryVoice, please downgrade EveryVoice.&quot;</span>
                 <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
 
@@ -1670,7 +1670,7 @@ for your data. You can share the TextConfig with any models that need it and onl
     <span class="k">for</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">punctuation</span><span class="o">.</span><span class="n">all</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_except_punctuation</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Sorry, the symbol &#39;</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">&#39; occurs in both your declared punctuation and in your other symbol set. Please inspect your text configuration and either remove the symbol from the punctuation or other symbol set.&quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Sorry, the symbol &#39;</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">&#39; occurs in both your declared punctuation and in your other symbol set. If you are training a model, please inspect your text configuration and either remove the symbol from the punctuation or other symbol set. If you are trying to use an existing model, it was probably trained with an older version of EveryVoice, please downgrade EveryVoice.&quot;</span>
             <span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
