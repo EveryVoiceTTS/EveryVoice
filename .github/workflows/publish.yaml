@@ -16,11 +16,12 @@ permissions:
 jobs:
   test:
     uses: ./.github/workflows/test.yml
-    secrets: inherit
+    permissions:
+      contents: write
+      pull-requests: write
 
   matrix-tests:
     uses: ./.github/workflows/matrix-tests.yml
-    secrets: inherit
 
   build:
     name: Build distribution 📦
