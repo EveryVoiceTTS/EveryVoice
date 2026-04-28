@@ -36,8 +36,6 @@ from everyvoice.tests.stubs import (
     null_patch,
     patch_menu_prompt,
     patch_questionary,
-    silence_c_stderr,
-    silence_c_stdout,
 )
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.wizard import StepNames as SN
@@ -207,8 +205,7 @@ class WizardTestBase(TestCase):
         # fail on accidentally shared initializer
         self.assertTrue(tour.state == {} or tour.state == {"dataset_0": {}})
         with capture_stdout() as out:
-            with null_patch() if debug else silence_c_stderr():
-                recursive_helper(steps_and_answers)
+            recursive_helper(steps_and_answers)
         return tour, out.getvalue()
 
 
@@ -507,7 +504,7 @@ class WizardTest(WizardTestBase):
                 dataset.DatasetNameStep(state_subset="dataset_2"),
             ],
         )
-        with patch_questionary("set1"), silence_c_stdout():
+        with patch_questionary("set1"):
             tour.steps[0].run()
         self.assertEqual(tour.state["dataset_0"][SN.dataset_name_step], "set1")
         with patch_questionary(("set1", "set2")), capture_stdout() as out:

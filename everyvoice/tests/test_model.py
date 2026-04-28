@@ -31,7 +31,6 @@ from everyvoice.tests.stubs import (
     TEST_DATA_DIR,
     monkeypatch,
     mute_logger,
-    silence_c_stderr,
 )
 from everyvoice.wizard import (
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
@@ -91,32 +90,30 @@ class ModelTest(TestCase):
         we can help allow our models to be loaded by other versions of EveryVoice. This test ensures
         the hyperparameters only contain JSON serializable content
         """
-        with silence_c_stderr():
-            SERIAL_SAFE_MODELS = [
-                HiFiGAN(
-                    HiFiGANConfig.load_config_from_path(
-                        self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-                    )
+        SERIAL_SAFE_MODELS = [
+            HiFiGAN(
+                HiFiGANConfig.load_config_from_path(
+                    self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+                )
+            ),
+            FastSpeech2(
+                FastSpeech2Config.load_config_from_path(
+                    self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
                 ),
-                FastSpeech2(
-                    FastSpeech2Config.load_config_from_path(
-                        self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+                stats=Stats(
+                    pitch=StatsInfo(
+                        min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
                     ),
-                    stats=Stats(
-                        pitch=StatsInfo(
-                            min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
-                        ),
-                        energy=StatsInfo(
-                            min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
-                        ),
+                    energy=StatsInfo(
+                        min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
                     ),
-                    lang2id={"foo": 0, "bar": 1},
-                    speaker2id={"baz": 0, "qux": 1},
-                ),  # we should probably also test that the error about the variance adaptor is raised
-            ]
+                ),
+                lang2id={"foo": 0, "bar": 1},
+                speaker2id={"baz": 0, "qux": 1},
+            ),  # we should probably also test that the error about the variance adaptor is raised
+        ]
         for model in SERIAL_SAFE_MODELS:
-            with silence_c_stderr():
-                trainer = Trainer()
+            trainer = Trainer()
             with tempfile.TemporaryDirectory() as tmpdir_str:
                 # Hacky way to connect the trainer with a model instead of trainer.fit(model) just for testing
                 # https://lightning.ai/forums/t/saving-a-lightningmodule-without-a-trainer/2217/2
@@ -186,24 +183,20 @@ class TestLoadingModel(TestCase):
         from pytorch_lightning.callbacks import ModelCheckpoint
 
         with tempfile.TemporaryDirectory() as tmpdir_str:
-            with silence_c_stderr():
-                model = HiFiGAN(
-                    HiFiGANConfig.load_config_from_path(
-                        self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-                    )
+            model = HiFiGAN(
+                HiFiGANConfig.load_config_from_path(
+                    self.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
                 )
-            with silence_c_stderr():
-                trainer = Trainer(
-                    default_root_dir=tmpdir_str,
-                    enable_progress_bar=False,
-                    logger=False,
-                    max_epochs=1,
-                    limit_train_batches=1,
-                    limit_val_batches=1,
-                    callbacks=[
-                        ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
-                    ],
-                )
+            )
+            trainer = Trainer(
+                default_root_dir=tmpdir_str,
+                enable_progress_bar=False,
+                logger=False,
+                max_epochs=1,
+                limit_train_batches=1,
+                limit_val_batches=1,
+                callbacks=[ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)],
+            )
             trainer.strategy.connect(model)
             ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
             trainer.save_checkpoint(ckpt_fn)
@@ -228,34 +221,30 @@ class TestLoadingModel(TestCase):
         from pytorch_lightning.callbacks import ModelCheckpoint
 
         with tempfile.TemporaryDirectory() as tmpdir_str:
-            with mute_logger("everyvoice.config.text_config"):
-                model = FastSpeech2(
-                    FastSpeech2Config.load_config_from_path(
-                        self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+            model = FastSpeech2(
+                FastSpeech2Config.load_config_from_path(
+                    self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+                ),
+                stats=Stats(
+                    pitch=StatsInfo(
+                        min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
                     ),
-                    stats=Stats(
-                        pitch=StatsInfo(
-                            min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
-                        ),
-                        energy=StatsInfo(
-                            min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
-                        ),
+                    energy=StatsInfo(
+                        min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
                     ),
-                    lang2id={"foo": 0, "bar": 1},
-                    speaker2id={"baz": 0, "qux": 1},
-                )
-            with silence_c_stderr():
-                trainer = Trainer(
-                    default_root_dir=tmpdir_str,
-                    enable_progress_bar=False,
-                    logger=False,
-                    max_epochs=1,
-                    limit_train_batches=1,
-                    limit_val_batches=1,
-                    callbacks=[
-                        ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
-                    ],
-                )
+                ),
+                lang2id={"foo": 0, "bar": 1},
+                speaker2id={"baz": 0, "qux": 1},
+            )
+            trainer = Trainer(
+                default_root_dir=tmpdir_str,
+                enable_progress_bar=False,
+                logger=False,
+                max_epochs=1,
+                limit_train_batches=1,
+                limit_val_batches=1,
+                callbacks=[ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)],
+            )
             trainer.strategy.connect(model)
             ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
             trainer.save_checkpoint(ckpt_fn)
@@ -281,35 +270,32 @@ class TestLoadingModel(TestCase):
 
         with tempfile.TemporaryDirectory() as tmpdir_str:
             if True:
-                with mute_logger("everyvoice.config.text_config"):
-                    model = FastSpeech2(
-                        FastSpeech2Config.load_config_from_path(
-                            self.config_dir
-                            / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+                model = FastSpeech2(
+                    FastSpeech2Config.load_config_from_path(
+                        self.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+                    ),
+                    stats=Stats(
+                        pitch=StatsInfo(
+                            min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
                         ),
-                        stats=Stats(
-                            pitch=StatsInfo(
-                                min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
-                            ),
-                            energy=StatsInfo(
-                                min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
-                            ),
+                        energy=StatsInfo(
+                            min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
                         ),
-                        lang2id={"foo": 0, "bar": 1},
-                        speaker2id={"baz": 0, "qux": 1},
-                    )
-                with silence_c_stderr():
-                    trainer = Trainer(
-                        default_root_dir=tmpdir_str,
-                        enable_progress_bar=False,
-                        logger=False,
-                        max_epochs=1,
-                        limit_train_batches=1,
-                        limit_val_batches=1,
-                        callbacks=[
-                            ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
-                        ],
-                    )
+                    ),
+                    lang2id={"foo": 0, "bar": 1},
+                    speaker2id={"baz": 0, "qux": 1},
+                )
+                trainer = Trainer(
+                    default_root_dir=tmpdir_str,
+                    enable_progress_bar=False,
+                    logger=False,
+                    max_epochs=1,
+                    limit_train_batches=1,
+                    limit_val_batches=1,
+                    callbacks=[
+                        ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
+                    ],
+                )
                 trainer.strategy.connect(model)
                 ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                 trainer.save_checkpoint(ckpt_fn)
@@ -372,20 +358,17 @@ class TestLoadingModel(TestCase):
             for ModelType, model in tests:
                 with self.subTest(ModelType=ModelType):
                     model._VERSION = CANARY_VERSION
-                    with silence_c_stderr():
-                        trainer = Trainer(
-                            default_root_dir=tmpdir_str,
-                            enable_progress_bar=False,
-                            logger=False,
-                            max_epochs=1,
-                            limit_train_batches=1,
-                            limit_val_batches=1,
-                            callbacks=[
-                                ModelCheckpoint(
-                                    dirpath=tmpdir_str, every_n_train_steps=1
-                                )
-                            ],
-                        )
+                    trainer = Trainer(
+                        default_root_dir=tmpdir_str,
+                        enable_progress_bar=False,
+                        logger=False,
+                        max_epochs=1,
+                        limit_train_batches=1,
+                        limit_val_batches=1,
+                        callbacks=[
+                            ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
+                        ],
+                    )
                     trainer.strategy.connect(model)
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
@@ -450,20 +433,17 @@ class TestLoadingModel(TestCase):
             for ModelType, model in tests:
                 with self.subTest(ModelType=ModelType):
                     model._VERSION = NEWER_VERSION
-                    with silence_c_stderr():
-                        trainer = Trainer(
-                            default_root_dir=tmpdir_str,
-                            enable_progress_bar=False,
-                            logger=False,
-                            max_epochs=1,
-                            limit_train_batches=1,
-                            limit_val_batches=1,
-                            callbacks=[
-                                ModelCheckpoint(
-                                    dirpath=tmpdir_str, every_n_train_steps=1
-                                )
-                            ],
-                        )
+                    trainer = Trainer(
+                        default_root_dir=tmpdir_str,
+                        enable_progress_bar=False,
+                        logger=False,
+                        max_epochs=1,
+                        limit_train_batches=1,
+                        limit_val_batches=1,
+                        callbacks=[
+                            ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
+                        ],
+                    )
                     trainer.strategy.connect(model)
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
@@ -497,15 +477,13 @@ class TestLoadingConfig(TestCase):
 
         for ConfigType, filename in self.configs:
             with self.subTest(ConfigType=ConfigType):
-                with silence_c_stderr():
-                    arguments = ConfigType.load_config_from_path(
-                        self.config_dir / f"{filename}.yaml"
-                    ).model_dump()
+                arguments = ConfigType.load_config_from_path(
+                    self.config_dir / f"{filename}.yaml"
+                ).model_dump()
                 del arguments["VERSION"]
 
                 self.assertNotIn("VERSION", arguments)
-                with silence_c_stderr():
-                    c = ConfigType(**arguments)
+                c = ConfigType(**arguments)
                 self.assertEqual(c.VERSION, "1.0")
 
     def test_config_newer_version(self):
@@ -515,10 +493,9 @@ class TestLoadingConfig(TestCase):
 
         for ConfigType, filename in self.configs:
             with self.subTest(ConfigType=ConfigType):
-                with silence_c_stderr():
-                    reference = ConfigType.load_config_from_path(
-                        self.config_dir / f"{filename}.yaml"
-                    )
+                reference = ConfigType.load_config_from_path(
+                    self.config_dir / f"{filename}.yaml"
+                )
                 NEWER_VERSION = "100.0"
                 reference.VERSION = NEWER_VERSION
 

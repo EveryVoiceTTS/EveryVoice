@@ -21,7 +21,7 @@ from everyvoice.config.validation_helpers import (
     path_is_a_directory,
     relative_to_absolute_path,
 )
-from everyvoice.tests.stubs import capture_logs, patch_logger, silence_c_stderr
+from everyvoice.tests.stubs import capture_logs, patch_logger
 from everyvoice.utils import write_filelist
 from everyvoice.utils.heavy import get_device_from_accelerator
 
@@ -266,11 +266,10 @@ class DirectoryPathMustExistTest(TestCase):
 
 class GetDeviceFromAcceleratorTest(TestCase):
     def test_auto(self):
-        with silence_c_stderr():
-            self.assertEqual(
-                get_device_from_accelerator("auto"),
-                torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
-            )
+        self.assertEqual(
+            get_device_from_accelerator("auto"),
+            torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+        )
 
     def test_cpu(self):
         self.assertEqual(get_device_from_accelerator("cpu"), torch.device("cpu"))

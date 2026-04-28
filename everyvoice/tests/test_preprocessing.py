@@ -37,8 +37,6 @@ from everyvoice.tests.stubs import (
     capture_stderr,
     capture_stdout,
     mute_logger,
-    silence_c_stderr,
-    silence_c_stdout,
 )
 from everyvoice.utils import generic_psv_filelist_reader
 
@@ -333,15 +331,14 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             preprocessor = Preprocessor(test_config)
 
             # Run the preprocess method with just audio processing
-            with silence_c_stdout(), silence_c_stderr():
-                preprocessor.preprocess(
-                    output_path=str(save_dir / "filelist.psv"),
-                    cpus=1,
-                    overwrite=True,
-                    to_process=(
-                        "audio",
-                    ),  # Only process audio to trigger the multichannel file creation
-                )
+            preprocessor.preprocess(
+                output_path=str(save_dir / "filelist.psv"),
+                cpus=1,
+                overwrite=True,
+                to_process=(
+                    "audio",
+                ),  # Only process audio to trigger the multichannel file creation
+            )
 
             # Verify that multichannel_files.txt was created
             multichannel_file = save_dir / "multichannel_files.txt"
@@ -756,10 +753,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     symbols = text_config.symbols.all_except_punctuation
                     for character in ("é", "É", "é"):  # nfc(é), nfc(É), nfd(é)
                         self.assertIn(character, symbols)
-                with silence_c_stderr():
-                    result = runner.invoke(
-                        app, ["preprocess", "config/everyvoice-text-to-spec.yaml"]
-                    )
+                result = runner.invoke(
+                    app, ["preprocess", "config/everyvoice-text-to-spec.yaml"]
+                )
                 if result.exit_code != 0 or stubs.VERBOSE_OVERRIDE:
                     print(result.output)
                 self.assertEqual(result.exit_code, 0)
