@@ -34,7 +34,7 @@ jobs:
           pip install -e .[dev]
       - run: pip freeze
       - run: pip list
-      - run: cd everyvoice && python run_tests.py dev
+      - run: pytest
 
   matrix-macos:
     timeout-minutes: 30
@@ -65,4 +65,4 @@ jobs:
       - run: python --version
       - run: pip freeze
       - run: pip list
-      - run: cd everyvoice && python run_tests.py dev
+      - run: pytest
