@@ -200,6 +200,24 @@ ignore_missing_imports = true
 plugins = ["pydantic.mypy", "numpy.typing.mypy_plugin"]
 check_untyped_defs = false
 
+[tool.coverage.run]
+source_pkgs = ["everyvoice"]
+branch = true
+omit = [
+  "*tmp*",
+  "*/run_tests.py",
+  "*/tests/*",
+  "*/wizard/simple_term_menu_win_stub.py",
+]
+
+[tool.coverage.report]
+precision = 2
+exclude_lines = [
+  "pragma: no cover",
+  "if 0:",
+  "if __name__ == .__main__.:",
+]
+
 [tool.pytest.ini_options]
 testpaths = [
   # glob patterns to match individual files, not directories, for much faster test collection
