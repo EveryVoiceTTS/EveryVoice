@@ -637,6 +637,7 @@ def test(suite: TestSuites = typer.Argument("dev")):  # pragma: no cover
             "ERROR: hidden command 'everyvoice test' only works when you install EveryVoice from source.",
             file=sys.stderr,
         )
+        sys.exit(1)
 
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
