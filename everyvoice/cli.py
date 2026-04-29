@@ -634,7 +634,7 @@ def test(suite: TestSuites = typer.Argument("dev")):  # pragma: no cover
         run_tests(suite.value)
     except ModuleNotFoundError:
         print(
-            "ERROR: hidden command 'everyvoice test' only works when you install EveryVoice from source.",
+            "ERROR: hidden command 'everyvoice test' only works when you install EveryVoice from source, with dev dependencies.",
             file=sys.stderr,
         )
         sys.exit(1)

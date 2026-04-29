@@ -3,13 +3,13 @@
 """Organize tests into Test Suites"""
 
 import argparse
-import importlib
-import re
+import io
 import sys
 from collections.abc import Iterable
-from os.path import dirname
-from unittest import TestLoader, TestSuite, TextTestRunner
+from contextlib import redirect_stdout
+from pathlib import Path
 
+import pytest
 from loguru import logger
 
 # Unit tests
@@ -19,6 +19,7 @@ SUBMODULE_SUITES: dict[str, tuple[str, ...]] = {
     "wav2vec2aligner": ("/model/aligner/wav2vec2aligner/aligner/tests",),
 }
 SUITES: dict[str, tuple[str, ...]] = {
+    "all": (),  # relies on discovery for collection
     "config": ("test_configs",),
     "loader": ("test_dataloader",),
     "text": ("test_text", "test_utils", "test_doctests"),
@@ -49,96 +50,75 @@ SUITE_NAMES = ["all", "dev"] + sorted(SUITES.keys())
 SUITES["dev"] = sum((SUITES[suite] for suite in dev_suites), start=())
 
 
-def remove_test_prefix(test_case: str):
-    for prefix in "<", "everyvoice.", "tests.":
-        if test_case.startswith(prefix):
-            test_case = test_case[len(prefix) :]
-    return "<" + test_case
+class PytestCollectorPlugin:
+    def __init__(self):
+        self.collected = []
+
+    def pytest_collection_modifyitems(self, session, config, items):
+        self.collected.extend([item.nodeid for item in items])
 
 
-def list_tests(suite: TestSuite):
-    for subsuite in suite:
-        # print(str(subsuite))
-        for match in re.finditer(r"tests=\[([^][]+)\]>", str(subsuite)):
-            for test_case in match[1].split(", "):
-                yield remove_test_prefix(test_case)
+def list_tests(suite: Iterable[str]):
+    plugin = PytestCollectorPlugin()
+    pytest_args = ["--collect-only", *suite, "-q"]
+    with redirect_stdout(io.StringIO()):
+        pytest.main(pytest_args, plugins=[plugin])
+    return plugin.collected
 
 
-def all_test_suites() -> TestSuite:
-    loader = TestLoader()
-    # NOTE: Looking specifically under `/tests` removes empty TestSuites.
-    test_suite = loader.discover(
-        dirname(__file__) + "/tests",
-        top_level_dir=dirname(dirname(__file__)),
-    )
-    for submodule_testsuite in SUBMODULE_SUITES.values():
-        suite = loader.discover(
-            dirname(__file__) + submodule_testsuite[0],
-            top_level_dir=dirname(dirname(__file__)),  # MANDATORY
-        )
-        test_suite.addTests(suite)
-
-    return test_suite
-
-
-def describe_suite(suite: TestSuite):
-    full_suite = all_test_suites()
-    full_list = list(list_tests(full_suite))
-    requested_list = list(list_tests(suite))
+def describe_suite(suite_name, suite_filenames: Iterable[str]):
+    full_list = list_tests([])
+    requested_list = list_tests(suite_filenames)
     requested_set = set(requested_list)
-    print("Test suite includes:", *sorted(requested_list), sep="\n")
+    print(f"Test suite '{suite_name}' includes:", *sorted(requested_list), sep="\n")
     print(
-        "\nTest suite excludes:",
+        f"\nTest suite '{suite_name}' excludes:",
         *sorted(test for test in full_list if test not in requested_set),
         sep="\n",
     )
+    print(
+        "\nTotal test cases",
+        f"found: {len(full_list)};",
+        f"included: {len(requested_list)};",
+        f"excluded: {len(full_list) - len(requested_list)}.",
+    )
 
 
-def run_tests(suite: str, describe: bool = False, verbosity=3):
-    """Decide which Test Suite to run"""
+def run_tests(suite: str, describe=False, verbose=False, no_capture=False):
+    """Run the specified test suite."""
     logger.info(f"Loading test suite '{suite}'. This may take a while...")
-    if suite == "all":
-        test_suite = all_test_suites()
-    else:
-        loader = TestLoader()
-        tests: Iterable[str]
-        if suite in SUITES:
-            tests = SUITES[suite]
-        else:
-            logger.error(
-                f"Please specify a test suite to run: one of '{['all'] + SUITE_NAMES}'."
-            )
-            return False
-        tests = [
-            "everyvoice.tests." + test if not test.startswith("/") else test
-            for test in tests
-        ]
-        test_suite = TestSuite()
-        for test in tests:
-            logger.info(f"Loading {test=}")
-            if test.startswith("/"):
-                sub_suite = loader.discover(
-                    dirname(__file__) + test,
-                    top_level_dir=dirname(dirname(__file__)),  # MANDATORY
-                )
-                test_suite.addTests(sub_suite)
-            else:
-                importlib.import_module(test)
-                test_suite.addTest(loader.loadTestsFromName(test))
+    if suite not in SUITES:
+        logger.error(f"Please specify a test suite to run: one of '{SUITE_NAMES}'.")
+        return False
 
+    test_suite = SUITES[suite]
+    root_dir = Path(__file__).parent
+    test_suite_filenames: list[str] = [
+        str(
+            root_dir / test_file[1:]
+            if test_file.startswith("/")
+            else root_dir / "tests" / f"{test_file}.py"
+        )
+        for test_file in test_suite
+    ]
+    # print(test_suite_filenames)
     if describe:
-        describe_suite(test_suite)
+        describe_suite(suite, test_suite_filenames)
         return True
     else:
-        logger.info("Running test suite")
-        return TextTestRunner(verbosity=verbosity).run(test_suite).wasSuccessful()
+        pytest_args = ["--verbose"] if verbose else []
+        if no_capture:
+            pytest_args.append("--capture=no")
+        return 0 == pytest.main([*test_suite_filenames, *pytest_args])
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="Run EveryVoice test suites.")
-    parser.add_argument("--quiet", "-q", action="store_true", help="reduce output")
     parser.add_argument(
-        "--verbose", "-v", action="store_true", help="let stderr logs go to screen"
+        "--no-capture", "-s", action="store_true", help="let all logs go to screen"
+    )
+    parser.add_argument(
+        "--verbose", "-v", action="store_true", help="show test names as they run"
     )
     parser.add_argument(
         "--describe", action="store_true", help="describe the selected test suite"
@@ -151,12 +131,12 @@ def main():
         choices=SUITE_NAMES,
     )
     args = parser.parse_args()
-    if args.verbose:
+    if args.no_capture:
         import everyvoice.tests.stubs as stubs
 
         stubs.VERBOSE_OVERRIDE = True
 
-    result = run_tests(args.suite, args.describe, 1 if args.quiet else 3)
+    result = run_tests(args.suite, args.describe, args.verbose, args.no_capture)
     if not result:
         sys.exit(1)
 
