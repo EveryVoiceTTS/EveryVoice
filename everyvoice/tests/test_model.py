@@ -514,7 +514,7 @@ class TestVersion(TestCase):
         from packaging.version import Version
 
         self.assertFalse("10.0" > "9.0")
-        self.assertTrue(Version("10.0") > Version("9.0"))
+        assert Version("10.0") > Version("9.0")
 
 
 if __name__ == "__main__":

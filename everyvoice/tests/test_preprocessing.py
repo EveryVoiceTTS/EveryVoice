@@ -221,7 +221,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
             # Check that multichannel_files.txt was created
             multichannel_file = save_dir / "multichannel_files.txt"
-            self.assertTrue(multichannel_file.exists())
+            assert multichannel_file.exists()
 
             # Check the content of multichannel_files.txt
             with open(multichannel_file, "r") as f:
@@ -261,7 +261,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
             # Verify the file was created and has correct content
             multichannel_file = save_dir / "multichannel_files.txt"
-            self.assertTrue(multichannel_file.exists())
+            assert multichannel_file.exists()
 
             with open(multichannel_file, "r") as f:
                 content = f.read()
@@ -524,7 +524,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             # note: this is off by a few frames due to mismatches in hop size between the aligner the test data
             # was trained with and the settings defined by the spectral transform function here.
             # It would be a problem if it weren't  but it's not really relevant since we're using jointly learned alignments now.
-            self.assertTrue(feats.size(1) - int(sum(durs)) <= 10)
+            assert feats.size(1) - int(sum(durs)) <= 10
 
     def test_energy(self):
         frame_energy_config = VocoderConfig(
@@ -1078,7 +1078,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
             # Check that missing files are also included in summary report
             summary_path = tmpdir / "preprocessed" / "summary.txt"
-            self.assertTrue(summary_path.exists())
+            assert summary_path.exists()
 
             with open(summary_path, "r", encoding="utf8") as f:
                 summary_content = f.read()
@@ -1115,7 +1115,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
             # Check that summary doesn't mention missing files
             summary_path = tmpdir / "preprocessed" / "summary.txt"
-            self.assertTrue(summary_path.exists())
+            assert summary_path.exists()
 
             with open(summary_path, "r", encoding="utf8") as f:
                 summary_content = f.read()
@@ -1295,7 +1295,7 @@ class TestSoxEffects(TestCase):
             apply_sox_effects_to_file(
                 self.audiofile, tmpdir / "output1.wav", self.many_effects
             )
-            self.assertTrue((tmpdir / "output1.wav").exists())
+            assert (tmpdir / "output1.wav").exists()
 
     def test_working_call2(self) -> None:
         with tempfile.TemporaryDirectory(prefix="sox_effects_", dir=".") as tmpdir_s:
@@ -1303,7 +1303,7 @@ class TestSoxEffects(TestCase):
             apply_sox_effects_to_file(
                 self.audiofile, tmpdir / "output2.wav", self.many_effects[:-1]
             )
-            self.assertTrue((tmpdir / "output2.wav").exists())
+            assert (tmpdir / "output2.wav").exists()
 
     def test_working_call3(self) -> None:
         with tempfile.TemporaryDirectory(prefix="sox_effects_", dir=".") as tmpdir_s:
@@ -1311,7 +1311,7 @@ class TestSoxEffects(TestCase):
             apply_sox_effects_to_file(
                 self.audiofile, tmpdir / "output3.wav", self.many_effects[1:]
             )
-            self.assertTrue((tmpdir / "output3.wav").exists())
+            assert (tmpdir / "output3.wav").exists()
 
 
 class PreprocessingHierarchyTest(TestCase):

@@ -62,7 +62,7 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
         )
         for sample in dataset:
             spec, audio, basename, spec_from_audio = sample
-            self.assertTrue(isinstance(basename, str))
+            assert isinstance(basename, str)
             self.assertEqual(spec.size(), spec_from_audio.size())
             self.assertEqual(
                 spec.size(0), self.config.vocoder.preprocessing.audio.n_mels

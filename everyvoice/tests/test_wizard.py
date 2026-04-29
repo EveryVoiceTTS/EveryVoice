@@ -203,7 +203,7 @@ class WizardTestBase(TestCase):
 
         tour = Tour(name, steps=[step for (step, *_) in steps_and_answers])
         # fail on accidentally shared initializer
-        self.assertTrue(tour.state == {} or tour.state == {"dataset_0": {}})
+        assert tour.state == {} or tour.state == {"dataset_0": {}}
         with capture_stdout() as out:
             recursive_helper(steps_and_answers)
         return tour, out.getvalue()
@@ -230,8 +230,8 @@ class WizardTest(WizardTestBase):
         testing that no exceptions get raised.
         """
         config_step = basic.ConfigFormatStep(name="Config Step")
-        self.assertTrue(config_step.validate("yaml"))
-        self.assertTrue(config_step.validate("json"))
+        assert config_step.validate("yaml")
+        assert config_step.validate("json")
         with tempfile.TemporaryDirectory() as tmpdirname:
             config_step._state = State()
             config_step.state[SN.output_step.value] = tmpdirname
@@ -301,7 +301,7 @@ class WizardTest(WizardTestBase):
         for i, node in enumerate(PreOrderIter(root_step)):
             if i != 0:
                 self.assertEqual(second_step.parent.response, "foo")
-                self.assertTrue(node.validate("bar"))
+                assert node.validate("bar")
                 self.assertFalse(node.validate("foo"))
             node.run()
 
@@ -329,7 +329,7 @@ class WizardTest(WizardTestBase):
                 step.run()
         self.assertEqual(step.response, "myname")
         self.assertIn("'myname'", stdout.getvalue())
-        self.assertTrue(step.completed)
+        assert step.completed
 
     def test_bad_name_step(self):
         """Exercise providing an invalid dataset name."""
@@ -371,7 +371,7 @@ class WizardTest(WizardTestBase):
             self.assertFalse(step.validate("test"))
             self.assertFalse(step.validate("test@"))
             self.assertFalse(step.validate("test@test."))
-            self.assertTrue(step.validate("test@test.ca"))
+            assert step.validate("test@test.ca")
             self.assertFalse(step.validate(""))
         output = stdout.getvalue().replace(" \n", " ")
         # Supporting email-validator prior and post 2.2.0 where the error string changed.
@@ -445,7 +445,7 @@ class WizardTest(WizardTestBase):
                 self.assertIn("could not create", out.getvalue())
 
             # Case with a deep path, make sure we don't leave part of it around
-            self.assertTrue(step.validate(tmpdir / "deep" / "path"))
+            assert step.validate(tmpdir / "deep" / "path")
             self.assertFalse((tmpdir / "deep").exists())
 
             # Good case
@@ -463,7 +463,7 @@ class WizardTest(WizardTestBase):
 
         step = tour.steps[1]
         self.assertFalse(step.validate("foo"))
-        self.assertTrue(step.validate("yes"))
+        assert step.validate("yes")
         self.assertEqual(len(step.children), 0)
 
         with patch_menu_prompt(0):  # answer 0 is "no"
@@ -493,7 +493,7 @@ class WizardTest(WizardTestBase):
         self.assertIn("your dataset needs a name", output[0])
         self.assertIn("is not valid", output[1])
         self.assertIn("finished the configuration", "".join(output[2:]))
-        self.assertTrue(step.completed)
+        assert step.completed
 
     def test_unique_dataset_name(self):
         tour = Tour(
@@ -525,7 +525,7 @@ class WizardTest(WizardTestBase):
         self.assertIn("speaker needs an ID", output[0])
         self.assertIn("is not valid", output[1])
         self.assertIn("will be used as the speaker ID", "".join(output[2:]))
-        self.assertTrue(step.completed)
+        assert step.completed
 
     def test_wavs_dir(self):
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -543,7 +543,7 @@ class WizardTest(WizardTestBase):
             with patch_questionary(("not-a-path", no_wavs_dir, has_wavs_dir)):
                 with capture_stdout():
                     step.run()
-            self.assertTrue(step.completed)
+            assert step.completed
             self.assertEqual(step.response, has_wavs_dir)
 
             # No symlinks on Windows, so just skip those test case subitems
@@ -560,7 +560,7 @@ class WizardTest(WizardTestBase):
             with patch_questionary(wavs_are_symlinks):
                 with capture_stdout():
                     step.run()
-            self.assertTrue(step.completed)
+            assert step.completed
             self.assertEqual(step.response, wavs_are_symlinks)
 
             wavs_dir_is_symlink = os.path.join(tmpdirname, "link-to-wavs-dir")
@@ -569,7 +569,7 @@ class WizardTest(WizardTestBase):
             with patch_questionary(wavs_dir_is_symlink):
                 with capture_stdout():
                     step.run()
-            self.assertTrue(step.completed)
+            assert step.completed
             self.assertEqual(step.response, wavs_dir_is_symlink)
 
             # wavs_are_symlinks and wavs_dir_is_symlink pass even if
@@ -583,7 +583,7 @@ class WizardTest(WizardTestBase):
             with patch_questionary(deeper_links):
                 with capture_stdout():
                     step.run()
-            self.assertTrue(step.completed)
+            assert step.completed
             self.assertEqual(step.response, deeper_links)
 
     def test_sample_rate_config(self):
@@ -603,7 +603,7 @@ class WizardTest(WizardTestBase):
         output = stdout.getvalue().replace(" \n", " ").split(".\n")
         for i in range(4):
             self.assertIn("not a valid sample rate", output[i])
-        self.assertTrue(step.completed)
+        assert step.completed
         self.assertEqual(step.response, 512)
 
     def test_whitespace_always_collapsed(self):
@@ -896,7 +896,7 @@ class WizardTest(WizardTestBase):
         self.assertRegex(output, r"does not look like a .*'tsv'")
         self.assertRegex(output, r"does not look like a .*'csv'")
         self.assertIn("is not in the festival format", output)
-        self.assertTrue(format_step.completed)
+        assert format_step.completed
         # print(format_step.state)
 
     def test_wrong_fileformat_festival(self):
@@ -920,7 +920,7 @@ class WizardTest(WizardTestBase):
         self.assertRegex(output, r"does not look like a .*'psv'")
         self.assertRegex(output, r"does not look like a .*'tsv'")
         self.assertRegex(output, r"does not look like a .*'csv'")
-        self.assertTrue(format_step.completed)
+        assert format_step.completed
         # print(format_step.state)
 
     def test_validate_path(self):
@@ -1055,7 +1055,7 @@ class WizardTest(WizardTestBase):
 
         # print(tour.state)
         self.assertEqual(len(tour.state["filelist_data"]), 5)
-        self.assertTrue(tour.steps[-1].completed)
+        assert tour.steps[-1].completed
 
     def test_get_iso_code(self):
         self.assertEqual(utils.get_iso_code("eng"), "eng")
@@ -1136,7 +1136,7 @@ class WizardTest(WizardTestBase):
 
             self.assertEqual(tour.state["dataset_0"][SN.speaker_header_step.value], 2)
             self.assertEqual(tour.state["dataset_0"][SN.language_header_step.value], 3)
-            self.assertTrue(tour.steps[-1].completed)
+            assert tour.steps[-1].completed
 
             with open(
                 tmpdir / "out/project/config/everyvoice-text-to-spec.yaml",
@@ -1993,7 +1993,7 @@ class WizardTest(WizardTestBase):
             ):
                 with patch_menu_prompt(3):
                     tour.run()
-            self.assertTrue(progress_file.exists())
+            assert progress_file.exists()
             with open(progress_file, encoding="utf8") as f:
                 progress_contents = f.read()
                 # print(progress_contents)

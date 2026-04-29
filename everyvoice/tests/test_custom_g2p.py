@@ -165,7 +165,7 @@ class TestG2p(TestCase):
 
         g2p_engine = get_g2p_engine(lang_id)
         self.assertFalse(isinstance(g2p_engine, str))
-        self.assertTrue(isinstance(g2p_engine, CachingG2PEngine))
+        assert isinstance(g2p_engine, CachingG2PEngine)
 
 
 class TextConfigWithG2pTest(TestCase):

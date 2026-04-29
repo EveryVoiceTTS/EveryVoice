@@ -28,7 +28,7 @@ from everyvoice.utils.heavy import get_device_from_accelerator
 
 class VersionTest(TestCase):
     def test_version_is_pep440_compliant(self):
-        self.assertTrue(is_canonical(VERSION))
+        assert is_canonical(VERSION)
 
 
 class UtilsTest(TestCase):
@@ -92,7 +92,7 @@ class PathIsADirectoryTest(TestCase):
             root_dir = Path(__file__).parent / "data"
             root_dir = root_dir.resolve()
             directory = Path("hierarchy")
-            self.assertTrue((root_dir / directory).exists())
+            assert (root_dir / directory).exists()
             with init_context({"writing_config": root_dir}):
                 PathIsADirectory(path=directory)
         except ValueError:
@@ -127,7 +127,7 @@ class PathIsADirectoryTest(TestCase):
             root_dir = Path(__file__).parent / "data"
             root_dir = root_dir.resolve()
             directory = Path("hierarchy")
-            self.assertTrue((root_dir / directory).exists())
+            assert (root_dir / directory).exists()
             PathIsADirectory(path=root_dir / directory)
         except ValueError:
             self.fail("Failed to detect that the argument is a directory")
@@ -191,7 +191,7 @@ class RelativePathToAbsoluteTest(TestCase):
         path = Path("data")
         with init_context({"config_path": root_dir}):
             dir = RelativePathToAbsolute(path=path)
-            self.assertTrue(dir.path.is_absolute())
+            assert dir.path.is_absolute()
 
 
 class DirectoryPathMustExist(ContextableBaseModel):
@@ -227,7 +227,7 @@ class DirectoryPathMustExistTest(TestCase):
                 dir = DirectoryPathMustExist(path=directory)
             # Note: dir.path shouldn't not change to an absolute value.
             self.assertEqual(dir.path, directory)
-            self.assertTrue((root_dir / directory).exists())
+            assert (root_dir / directory).exists()
             # Note: since dir.path is NOT replaced with an absolute it
             # shouldn't exist because it was created relative to the context's
             # path.
@@ -243,7 +243,7 @@ class DirectoryPathMustExistTest(TestCase):
             dir = DirectoryPathMustExist(path=path)
             # There should be no info logged.
             self.assertListEqual(output, [])
-        self.assertTrue(dir.path.exists())
+        assert dir.path.exists()
 
     def test_using_a_directory(self):
         """
@@ -260,8 +260,8 @@ class DirectoryPathMustExistTest(TestCase):
                 f"Directory at {path} does not exist. Creating...",
                 "".join(cm.output),
             )
-            self.assertTrue(path.exists())
-            self.assertTrue(dir.path.exists())
+            assert path.exists()
+            assert dir.path.exists()
 
 
 class GetDeviceFromAcceleratorTest(TestCase):

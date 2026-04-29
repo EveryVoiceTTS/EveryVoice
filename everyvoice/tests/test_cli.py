@@ -355,7 +355,7 @@ class CLITest(TestCase):
             "should report metrics in terms of averages",
         )
         evaluation_output = self.data_dir / "lj" / "wavs" / "evaluation.json"
-        self.assertTrue(evaluation_output.exists(), "should print results to a file")
+        assert evaluation_output.exists(), "should print results to a file"
         evaluation_output.unlink()
 
     def test_old_inspect_checkpoint(self):
@@ -1002,10 +1002,10 @@ class TestBaseCLIHelper(TestCase):
 
             log_dir = config.training.logger.save_dir / config.training.logger.name
             log = log_dir / "log"
-            self.assertTrue(log.exists())
+            assert log.exists()
 
             hparams = log_dir / "hparams.yaml"
-            self.assertTrue(hparams.exists())
+            assert hparams.exists()
             with hparams.open(mode="r", encoding="UTF8") as f:
                 config_reloaded = yaml.load(f, Loader=Loader)
                 self.assertEqual(

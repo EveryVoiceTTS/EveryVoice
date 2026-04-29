@@ -275,10 +275,10 @@ class TextTest(TestCase):
             self.base_text_processor.encode_string_tokens([JOINER_SUBSTITUTION])
 
     def test_is_sentence_final(self):
-        self.assertTrue(is_sentence_final("!"))
-        self.assertTrue(is_sentence_final("?"))
-        self.assertTrue(is_sentence_final("."))
-        self.assertTrue(is_sentence_final("᙮"))
+        assert is_sentence_final("!")
+        assert is_sentence_final("?")
+        assert is_sentence_final(".")
+        assert is_sentence_final("᙮")
         self.assertFalse(is_sentence_final("¡"))
         self.assertFalse(is_sentence_final("¿"))
 
