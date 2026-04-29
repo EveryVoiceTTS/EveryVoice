@@ -112,7 +112,8 @@ test = [
   "jsonschema>=4.17.3",
   "pep440>=0.1.2",
   "playwright>=1.52.0",
-  "pytest",
+  "pytest>=7",
+  "pytest-subtests",
 ]
 docs = [
   "mkdocs>=1.5.2",

@@ -42,7 +42,7 @@ class TextTest(TestCase):
 
     def test_token_sequence_to_text(self):
         sequence = [60, 57, 64, 64, 67, 1, 75, 67, 70, 64, 56]
-        self.assertEqual(self.base_text_processor.encode_text("hello world"), sequence)
+        assert self.base_text_processor.encode_text("hello world") == sequence
 
     def test_hardcoded_symbols(self):
         self.assertEqual(
@@ -191,9 +191,9 @@ class TextTest(TestCase):
             encode_as_phonological_features=True,
         )
         self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens, "", ""), "séːɡũ")
-        self.assertEqual(len(g2p_tokens), len(feats))
+        assert len(g2p_tokens) == len(feats)
         self.assertNotEqual(len(g2p_tokens), len(one_hot_tokens))
-        self.assertEqual(len(feats[0]), N_PHONOLOGICAL_FEATURES)
+        assert len(feats[0]) == N_PHONOLOGICAL_FEATURES
 
     def test_duplicates_removed(self):
         duplicate_symbols_text_processor = TextProcessor(
@@ -219,7 +219,7 @@ class TextTest(TestCase):
         )
         text = "ee"  # should be treated as "ee" and not two instances of "e"
         sequence = digraph_text_processor.encode_text(text)
-        self.assertEqual(len(sequence), 1)
+        assert len(sequence) == 1
 
     def test_normalization(self):
         # This test doesn't really test very much, but just here to highlight that base cleaning doesn't involve NFC
@@ -246,8 +246,8 @@ class TextTest(TestCase):
         text = "h3llo world"
         sequence = self.base_text_processor.encode_text(text)
         self.assertNotEqual(self.base_text_processor.decode_tokens(sequence), text)
-        self.assertIn("3", self.base_text_processor.missing_symbols)
-        self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
+        assert "3" in self.base_text_processor.missing_symbols
+        assert self.base_text_processor.missing_symbols["3"] == 1
 
     def test_use_slash(self):
         text = "word/token"
@@ -256,9 +256,9 @@ class TextTest(TestCase):
         )
         sequence = text_processor.encode_text(text)
         decoded = text_processor.decode_tokens(sequence)
-        self.assertEqual(decoded, "w/o/r/d/" + JOINER_SUBSTITUTION + "/t/o/k/e/n")
+        assert decoded == "w/o/r/d/" + JOINER_SUBSTITUTION + "/t/o/k/e/n"
         encoded = text_processor.encode_escaped_string_sequence(decoded)
-        self.assertEqual(encoded, sequence)
+        assert encoded == sequence
 
         with self.assertRaises(exceptions.OutOfVocabularySymbolError):
             # / is OOV, so JOINER_SUBSTITUTION will also be OOV
@@ -275,10 +275,10 @@ class TextTest(TestCase):
             self.base_text_processor.encode_string_tokens([JOINER_SUBSTITUTION])
 
     def test_is_sentence_final(self):
-        self.assertTrue(is_sentence_final("!"))
-        self.assertTrue(is_sentence_final("?"))
-        self.assertTrue(is_sentence_final("."))
-        self.assertTrue(is_sentence_final("᙮"))
+        assert is_sentence_final("!")
+        assert is_sentence_final("?")
+        assert is_sentence_final(".")
+        assert is_sentence_final("᙮")
         self.assertFalse(is_sentence_final("¡"))
         self.assertFalse(is_sentence_final("¿"))
 
@@ -463,7 +463,7 @@ class TestTextSplit(TestCase):
     def test_normalization(self):
         a = "Welcome to the EveryVoice Documentation! Please read the background section below."
         text = "       Welcome to     the EveryVoice       Documentation!\n\n\n\nPlease read the background section below.                        "
-        self.assertEqual([a], chunk_text(text))
+        assert [a] == chunk_text(text)
 
     def test_quote_toggling(self):
         text = 'There are approximately "70 Indigenous languages spoken in Canada. The majority of these languages" now have fewer than 500 fluent speakers remaining.'
@@ -496,7 +496,7 @@ class TestTextSplit(TestCase):
         # With custom weak boundaries
         self.assertNotIn(a, chunk_text(text, 15, 30, weak_boundaries=":;"))
         # Without custom weak boundaries
-        self.assertIn(a, chunk_text(text, 15, 30))
+        assert a, chunk_text(text, 15 in 30)
 
     def test_custom_strong_boundaries(self):
         """

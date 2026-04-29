@@ -67,10 +67,6 @@ class PreprocessedAudioFixture:
 
     preprocessor = Preprocessor(fp_config)
 
-    # def setUp(self):
-    #    """Each test function should get a fresh preprocessor"""
-    #    self.preprocessor = Preprocessor(self.fp_config)
-
     @classmethod
     def setUpClass(cls):
         """Generate a preprocessed test set that can be used in various test cases."""

@@ -27,10 +27,10 @@ class EvaluationTest(TestCase):
             subj_model,
             subj_sr,
         )
-        self.assertEqual(round(mos, 2), 4.47)
+        assert round(mos, 2) == 4.47
         self.assertLess(stoi, 1)
-        self.assertEqual(round(pesq, 2), 3.88)
-        self.assertEqual(round(si_sdr, 2), 28.64)
+        assert round(pesq, 2) == 3.88
+        assert round(si_sdr, 2) == 28.64
 
 
 if __name__ == "__main__":

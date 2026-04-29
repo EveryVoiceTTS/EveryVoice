@@ -62,8 +62,8 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
         )
         for sample in dataset:
             spec, audio, basename, spec_from_audio = sample
-            self.assertTrue(isinstance(basename, str))
-            self.assertEqual(spec.size(), spec_from_audio.size())
+            assert isinstance(basename, str)
+            assert spec.size() == spec_from_audio.size()
             self.assertEqual(
                 spec.size(0), self.config.vocoder.preprocessing.audio.n_mels
             )
@@ -82,7 +82,7 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
     def test_hifi_data_loader(self):
         hfgdm = HiFiGANDataModule(self.config.vocoder)
         hfgdm.load_dataset()
-        self.assertEqual(len(hfgdm.train_dataset), 5)
+        assert len(hfgdm.train_dataset) == 5
 
     def test_filter_dataset(self):
         train_dataset = [{"character_tokens": "b", "phone_tokens": ""}] * 4
@@ -94,7 +94,7 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
                     "training",
                     6,
                 )
-        self.assertEqual(cm.exception.code, 1)
+        assert cm.exception.code == 1
         with self.assertRaises(SystemExit) as cm:
             with mute_logger("everyvoice.utils"):
                 filter_dataset_based_on_target_text_representation_level(
@@ -103,7 +103,7 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
                     "training",
                     4,
                 )
-        self.assertEqual(cm.exception.code, 1)
+        assert cm.exception.code == 1
         train_ds = filter_dataset_based_on_target_text_representation_level(
             TargetTrainingTextRepresentationLevel.characters,
             train_dataset,
@@ -116,8 +116,8 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
             "validation",
             4,
         )
-        self.assertEqual(len(train_ds), 4)
-        self.assertEqual(len(val_ds), 4)
+        assert len(train_ds) == 4
+        assert len(val_ds) == 4
 
     def test_hifi_ft_data_loader(self):
         """TODO: can't make this test until I generate some synthesized samples"""
@@ -142,7 +142,7 @@ class DataLoaderTest(PreprocessedAudioFixture, TestCase):
         sampler = ImbalancedDatasetSampler(dataset)
         print(sampler.weights)
         sample = list(sampler)
-        self.assertEqual(len(sample), 5)
+        assert len(sample) == 5
 
 
 if __name__ == "__main__":
