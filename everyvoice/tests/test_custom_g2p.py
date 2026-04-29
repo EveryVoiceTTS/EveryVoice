@@ -2,12 +2,14 @@
 
 """Unit tests for using custom g2p functions"""
 
+import sys
 import tempfile
 from pathlib import Path
 from textwrap import dedent
-from unittest import TestCase, main
+from unittest import TestCase
 
 from pydantic import ValidationError
+from pytest import main
 
 import everyvoice
 from everyvoice.config.text_config import TextConfig
@@ -580,4 +582,4 @@ class CustomG2pTest(WizardTestBase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

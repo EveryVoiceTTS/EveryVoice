@@ -27,6 +27,11 @@ jobs:
       - name: Verify SoX installation
         run: sox --version
       - uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # @v3.1, with tool cache
+        id: ffmpeg
+        continue-on-error: true
+      - name: Alternate way to install ffmpeg if need be
+        if: steps.ffmpeg.outcome == 'failure'
+        run: sudo apt-get update && sudo apt-get install ffmpeg
       - uses: actions/setup-python@v6
         with:
           python-version: "3.10"
@@ -38,21 +43,14 @@ jobs:
       - run: pip freeze
       - run: pip list
       - name: Run tests
-        id: tests
-        continue-on-error: true
         run: |
-          cd everyvoice && coverage run run_tests.py dev
+          cd everyvoice
+          coverage run -m pytest
           coverage xml
-      - name: Verbose test outputs in case of failure
-        if: steps.tests.outcome == 'failure'
-        run: |
-          cd everyvoice && EVERYVOICE_VERBOSE_TESTS=1 python run_tests.py --verbose dev
-          false
       - run: cd everyvoice && coverage report
       - name: Check for logs_and_checkpoints/ and preprocessed/
         id: no-extra-directories
         run: |
-          cd everyvoice
           find -type d -name logs_and_checkpoints -or -name preprocessed | grep -v 'tests/data' || true
           [[ $(find -type d -name logs_and_checkpoints -or -name preprocessed | grep --count --invert-match 'tests/data') -eq 0 ]]
       - uses: codecov/codecov-action@v5
@@ -123,8 +121,7 @@ jobs:
       - run: pip freeze
       - run: pip list
       - name: Run tests
-        id: tests
-        run: everyvoice test
+        run: pytest
 
   # Run pre-commit and update a PR automatically if possible
   pre-commit:

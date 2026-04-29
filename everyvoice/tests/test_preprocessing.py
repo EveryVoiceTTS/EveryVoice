@@ -2,16 +2,18 @@
 
 import os
 import shutil
+import sys
 import tempfile
 from math import sqrt
 from pathlib import Path
 from typing import Any
-from unittest import TestCase, main
+from unittest import TestCase
 
 import torch
 import torchaudio
 import yaml
 from pydantic_core._pydantic_core import ValidationError
+from pytest import main
 from torch import float32
 from typer.testing import CliRunner
 
@@ -35,8 +37,6 @@ from everyvoice.tests.stubs import (
     capture_stderr,
     capture_stdout,
     mute_logger,
-    silence_c_stderr,
-    silence_c_stdout,
 )
 from everyvoice.utils import generic_psv_filelist_reader
 
@@ -274,8 +274,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         # Use the long test audio file (12 seconds, longer than default 11.0 limit)
         long_audio_path = TEST_DATA_DIR / "long_audio_test.wav"
 
-        with mute_logger("everyvoice.preprocessor.preprocessor"):
-            audio, sr = self.preprocessor.process_audio(long_audio_path, hop_size=256)
+        audio, sr = self.preprocessor.process_audio(long_audio_path, hop_size=256)
 
         # Should return None, None indicating the file was skipped
         self.assertEqual(audio, None)
@@ -332,15 +331,14 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             preprocessor = Preprocessor(test_config)
 
             # Run the preprocess method with just audio processing
-            with silence_c_stdout(), silence_c_stderr():
-                preprocessor.preprocess(
-                    output_path=str(save_dir / "filelist.psv"),
-                    cpus=1,
-                    overwrite=True,
-                    to_process=(
-                        "audio",
-                    ),  # Only process audio to trigger the multichannel file creation
-                )
+            preprocessor.preprocess(
+                output_path=str(save_dir / "filelist.psv"),
+                cpus=1,
+                overwrite=True,
+                to_process=(
+                    "audio",
+                ),  # Only process audio to trigger the multichannel file creation
+            )
 
             # Verify that multichannel_files.txt was created
             multichannel_file = save_dir / "multichannel_files.txt"
@@ -755,10 +753,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     symbols = text_config.symbols.all_except_punctuation
                     for character in ("é", "É", "é"):  # nfc(é), nfc(É), nfd(é)
                         self.assertIn(character, symbols)
-                with silence_c_stderr():
-                    result = runner.invoke(
-                        app, ["preprocess", "config/everyvoice-text-to-spec.yaml"]
-                    )
+                result = runner.invoke(
+                    app, ["preprocess", "config/everyvoice-text-to-spec.yaml"]
+                )
                 if result.exit_code != 0 or stubs.VERBOSE_OVERRIDE:
                     print(result.output)
                 self.assertEqual(result.exit_code, 0)
@@ -1372,4 +1369,4 @@ class PreprocessingHierarchyTest(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

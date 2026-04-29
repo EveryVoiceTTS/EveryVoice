@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 
 import json
+import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import TestCase, main
+from unittest import TestCase
 
 import yaml
 from pydantic import ValidationError
+from pytest import main
 from readalongs.portable_tempfile import (
     PortableNamedTemporaryFile as NamedTemporaryFile,
 )
@@ -648,4 +650,4 @@ class HiFiGANTrainingConfigTest(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

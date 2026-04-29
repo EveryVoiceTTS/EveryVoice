@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+import sys
 import tempfile
 from pathlib import Path
-from unittest import TestCase, main
+from unittest import TestCase
 
 import yaml
 from anytree import PreOrderIter
+from pytest import main
 
 from everyvoice.tests.stubs import capture_stdout, temp_chdir
 from everyvoice.tests.test_wizard import CONTACT_INFO_STATE
@@ -313,4 +315,4 @@ class TestNodeMixin(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
