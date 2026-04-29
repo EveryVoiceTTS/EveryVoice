@@ -277,7 +277,7 @@ class WizardTest(WizardTestBase):
                     f.read(),
                     "basename|language|speaker|text\n0001|und|default|hello\n0002|und|default|hello\n0003|und|default|hello\n",
                 )
-            self.assertIn("Congratulations", stdout.getvalue())
+            assert "Congratulations" in stdout.getvalue()
             self.assertTrue(
                 (Path(tmpdirname) / config_step.name / "logs_and_checkpoints").exists()
             )
@@ -318,8 +318,8 @@ class WizardTest(WizardTestBase):
         with capture_stdout() as out:
             tour.visualize()
         log = out.getvalue()
-        self.assertIn("── Contact Name ", log)
-        self.assertIn("── Validate Wavs ", log)
+        assert "── Contact Name " in log
+        assert "── Validate Wavs " in log
 
     def test_name_step(self):
         """Exercise providing a valid dataset name."""
@@ -328,7 +328,7 @@ class WizardTest(WizardTestBase):
             with patch_questionary("myname"):
                 step.run()
         self.assertEqual(step.response, "myname")
-        self.assertIn("'myname'", stdout.getvalue())
+        assert "'myname'" in stdout.getvalue()
         assert step.completed
 
     def test_bad_name_step(self):
@@ -341,17 +341,17 @@ class WizardTest(WizardTestBase):
             self.assertFalse(step.validate("foo/bar"))
             self.assertFalse(step.validate(""))
         output = stdout.getvalue()
-        self.assertIn("'foo/bar'", output)
-        self.assertIn("is not valid", output)
-        self.assertIn("your project needs a name", output)
+        assert "'foo/bar'" in output
+        assert "is not valid" in output
+        assert "your project needs a name" in output
 
         step = basic.NameStep("")
         with capture_stdout() as stdout:
             with patch_questionary(("bad/name", "good-name"), True):
                 step.run()
         output = stdout.getvalue()
-        self.assertIn("'bad/name'", stdout.getvalue())
-        self.assertIn("is not valid", stdout.getvalue())
+        assert "'bad/name'" in stdout.getvalue()
+        assert "is not valid" in stdout.getvalue()
         self.assertEqual(step.response, "good-name")
 
     def test_bad_contact_name_step(self):
@@ -361,8 +361,8 @@ class WizardTest(WizardTestBase):
             self.assertFalse(step.validate("a"))
             self.assertFalse(step.validate(""))
         output = stdout.getvalue()
-        self.assertIn("Sorry", output)
-        self.assertIn("EveryVoice requires a name", output)
+        assert "Sorry" in output
+        assert "EveryVoice requires a name" in output
 
     def test_bad_contact_email_step(self):
         """Exercise providing an invalid contact email."""
@@ -379,8 +379,8 @@ class WizardTest(WizardTestBase):
             "It must have exactly one @-sign" in output
             or "An email address must have an @-sign" in output
         )
-        self.assertIn("There must be something after the @-sign", output)
-        self.assertIn("An email address cannot end with a period", output)
+        assert "There must be something after the @-sign" in output
+        assert "An email address cannot end with a period" in output
 
     def test_no_permissions(self):
         """Exercise lacking permissions, then trying again"""
@@ -388,7 +388,7 @@ class WizardTest(WizardTestBase):
         permission_step = find_step(SN.dataset_permission_step, tour.steps)
         self.assertGreater(len(permission_step.children), 8)
         self.assertGreater(len(tour.root.descendants), 14)
-        self.assertIn("dataset_0", tour.state)
+        assert "dataset_0" in tour.state
         with patch_menu_prompt(0):  # 0 is no, I don't have permission
             permission_step.run()
         self.assertEqual(permission_step.children, ())
@@ -398,7 +398,7 @@ class WizardTest(WizardTestBase):
         more_dataset_step = find_step(SN.more_datasets_step, tour.steps)
         with patch_menu_prompt(1):  # 1 is Yes, I have more data
             more_dataset_step.run()
-        self.assertIn("dataset_0", tour.state)
+        assert "dataset_0" in tour.state
         self.assertGreater(len(more_dataset_step.descendants), 8)
         self.assertGreater(len(tour.root.descendants), 14)
 
@@ -442,7 +442,7 @@ class WizardTest(WizardTestBase):
                 ro_dir.mkdir(mode=0x555)
                 with capture_stdout() as out:
                     self.assertFalse(step.validate(str(ro_dir)))
-                self.assertIn("could not create", out.getvalue())
+                assert "could not create" in out.getvalue()
 
             # Case with a deep path, make sure we don't leave part of it around
             assert step.validate(tmpdir / "deep" / "path")
@@ -452,7 +452,7 @@ class WizardTest(WizardTestBase):
             with capture_stdout() as stdout:
                 with monkeypatch(step, "prompt", Say(tmpdirname)):
                     step.run()
-            self.assertIn("will put your files", stdout.getvalue())
+            assert "will put your files" in stdout.getvalue()
 
     def test_more_data_step(self):
         """Exercise giving an invalid response and a yes response to more data."""
@@ -482,7 +482,7 @@ class WizardTest(WizardTestBase):
         with patch_menu_prompt(0), capture_stdout() as out:  # answer 0 is "no"
             step.run()
         self.assertEqual(len(step.children), 0)
-        self.assertIn("No dataset to save", out.getvalue())
+        assert "No dataset to save" in out.getvalue()
 
     def test_dataset_name(self):
         step = dataset.DatasetNameStep()
@@ -490,9 +490,9 @@ class WizardTest(WizardTestBase):
             with capture_stdout() as stdout:
                 step.run()
         output = stdout.getvalue().replace(" \n", " ").split("\n")
-        self.assertIn("your dataset needs a name", output[0])
-        self.assertIn("is not valid", output[1])
-        self.assertIn("finished the configuration", "".join(output[2:]))
+        assert "your dataset needs a name" in output[0]
+        assert "is not valid" in output[1]
+        assert "finished the configuration" in "".join(output[2:])
         assert step.completed
 
     def test_unique_dataset_name(self):
@@ -509,11 +509,11 @@ class WizardTest(WizardTestBase):
         self.assertEqual(tour.state["dataset_0"][SN.dataset_name_step], "set1")
         with patch_questionary(("set1", "set2")), capture_stdout() as out:
             tour.steps[1].run()
-        self.assertIn("Please choose unique", flatten_log(out.getvalue()))
+        assert "Please choose unique" in flatten_log(out.getvalue())
         self.assertEqual(tour.state["dataset_1"][SN.dataset_name_step], "set2")
         with patch_questionary(("set1", "set2", "set3")), capture_stdout() as out:
             tour.steps[2].run()
-        self.assertIn("Please choose unique", flatten_log(out.getvalue()))
+        assert "Please choose unique" in flatten_log(out.getvalue())
         self.assertEqual(tour.state["dataset_2"][SN.dataset_name_step], "set3")
 
     def test_speaker_name(self):
@@ -522,9 +522,9 @@ class WizardTest(WizardTestBase):
             with capture_stdout() as stdout:
                 step.run()
         output = stdout.getvalue().replace(" \n", " ").split("\n")
-        self.assertIn("speaker needs an ID", output[0])
-        self.assertIn("is not valid", output[1])
-        self.assertIn("will be used as the speaker ID", "".join(output[2:]))
+        assert "speaker needs an ID" in output[0]
+        assert "is not valid" in output[1]
+        assert "will be used as the speaker ID" in "".join(output[2:])
         assert step.completed
 
     def test_wavs_dir(self):
@@ -602,7 +602,7 @@ class WizardTest(WizardTestBase):
                 step.run()
         output = stdout.getvalue().replace(" \n", " ").split(".\n")
         for i in range(4):
-            self.assertIn("not a valid sample rate", output[i])
+            assert "not a valid sample rate" in output[i]
         assert step.completed
         self.assertEqual(step.response, 512)
 
@@ -811,7 +811,7 @@ class WizardTest(WizardTestBase):
         with capture_stdout(), capture_stderr():
             symbol_set_step.run()
         self.assertEqual(len(symbol_set_step.state[SN.symbol_set_step.value]), 2)
-        self.assertIn("t͡s", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
+        assert "t͡s" in symbol_set_step.state[SN.symbol_set_step.value]["phones"]
         self.assertNotIn(
             ":", symbol_set_step.state[SN.symbol_set_step.value]["characters"]
         )
@@ -872,7 +872,7 @@ class WizardTest(WizardTestBase):
             with patch_menu_prompt(1) as stdout:
                 format_step.run()
             output = stdout.getvalue()
-            self.assertIn("is empty", output)
+            assert "is empty" in output
         self.assertEqual(cm.exception.code, 1)
 
     def test_wrong_fileformat_psv(self):
@@ -895,7 +895,7 @@ class WizardTest(WizardTestBase):
         output = flatten_log(stdout.getvalue())
         self.assertRegex(output, r"does not look like a .*'tsv'")
         self.assertRegex(output, r"does not look like a .*'csv'")
-        self.assertIn("is not in the festival format", output)
+        assert "is not in the festival format" in output
         assert format_step.completed
         # print(format_step.state)
 
@@ -975,7 +975,7 @@ class WizardTest(WizardTestBase):
                 "some question", ("choice1", "choice2")
             )
             self.assertEqual(answer, "choice2")
-            self.assertIn("some question", stdout.getvalue())
+            assert "some question" in stdout.getvalue()
         with patch_menu_prompt((2, 4)):
             answer = prompts.get_response_from_menu_prompt(
                 choices=("a", "b", "c", "d", "e"), multi=True
@@ -1049,9 +1049,9 @@ class WizardTest(WizardTestBase):
         )
 
         tree = str(RenderTree(tour.root))
-        self.assertIn("├── Validate Wavs Step", tree)
-        self.assertIn("│   └── Validate Wavs Step", tree)
-        self.assertIn("Great! All audio files found in directory", out)
+        assert "├── Validate Wavs Step" in tree
+        assert "│   └── Validate Wavs Step" in tree
+        assert "Great! All audio files found in directory" in out
 
         # print(tour.state)
         self.assertEqual(len(tour.state["filelist_data"]), 5)
@@ -1143,8 +1143,8 @@ class WizardTest(WizardTestBase):
                 encoding="utf8",
             ) as f:
                 text_to_spec_config = "\n".join(f)
-            self.assertIn("multilingual: true", text_to_spec_config)
-            self.assertIn("multispeaker: true", text_to_spec_config)
+            assert "multilingual: true" in text_to_spec_config
+            assert "multispeaker: true" in text_to_spec_config
 
     def test_no_header_line(self):
         with tempfile.TemporaryDirectory() as tmpdir_s:
@@ -1239,8 +1239,8 @@ class WizardTest(WizardTestBase):
                 encoding="utf8",
             ) as f:
                 text_to_spec_config = "\n".join(f)
-            self.assertIn("multilingual: false", text_to_spec_config)
-            self.assertIn("multispeaker: false", text_to_spec_config)
+            assert "multilingual: false" in text_to_spec_config
+            assert "multispeaker: false" in text_to_spec_config
 
     def test_running_out_of_columns(self):
         with tempfile.TemporaryDirectory() as tmpdir_s:
@@ -1689,8 +1689,8 @@ class WizardTest(WizardTestBase):
                 encoding="utf8",
             ) as f:
                 text_to_spec_config = "\n".join(f)
-            self.assertIn("multilingual: true", text_to_spec_config)
-            self.assertIn("multispeaker: true", text_to_spec_config)
+            assert "multilingual: true" in text_to_spec_config
+            assert "multispeaker: true" in text_to_spec_config
 
             # Assertions about dataset-specific and global cleaners
             with open(
@@ -1910,8 +1910,8 @@ class WizardTest(WizardTestBase):
                 encoding="utf8",
             ) as f:
                 text_to_spec_config = "\n".join(f)
-            self.assertIn("multilingual: false", text_to_spec_config)
-            self.assertIn("multispeaker: false", text_to_spec_config)
+            assert "multilingual: false" in text_to_spec_config
+            assert "multispeaker: false" in text_to_spec_config
 
     trivial_tour_results = {
         SN.name_step.value: "project_name",
@@ -1959,7 +1959,7 @@ class WizardTest(WizardTestBase):
         ):
             with patch_menu_prompt(2) as output:
                 tour.run()
-            self.assertIn("Contact Name: Jane Doe", flatten_log(output.getvalue()))
+            assert "Contact Name: Jane Doe" in flatten_log(output.getvalue())
         self.assertEqual(tour.state, self.trivial_tour_results)
 
     progress_template = dedent(
@@ -2011,7 +2011,7 @@ class WizardTest(WizardTestBase):
             tour = make_trivial_tour()
             with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=progress_file)
-            self.assertIn("Applying saved response", out.getvalue())
+            assert "Applying saved response" in out.getvalue()
             self.assertEqual(tour.state, self.trivial_tour_results)
 
     def test_resume_from_the_future(self):
@@ -2031,9 +2031,9 @@ class WizardTest(WizardTestBase):
             with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
             output = flatten_log(out.getvalue())
-            self.assertIn("Proceeding anyway", output)
-            self.assertIn("consider updating your software", output)
-            self.assertIn("Applying saved response", output)
+            assert "Proceeding anyway" in output
+            assert "consider updating your software" in output
+            assert "Applying saved response" in output
             self.assertEqual(tour.state, self.trivial_tour_results)
 
     def test_resume_from_near_past(self):
@@ -2049,9 +2049,9 @@ class WizardTest(WizardTestBase):
             with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
             output = flatten_log(out.getvalue())
-            self.assertIn("expected to be compatible", output)
-            self.assertIn("Proceeding anyway", output)
-            self.assertIn("Applying saved response", output)
+            assert "expected to be compatible" in output
+            assert "Proceeding anyway" in output
+            assert "Applying saved response" in output
             self.assertEqual(tour.state, self.trivial_tour_results)
 
     def test_resume_from_far_past(self):
@@ -2065,9 +2065,9 @@ class WizardTest(WizardTestBase):
             with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=changed_version)
             output = flatten_log(out.getvalue())
-            self.assertIn("not fully compatible", output)
-            self.assertIn("Proceeding anyway", output)
-            self.assertIn("Applying saved response", output)
+            assert "not fully compatible" in output
+            assert "Proceeding anyway" in output
+            assert "Applying saved response" in output
             self.assertEqual(tour.state, self.trivial_tour_results)
 
     def test_resume_with_invalid_progress_files(self):
@@ -2082,7 +2082,7 @@ class WizardTest(WizardTestBase):
             tour = make_trivial_tour()
             with patch_questionary("email@mail.com"), capture_stdout() as out:
                 tour.run(resume_from=invalid_response)
-            self.assertIn("Error: saved response 'invalid email'", out.getvalue())
+            assert "Error: saved response 'invalid email'" in out.getvalue()
             self.assertEqual(tour.state, self.trivial_tour_results)
 
             # From here on, it's lots of ways to fail, which always causes a SystemExit
@@ -2125,7 +2125,7 @@ class WizardTest(WizardTestBase):
                 f.write("".join(progress_lines[-4:-2]))
             with self.assertRaises(SystemExit), capture_stdout() as out:
                 tour.run(resume_from=questions_out_of_order)
-            self.assertIn("out of sync", out.getvalue())
+            assert "out of sync" in out.getvalue()
 
             extra_question_not_in_tour = tmpdir / "extra-question"
             with open(extra_question_not_in_tour, "w", encoding="utf8") as f:
@@ -2135,7 +2135,7 @@ class WizardTest(WizardTestBase):
             tour = make_trivial_tour()
             with self.assertRaises(SystemExit), capture_stdout() as out:
                 tour.run(resume_from=extra_question_not_in_tour)
-            self.assertIn("saved responses left", out.getvalue())
+            assert "saved responses left" in out.getvalue()
 
             wrong_software_name = tmpdir / "wrong-software-name"
             with open(wrong_software_name, "w", encoding="utf8") as f:
@@ -2143,7 +2143,7 @@ class WizardTest(WizardTestBase):
                 f.write("".join(progress_lines[1:]))
             with self.assertRaises(SystemExit), capture_stdout() as out:
                 tour.run(resume_from=wrong_software_name)
-            self.assertIn("it is for software", flatten_log(out.getvalue()))
+            assert "it is for software" in flatten_log(out.getvalue())
 
     def test_control_c_exit(self):
         # Ctrl-C plus option 4 (Exit) exits
@@ -2169,12 +2169,12 @@ class WizardTest(WizardTestBase):
                 tour.run()
         for step in tour.steps:
             # When not the current step:
-            self.assertIn(step.name.replace(" Step", "") + "  ", out.getvalue())
+            assert step.name.replace(" Step", "") + "  " in out.getvalue()
             # When it is the current step:
             self.assertRegex(out.getvalue(), step.name.replace(" Step", "") + " *←")
             # When previously filled:
             if step != tour.steps[-1]:
-                self.assertIn(step.name.replace(" Step", "") + ": ", out.getvalue())
+                assert step.name.replace(" Step", "") + ": " in out.getvalue()
 
     def test_debug_state(self):
         tour = make_trivial_tour(debug_state=True)

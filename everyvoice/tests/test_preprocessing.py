@@ -173,11 +173,11 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         report = self.preprocessor.report()
 
         # Check that multichannel files are mentioned in the report
-        self.assertIn("multichannel_files", report)
+        assert "multichannel_files" in report
         expected_count = initial_count + 1
-        self.assertIn(f"multichannel_files          {expected_count}", report)
-        self.assertIn(f"Multichannel Audio Files ({expected_count} total)", report)
-        self.assertIn(str(multichannel_audio_path), report)
+        assert f"multichannel_files          {expected_count}" in report
+        assert f"Multichannel Audio Files ({expected_count} total)" in report
+        assert str(multichannel_audio_path) in report
 
     def test_multichannel_files_empty_report(self):
         """Test that report works correctly when no multichannel files exist"""
@@ -188,7 +188,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         report = fresh_preprocessor.report()
 
         # Should show 0 multichannel files and no multichannel files section
-        self.assertIn("multichannel_files          0", report)
+        assert "multichannel_files          0" in report
         self.assertNotIn("Multichannel Audio Files", report)
 
     def test_multichannel_files_file_creation(self):
@@ -226,9 +226,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             # Check the content of multichannel_files.txt
             with open(multichannel_file, "r") as f:
                 content = f.read()
-                self.assertIn("Multichannel Audio Files", content)
-                self.assertIn("multichannel_test.wav", content)
-                self.assertIn("=" * 50, content)
+                assert "Multichannel Audio Files" in content
+                assert "multichannel_test.wav" in content
+                assert "=" * 50 in content
 
     def test_multichannel_preprocess_file_output(self):
         """Test the exact multichannel file output code path from preprocess method"""
@@ -265,9 +265,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
             with open(multichannel_file, "r") as f:
                 content = f.read()
-                self.assertIn("Multichannel Audio Files (1 total)", content)
-                self.assertIn("multichannel_test.wav", content)
-                self.assertIn("=" * 50, content)
+                assert "Multichannel Audio Files (1 total)" in content
+                assert "multichannel_test.wav" in content
+                assert "=" * 50 in content
 
     def test_audio_too_long_condition(self):
         """Test that audio files longer than max_audio_length are skipped"""
@@ -349,9 +349,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             # Verify the content
             with open(multichannel_file, "r") as f:
                 content = f.read()
-                self.assertIn("Multichannel Audio Files (1 total)", content)
-                self.assertIn("multichannel_test.wav", content)
-                self.assertIn("=" * 50, content)
+                assert "Multichannel Audio Files (1 total)" in content
+                assert "multichannel_test.wav" in content
+                assert "=" * 50 in content
 
     def test_process_audio(self):
         import torchaudio
@@ -752,7 +752,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     text_config = TextConfig(**yaml.load(f, Loader=yaml.FullLoader))
                     symbols = text_config.symbols.all_except_punctuation
                     for character in ("é", "É", "é"):  # nfc(é), nfc(É), nfd(é)
-                        self.assertIn(character, symbols)
+                        assert character in symbols
                 result = runner.invoke(
                     app, ["preprocess", "config/everyvoice-text-to-spec.yaml"]
                 )
@@ -761,14 +761,14 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 self.assertEqual(result.exit_code, 0)
                 filelist = generic_psv_filelist_reader("preprocessed/filelist.psv")
                 self.assertEqual(filelist[4]["label"], "lowercase-only")
-                self.assertIn("/é/", filelist[4]["character_tokens"])  # lower NFD only
+                assert "/é/" in filelist[4]["character_tokens"]  # lower NFD only
                 self.assertNotIn("/é/", filelist[4]["character_tokens"])  # not NFC
                 self.assertNotIn("/É/", filelist[4]["character_tokens"])  # not upper
                 self.assertEqual(filelist[8]["label"], "nfc-only")
-                self.assertIn("/é/", filelist[8]["character_tokens"])  # lower NFC
+                assert "/é/" in filelist[8]["character_tokens"]  # lower NFC
                 self.assertNotIn("/é/", filelist[8]["character_tokens"])  # not NFD
                 self.assertEqual(filelist[9]["label"], "nfc-only")
-                self.assertIn("/É/", filelist[9]["character_tokens"])  # upper NFC
+                assert "/É/" in filelist[9]["character_tokens"]  # upper NFC
                 self.assertNotIn("/É/", filelist[9]["character_tokens"])  # not NFD
 
     def test_incremental_preprocess(self):
@@ -894,8 +894,8 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                                     to_process=to_process,
                                 )
                 log_output = "\n".join(logs.output)
-                self.assertIn("Config lock mismatch:", log_output)
-                self.assertIn(message, log_output)
+                assert "Config lock mismatch:" in log_output
+                assert message in log_output
 
             fail_config_lock(
                 fp_config.preprocessing.audio,
@@ -951,10 +951,10 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
         with self.assertRaises(ValidationError), capture_stdout() as cout:
             config = PreprocessingConfig(train_split=-0.1)
-            self.assertIn("Input should be greater than or equal to 0", cout.getvalue())
+            assert "Input should be greater than or equal to 0" in cout.getvalue()
         with self.assertRaises(ValidationError), capture_stdout() as cout:
             config = PreprocessingConfig(train_split=1.1)
-            self.assertIn("Input should be less than or equal to 1", cout.getvalue())
+            assert "Input should be less than or equal to 1" in cout.getvalue()
 
     def test_no_speaker(self) -> None:
         """Exercise getting the default speaker and languages during preprocessing"""
@@ -1072,9 +1072,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             with open(missing_files_path, "r", encoding="utf8") as f:
                 content = f.read()
 
-            self.assertIn("Missing Audio Files (2 total)", content)
-            self.assertIn("nonexistent1.wav", content)
-            self.assertIn("nonexistent2.wav", content)
+            assert "Missing Audio Files (2 total)" in content
+            assert "nonexistent1.wav" in content
+            assert "nonexistent2.wav" in content
 
             # Check that missing files are also included in summary report
             summary_path = tmpdir / "preprocessed" / "summary.txt"
@@ -1083,9 +1083,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             with open(summary_path, "r", encoding="utf8") as f:
                 summary_content = f.read()
 
-            self.assertIn("Missing Audio Files (2 total)", summary_content)
-            self.assertIn("nonexistent1.wav", summary_content)
-            self.assertIn("nonexistent2.wav", summary_content)
+            assert "Missing Audio Files (2 total)" in summary_content
+            assert "nonexistent1.wav" in summary_content
+            assert "nonexistent2.wav" in summary_content
 
     def test_no_missing_files(self):
         """Test that missing_files.txt is not created when all files exist"""
@@ -1134,7 +1134,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         self.assertIsNone(input_spec)
         self.assertIsNone(output_spec)
         self.assertEqual(len(preprocessor.missing_files_list), 1)
-        self.assertIn("nonexistent", preprocessor.missing_files_list[0])
+        assert "nonexistent" in preprocessor.missing_files_list[0]
 
     def test_missing_files_report_formatting(self):
         """Test report method includes missing files section with correct formatting"""
@@ -1149,9 +1149,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         report = preprocessor.report()
 
         # Check report contains missing files section
-        self.assertIn("Missing Audio Files (2 total)", report)
-        self.assertIn("- /path/to/missing1.wav", report)
-        self.assertIn("- /path/to/missing2.wav", report)
+        assert "Missing Audio Files (2 total)" in report
+        assert "- /path/to/missing1.wav" in report
+        assert "- /path/to/missing2.wav" in report
 
     def test_missing_files_basename_with_wav_extension(self):
         """Test missing files when basename already has .wav extension"""
@@ -1191,7 +1191,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
             with open(missing_files_path, "r", encoding="utf8") as f:
                 content = f.read()
-            self.assertIn("missing.wav", content)
+            assert "missing.wav" in content
 
     def test_empty_missing_files_list_report(self):
         """Test report method when no missing files exist"""

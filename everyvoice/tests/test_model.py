@@ -300,11 +300,11 @@ class TestLoadingModel(TestCase):
                 ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                 trainer.save_checkpoint(ckpt_fn)
                 m = torch.load(ckpt_fn, weights_only=True)
-                self.assertIn("model_info", m.keys())
+                assert "model_info" in m.keys()
                 m["model_info"]["name"] = "BAD_TYPE"
                 torch.save(m, ckpt_fn)
                 m = torch.load(ckpt_fn, weights_only=True)
-                self.assertIn("model_info", m.keys())
+                assert "model_info" in m.keys()
                 self.assertEqual(m["model_info"]["name"], "BAD_TYPE")
                 # self.assertEqual(m["model_info"]["version"], "1.0")
                 with self.assertRaisesRegex(
@@ -373,7 +373,7 @@ class TestLoadingModel(TestCase):
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
                     m = torch.load(ckpt_fn, weights_only=True)
-                    self.assertIn("model_info", m.keys())
+                    assert "model_info" in m.keys()
                     self.assertEqual(m["model_info"]["name"], ModelType.__name__)
                     self.assertEqual(m["model_info"]["version"], CANARY_VERSION)
                     del m["model_info"]["version"]
@@ -387,7 +387,7 @@ class TestLoadingModel(TestCase):
                     else:
                         with mute_logger("everyvoice.config.text_config"):
                             model = ModelType.load_from_checkpoint(ckpt_fn)
-                        self.assertIn(model._VERSION, ["1.0", "1.1"])
+                        assert model._VERSION, ["1.0" in "1.1"]
 
     def test_newer_model_version(self):
         """
@@ -448,7 +448,7 @@ class TestLoadingModel(TestCase):
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
                     m = torch.load(ckpt_fn, weights_only=True)
-                    self.assertIn("model_info", m.keys())
+                    assert "model_info" in m.keys()
                     self.assertEqual(m["model_info"]["name"], ModelType.__name__)
                     self.assertEqual(m["model_info"]["version"], NEWER_VERSION)
                     with self.assertRaisesRegex(

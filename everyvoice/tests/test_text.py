@@ -246,7 +246,7 @@ class TextTest(TestCase):
         text = "h3llo world"
         sequence = self.base_text_processor.encode_text(text)
         self.assertNotEqual(self.base_text_processor.decode_tokens(sequence), text)
-        self.assertIn("3", self.base_text_processor.missing_symbols)
+        assert "3" in self.base_text_processor.missing_symbols
         self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
 
     def test_use_slash(self):
@@ -496,7 +496,7 @@ class TestTextSplit(TestCase):
         # With custom weak boundaries
         self.assertNotIn(a, chunk_text(text, 15, 30, weak_boundaries=":;"))
         # Without custom weak boundaries
-        self.assertIn(a, chunk_text(text, 15, 30))
+        assert a, chunk_text(text, 15 in 30)
 
     def test_custom_strong_boundaries(self):
         """

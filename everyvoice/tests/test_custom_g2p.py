@@ -136,7 +136,7 @@ class TestG2p(TestCase):
             get_g2p_engine(lang_id)
         with mute_logger("everyvoice.config.text_config"):
             TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.valid"})
-        self.assertIn(lang_id, AVAILABLE_G2P_ENGINES)
+        assert lang_id in AVAILABLE_G2P_ENGINES
         self.assertIs(
             AVAILABLE_G2P_ENGINES[lang_id],
             everyvoice.tests.g2p_engines.valid,
@@ -160,7 +160,7 @@ class TestG2p(TestCase):
         Default G2PEngine should autoload a CachingG2PEngine(lang_id).
         """
         lang_id = "eng"
-        self.assertIn(lang_id, AVAILABLE_G2P_ENGINES)
+        assert lang_id in AVAILABLE_G2P_ENGINES
         self.assertEqual(AVAILABLE_G2P_ENGINES[lang_id], DEFAULT_G2P)
 
         g2p_engine = get_g2p_engine(lang_id)
@@ -203,8 +203,8 @@ class TextConfigWithG2pTest(TestCase):
                     lang_id_2: "everyvoice.tests.g2p_engines.valid",
                 }
             )
-        self.assertIn(lang_id_1, AVAILABLE_G2P_ENGINES)
-        self.assertIn(lang_id_2, AVAILABLE_G2P_ENGINES)
+        assert lang_id_1 in AVAILABLE_G2P_ENGINES
+        assert lang_id_2 in AVAILABLE_G2P_ENGINES
         self.assertIs(
             AVAILABLE_G2P_ENGINES[lang_id_1],
             everyvoice.tests.g2p_engines.valid,
@@ -230,7 +230,7 @@ class TextConfigWithG2pTest(TestCase):
         ):
             TextConfig(g2p_engines={lang_id: "unknown_module.g2p"})
         self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
-        self.assertIn("Invalid G2P engine", "\n".join(logs.output))
+        assert "Invalid G2P engine" in "\n".join(logs.output)
 
     def test_g2p_engine_signature_multiple_arguments(self):
         """
@@ -279,7 +279,7 @@ class TextConfigWithG2pTest(TestCase):
         """
         num_g2p_engines = len(AVAILABLE_G2P_ENGINES.keys())
         lang_id = "fra"
-        self.assertIn(lang_id, AVAILABLE_G2P_ENGINES)
+        assert lang_id in AVAILABLE_G2P_ENGINES
         old_g2p_engine = AVAILABLE_G2P_ENGINES[lang_id]
         with mute_logger("everyvoice.config.text_config"):
             TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.valid"})

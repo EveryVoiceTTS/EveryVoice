@@ -356,7 +356,7 @@ VERBOSE_OVERRIDE = bool(os.environ.get("EVERYVOICE_VERBOSE_TESTS", False))
 def flatten_log(log_output: str) -> str:
     """Replace newlines and other sequences of whitespace by a single space.
 
-    Usage: self.assertIn("some text", flatten_log(captured_output))
+    Usage: assert "some text" in flatten_log(captured_output)
 
     Avoids having to use self.assertRegex everywhere just because of rich or pretty
     printing of messages over multiple lines.
