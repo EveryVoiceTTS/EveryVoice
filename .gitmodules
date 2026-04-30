@@ -7,3 +7,6 @@
 [submodule "everyvoice/model/aligner/wav2vec2aligner"]
 	path = everyvoice/model/aligner/wav2vec2aligner
 	url = ../wav2vec2aligner.git
+[submodule "everyvoice/model/e2e/StyleTTS2_lightning"]
+	path = everyvoice/model/e2e/StyleTTS2_lightning
+	url = ../StyleTTS2.git
