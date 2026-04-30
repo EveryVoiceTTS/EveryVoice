@@ -35,6 +35,9 @@ from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     extract_segments_from_textgrid,
 )
+from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.train import (
+    train as train_styletts2,
+)
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.check_data import (
     check_data_command,
 )
@@ -108,12 +111,14 @@ app = typer.Typer(
 
     ## Train
 
-    Once you have a configuration and have preprocessed your data, train a model by running everyvoice train [text-to-spec|spec-to-wav] [OPTIONS].
+    Once you have a configuration and have preprocessed your data, train a model by running everyvoice train [text-to-spec|spec-to-wav|text-to-wav] [OPTIONS].
     EveryVoice has different types of models you can train:
 
     1. **text-to-spec** --- this is the most common model you will need to train. It is a model from text inputs to spectral feature (aka spectrogram) outputs.
 
     2. **spec-to-wav** --- this is the model that turns your spectral features into audio. It is also known as a 'vocoder'. You will typically not need to train your own version. Please refer to [https://pathtocheckpoints](https://pathtocheckpoints) for more information.
+
+    3. **text-to-wav** --- this is a model that directly trains text input to waveform/audio output. It is much more heavy duty than training a text-to-spec model. A text-to-spec model will take less than 1 day to train for most datasets, while a text-to-wav model will take over a week for most datasets. For that reason, we strongly recommend training a text-to-wav model first. If you are satisfied with the results, and have extra GPU resources, you can try training a text-to-wav model for improved sentence-level audio quality.
 
     ## Synthesize
 
@@ -512,15 +517,20 @@ train_group = typer.Typer(
     help="""
     # Train Help
 
+    Please visit http://pathtomodelinfodocs for more information
+
         - **text-to-spec** --- this is the most common model you will need to train. It is a model from text inputs to spectral feature (aka spectrogram) outputs.
 
         - **spec-to-wav** --- this is the model that turns your spectral features into audio. It is also known as a 'vocoder'. You will typically not need to train your own version. Please refer to [https://pathtocheckpoints](https://pathtocheckpoints) for more information.
+
+        - **text-to-wav** --- this is a model that directly trains text input to waveform/audio output. It is much more heavy duty than training a text-to-spec model. A text-to-spec model will take less than 1 day to train for most datasets, while a text-to-wav model will take over a week for most datasets. For that reason, we strongly recommend training a text-to-wav model first. If you are satisfied with the results, and have extra GPU resources, you can try training a text-to-wav model for improved sentence-level audio quality.
+
     """,
 )
 
 train_group.command(
     name="text-to-spec",
-    short_help="Train your Text-to-Spec model",
+    short_help="Train your Text-to-Spec (FastSpeech2) model",
     help=f"""Train your text-to-spec model.  For example:
 
     **everyvoice train text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**
@@ -529,12 +539,21 @@ train_group.command(
 
 train_group.command(
     name="spec-to-wav",
-    short_help="Train your Spec-to-Wav model",
+    short_help="Train your Spec-to-Wav (HiFiGAN) model",
     help=f"""Train your spec-to-wav model.  For example:
 
     **everyvoice train spec-to-wav config/{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
     """,
 )(train_hfg)
+
+train_group.command(
+    name="text-to-wav",
+    short_help="Train an end-to-end (StyleTTS2) model",
+    help=f"""Train an end-to-end text-to-speech model. For example:
+
+    **everyvoice train text-to-wav config/{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml --mode first**
+    """,
+)(train_styletts2)
 
 app.add_typer(
     train_group,

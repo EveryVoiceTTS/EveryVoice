@@ -10,6 +10,9 @@ from everyvoice.config.shared_types import (
     init_context,
 )
 from everyvoice.config.utils import PossiblyRelativePath, load_partials
+from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.ev_config import (  # noqa: F401
+    StyleTTS2Config,
+)
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.utils import load_config_from_json_or_yaml_path
