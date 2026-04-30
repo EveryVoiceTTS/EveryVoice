@@ -17,6 +17,7 @@ sys.path.append(
         parent_folder_path, "model", "feature_prediction", "FastSpeech2_lightning"
     )
 )
+sys.path.append(os.path.join(parent_folder_path, "model", "e2e", "StyleTTS2_lightning"))
 sys.path.append(
     os.path.join(parent_folder_path, "model", "vocoder", "HiFiGAN_iSTFT_lightning")
 )
