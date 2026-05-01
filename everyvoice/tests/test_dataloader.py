@@ -22,21 +22,17 @@ from everyvoice.utils import filter_dataset_based_on_target_text_representation_
 
 
 @fixture
-def config() -> EveryVoiceConfig:
-    return EveryVoiceConfig(
+def config() -> VocoderConfig:
+    return VocoderConfig(
         contact=TEST_CONTACT,
-        feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
-        vocoder=VocoderConfig(
-            contact=TEST_CONTACT,
-            training=HiFiGANTrainingConfig(
-                training_filelist=PreprocessedAudioFixture.lj_preprocessed
-                / "preprocessed_filelist.psv",
-                validation_filelist=PreprocessedAudioFixture.lj_preprocessed
-                / "validation_preprocessed_filelist.psv",
-            ),
-            preprocessing=PreprocessingConfig(
-                save_dir=PreprocessedAudioFixture.lj_preprocessed,
-            ),
+        training=HiFiGANTrainingConfig(
+            training_filelist=PreprocessedAudioFixture.lj_preprocessed
+            / "preprocessed_filelist.psv",
+            validation_filelist=PreprocessedAudioFixture.lj_preprocessed
+            / "validation_preprocessed_filelist.psv",
+        ),
+        preprocessing=PreprocessingConfig(
+            save_dir=PreprocessedAudioFixture.lj_preprocessed,
         ),
     )
 
@@ -51,10 +47,8 @@ class TestDataLoader(PreprocessedAudioFixture):
 
     def test_spec_dataset(self, config):
         dataset = SpecDataset(
-            config.training.filelist_loader(
-                config.training.training_filelist
-            ),
-            config.vocoder,
+            config.training.filelist_loader(config.training.training_filelist),
+            config,
             use_segments=True,
         )
         for sample in dataset:
@@ -62,9 +56,7 @@ class TestDataLoader(PreprocessedAudioFixture):
             assert isinstance(basename, str)
             assert spec.size() == spec_from_audio.size()
             assert spec.size(0) == config.preprocessing.audio.n_mels
-            assert spec.size(
-                1
-            ) == config.preprocessing.audio.vocoder_segment_size / (
+            assert spec.size(1) == config.preprocessing.audio.vocoder_segment_size / (
                 config.preprocessing.audio.fft_hop_size
                 * (
                     config.preprocessing.audio.output_sampling_rate
@@ -126,9 +118,7 @@ class TestDataLoader(PreprocessedAudioFixture):
 
     def test_imbalanced_sampler(self, config):
         dataset = SpecDataset(
-            config.training.filelist_loader(
-                config.training.training_filelist
-            ),
+            config.training.filelist_loader(config.training.training_filelist),
             config,
             use_segments=True,
         )

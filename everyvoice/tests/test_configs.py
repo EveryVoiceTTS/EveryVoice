@@ -239,7 +239,7 @@ class ConfigTest(TestCase):
 
         assert base_config.training.max_len == 400
         config = base_config.combine_configs(base_config, test_dict)
-        assert config["training"]["max_len"] "400"
+        assert config["training"]["max_len"] == "400"
 
     def test_changes(self):
         """Test that the changes to the config are correct"""
