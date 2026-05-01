@@ -13,7 +13,6 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import HiFiGAN
-from everyvoice.tests.stubs import silence_c_stderr
 
 
 def get_stubbed_vocoder(tmp_dir: Path) -> tuple[HiFiGAN, Path]:
@@ -32,8 +31,7 @@ def get_stubbed_vocoder(tmp_dir: Path) -> tuple[HiFiGAN, Path]:
         contact_name="Test Runner", contact_email="info@everyvoice.ca"
     )
     vocoder = HiFiGAN(HiFiGANConfig(contact=contact_info))
-    with silence_c_stderr():
-        trainer = Trainer(default_root_dir=str(tmp_dir), barebones=True)
+    trainer = Trainer(default_root_dir=str(tmp_dir), barebones=True)
     trainer.strategy.connect(vocoder)
     vocoder_path = tmp_dir / "vocoder"
     trainer.save_checkpoint(vocoder_path)
@@ -59,8 +57,7 @@ def get_stubbed_model(tmp_dir: Path) -> tuple[FastSpeech2, Path]:
             ),
         ),
     )
-    with silence_c_stderr():
-        trainer = Trainer(default_root_dir=str(tmp_dir), barebones=True)
+    trainer = Trainer(default_root_dir=str(tmp_dir), barebones=True)
     trainer.strategy.connect(model)
     model_path = tmp_dir / "model"
     trainer.save_checkpoint(model_path)

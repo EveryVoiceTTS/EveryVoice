@@ -4,17 +4,19 @@ import enum
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
-from unittest import TestCase, main, mock
+from unittest import TestCase, mock
 
 import jsonschema
 import typer
 import yaml
 from packaging.version import Version
 from pydantic import ValidationError
+from pytest import main
 from pytorch_lightning import Trainer
 from typer.testing import CliRunner
 from yaml import CLoader as Loader
@@ -46,8 +48,6 @@ from everyvoice.tests.stubs import (
     capture_logs,
     capture_stdout,
     flatten_log,
-    silence_c_stderr,
-    silence_c_stdout,
     temp_chdir,
 )
 from everyvoice.wizard import (
@@ -95,6 +95,10 @@ class CLITest(TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.class_tmp_dir_obj.cleanup()
+        if hasattr(cls, "dummy_fp_path"):
+            del cls.dummy_fp_path
+        if hasattr(cls, "dummy_vocoder_path"):
+            del cls.dummy_vocoder_path
 
     @classmethod
     def get_dummy_models(cls) -> tuple[Path, Path]:
@@ -259,12 +263,11 @@ class CLITest(TestCase):
         self.assertIn("https://docs.everyvoice.ca", result.stdout)
 
     def test_command_help_messages(self):
-        with silence_c_stderr():
-            for command in self.commands:
-                result = self.runner.invoke(app, [command, "--help"])
-                self.assertEqual(result.exit_code, 0)
-                result = self.runner.invoke(app, [command, "-h"])
-                self.assertEqual(result.exit_code, 0)
+        for command in self.commands:
+            result = self.runner.invoke(app, [command, "--help"])
+            self.assertEqual(result.exit_code, 0)
+            result = self.runner.invoke(app, [command, "-h"])
+            self.assertEqual(result.exit_code, 0)
 
     def test_update_schema(self):
         dummy_contact = ContactInformation(
@@ -318,17 +321,16 @@ class CLITest(TestCase):
         self.assertIn("FileExistsError", str(result))
 
     def test_evaluate(self):
-        with silence_c_stderr():
-            result = self.runner.invoke(
-                app,
-                [
-                    "evaluate",
-                    "-f",
-                    self.data_dir / "LJ010-0008.wav",
-                    "-r",
-                    self.data_dir / "lj" / "wavs" / "LJ050-0269.wav",
-                ],
-            )
+        result = self.runner.invoke(
+            app,
+            [
+                "evaluate",
+                "-f",
+                self.data_dir / "LJ010-0008.wav",
+                "-r",
+                self.data_dir / "lj" / "wavs" / "LJ050-0269.wav",
+            ],
+        )
         self.assertEqual(result.exit_code, 0)
         self.assertIn("LJ010-0008", result.stdout)
         self.assertIn("STOI", result.stdout)
@@ -357,10 +359,9 @@ class CLITest(TestCase):
         evaluation_output.unlink()
 
     def test_old_inspect_checkpoint(self):
-        with silence_c_stderr():
-            result = self.runner.invoke(
-                app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
-            )
+        result = self.runner.invoke(
+            app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
+        )
         self.assertEqual(result.exit_code, 0)
         self.assertIn(
             "This command has been renamed to `everyvoice checkpoint inspect`",
@@ -368,15 +369,13 @@ class CLITest(TestCase):
         )
 
     def test_inspect_checkpoint_help(self):
-        with silence_c_stderr():
-            result = self.runner.invoke(app, ["checkpoint", "inspect", "--help"])
+        result = self.runner.invoke(app, ["checkpoint", "inspect", "--help"])
         self.assertIn("checkpoint inspect [OPTIONS] MODEL_PATH", result.stdout)
 
     def test_inspect_checkpoint(self):
-        with silence_c_stderr():
-            result = self.runner.invoke(
-                app, ["checkpoint", "inspect", str(self.data_dir / "test.ckpt")]
-            )
+        result = self.runner.invoke(
+            app, ["checkpoint", "inspect", str(self.data_dir / "test.ckpt")]
+        )
         self.assertIn('global_step": 52256', result.stdout)
         self.assertIn(
             "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version.",
@@ -426,7 +425,7 @@ class CLITest(TestCase):
         """
         The user should have a friendly message that informs them that they used the wrong config file type.
         """
-        with silence_c_stderr(), capture_logs() as output:
+        with capture_logs() as output:
             result = self.runner.invoke(
                 app,
                 [
@@ -528,17 +527,16 @@ class CLITest(TestCase):
         self.assertIn("maybe it's not actually an fs2 model", str(cm.exception))
 
     def test_g2p(self):
-        with silence_c_stderr():
-            result = self.runner.invoke(
-                app,
-                [
-                    "g2p",
-                    "abc",
-                    str(self.data_dir / Path("text.txt")),
-                    "--config",
-                    str(self.config_dir / Path("everyvoice-shared-text.yaml")),
-                ],
-            )
+        result = self.runner.invoke(
+            app,
+            [
+                "g2p",
+                "abc",
+                str(self.data_dir / Path("text.txt")),
+                "--config",
+                str(self.config_dir / Path("everyvoice-shared-text.yaml")),
+            ],
+        )
 
         self.assertEqual(result.exit_code, 0)
         self.assertIn("['hello', 'world']", result.stdout)
@@ -687,7 +685,7 @@ class CLITest(TestCase):
             with allowlist_file.open("w", encoding="utf8") as f:
                 f.write("hey\nyes\nword")
             # This test is just to make sure that the demo app params are passed correctly
-            port = 7000
+            port = "7000"
             ip = "123.456.78.90"
 
             with (
@@ -774,7 +772,7 @@ class CLITest(TestCase):
             with config_file.open("w", encoding="utf8") as f:
                 f.write(config)
             # This test is just to make sure that the demo app params are passed correctly
-            port = 7000
+            port = "7000"
             ip = "123.456.78.90"
 
             with (
@@ -844,7 +842,7 @@ class CLITest(TestCase):
             },
         }
 
-        with self.assertRaises(typer.BadParameter) as cm, silence_c_stdout():
+        with self.assertRaises(typer.BadParameter) as cm:
             load_app_ui_labels(
                 config_bad_language,
                 ["all"],
@@ -868,7 +866,7 @@ class CLITest(TestCase):
             "The 'speakers' key in the app config JSON does not match the speakers provided.",
             str(cm.exception),
         )
-        with self.assertRaises(typer.BadParameter) as cm, silence_c_stdout():
+        with self.assertRaises(typer.BadParameter) as cm:
             load_app_ui_labels(
                 config_bad_speaker,
                 ["default"],
@@ -881,7 +879,7 @@ class CLITest(TestCase):
             "Language option has been activated, but valid languages have not been provided. The model has been trained in ['default'] languages. Please select either 'all' or at least some of them.",
             str(cm.exception),
         )
-        with self.assertRaises(typer.BadParameter) as cm, silence_c_stdout():
+        with self.assertRaises(typer.BadParameter) as cm:
             load_app_ui_labels(
                 config_bad_speaker,
                 ["unknown"],
@@ -987,10 +985,7 @@ class CLITest(TestCase):
 
 class TestBaseCLIHelper(TestCase):
     def test_save_configuration_to_log_dir(self):
-        with (
-            TemporaryDirectory(ignore_cleanup_errors=True) as tempdir_s,
-            silence_c_stderr(),
-        ):
+        with TemporaryDirectory(ignore_cleanup_errors=True) as tempdir_s:
             tempdir = Path(tempdir_s)
             config = FastSpeech2Config(
                 contact=ContactInformation(
@@ -1024,4 +1019,4 @@ class TestBaseCLIHelper(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

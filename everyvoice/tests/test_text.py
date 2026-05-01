@@ -1,16 +1,18 @@
 #!/usr/bin/env python
 
 import string
+import sys
 from pathlib import Path
 from unicodedata import normalize
-from unittest import TestCase, main
+from unittest import TestCase
 
 from pydantic import ValidationError
+from pytest import main
 
 from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
-from everyvoice.tests.stubs import TEST_CONTACT, silence_c_stderr
+from everyvoice.tests.stubs import TEST_CONTACT
 from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
@@ -52,13 +54,12 @@ class TextTest(TestCase):
     def test_cleaners_with_upper(self):
         text = "hello world"
         text_upper = "HELLO WORLD"
-        with silence_c_stderr():
-            upper_text_processor = TextProcessor(
-                TextConfig(
-                    cleaners=[collapse_whitespace, lower],
-                    symbols=Symbols(letters=list(string.ascii_letters)),
-                ),
-            )
+        upper_text_processor = TextProcessor(
+            TextConfig(
+                cleaners=[collapse_whitespace, lower],
+                symbols=Symbols(letters=list(string.ascii_letters)),
+            ),
+        )
         sequence = upper_text_processor.encode_text(text_upper)
         self.assertEqual(upper_text_processor.decode_tokens(sequence, "", ""), text)
 
@@ -68,13 +69,12 @@ class TextTest(TestCase):
 
     def test_punctuation(self):
         text = "hello! How are you? My name's: foo;."
-        with silence_c_stderr():
-            upper_text_processor = TextProcessor(
-                TextConfig(
-                    cleaners=[collapse_whitespace, lower],
-                    symbols=Symbols(letters=list(string.ascii_letters)),
-                ),
-            )
+        upper_text_processor = TextProcessor(
+            TextConfig(
+                cleaners=[collapse_whitespace, lower],
+                symbols=Symbols(letters=list(string.ascii_letters)),
+            ),
+        )
         tokens = upper_text_processor.apply_tokenization(
             upper_text_processor.normalize_text(text)
         )
@@ -244,8 +244,7 @@ class TextTest(TestCase):
 
     def test_missing_symbol(self):
         text = "h3llo world"
-        with silence_c_stderr():
-            sequence = self.base_text_processor.encode_text(text)
+        sequence = self.base_text_processor.encode_text(text)
         self.assertNotEqual(self.base_text_processor.decode_tokens(sequence), text)
         self.assertIn("3", self.base_text_processor.missing_symbols)
         self.assertEqual(self.base_text_processor.missing_symbols["3"], 1)
@@ -514,4 +513,4 @@ class TestTextSplit(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

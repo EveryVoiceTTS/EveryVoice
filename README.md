@@ -149,9 +149,9 @@ Many thanks to:
 ## Tests
 
 There are many ways to run the unit tests, if you installed EveryVoice from source:
- - Run all the tests with the most concise output: `pytest`
+ - Run all the tests: `pytest`; add `-v` to list tests cases, `-s` to see all logs
  - Run all the dev tests: `everyvoice/run_tests.py dev` or `everyvoice test dev`
  - Run the tests with verbose logs: `everyvoice/run_tests.py --verbose dev`
  - Show the names of the other suites you can run: `everyvoice/run_tests.py -h`
- - Run all the tests in one test file: `python -m unittest everyvoice/tests/test_<somefilename>.py`
- - Run one specific test case: `python -m unittest everyvoice.tests.<filename>.<class_name>.<function_name>`
+ - Run all the tests in one test file: `pytest everyvoice/tests/test_<somefilename>.py`
+ - Run one specific test case: `pytest everyvoice/tests/<filename>.py::<class_name>::<function_name>`

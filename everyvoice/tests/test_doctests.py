@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 import doctest
-from unittest import TestCase, main
+import sys
+from unittest import TestCase
+
+from pytest import main
 
 import everyvoice.demo.app
 import everyvoice.text
@@ -28,4 +31,4 @@ class RunDocTests(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

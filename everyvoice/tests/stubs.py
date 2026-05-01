@@ -2,7 +2,6 @@ import io
 import logging
 import os
 import re
-import sys
 from collections.abc import Generator, Sequence
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -352,64 +351,6 @@ class patch_questionary:
 
 
 VERBOSE_OVERRIDE = bool(os.environ.get("EVERYVOICE_VERBOSE_TESTS", False))
-
-
-@contextmanager
-def silence_c_stdout():
-    """Capture stdout from C output, e.g., from SoundSwallower.
-
-    Note: to capture stdout for both C and Python code, combine this with
-    redirect_stdout(), but you must use capture_c_stdout() first:
-        with capture_c_stdout(), redirect_stdout(io.StringIO()):
-            # code
-
-    Loosely inspired by https://stackoverflow.com/a/24277852, but much simplified to
-    address our narrow needs, namely to silence stdout in a context manager.
-
-    Warning: disabled on Windows, where it causes silent crashes.
-    Warning: not compatible with pytest
-    """
-
-    if not VERBOSE_OVERRIDE and os.name != "nt" and "pytest" not in sys.modules:
-        stdout_fileno = sys.stdout.fileno()
-        stdout_save = os.dup(stdout_fileno)
-        stdout_fd = os.open(os.devnull, os.O_RDWR)
-        os.dup2(stdout_fd, stdout_fileno)
-        yield
-        os.dup2(stdout_save, stdout_fileno)
-        os.close(stdout_save)
-        os.close(stdout_fd)
-    else:
-        yield
-
-
-@contextmanager
-def silence_c_stderr():
-    """Capture stderr from C output, e.g., from SoundSwallower.
-
-    Note: to capture stderr for both C and Python code, combine this with
-    redirect_stderr(), but you must use capture_c_stderr() first:
-        with capture_c_stderr(), redirect_stderr(io.StringIO()):
-            # code
-
-    Loosely inspired by https://stackoverflow.com/a/24277852, but much simplified to
-    address our narrow needs, namely to silence stderr in a context manager.
-
-    Warning: disabled on Windows, where it causes silent crashes.
-    Warning: not compatible with pytest
-    """
-
-    if not VERBOSE_OVERRIDE and os.name != "nt" and "pytest" not in sys.modules:
-        stderr_fileno = sys.stderr.fileno()
-        stderr_save = os.dup(stderr_fileno)
-        stderr_fd = os.open(os.devnull, os.O_RDWR)
-        os.dup2(stderr_fd, stderr_fileno)
-        yield
-        os.dup2(stderr_save, stderr_fileno)
-        os.close(stderr_save)
-        os.close(stderr_fd)
-    else:
-        yield
 
 
 def flatten_log(log_output: str) -> str:

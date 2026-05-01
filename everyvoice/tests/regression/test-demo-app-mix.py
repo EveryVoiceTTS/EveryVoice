@@ -7,9 +7,11 @@ To run this test:
  - python test_demo_app_mix.py
 """
 
-from unittest import TestCase, main
+import sys
+from unittest import TestCase
 
 from playwright.sync_api import sync_playwright
+from pytest import main
 
 
 class TestDemoAppMix(TestCase):
@@ -85,4 +87,4 @@ class TestDemoAppMix(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

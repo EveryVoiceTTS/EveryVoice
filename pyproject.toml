@@ -202,8 +202,9 @@ check_untyped_defs = false
 
 [tool.pytest.ini_options]
 testpaths = [
-  "everyvoice/tests",
-  "everyvoice/**/tests",
+  # glob patterns to match individual files, not directories, for much faster test collection
+  "everyvoice/tests/test_*.py",
+  "everyvoice/model/*/*/*/tests/test_*.py",
 ]
 filterwarnings = [
   "ignore:Can't initialize NVML:UserWarning",
@@ -211,4 +212,5 @@ filterwarnings = [
   "ignore:'audioop' is deprecated and slated for removal in Python 3.13:DeprecationWarning",
   "ignore:.*srun.*:UserWarning",
   "ignore:.*DataLoader.*:UserWarning",
+  "ignore:.*Module already imported so cannot be rewritten. anyio.*",
 ]

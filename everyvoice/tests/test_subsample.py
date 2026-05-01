@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 
+import sys
 from pathlib import Path
-from unittest import TestCase, main
+from unittest import TestCase
 
+from pytest import main
 from typer.testing import CliRunner
 
 from everyvoice.tests.regression.subsample import app
@@ -143,4 +145,4 @@ class SubsampleTest(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

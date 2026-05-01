@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-from unittest import TestCase, main
+import sys
+from unittest import TestCase
+
+from pytest import main
 
 from everyvoice.evaluation import (
     calculate_objective_metrics_from_single_path,
@@ -8,14 +11,13 @@ from everyvoice.evaluation import (
     load_squim_objective_model,
     load_squim_subjective_model,
 )
-from everyvoice.tests.stubs import TEST_DATA_DIR, silence_c_stderr
+from everyvoice.tests.stubs import TEST_DATA_DIR
 
 
 class EvaluationTest(TestCase):
     def test_squim_evaluation(self):
-        with silence_c_stderr():
-            model, sr = load_squim_objective_model()
-            subj_model, subj_sr = load_squim_subjective_model()
+        model, sr = load_squim_objective_model()
+        subj_model, subj_sr = load_squim_subjective_model()
         stoi, pesq, si_sdr = calculate_objective_metrics_from_single_path(
             TEST_DATA_DIR / "LJ010-0008.wav", model, sr
         )
@@ -32,4 +34,4 @@ class EvaluationTest(TestCase):
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)
