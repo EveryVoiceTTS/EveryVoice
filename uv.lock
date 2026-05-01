@@ -783,6 +783,7 @@ dev = [
     { name = "playwright" },
     { name = "pre-commit" },
     { name = "pytest" },
+    { name = "pytest-subtests" },
     { name = "types-pyyaml" },
     { name = "types-requests" },
     { name = "types-setuptools" },
@@ -803,6 +804,7 @@ test = [
     { name = "pep440" },
     { name = "playwright" },
     { name = "pytest" },
+    { name = "pytest-subtests" },
 ]
 torch = [
     { name = "torch", marker = "sys_platform == 'darwin'" },
@@ -832,7 +834,7 @@ requires-dist = [
     { name = "jsonschema", marker = "extra == 'test'", specifier = ">=4.17.3" },
     { name = "librosa", specifier = "==0.11.0" },
     { name = "lightning", specifier = ">=2.1.0" },
-    { name = "loguru", specifier = "==0.6.0" },
+    { name = "loguru", specifier = ">=0.6.0" },
     { name = "matplotlib", specifier = ">=3.9.0" },
     { name = "merge-args" },
     { name = "mike", marker = "extra == 'docs'", specifier = ">=1.1.2" },
@@ -856,8 +858,10 @@ requires-dist = [
     { name = "protobuf", specifier = "~=4.25" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.4.2,<2.8.0" },
     { name = "pympi-ling" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest", marker = "extra == 'test'" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=7" },
+    { name = "pytest-subtests", marker = "extra == 'dev'" },
+    { name = "pytest-subtests", marker = "extra == 'test'" },
     { name = "pyworld-prebuilt", specifier = "==0.3.4.4" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "questionary", specifier = ">=2.0.0" },
@@ -3114,6 +3118,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/80/1f/9d8e98e4133ffb16c90f3b405c43e38d3abb715bb5d7a63a5a684f7e46a3/pytest-7.4.4.tar.gz", hash = "sha256:2cf0005922c6ace4a3e2ec8b4080eb0d9753fdc93107415332f50ce9e7994280", size = 1357116, upload-time = "2023-12-31T12:00:18.035Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/51/ff/f6e8b8f39e08547faece4bd80f89d5a8de68a38b2d179cc1c4490ffa3286/pytest-7.4.4-py3-none-any.whl", hash = "sha256:b090cdf5ed60bf4c45261be03239c2c1c22df034fbffe691abe93cd80cea01d8", size = 325287, upload-time = "2023-12-31T12:00:13.963Z" },
+]
+
+[[package]]
+name = "pytest-subtests"
+version = "0.15.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "attrs" },
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bb/d9/20097971a8d315e011e055d512fa120fd6be3bdb8f4b3aa3e3c6bf77bebc/pytest_subtests-0.15.0.tar.gz", hash = "sha256:cb495bde05551b784b8f0b8adfaa27edb4131469a27c339b80fd8d6ba33f887c", size = 18525, upload-time = "2025-10-20T16:26:18.358Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/23/64/bba465299b37448b4c1b84c7a04178399ac22d47b3dc5db1874fe55a2bd3/pytest_subtests-0.15.0-py3-none-any.whl", hash = "sha256:da2d0ce348e1f8d831d5a40d81e3aeac439fec50bd5251cbb7791402696a9493", size = 9185, upload-time = "2025-10-20T16:26:17.239Z" },
 ]
 
 [[package]]
