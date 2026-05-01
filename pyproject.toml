@@ -57,7 +57,7 @@ dependencies = [
   "ipatok>=0.4.1",
   "librosa==0.11.0",
   "lightning>=2.1.0",
-  "loguru==0.6.0",
+  "loguru>=0.6.0",
   "matplotlib>=3.9.0",
   "merge-args",
   "nltk==3.9.3",
@@ -112,7 +112,8 @@ test = [
   "jsonschema>=4.17.3",
   "pep440>=0.1.2",
   "playwright>=1.52.0",
-  "pytest",
+  "pytest>=7",
+  "pytest-subtests",
 ]
 docs = [
   "mkdocs>=1.5.2",

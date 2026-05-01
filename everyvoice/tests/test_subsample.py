@@ -30,12 +30,12 @@ class SubsampleTest(TestCase):
                 "psv",
             ],
         )
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn("basename|", result.stdout)
-        self.assertIn("LJ050-0269|", result.stdout)
-        self.assertIn("LJ050-0270|", result.stdout)
-        self.assertIn("LJ050-0271|", result.stdout)
-        self.assertIn("LJ050-0272.wav|", result.stdout)
+        assert result.exit_code == 0
+        assert "basename|" in result.stdout
+        assert "LJ050-0269|" in result.stdout
+        assert "LJ050-0270|" in result.stdout
+        assert "LJ050-0271|" in result.stdout
+        assert "LJ050-0272.wav|" in result.stdout
         self.assertNotIn("LJ050-0273|", result.stdout)
 
     def test_festival(self):
@@ -46,14 +46,14 @@ class SubsampleTest(TestCase):
             [str(self.metadata_path), str(self.wavs_path), "-d", "7", "-f", "festival"],
         )
 
-        self.assertEqual(result.exit_code, 0)
-        self.assertIn("LJ050-0269", result.stdout)
-        self.assertIn("LJ050-0270", result.stdout)
+        assert result.exit_code == 0
+        assert "LJ050-0269" in result.stdout
+        assert "LJ050-0270" in result.stdout
         self.assertNotIn("LJ050-0271", result.stdout)
 
     def test_help(self):
         result = self.runner.invoke(app, ["--help"])
-        self.assertIn("Standalone test script for subsampling corpora", result.stdout)
+        assert "Standalone test script for subsampling corpora" in result.stdout
 
     def test_speakerid(self):
         self.metadata_path = (
@@ -77,9 +77,9 @@ class SubsampleTest(TestCase):
             ],
         )
 
-        self.assertIn("basename|", result.stdout)
-        self.assertIn("LJ050-0269|", result.stdout)
-        self.assertIn("LJ050-0272.wav|", result.stdout)
+        assert "basename|" in result.stdout
+        assert "LJ050-0269|" in result.stdout
+        assert "LJ050-0272.wav|" in result.stdout
         self.assertNotIn("LJ050-0270|", result.stdout)
 
     def test_error_validation(self):
@@ -89,8 +89,8 @@ class SubsampleTest(TestCase):
         result = self.runner.invoke(
             app, [str(self.metadata_path), str(self.wavs_path), "-d", "7", "-f", "txt"]
         )
-        self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("Invalid value for", result.output)
+        assert result.exit_code != 0
+        assert "Invalid value for" in result.output
         self.assertRegex(
             result.output,
             r"(?s)txt is not one of psv tsv csv festival".replace(" ", r".*"),
@@ -115,7 +115,7 @@ class SubsampleTest(TestCase):
             ],
         )
 
-        self.assertNotEqual(result.exit_code, 0)
+        assert result.exit_code != 0
         self.assertRegex(
             result.output,
             r"Invalid value: Festival formatted files cannot have a speaker id.".replace(
@@ -137,7 +137,7 @@ class SubsampleTest(TestCase):
                 "psv",
             ],
         )
-        self.assertNotEqual(result.exit_code, 0)
+        assert result.exit_code != 0
         self.assertRegex(
             result.output,
             r"A \.wav file could not be found".replace(" ", r"[\s\S]*"),

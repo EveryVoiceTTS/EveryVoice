@@ -28,7 +28,7 @@ from everyvoice.utils.heavy import get_device_from_accelerator
 
 class VersionTest(TestCase):
     def test_version_is_pep440_compliant(self):
-        self.assertTrue(is_canonical(VERSION))
+        assert is_canonical(VERSION)
 
 
 class UtilsTest(TestCase):
@@ -49,12 +49,12 @@ class UtilsTest(TestCase):
             write_filelist(basic_files, basic_path)
             with open(basic_path, encoding="utf8") as f:
                 headers = f.readline().strip().split("|")
-            self.assertEqual(len(headers), 5)
-            self.assertEqual(headers[0], "basename")
-            self.assertEqual(headers[1], "language")
-            self.assertEqual(headers[2], "characters")
-            self.assertEqual(headers[3], "phones")
-            self.assertEqual(headers[4], "extra")
+            assert len(headers) == 5
+            assert headers[0] == "basename"
+            assert headers[1] == "language"
+            assert headers[2] == "characters"
+            assert headers[3] == "phones"
+            assert headers[4] == "extra"
 
 
 class ContextableBaseModel(BaseModel):
@@ -92,7 +92,7 @@ class PathIsADirectoryTest(TestCase):
             root_dir = Path(__file__).parent / "data"
             root_dir = root_dir.resolve()
             directory = Path("hierarchy")
-            self.assertTrue((root_dir / directory).exists())
+            assert (root_dir / directory).exists()
             with init_context({"writing_config": root_dir}):
                 PathIsADirectory(path=directory)
         except ValueError:
@@ -127,7 +127,7 @@ class PathIsADirectoryTest(TestCase):
             root_dir = Path(__file__).parent / "data"
             root_dir = root_dir.resolve()
             directory = Path("hierarchy")
-            self.assertTrue((root_dir / directory).exists())
+            assert (root_dir / directory).exists()
             PathIsADirectory(path=root_dir / directory)
         except ValueError:
             self.fail("Failed to detect that the argument is a directory")
@@ -173,7 +173,7 @@ class RelativePathToAbsoluteTest(TestCase):
         path = Path(__file__).absolute()
         with init_context({"config_path": path.parent / "data"}):
             dir = RelativePathToAbsolute(path=path)
-            self.assertEqual(dir.path, path)
+            assert dir.path == path
 
     def test_should_not_change(self):
         """
@@ -181,7 +181,7 @@ class RelativePathToAbsoluteTest(TestCase):
         """
         path = Path("data")
         test = RelativePathToAbsolute(path=path)
-        self.assertEqual(test.path, path)
+        assert test.path == path
 
     def test_with_context(self):
         """
@@ -191,7 +191,7 @@ class RelativePathToAbsoluteTest(TestCase):
         path = Path("data")
         with init_context({"config_path": root_dir}):
             dir = RelativePathToAbsolute(path=path)
-            self.assertTrue(dir.path.is_absolute())
+            assert dir.path.is_absolute()
 
 
 class DirectoryPathMustExist(ContextableBaseModel):
@@ -226,8 +226,8 @@ class DirectoryPathMustExistTest(TestCase):
             with init_context({"writing_config": root_dir.resolve()}):
                 dir = DirectoryPathMustExist(path=directory)
             # Note: dir.path shouldn't not change to an absolute value.
-            self.assertEqual(dir.path, directory)
-            self.assertTrue((root_dir / directory).exists())
+            assert dir.path == directory
+            assert (root_dir / directory).exists()
             # Note: since dir.path is NOT replaced with an absolute it
             # shouldn't exist because it was created relative to the context's
             # path.
@@ -243,7 +243,7 @@ class DirectoryPathMustExistTest(TestCase):
             dir = DirectoryPathMustExist(path=path)
             # There should be no info logged.
             self.assertListEqual(output, [])
-        self.assertTrue(dir.path.exists())
+        assert dir.path.exists()
 
     def test_using_a_directory(self):
         """
@@ -255,13 +255,13 @@ class DirectoryPathMustExistTest(TestCase):
             with patch_logger(everyvoice.config.validation_helpers) as logger:
                 with self.assertLogs(logger) as cm:
                     dir = DirectoryPathMustExist(path=path)
-            self.assertEqual(dir.path, path)
+            assert dir.path == path
             self.assertIn(
                 f"Directory at {path} does not exist. Creating...",
                 "".join(cm.output),
             )
-            self.assertTrue(path.exists())
-            self.assertTrue(dir.path.exists())
+            assert path.exists()
+            assert dir.path.exists()
 
 
 class GetDeviceFromAcceleratorTest(TestCase):
@@ -272,16 +272,16 @@ class GetDeviceFromAcceleratorTest(TestCase):
         )
 
     def test_cpu(self):
-        self.assertEqual(get_device_from_accelerator("cpu"), torch.device("cpu"))
+        assert get_device_from_accelerator("cpu") == torch.device("cpu")
 
     def test_gpu(self):
-        self.assertEqual(get_device_from_accelerator("gpu"), torch.device("cuda:0"))
+        assert get_device_from_accelerator("gpu") == torch.device("cuda:0")
 
     def test_mps(self):
-        self.assertEqual(get_device_from_accelerator("mps"), torch.device("mps"))
+        assert get_device_from_accelerator("mps") == torch.device("mps")
 
     def test_unknown_accelerator(self):
-        self.assertEqual(get_device_from_accelerator("unknown"), torch.device("cpu"))
+        assert get_device_from_accelerator("unknown") == torch.device("cpu")
 
 
 if __name__ == "__main__":

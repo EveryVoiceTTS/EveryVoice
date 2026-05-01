@@ -30,7 +30,7 @@ class TestDemoAppMix(TestCase):
             with page.expect_download() as download_info:
                 page.get_by_label("Download").click()
             download = download_info.value
-            self.assertTrue(download.suggested_filename.endswith(".wav"))
+            assert download.suggested_filename.endswith(".wav")
             page.get_by_label("Output Format").click()
             page.get_by_label("spec").click()
             synthesize_button.click()
@@ -38,28 +38,28 @@ class TestDemoAppMix(TestCase):
             with page.expect_download() as download1_info:
                 page.locator("#file_output").get_by_role("link").click()
             download = download1_info.value
-            self.assertTrue(download.suggested_filename.endswith(".pt"))
+            assert download.suggested_filename.endswith(".pt")
             page.get_by_label("Output Format").click()
             page.get_by_label("textgrid").click()
             synthesize_button.click()
             with page.expect_download() as download2_info:
                 page.locator("#file_output").get_by_role("link").click()
             download = download2_info.value
-            self.assertTrue(download.suggested_filename.endswith(".TextGrid"))
+            assert download.suggested_filename.endswith(".TextGrid")
             page.get_by_label("Output Format").click()
             page.get_by_label("readalong-xml").click()
             synthesize_button.click()
             with page.expect_download() as download3_info:
                 page.locator("#file_output").get_by_role("link").click()
             download = download3_info.value
-            self.assertTrue(download.suggested_filename.endswith(".readalong"))
+            assert download.suggested_filename.endswith(".readalong")
             page.get_by_label("Output Format").click()
             page.get_by_label("readalong-html").click()
             synthesize_button.click()
             with page.expect_download() as download4_info:
                 page.locator("#file_output").get_by_role("link").click()
             download = download4_info.value
-            self.assertTrue(download.suggested_filename.endswith(".html"))
+            assert download.suggested_filename.endswith(".html")
             page.get_by_label("Language").click()
             page.get_by_label("und").click()
             page.get_by_label("Speaker", exact=True).click()

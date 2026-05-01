@@ -81,8 +81,8 @@ class ModelTest(TestCase):
 
     def test_hparams(self):
         self.hifi_gan = HiFiGAN(self.config.vocoder)
-        self.assertEqual(self.config.vocoder, self.hifi_gan.hparams.config)
-        self.assertEqual(self.config.vocoder, self.hifi_gan.config)
+        assert self.config.vocoder == self.hifi_gan.hparams.config
+        assert self.config.vocoder == self.hifi_gan.config
 
     def test_checkpoints_only_contain_serializable_content(self):
         """These tests help remove any dependencies on specific versions of Pydantic.
@@ -300,13 +300,13 @@ class TestLoadingModel(TestCase):
                 ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                 trainer.save_checkpoint(ckpt_fn)
                 m = torch.load(ckpt_fn, weights_only=True)
-                self.assertIn("model_info", m.keys())
+                assert "model_info" in m.keys()
                 m["model_info"]["name"] = "BAD_TYPE"
                 torch.save(m, ckpt_fn)
                 m = torch.load(ckpt_fn, weights_only=True)
-                self.assertIn("model_info", m.keys())
-                self.assertEqual(m["model_info"]["name"], "BAD_TYPE")
-                # self.assertEqual(m["model_info"]["version"], "1.0")
+                assert "model_info" in m.keys()
+                assert m["model_info"]["name"] == "BAD_TYPE"
+                # assert m["model_info"]["version"] == "1.0"
                 with self.assertRaisesRegex(
                     TypeError,
                     r"Wrong model type \(BAD_TYPE\), we are expecting a 'FastSpeech2' model",
@@ -373,9 +373,9 @@ class TestLoadingModel(TestCase):
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
                     m = torch.load(ckpt_fn, weights_only=True)
-                    self.assertIn("model_info", m.keys())
-                    self.assertEqual(m["model_info"]["name"], ModelType.__name__)
-                    self.assertEqual(m["model_info"]["version"], CANARY_VERSION)
+                    assert "model_info" in m.keys()
+                    assert m["model_info"]["name"] == ModelType.__name__
+                    assert m["model_info"]["version"] == CANARY_VERSION
                     del m["model_info"]["version"]
                     torch.save(m, ckpt_fn)
                     if isinstance(model, FastSpeech2):
@@ -387,7 +387,7 @@ class TestLoadingModel(TestCase):
                     else:
                         with mute_logger("everyvoice.config.text_config"):
                             model = ModelType.load_from_checkpoint(ckpt_fn)
-                        self.assertIn(model._VERSION, ["1.0", "1.1"])
+                        assert model._VERSION, ["1.0" in "1.1"]
 
     def test_newer_model_version(self):
         """
@@ -448,9 +448,9 @@ class TestLoadingModel(TestCase):
                     ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
                     trainer.save_checkpoint(ckpt_fn)
                     m = torch.load(ckpt_fn, weights_only=True)
-                    self.assertIn("model_info", m.keys())
-                    self.assertEqual(m["model_info"]["name"], ModelType.__name__)
-                    self.assertEqual(m["model_info"]["version"], NEWER_VERSION)
+                    assert "model_info" in m.keys()
+                    assert m["model_info"]["name"] == ModelType.__name__
+                    assert m["model_info"]["version"] == NEWER_VERSION
                     with self.assertRaisesRegex(
                         ValueError,
                         r"Your model was created with a newer version of EveryVoice, please update your software.",
@@ -484,7 +484,7 @@ class TestLoadingConfig(TestCase):
 
                 self.assertNotIn("VERSION", arguments)
                 c = ConfigType(**arguments)
-                self.assertEqual(c.VERSION, "1.0")
+                assert c.VERSION == "1.0"
 
     def test_config_newer_version(self):
         """
@@ -514,7 +514,7 @@ class TestVersion(TestCase):
         from packaging.version import Version
 
         self.assertFalse("10.0" > "9.0")
-        self.assertTrue(Version("10.0") > Version("9.0"))
+        assert Version("10.0") > Version("9.0")
 
 
 if __name__ == "__main__":

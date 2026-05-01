@@ -19,7 +19,7 @@ from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 
 class PreprocessedAudioFixture:
     """
-    A unittest fixture to preprocess the audio files.
+    A unittest fixture (implemented as a base class) to preprocess the audio files.
     """
 
     _tempdir = tempfile.TemporaryDirectory(prefix="tmpdir_PreprocessedInputFixture_")
@@ -67,12 +67,8 @@ class PreprocessedAudioFixture:
 
     preprocessor = Preprocessor(fp_config)
 
-    # def setUp(self):
-    #    """Each test function should get a fresh preprocessor"""
-    #    self.preprocessor = Preprocessor(self.fp_config)
-
     @classmethod
-    def setUpClass(cls):
+    def setup_class(cls):
         """Generate a preprocessed test set that can be used in various test cases."""
         # We only need to actually run this once
         if not PreprocessedAudioFixture._preprocess_ran:

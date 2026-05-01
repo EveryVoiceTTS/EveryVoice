@@ -263,18 +263,18 @@ class TestEnumDict(TestCase):
         """Enum values need to behave the same with or without .value"""
         d = EnumDict()
         d[SN.audio_config_step] = "foo"
-        self.assertEqual(d[SN.audio_config_step.value], "foo")
-        self.assertEqual(d.get(SN.audio_config_step.value), "foo")
+        assert d[SN.audio_config_step.value] == "foo"
+        assert d.get(SN.audio_config_step.value) == "foo"
 
         d[SN.wavs_dir_step.value] = "bar"
-        self.assertEqual(d[SN.wavs_dir_step], "bar")
-        self.assertEqual(d.get(SN.wavs_dir_step), "bar")
+        assert d[SN.wavs_dir_step] == "bar"
+        assert d.get(SN.wavs_dir_step) == "bar"
 
         self.assertEqual(d.get(SN.filelist_format_step, None), None)
         self.assertEqual(d.get(SN.filelist_format_step.value, None), None)
 
         d.update({SN.contact_email_step: "a@b.com"})
-        self.assertEqual(d[SN.contact_email_step.value], "a@b.com")
+        assert d[SN.contact_email_step.value] == "a@b.com"
 
         self.assertEqual(
             d,
@@ -308,10 +308,10 @@ class TestNodeMixin(TestCase):
 
         forward_order = list(PreOrderIter(root))
         for prev, next in zip(forward_order, forward_order[1:] + [None]):
-            self.assertEqual(prev.next(), next)
+            assert prev.next() == next
 
         for next, prev in zip(forward_order, [None] + forward_order[:-1]):
-            self.assertEqual(next.prev(), prev)
+            assert next.prev() == prev
 
 
 if __name__ == "__main__":
