@@ -835,7 +835,7 @@ def update_schemas(
     # Defer somewhat slow imports to optimize CLI
     from everyvoice.config.preprocessing_config import PreprocessingConfig
     from everyvoice.config.text_config import TextConfig
-    from everyvoice.model.e2e.config import EveryVoiceConfig
+    from everyvoice.model.e2e.config import E2EConfig
     from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
     from everyvoice.model.vocoder.config import VocoderConfig
 
@@ -844,7 +844,7 @@ def update_schemas(
 
     SCHEMAS_TO_OUTPUT.update(
         {
-            f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": EveryVoiceConfig,
+            f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": E2EConfig,
             f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": FeaturePredictionConfig,
             f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": PreprocessingConfig,
             f"{TEXT_CONFIG_FILENAME_PREFIX}-{MAJOR_MINOR_VERSION}.json": TextConfig,

@@ -13,7 +13,6 @@ from pytest import main
 from pytorch_lightning import Trainer
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
-from everyvoice.model.e2e.config import EveryVoiceConfig
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
 )
@@ -74,15 +73,15 @@ class ModelTest(TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.config = EveryVoiceConfig(
+        self.config = HiFiGANConfig(
             contact=TEST_CONTACT,
         )
         self.config_dir = TEST_DATA_DIR / "relative" / "config"
 
     def test_hparams(self):
-        self.hifi_gan = HiFiGAN(self.config.vocoder)
-        assert self.config.vocoder == self.hifi_gan.hparams.config
-        assert self.config.vocoder == self.hifi_gan.config
+        self.hifi_gan = HiFiGAN(self.config)
+        assert self.config == self.hifi_gan.hparams.config
+        assert self.config == self.hifi_gan.config
 
     def test_checkpoints_only_contain_serializable_content(self):
         """These tests help remove any dependencies on specific versions of Pydantic.

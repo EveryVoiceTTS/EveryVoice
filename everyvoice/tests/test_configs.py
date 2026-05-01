@@ -27,7 +27,10 @@ from everyvoice.config.shared_types import (
     init_context,
 )
 from everyvoice.config.text_config import TextConfig
-from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
+from everyvoice.model.e2e.config import E2EConfig
+from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.ev_config import (
+    StyleTTS2TrainingConfig,
+)
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
@@ -63,33 +66,20 @@ class ConfigTest(TestCase):
 
     def setUp(self) -> None:
         super().setUp()
-        self.config = EveryVoiceConfig(
+        self.config = E2EConfig(
             contact=TEST_CONTACT,
-            feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
-            vocoder=VocoderConfig(contact=TEST_CONTACT),
         )
 
     def test_from_object(self):
         """Test from object"""
-        config_default = EveryVoiceConfig(
+        config_default = E2EConfig(
             contact=TEST_CONTACT,
-            feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
-            vocoder=VocoderConfig(contact=TEST_CONTACT),
         )
-        config_declared = EveryVoiceConfig(
+        config_32 = E2EConfig(
             contact=TEST_CONTACT,
-            feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
-            vocoder=VocoderConfig(contact=TEST_CONTACT),
-            training=E2ETrainingConfig(),
-        )
-        config_32 = EveryVoiceConfig(
-            contact=TEST_CONTACT,
-            feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
-            vocoder=VocoderConfig(contact=TEST_CONTACT),
-            training=E2ETrainingConfig(batch_size=32),
+            training=StyleTTS2TrainingConfig(batch_size=32),
         )
         assert config_default.training.batch_size == 16
-        assert config_declared.training.batch_size == 16
         assert config_32.training.batch_size == 32
 
     def test_config_save_dirs(self):
@@ -159,15 +149,6 @@ class ConfigTest(TestCase):
             )
             _writer_helper(vocoder_config, tempdir / "vocoder.json")
             assert isinstance(vocoder_config, VocoderConfig)
-            # E2E Config
-            with mute_logger("everyvoice.config.utils"):
-                e2e_config = EveryVoiceConfig(
-                    contact=TEST_CONTACT,
-                    path_to_feature_prediction_config_file=(tempdir / "fp.json"),
-                    path_to_training_config_file=(tempdir / "training.json"),
-                    path_to_vocoder_config_file=(tempdir / "vocoder.json"),
-                )
-            assert isinstance(e2e_config, EveryVoiceConfig)
 
     def test_config_partial_override(self):
         """Test override of partial"""
@@ -197,13 +178,13 @@ class ConfigTest(TestCase):
     def test_update_from_file(self):
         """Test that updating the config from yaml/json works"""
         with open(TEST_DATA_DIR / "update.json", encoding="utf8") as f:
-            update = json.load(f)
-        self.config.update_config(update)
+            update1 = json.load(f)
         with open(TEST_DATA_DIR / "update.yaml", encoding="utf8") as f:
-            update = yaml.safe_load(f)
-        self.config.update_config(update)
-        assert self.config.feature_prediction.training.batch_size == 123
-        assert self.config.vocoder.training.batch_size == 456
+            update2 = yaml.safe_load(f)
+        self.config.update_config(update1)
+        assert self.config.training.batch_size == 123
+        self.config.update_config(update2)
+        assert self.config.training.batch_size == 456
 
     def test_string_to_callable(self):
         # Test Basic Functionality
@@ -241,33 +222,29 @@ class ConfigTest(TestCase):
             assert isinstance(fn, Callable)
 
     def test_string_to_dict(self):
-        base_config = EveryVoiceConfig(
+        base_config = E2EConfig(
             contact=TEST_CONTACT,
-            feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
-            vocoder=VocoderConfig(contact=TEST_CONTACT),
         )
-        test_string = "vocoder.training.gan_type=wgan"
+        test_string = "training.max_len=400"
         test_bad_strings = [
-            "vocoder.training.gan_type==wgan",
-            "vocoder.training.gan_typewgan",
+            "training.max_len==400",
+            "training.max_len400",
         ]
         # test_missing = ["training.foobar.gan_type=original"]
         test_dict = expand_config_string_syntax(test_string)
-        assert test_dict == {"vocoder": {"training": {"gan_type": "wgan"}}}
+        assert test_dict == {"training": {"max_len": "400"}}
         for bs in test_bad_strings:
             with self.assertRaises(ValueError):
                 expand_config_string_syntax(bs)
 
-        assert base_config.vocoder.training.gan_type.value == "original"
+        assert base_config.training.max_len == 400
         config = base_config.combine_configs(base_config, test_dict)
-        assert config["vocoder"]["training"]["gan_type"] == "wgan"
+        assert config["training"]["max_len"] "400"
 
     def test_changes(self):
         """Test that the changes to the config are correct"""
-        self.config.update_config(
-            {"feature_prediction": {"text": {"cleaners": ["everyvoice.utils.lower"]}}}
-        )
-        assert self.config.feature_prediction.text.cleaners == [lower]
+        self.config.update_config({"text": {"cleaners": ["everyvoice.utils.lower"]}})
+        assert self.config.text.cleaners == [lower]
 
     def test_load_empty_config(self):
         with NamedTemporaryFile(
@@ -299,7 +276,8 @@ class ConfigTest(TestCase):
 
     def test_shared_sox(self) -> None:
         """Test that the shared sox config is correct"""
-        vocoder_config = VocoderConfig(
+
+        config: E2EConfig = E2EConfig(
             contact=TEST_CONTACT,
             preprocessing=PreprocessingConfig(
                 source_data=[
@@ -310,28 +288,21 @@ class ConfigTest(TestCase):
                 ]
             ),
         )
-        config: EveryVoiceConfig = EveryVoiceConfig(
-            vocoder=vocoder_config,
-            contact=TEST_CONTACT,
-            feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
-        )
-        sox_effects = config.vocoder.preprocessing.source_data[0].sox_effects
-        assert len(config.vocoder.preprocessing.source_data) == 4
-        for d_other in config.vocoder.preprocessing.source_data[1:]:
+        sox_effects = config.preprocessing.source_data[0].sox_effects
+        assert len(config.preprocessing.source_data) == 4
+        for d_other in config.preprocessing.source_data[1:]:
             assert sox_effects == d_other.sox_effects
             assert sox_effects[0] == ["channels", "1"]
 
     def test_correct_number_typing(self):
         batch_size = 64.0
-        config = EveryVoiceConfig(
-            training=E2ETrainingConfig(batch_size=batch_size),
+        config = E2EConfig(
+            training=StyleTTS2TrainingConfig(batch_size=batch_size),
             contact=TEST_CONTACT,
-            feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
-            vocoder=VocoderConfig(contact=TEST_CONTACT),
         )
         self.assertIsInstance(batch_size, float)
         assert config.training.batch_size == 64
-        self.assertIsInstance(config.feature_prediction.training.batch_size, int)
+        self.assertIsInstance(config.training.batch_size, int)
 
 
 class LoadConfigTest(TestCase):
@@ -411,30 +382,20 @@ class LoadConfigTest(TestCase):
         self.validate_config_path(config.training.training_filelist)
         self.validate_config_path(config.training.validation_filelist)
 
-    def test_everyvoice_config(self):
-        """Create a EveryVoiceConfig which pydantic will validate for us."""
+    def test_e2e_config(self):
+        """Create a E2EConfig which pydantic will validate for us."""
         config_path = self.REL_DATA_DIR / f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
-            self.assertFalse(
-                Path(pre_test["path_to_feature_prediction_config_file"]).is_absolute()
-            )
-            self.assertFalse(
-                Path(pre_test["path_to_vocoder_config_file"]).is_absolute()
-            )
             training = pre_test["training"]
             self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
             self.assertFalse(Path(training["training_filelist"]).is_absolute())
             self.assertFalse(Path(training["validation_filelist"]).is_absolute())
         with mute_logger("everyvoice.config.text_config"):
-            config = EveryVoiceConfig.load_config_from_path(config_path)
+            config = E2EConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
-        assert isinstance(config, EveryVoiceConfig)
-        self.assertEqual(
-            config.feature_prediction.preprocessing.dataset, self.DATASET_NAME
-        )
-        self.validate_config_path(config.path_to_feature_prediction_config_file)
-        self.validate_config_path(config.path_to_vocoder_config_file)
+        assert isinstance(config, E2EConfig)
+        assert config.preprocessing.dataset == self.DATASET_NAME
         self.validate_config_path(config.training.logger.save_dir)
         self.validate_config_path(config.training.training_filelist)
         self.validate_config_path(config.training.validation_filelist)

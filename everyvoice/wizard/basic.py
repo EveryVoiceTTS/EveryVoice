@@ -221,7 +221,11 @@ class ConfigFormatStep(Step):
         return response in ("yaml", "json")
 
     def effect(self):
-        from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
+        from everyvoice.model.e2e.config import E2EConfig
+        from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.ev_config import (
+            StyleTTS2ModelConfig,
+            StyleTTS2TrainingConfig,
+        )
         from everyvoice.model.feature_prediction.config import (
             FastSpeech2ModelConfig,
             FeaturePredictionConfig,
@@ -475,11 +479,10 @@ class ConfigFormatStep(Step):
             e2e_logger = LoggerConfig(
                 name="E2E-Experiment", save_dir=log_dir_relative_to_configs
             )
-            e2e_config = EveryVoiceConfig(
+            e2e_config = E2EConfig(
                 contact=CONTACT_INFO,
-                feature_prediction=fp_config,
-                vocoder=vocoder_config,
-                training=E2ETrainingConfig(
+                model=StyleTTS2ModelConfig(multispeaker=multispeaker),
+                training=StyleTTS2TrainingConfig(
                     training_filelist=preprocessed_training_filelist_path,
                     validation_filelist=preprocessed_validation_filelist_path,
                     logger=e2e_logger,
@@ -488,16 +491,12 @@ class ConfigFormatStep(Step):
             e2e_config_json = json.loads(
                 e2e_config.model_dump_json(
                     exclude_none=False,
-                    exclude={
-                        "feature_prediction": True,
-                        "vocoder": True,
-                    },
                 )
             )
-            e2e_config_json["path_to_feature_prediction_config_file"] = str(
-                fp_config_path
+            e2e_config_json["path_to_preprocessing_config_file"] = str(
+                preprocessing_config_path
             )
-            e2e_config_json["path_to_vocoder_config_file"] = str(vocoder_config_path)
+            e2e_config_json["path_to_text_config_file"] = str(text_config_path)
             e2e_config_path = Path(
                 f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
             )

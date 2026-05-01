@@ -74,14 +74,22 @@ dependencies = [
   "simple-term-menu==1.5.2",
   "tabulate==0.9.0",
   "tensorboard>=2.14.1",
+  "transformers>=4.30",
+  "einops-exts",
   "torch==2.7.1",
+  "monotonic-align",
   "torchaudio==2.7.1",
   "torchinfo==1.8.0",
   "tqdm>=4.66.0",
   "typer>=0.15.3",
   "yaspin>=3.1.0",
+  "munch>=4.0.0",
 ]
 dynamic = ["version"]
+
+[tool.uv.sources]
+# monotonic_align has no PyPI release; install from source
+monotonic-align = { git = "https://github.com/resemble-ai/monotonic_align.git" }
 
 [project.optional-dependencies]
 # [Specifying GPU version of pytorch for python package in pyproject.toml](https://discuss.pytorch.org/t/specifying-gpu-version-of-pytorch-for-python-package-in-pyproject-toml/209157)

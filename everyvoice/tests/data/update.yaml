@@ -1,3 +1,2 @@
-vocoder:
-  training:
-    batch_size: 456
+training:
+  batch_size: 456
