@@ -5,7 +5,7 @@ from string import ascii_lowercase
 
 from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
 from everyvoice.config.text_config import Symbols, TextConfig
-from everyvoice.model.e2e.config import FeaturePredictionConfig
+from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.preprocessor import Preprocessor
 from everyvoice.tests.stubs import (
     TEST_CONTACT,
