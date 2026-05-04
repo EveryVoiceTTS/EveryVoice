@@ -5,8 +5,8 @@
 # - run: ./profile-help-ci.sh "${{ github.event.pull_request.head.sha }}"
 # - display `import-message.txt` as a PR comment (see .github/workflows/text.yml)
 
-PYTHONPROFILEIMPORTTIME=1 everyvoice -h 2> importtime.txt > /dev/null
-CLI_LOAD_TIME="$( (/usr/bin/time --format=%E everyvoice -h > /dev/null) 2>&1 )"
+PYTHONPROFILEIMPORTTIME=1 uv run everyvoice -h 2> importtime.txt > /dev/null
+CLI_LOAD_TIME="$( (/usr/bin/time --format=%E uv run everyvoice -h > /dev/null) 2>&1 )"
 
 {
     echo "CLI load time: $CLI_LOAD_TIME"
@@ -25,8 +25,8 @@ cat importtime.txt
 EXIT_CODE=
 if [[ "$CLI_LOAD_TIME" > "0:01.00" ]]; then
     echo ""
-    echo "ERROR: everyvoice --help is too slow."
-    echo "Please run 'PYTHONPROFILEIMPORTTIME=1 everyvoice -h 2> importtime.txt; tuna importtime.txt' and tuck away expensive imports so that the CLI doesn't load them until it uses them."
+    echo "ERROR: uv run everyvoice --help is too slow."
+    echo "Please run 'PYTHONPROFILEIMPORTTIME=1 uv run everyvoice -h 2> importtime.txt; tuna importtime.txt' and tuck away expensive imports so that the CLI doesn't load them until it uses them."
     EXIT_CODE=1
 fi
 if grep -E -q "shared_types|pydantic" importtime.txt; then
