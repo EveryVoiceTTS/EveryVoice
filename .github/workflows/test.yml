@@ -57,6 +57,7 @@ jobs:
           fail_ci_if_error: false # optional (default = false)
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Make sure the CLI stays fast
+        if: always()
         run: ./profile-help-ci.sh "${{ github.event.pull_request.head.sha }}"
       - name: Report help speed in PR
         if: github.event_name == 'pull_request'
