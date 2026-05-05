@@ -49,7 +49,6 @@ jobs:
           coverage xml
       - run: cd everyvoice && coverage report
       - name: Check for logs_and_checkpoints/ and preprocessed/
-        id: no-extra-directories
         run: |
           find -type d -name logs_and_checkpoints -or -name preprocessed | grep -v 'tests/data' || true
           [[ $(find -type d -name logs_and_checkpoints -or -name preprocessed | grep --count --invert-match 'tests/data') -eq 0 ]]
@@ -58,27 +57,7 @@ jobs:
           fail_ci_if_error: false # optional (default = false)
           token: ${{ secrets.CODECOV_TOKEN }}
       - name: Make sure the CLI stays fast
-        id: cli-load-time
-        run: |
-          PYTHONPROFILEIMPORTTIME=1 everyvoice -h 2> importtime.txt > /dev/null
-          CLI_LOAD_TIME="$((/usr/bin/time --format=%E everyvoice -h > /dev/null) 2>&1)"
-          echo "CLI load time: $CLI_LOAD_TIME" > import-message.txt
-          PR_HEAD="${{ github.event.pull_request.head.sha }}"
-          [[ $PR_HEAD ]] && echo "Pull Request HEAD: $PR_HEAD" >> import-message.txt
-          echo "Imports that take more than 0.1 s:" >> import-message.txt
-          grep -E 'cumulative|[0-9]{6} ' importtime.txt >> import-message.txt
-          cat import-message.txt
-          echo "Full import time log:"
-          cat importtime.txt
-          if [[ "$CLI_LOAD_TIME" > "0:01.00" ]]; then \
-            echo "ERROR: everyvoice --help is too slow."; \
-            echo "Please run 'PYTHONPROFILEIMPORTTIME=1 everyvoice -h 2> importtime.txt; tuna importtime.txt' and tuck away expensive imports so that the CLI doesn't load them until it uses them."; \
-            false; \
-          fi
-          if grep -E -q "shared_types|pydantic" importtime.txt; then \
-            echo "ERROR: please be careful not to cause shared_types or pydantic to be imported when the CLI just loads. They are expensive imports."; \
-            false; \
-          fi
+        run: ./profile-help-ci.sh "${{ github.event.pull_request.head.sha }}"
       - name: Report help speed in PR
         if: github.event_name == 'pull_request'
         uses: mshick/add-pr-comment@7c1a3a3e5a072270dc21c0639df39ca11e860b2b # v3.5.0
