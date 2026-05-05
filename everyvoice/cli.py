@@ -9,11 +9,13 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Annotated, Any, Optional
 
+import pydantic  # noqa
 import typer
 from merge_args import merge_args
 from rich import print as rich_print
 from rich.panel import Panel
 
+import everyvoice.config.shared_types  # noqa
 from everyvoice._version import VERSION
 from everyvoice.base_cli.checkpoint import inspect, rename_speaker
 from everyvoice.base_cli.interfaces import (
