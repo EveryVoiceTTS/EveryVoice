@@ -27,7 +27,7 @@ See [Pull Request Recommendations](#pull-request-recommendations) for hints on m
 Run these commands in each of your sandboxes to enable our pre-commit hooks and gitlint:
 
 ```sh
-pip install -r requirements.dev.txt
+pip install -e '.[dev]'
 pre-commit install
 gitlint install-hook
 git submodule foreach 'pre-commit install'
@@ -61,11 +61,11 @@ All the pre-commit hooks are executed using a tool called
 [pre-commit](https://pre-commit.com/). Once you enable pre-commit, it will run all the
 hooks each time you try to commit anything in this repo.
 
-We've listed all the developper dependencies for the project in
-[requirements.dev.txt](requirements.dev.txt) to make them easy to install:
+The developer dependencies are listed in the dev extra in [pyproject.toml](pyproject.toml)
+to make them easy to install:
 
 ```sh
-pip install -r requirements.dev.txt
+pip install -e '.[dev]'
 pre-commit install
 ```
 
@@ -132,12 +132,12 @@ commit-msg hook in Git.
 Run this command in your sandbox to install and enable the commit-msg hook:
 
 ```sh
-pip install -r requirements/requirements.dev.txt
+pip install -e '.[dev]'
 gitlint install-hook
 ```
 
-- Now, next time you make a change and commit it, your commit log will be checked:
-  - `git commit -m'non-compliant commit log text'` outputs an error
+- Now, your commit log will be checked:
+  - `git commit -m'non-compliant commit message'` outputs an error
   - `git commit -m'fix(g2p): fixing a bug in g2p integration'` works
 
 ### Initializing submodules too
