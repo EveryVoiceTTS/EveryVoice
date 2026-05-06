@@ -14,7 +14,7 @@ This repo follows the [Contributor Covenant](http://contributor-covenant.org/ver
 
 This repo uses automated tools to standardize the formatting of code, text files and
 commits.
- - [Pre-commit hooks](#pre-commit-hooks) validate and automatically apply code
+ - [Pre-commit/prek hooks](#pre-commitprek-hooks) validate and automatically apply code
    formatting rules.
  - [gitlint](#gitlint) is used as a commit message hook to validate that
    commit messages follow the convention.
@@ -28,19 +28,19 @@ Run these commands in each of your sandboxes to enable our pre-commit hooks and 
 
 ```sh
 pip install -e '.[dev]'
-pre-commit install
+prek install
 gitlint install-hook
-git submodule foreach 'pre-commit install'
+git submodule foreach 'prek install'
 git submodule foreach 'gitlint install-hook'
 ```
 
-## Pre-commit hooks
+## Pre-commit/prek hooks
 
 The ReadAlong Studio team has agreed to systematically use a number of pre-commit hooks to
-normalize formatting of code. You need to install and enable pre-commit to have these used
-automatically when you do your own commits.
+normalize formatting of code. You need to install and enable prek (fast replacement of pre-commit)
+to have these used automatically when you do your own commits.
 
-Pre-commit hooks enabled:
+Pre-commit hooks we use:
 - check-yaml validates YAML files
 - end-of-file-fixer makes sure each text file ends with exactly one newline character
 - trailing-whitespace removes superfluous whitespace at the end of lines in text files
@@ -58,7 +58,7 @@ Pre-commit hooks enabled:
 ### Enabling pre-commit hooks
 
 All the pre-commit hooks are executed using a tool called
-[pre-commit](https://pre-commit.com/). Once you enable pre-commit, it will run all the
+[prek](https://prek.j178.dev/). Once you enable prek, it will run all the
 hooks each time you try to commit anything in this repo.
 
 The developer dependencies are listed in the dev extra in [pyproject.toml](pyproject.toml)
@@ -66,7 +66,7 @@ to make them easy to install:
 
 ```sh
 pip install -e '.[dev]'
-pre-commit install
+prek install
 ```
 
 Note that you have to run the second command in every sandbox you create, so please
@@ -142,13 +142,13 @@ gitlint install-hook
 
 ### Initializing submodules too
 
-The EveryVoice repo uses submodules, and the gitlint and pre-commit
+The EveryVoice repo uses submodules, and the gitlint and prek/pre-commit
 initialization has to be done separately in each of one them. You can cd into
 each submodule directory and run the same commands shown above, but there is a
 shortcut:
 
 ```sh
-git submodule foreach 'pre-commit install'
+git submodule foreach 'prek install'
 git submodule foreach 'gitlint install-hook'
 ```
 

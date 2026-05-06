@@ -81,9 +81,9 @@ Please make sure our standard Git hooks are activated, by running these commands
 
 ```sh
 pip install -e '.[dev]'
-pre-commit install
+prek install
 gitlint install-hook
-git submodule foreach 'pre-commit install'
+git submodule foreach 'prek install'
 git submodule foreach 'gitlint install-hook'
 ```
 

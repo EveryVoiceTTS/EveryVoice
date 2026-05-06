@@ -219,8 +219,8 @@ Before you can run the test suites, you'll also need to install the dev dependen
 If you plan to contribute to the project, please install our Git hooks:
 
 ```sh
-pre-commit install
+prek install
 gitlint install-hook
-git submodule foreach 'pre-commit install'
+git submodule foreach 'prek install'
 git submodule foreach 'gitlint install-hook'
 ```

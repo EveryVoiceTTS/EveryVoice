@@ -246,8 +246,8 @@ echo "Environment creation completed with success"
 echo ""
 echo "Configuring your sandbox in case you want to contribute to the project."
 if [[ ! -f .git/hooks/pre-commit ]]; then
-    if ! pre-commit install; then
-        echo "Error running \"pre-commit install\". Your \"$ENV2ACTIVATE\" environment is good, but if you want to submit contributions to the project, please rerun \"pre-commit install\" in your sandbox."
+    if ! prek install; then
+        echo "Error running \"prek install\". Your \"$ENV2ACTIVATE\" environment is good, but if you want to submit contributions to the project, please rerun \"prek install\" in your sandbox."
     fi
 fi
 if [[ ! -f .git/hooks/commit-msg ]]; then
@@ -257,7 +257,7 @@ if [[ ! -f .git/hooks/commit-msg ]]; then
     fi
 fi
 # Try to install pre-commit and gitlint hooks in the submodules but don't complain on failure
-git submodule foreach 'test -f $(cat .git|cut -f2 -d" ")/hooks/pre-commit || pre-commit install || true' >& /dev/null || true
+git submodule foreach 'test -f $(cat .git|cut -f2 -d" ")/hooks/pre-commit || prek install || true' >& /dev/null || true
 git submodule foreach 'test -f $(cat .git|cut -f2 -d" ")/hooks/commit-msg || gitlint install-hook || true' >& /dev/null || true
 
 echo ""
