@@ -15,6 +15,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.11", "3.12"]
+      fail-fast: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -41,26 +42,17 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12"]
+      fail-fast: false
     runs-on: macos-latest
-    defaults:
-      run:
-        # Required for conda
-        shell: bash -l {0}
     steps:
       - uses: actions/checkout@v6
         with:
           submodules: recursive
-      - name: Set up conda
-        uses: conda-incubator/setup-miniconda@fc2d68f6413eb2d87b895e92f8584b5b94a10167 # v3.3.0
+      - run: brew install ffmpeg sox
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          miniforge-version: latest
-          conda-remove-defaults: true
-      - run: conda install -y -c conda-forge sox ffmpeg
-      - uses: actions/cache@v5
-        with:
-          path: ~/Library/Caches/pip
-          key: pip-macos-${{ matrix.python-version }}
+          cache: "pip"
       - run: pip install -e .[dev]
       - run: python --version
       - run: pip freeze
