@@ -20,7 +20,7 @@ from pydantic import ValidationError
 
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import InvalidConfiguration
-from everyvoice.model.e2e.config import E2EConfig
+from everyvoice.model.e2e.config import StyleTTS2Config
 from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.lightning import (
     StyleTTS2DataModule,
     StyleTTS2Module,
@@ -59,6 +59,7 @@ def load_unknown_config(
     for config_type in (
         PreprocessingConfig,
         FastSpeech2Config,
+        StyleTTS2Config,
         HiFiGANConfig,
     ):
         try:
@@ -74,7 +75,7 @@ def load_unknown_config(
 
 def load_config_base_command(
     model_config: Union[
-        type[E2EConfig],
+        type[StyleTTS2Config],
         type[FastSpeech2Config],
         type[HiFiGANConfig],
     ],
@@ -92,7 +93,7 @@ def load_config_base_command(
         import sys
 
         for config_type in (
-            E2EConfig,
+            StyleTTS2Config,
             FastSpeech2Config,
             HiFiGANConfig,
         ):
@@ -116,7 +117,7 @@ def load_config_base_command(
 
 def preprocess_base_command(
     model_config: Union[
-        type[E2EConfig],
+        type[StyleTTS2Config],
         type[FastSpeech2Config],
         type[HiFiGANConfig],
     ],
@@ -132,8 +133,10 @@ def preprocess_base_command(
 
     config = load_config_base_command(model_config, config_args, config_file)
     preprocessor = Preprocessor(config)
+    if isinstance(config, StyleTTS2Config):
+        steps = ["audio", "text"]
     if (
-        isinstance(config, FastSpeech2Config)
+        (isinstance(config, FastSpeech2Config) or isinstance(config, StyleTTS2Config))
         and config.model.target_text_representation_level
         == TargetTrainingTextRepresentationLevel.phonological_features
     ):
@@ -148,7 +151,7 @@ def preprocess_base_command(
 
 
 def save_configuration_to_log_dir(
-    config: Union[E2EConfig, FastSpeech2Config, HiFiGANConfig]
+    config: Union[StyleTTS2Config, FastSpeech2Config, HiFiGANConfig]
 ):
     """
     Adds a logging file to the module's logger.
@@ -170,7 +173,7 @@ def save_configuration_to_log_dir(
 
 def train_base_command(
     model_config: Union[
-        type[E2EConfig],
+        type[StyleTTS2Config],
         type[FastSpeech2Config],
         type[HiFiGANConfig],
     ],
@@ -289,7 +292,9 @@ def train_base_command(
             sys.exit(1)
         logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
-        if isinstance(model_obj, StyleTTS2Module) or isinstance(config, E2EConfig):
+        if isinstance(model_obj, StyleTTS2Module) or isinstance(
+            config, StyleTTS2Config
+        ):
             optimizer_diff = DeepDiff((), ())
             model_diff = DeepDiff((), ())
         else:
