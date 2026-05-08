@@ -461,8 +461,8 @@
         },
         "upsample_rates": {
           "default": [
-            10,
-            6
+            8,
+            8
           ],
           "items": {
             "type": "integer"
@@ -472,8 +472,8 @@
         },
         "upsample_kernel_sizes": {
           "default": [
-            20,
-            12
+            16,
+            16
           ],
           "items": {
             "type": "integer"
@@ -561,13 +561,13 @@
           "type": "array"
         },
         "gen_istft_n_fft": {
-          "default": 20,
+          "default": 16,
           "description": "FFT size for the iSTFTNet generator. Only used when istft_layer=True.",
           "title": "Gen Istft N Fft",
           "type": "integer"
         },
         "gen_istft_hop_size": {
-          "default": 5,
+          "default": 4,
           "description": "Hop size for the iSTFTNet generator. Only used when istft_layer=True.",
           "title": "Gen Istft Hop Size",
           "type": "integer"
@@ -984,7 +984,7 @@
       "description": "Training hyperparameters for StyleTTS2.\n\nInherits shared fields from BaseTrainingConfig: batch_size,\nsave_top_k_ckpts, ckpt_steps/ckpt_epochs, val_check_interval,\nmax_epochs/max_steps, finetune_checkpoint (\u2192 pretrained_model),\ntraining_filelist (\u2192 data_params.train_data),\nvalidation_filelist (\u2192 data_params.val_data), logger, and data workers.",
       "properties": {
         "batch_size": {
-          "default": 16,
+          "default": 2,
           "description": "The number of samples to include in each batch when training. If you are running out of memory, consider lowering your batch_size.",
           "title": "Batch Size",
           "type": "integer"
@@ -1131,8 +1131,8 @@
           "type": "integer"
         },
         "max_len": {
-          "default": 400,
-          "description": "Maximum clip length in mel frames used during training.",
+          "default": 800,
+          "description": "Maximum clip length in Mel frames used during training. You can lower this or your batch size if you run into out-of-memory errors. Advanced: In time, this is equal to max_len * (hop_length / sampling rate). e.g. with a max_len of 800, a hop length of 300 and a sampling rate of 24kHz, this is equal to ten seconds (800 * (300 / 24000)).",
           "title": "Max Len",
           "type": "integer"
         },
