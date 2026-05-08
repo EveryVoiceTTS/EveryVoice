@@ -79,7 +79,7 @@ class ConfigTest(TestCase):
             contact=TEST_CONTACT,
             training=StyleTTS2TrainingConfig(batch_size=32),
         )
-        assert config_default.training.batch_size == 16
+        assert config_default.training.batch_size == 2
         assert config_32.training.batch_size == 32
 
     def test_config_save_dirs(self):
@@ -225,21 +225,21 @@ class ConfigTest(TestCase):
         base_config = E2EConfig(
             contact=TEST_CONTACT,
         )
-        test_string = "training.max_len=400"
+        test_string = "training.max_len=800"
         test_bad_strings = [
-            "training.max_len==400",
-            "training.max_len400",
+            "training.max_len==800",
+            "training.max_len800",
         ]
         # test_missing = ["training.foobar.gan_type=original"]
         test_dict = expand_config_string_syntax(test_string)
-        assert test_dict == {"training": {"max_len": "400"}}
+        assert test_dict == {"training": {"max_len": "800"}}
         for bs in test_bad_strings:
             with self.assertRaises(ValueError):
                 expand_config_string_syntax(bs)
 
-        assert base_config.training.max_len == 400
+        assert base_config.training.max_len == 800
         config = base_config.combine_configs(base_config, test_dict)
-        assert config["training"]["max_len"] == "400"
+        assert config["training"]["max_len"] == "800"
 
     def test_changes(self):
         """Test that the changes to the config are correct"""
