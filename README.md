@@ -21,7 +21,7 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
   - On Ubuntu, `sudo apt-get install ffmpeg` should work.
   - Other Linux distros should have an equivalent package.
   - With Conda, `conda install ffmpeg` is reliable.
-  - Or, use the official bundles from https://www.ffmpeg.org/download.html
+  - Or, use the applicable link under "Get packages & executables files" at https://www.ffmpeg.org/download.html
 
 - Install `torch` and `torchaudio` version 2.1.0 for your platform and CUDA version: follow the instructions at https://pytorch.org/get-started/locally/ but specify `torch==2.1.0 torchaudio==2.1.0` in the install command and remove `torchvision`.
 
