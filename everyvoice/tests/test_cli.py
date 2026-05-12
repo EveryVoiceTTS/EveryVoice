@@ -269,16 +269,17 @@ class CLITest(TestCase):
             result = self.runner.invoke(app, [command, "-h"])
             assert result.exit_code == 0
 
-    def test_update_schema(self):
+    def test_update_schemas(self):
         dummy_contact = ContactInformation(
             contact_name="Test Runner", contact_email="info@everyvoice.ca"
         )
-        with tempfile.TemporaryDirectory() as tmpdir:
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
             # Validate that schema generation works correctly.
-            _ = self.runner.invoke(app, ["update-schemas", "-o", tmpdir])
+            _ = self.runner.invoke(app, ["update-schemas", "-o", tmpdir_s])
             for filename, obj in SCHEMAS_TO_OUTPUT.items():
                 with self.subTest(filename=filename, type=obj):
-                    with open(Path(tmpdir) / filename, encoding="utf8") as f:
+                    with open(tmpdir / filename, encoding="utf8") as f:
                         schema = json.load(f)
                     # serialize the model to json and then validate against the schema
                     # Some objects will require a contact key
@@ -297,10 +298,8 @@ class CLITest(TestCase):
             # i.e., that we didn't change the models but forget to update the schemas.
             for filename in SCHEMAS_TO_OUTPUT:
                 with self.subTest(filename=filename):
-                    with open(Path(tmpdir) / filename, encoding="utf8") as f:
-                        new_schema = f.read().replace(
-                            "\\\\", "/"
-                        )  # force paths to posix
+                    with open(tmpdir / filename, encoding="utf8") as f:
+                        new_schema = f.read()
                     try:
                         with open(EV_DIR / ".schema" / filename, encoding="utf8") as f:
                             saved_schema = f.read()
@@ -314,11 +313,21 @@ class CLITest(TestCase):
                         'Schemas are out of date, please run "everyvoice update-schemas".',
                     )
 
-        # Next, but only if everything above passed, we make sure we can't overwrite
-        # existing schemas by accident.
+            # Make sure we can't overwrite existing but out-of-date schemas by accident.
+            with open(tmpdir / next(iter(SCHEMAS_TO_OUTPUT)), "w") as f:
+                # Make one of the schemas forcefully out of date
+                f.write("asdf")
+            result = self.runner.invoke(app, ["update-schemas", "-o", tmpdir_s])
+            assert result.exit_code != 0
+            assert "ERROR" in result.output
+            assert "Out of date" in result.output
+
+        # If everything above passed, running update-schemas should say schemas are up to date
         result = self.runner.invoke(app, ["update-schemas"])
-        assert result.exit_code != 0
-        assert "FileExistsError" in str(result)
+        assert result.exit_code == 0
+        assert "already up to date" in result.output
+        assert "Out of date" not in result.output
+        assert "ERROR" not in result.output
 
     def test_evaluate(self):
         result = self.runner.invoke(
