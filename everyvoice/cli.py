@@ -621,10 +621,6 @@ def inspect_checkpoint(model_path: Path):
     )
 
 
-# Deferred full initialization to optimize the CLI, but still exposed for unit testing.
-SCHEMAS_TO_OUTPUT: dict[str, Any] = {}  # dict[str, type[BaseModel]]
-
-
 AllowedDemoOutputFormats = Enum(  # type: ignore
     "AllowedDemoOutputFormats",
     [("all", "all")] + [(i.name, i.value) for i in SynthesizeOutputFormats],
@@ -797,6 +793,10 @@ def demo(
     )
 
 
+# Deferred full initialization to optimize the CLI, but still exposed for unit testing.
+SCHEMAS_TO_OUTPUT: dict[str, Any] = {}  # dict[str, type[BaseModel]]
+
+
 @app.command(hidden=True)
 def update_schemas(
     out_dir: Annotated[
@@ -833,16 +833,37 @@ def update_schemas(
         }
     )
 
+    all_good = True
     for filename, schema in SCHEMAS_TO_OUTPUT.items():
+        schema_contents = json.dumps(schema.model_json_schema(), indent=2) + "\n"
         if (schema_dir_path / filename).exists():
-            raise FileExistsError(
-                f"Sorry a schema already exists for version {filename}.\n"
-                "If it's already been published to the schema store, please bump the EveryVoice minor version number and generate the schemas again.\n"
-                "If the current minor version is still in development, just delete the schema files and try again."
+            with open(schema_dir_path / filename) as f:
+                existing_contents = f.read()
+                if existing_contents == schema_contents:
+                    print(f"Schema '{filename}' already up to date.")
+                else:
+                    all_good = False
+                    print(
+                        f"Out of date schema '{filename}' exists in '{schema_dir_path}'."
+                    )
+        else:
+            with open(
+                schema_dir_path / filename, "w", encoding="utf8", newline="\n"
+            ) as f:
+                f.write(schema_contents)
+                print(f"Schema '{filename}' created.")
+
+    if not all_good:
+        sys.exit(
+            dedent(
+                """
+                ERROR: out-of-date schemas exist.
+                If the current schemas were already published to the schema store, please
+                bump the EveryVoice minor version number and run update-schemas again.
+                If the current minor version is still in development, delete the out-of-date
+                schemas and try again."""
             )
-        with open(schema_dir_path / filename, "w", encoding="utf8", newline="\n") as f:
-            json.dump(schema.model_json_schema(), f, indent=2)
-            f.write("\n")
+        )
 
 
 @app.command()
