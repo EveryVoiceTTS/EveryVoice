@@ -93,8 +93,6 @@ torch = [
 ]
 dev = [
   "black~=24.3",
-  "coverage",
-  "chardet<6", # requests<=2.32.5 not compat with chardet>=6, remove this on next requests release
   "diff-cover",
   "flake8>=4.0.1",
   "gitlint-core>=0.19.0",
@@ -109,6 +107,7 @@ dev = [
   "everyvoice[test]",
 ]
 test = [
+  "coverage",
   "jsonschema>=4.17.3",
   "pep440>=0.1.2",
   "playwright>=1.52.0",
