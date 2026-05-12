@@ -61,7 +61,6 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
-from everyvoice.run_tests import SUITE_NAMES, run_tests
 from everyvoice.utils import spinner
 from everyvoice.wizard import (
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
@@ -620,24 +619,6 @@ def inspect_checkpoint(model_path: Path):
             title="Inspect Checkpoint",
         )
     )
-
-
-TestSuites = Enum("TestSuites", {name: name for name in SUITE_NAMES})  # type: ignore
-
-
-@app.command(hidden=True)
-def test(suite: TestSuites = typer.Argument("dev")):  # pragma: no cover
-    """Run a test suite"""
-    try:
-        import everyvoice.tests  # noqa: F401
-
-        run_tests(suite.value)
-    except ModuleNotFoundError:
-        print(
-            "ERROR: hidden command 'everyvoice test' only works when you install EveryVoice from source, with dev dependencies.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
 
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
