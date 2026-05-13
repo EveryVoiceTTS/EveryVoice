@@ -63,7 +63,6 @@ dependencies = [
   "nltk==3.9.3",
   "packaging>=22.0",
   "pandas~=2.0",
-  "protobuf~=4.25", # https://github.com/EveryVoiceTTS/EveryVoice/issues/387
   "pydantic[email]>=2.4.2,<2.8.0",
   "pympi-ling",
   "pyworld-prebuilt==0.3.4.4",
