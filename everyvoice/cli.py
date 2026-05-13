@@ -529,6 +529,7 @@ train_group = typer.Typer(
 
 train_group.command(
     name="text-to-spec",
+    no_args_is_help=True,
     short_help="Train your Text-to-Spec (FastSpeech2) model",
     help=f"""Train your text-to-spec model.  For example:
 
@@ -538,6 +539,7 @@ train_group.command(
 
 train_group.command(
     name="spec-to-wav",
+    no_args_is_help=True,
     short_help="Train your Spec-to-Wav (HiFiGAN) model",
     help=f"""Train your spec-to-wav model.  For example:
 
@@ -547,6 +549,7 @@ train_group.command(
 
 train_group.command(
     name="text-to-wav",
+    no_args_is_help=True,
     short_help="Train an end-to-end (StyleTTS2) model",
     help=f"""Train an end-to-end text-to-speech model. For example:
 
