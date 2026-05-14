@@ -2,14 +2,14 @@ from collections.abc import Iterable, Sequence
 from itertools import chain
 from typing import Union
 
-from everyvoice.model.e2e.config import EveryVoiceConfig
+from everyvoice.model.e2e.config import E2EConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 
 LookupTable = dict[str, int]
 
 
 def lookuptables_from_config(
-    config: Union[EveryVoiceConfig, FeaturePredictionConfig]
+    config: Union[E2EConfig, FeaturePredictionConfig]
 ) -> tuple[LookupTable, LookupTable]:
     """ """
     train_dataset = config.training.filelist_loader(config.training.training_filelist)
@@ -41,6 +41,6 @@ def build_lookup(items: Sequence[dict[str, str]], key: str) -> dict[str, int]:
 
 
 class LookupTables:
-    def __init__(self, config: Union[EveryVoiceConfig, FeaturePredictionConfig]):
+    def __init__(self, config: Union[E2EConfig, FeaturePredictionConfig]):
         self.config = config
         self.lang2id, self.speaker2id = lookuptables_from_config(self.config)

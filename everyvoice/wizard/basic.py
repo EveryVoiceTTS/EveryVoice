@@ -221,7 +221,11 @@ class ConfigFormatStep(Step):
         return response in ("yaml", "json")
 
     def effect(self):
-        from everyvoice.model.e2e.config import E2ETrainingConfig, EveryVoiceConfig
+        from everyvoice.model.e2e.config import (
+            E2EConfig,
+            StyleTTS2ModelConfig,
+            StyleTTS2TrainingConfig,
+        )
         from everyvoice.model.feature_prediction.config import (
             FastSpeech2ModelConfig,
             FeaturePredictionConfig,
@@ -472,14 +476,31 @@ class ConfigFormatStep(Step):
             )
 
             # E2E Config
+            from everyvoice.model.e2e import StyleTTS2_lightning
+            from everyvoice.model.e2e.config import (
+                StyleTTS2PretrainedConfig,
+            )
+
+            st_dir = Path(StyleTTS2_lightning.__path__[0])
+            pretrained_folder = st_dir / "styletts2" / "pretrained"
+
             e2e_logger = LoggerConfig(
                 name="E2E-Experiment", save_dir=log_dir_relative_to_configs
             )
-            e2e_config = EveryVoiceConfig(
+            e2e_config = E2EConfig(
                 contact=CONTACT_INFO,
-                feature_prediction=fp_config,
-                vocoder=vocoder_config,
-                training=E2ETrainingConfig(
+                model=StyleTTS2ModelConfig(multispeaker=multispeaker),
+                preprocessing=preprocessing_config,  # TODO: should we use the default 24kHz sampling rate that StyleTTS2 usually uses? if so, the hop size, upsample rates etc will also need to change
+                pretrained=StyleTTS2PretrainedConfig(
+                    f0_path=pretrained_folder / "jdc/bst.t7",
+                    asr_config=pretrained_folder / "asr/config.yml",
+                    asr_path=pretrained_folder / "asr/epoch_00080.pth",
+                    plbert_dir=pretrained_folder / "plbert",
+                ),
+                training=StyleTTS2TrainingConfig(
+                    ood_data=st_dir
+                    / "data"
+                    / "OOD_texts.txt",  # TODO: We should absolutely not just use English OOD for everything, but I'm undecided about how to incorporate this into the wizard/preprocessing pipelines for now, so punting this to later.
                     training_filelist=preprocessed_training_filelist_path,
                     validation_filelist=preprocessed_validation_filelist_path,
                     logger=e2e_logger,
@@ -488,16 +509,12 @@ class ConfigFormatStep(Step):
             e2e_config_json = json.loads(
                 e2e_config.model_dump_json(
                     exclude_none=False,
-                    exclude={
-                        "feature_prediction": True,
-                        "vocoder": True,
-                    },
                 )
             )
-            e2e_config_json["path_to_feature_prediction_config_file"] = str(
-                fp_config_path
+            e2e_config_json["path_to_preprocessing_config_file"] = str(
+                preprocessing_config_path
             )
-            e2e_config_json["path_to_vocoder_config_file"] = str(vocoder_config_path)
+            e2e_config_json["path_to_text_config_file"] = str(text_config_path)
             e2e_config_path = Path(
                 f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
             )

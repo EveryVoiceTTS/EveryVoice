@@ -35,19 +35,21 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.10"
-          cache: "pip"
-      - name: Install dependencies and EveryVoice itself
-        run: |
-          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -e .[dev]
-      - run: pip freeze
-      - run: pip list
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          # Install a specific version of uv.
+          version: "0.11.8"
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+      - run: uv pip freeze
+      - run: uv pip list
       - name: Run tests
         run: |
           cd everyvoice
-          coverage run -m pytest
-          coverage xml
-      - run: cd everyvoice && coverage report
+          uv run coverage run -m pytest
+          uv run coverage xml
+      - run: cd everyvoice && uv run coverage report
       - name: Check for logs_and_checkpoints/ and preprocessed/
         run: |
           find -type d -name logs_and_checkpoints -or -name preprocessed | grep -v 'tests/data' || true
@@ -93,14 +95,17 @@ jobs:
           echo "${{ github.workspace }}/sox/bin" >> $GITHUB_PATH
       - name: Verify SoX installation
         run: sox --version
-      - name: Install dependencies and EveryVoice itself
-        run: |
-          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -e .[dev]
-      - run: pip freeze
-      - run: pip list
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          # Install a specific version of uv.
+          version: "0.11.8"
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+      - run: uv pip freeze
+      - run: uv pip list
       - name: Run tests
-        run: pytest
+        run: uv run pytest
 
   # Run pre-commit and update a PR automatically if possible
   pre-commit:

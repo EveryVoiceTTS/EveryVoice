@@ -7,8 +7,6 @@ from pytest import fixture, main, raises
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
-from everyvoice.model.e2e.config import EveryVoiceConfig
-from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
     HiFiGANTrainingConfig,
@@ -24,21 +22,17 @@ from everyvoice.utils import filter_dataset_based_on_target_text_representation_
 
 
 @fixture
-def config() -> EveryVoiceConfig:
-    return EveryVoiceConfig(
+def config() -> VocoderConfig:
+    return VocoderConfig(
         contact=TEST_CONTACT,
-        feature_prediction=FeaturePredictionConfig(contact=TEST_CONTACT),
-        vocoder=VocoderConfig(
-            contact=TEST_CONTACT,
-            training=HiFiGANTrainingConfig(
-                training_filelist=PreprocessedAudioFixture.lj_preprocessed
-                / "preprocessed_filelist.psv",
-                validation_filelist=PreprocessedAudioFixture.lj_preprocessed
-                / "validation_preprocessed_filelist.psv",
-            ),
-            preprocessing=PreprocessingConfig(
-                save_dir=PreprocessedAudioFixture.lj_preprocessed,
-            ),
+        training=HiFiGANTrainingConfig(
+            training_filelist=PreprocessedAudioFixture.lj_preprocessed
+            / "preprocessed_filelist.psv",
+            validation_filelist=PreprocessedAudioFixture.lj_preprocessed
+            / "validation_preprocessed_filelist.psv",
+        ),
+        preprocessing=PreprocessingConfig(
+            save_dir=PreprocessedAudioFixture.lj_preprocessed,
         ),
     )
 
@@ -47,35 +41,31 @@ class TestDataLoader(PreprocessedAudioFixture):
     """Basic test for dataloaders"""
 
     def test_base_data_loader(self, config):
-        bdm = BaseDataModule(config.vocoder)
+        bdm = BaseDataModule(config)
         with raises(NotImplementedError):
             bdm.load_dataset()
 
     def test_spec_dataset(self, config):
         dataset = SpecDataset(
-            config.vocoder.training.filelist_loader(
-                config.vocoder.training.training_filelist
-            ),
-            config.vocoder,
+            config.training.filelist_loader(config.training.training_filelist),
+            config,
             use_segments=True,
         )
         for sample in dataset:
             spec, audio, basename, spec_from_audio = sample
             assert isinstance(basename, str)
             assert spec.size() == spec_from_audio.size()
-            assert spec.size(0) == config.vocoder.preprocessing.audio.n_mels
-            assert spec.size(
-                1
-            ) == config.vocoder.preprocessing.audio.vocoder_segment_size / (
-                config.vocoder.preprocessing.audio.fft_hop_size
+            assert spec.size(0) == config.preprocessing.audio.n_mels
+            assert spec.size(1) == config.preprocessing.audio.vocoder_segment_size / (
+                config.preprocessing.audio.fft_hop_size
                 * (
-                    config.vocoder.preprocessing.audio.output_sampling_rate
-                    // config.vocoder.preprocessing.audio.input_sampling_rate
+                    config.preprocessing.audio.output_sampling_rate
+                    // config.preprocessing.audio.input_sampling_rate
                 )
             )
 
     def test_hifi_data_loader(self, config):
-        hfgdm = HiFiGANDataModule(config.vocoder)
+        hfgdm = HiFiGANDataModule(config)
         hfgdm.load_dataset()
         assert len(hfgdm.train_dataset) == 5
 
@@ -128,10 +118,8 @@ class TestDataLoader(PreprocessedAudioFixture):
 
     def test_imbalanced_sampler(self, config):
         dataset = SpecDataset(
-            config.vocoder.training.filelist_loader(
-                config.vocoder.training.training_filelist
-            ),
-            config.vocoder,
+            config.training.filelist_loader(config.training.training_filelist),
+            config,
             use_segments=True,
         )
         sampler = ImbalancedDatasetSampler(dataset)

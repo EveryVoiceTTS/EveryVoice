@@ -26,7 +26,7 @@ from everyvoice.config.preprocessing_config import (
 )
 from everyvoice.config.shared_types import init_context
 from everyvoice.config.text_config import TextConfig
-from everyvoice.model.e2e.config import FeaturePredictionConfig
+from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor, preprocessor
 from everyvoice.preprocessor.helpers import SoxError, apply_sox_effects_to_file

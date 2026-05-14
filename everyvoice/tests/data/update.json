@@ -1,7 +1,5 @@
 {
-  "feature_prediction": {
     "training": {
       "batch_size": 123
     }
-  }
 }
