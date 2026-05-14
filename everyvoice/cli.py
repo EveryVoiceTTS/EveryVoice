@@ -517,7 +517,7 @@ train_group = typer.Typer(
     help="""
     # Train Help
 
-    Please visit http://pathtomodelinfodocs for more information
+    TODO: Please visit http://pathtomodelinfodocs for more information
 
         - **text-to-spec** --- this is the most common model you will need to train. It is a model from text inputs to spectral feature (aka spectrogram) outputs.
 

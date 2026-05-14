@@ -221,8 +221,8 @@ class ConfigFormatStep(Step):
         return response in ("yaml", "json")
 
     def effect(self):
-        from everyvoice.model.e2e.config import E2EConfig
-        from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.ev_config import (
+        from everyvoice.model.e2e.config import (
+            E2EConfig,
             StyleTTS2ModelConfig,
             StyleTTS2TrainingConfig,
         )
@@ -477,7 +477,7 @@ class ConfigFormatStep(Step):
 
             # E2E Config
             from everyvoice.model.e2e import StyleTTS2_lightning
-            from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.ev_config import (
+            from everyvoice.model.e2e.config import (
                 StyleTTS2PretrainedConfig,
             )
 

@@ -27,10 +27,7 @@ from everyvoice.config.shared_types import (
     init_context,
 )
 from everyvoice.config.text_config import TextConfig
-from everyvoice.model.e2e.config import E2EConfig
-from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.ev_config import (
-    StyleTTS2TrainingConfig,
-)
+from everyvoice.model.e2e.config import E2EConfig, StyleTTS2TrainingConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
