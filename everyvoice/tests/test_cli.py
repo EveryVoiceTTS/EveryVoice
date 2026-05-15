@@ -463,12 +463,20 @@ class CLITest(TestCase):
         self.assertNotIn(b"pydantic", result.stderr, msg.format("pydantic"))
 
     def test_demo_with_bad_args(self):
-        result = self.runner.invoke(app, ["demo"])
+        result = self.runner.invoke(app, ["demo", "text-to-spec"])
         assert result.exit_code != 0
         assert "Missing argument" in result.output
 
         result = self.runner.invoke(
-            app, ["demo", os.devnull, os.devnull, "--output-format", "not-a-format"]
+            app,
+            [
+                "demo",
+                "text-to-spec",
+                os.devnull,
+                os.devnull,
+                "--output-format",
+                "not-a-format",
+            ],
         )
         assert result.exit_code != 0
         assert "Invalid value" in result.output
@@ -605,6 +613,7 @@ class CLITest(TestCase):
                     app,
                     [
                         "demo",
+                        "text-to-spec",
                         str(spec_model_path),
                         str(vocoder_path),
                         "--port",
@@ -720,6 +729,7 @@ class CLITest(TestCase):
                     app,
                     [
                         "demo",
+                        "text-to-spec",
                         str(spec_model_path),
                         str(vocoder_path),
                         "--port",
@@ -807,6 +817,7 @@ class CLITest(TestCase):
                     app,
                     [
                         "demo",
+                        "text-to-spec",
                         str(spec_model_path),
                         str(vocoder_path),
                         "--port",
