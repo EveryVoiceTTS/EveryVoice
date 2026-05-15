@@ -24,18 +24,20 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
       - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 # v1.6.0
         with:
           packages: sox
       - uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # @v3.1, with tool cache
-      - name: Install dependencies and EveryVoice itself
-        run: |
-          CUDA_TAG=cpu pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
-          pip install -e .[dev]
-      - run: pip freeze
-      - run: pip list
-      - run: pytest
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          # Install a specific version of uv.
+          version: "0.11.8"
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+      - run: uv pip freeze
+      - run: uv pip list
+      - run: uv run pytest
 
   matrix-macos:
     timeout-minutes: 30
@@ -52,9 +54,13 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
-      - run: pip install -e .[dev]
-      - run: python --version
-      - run: pip freeze
-      - run: pip list
-      - run: pytest
+      - name: Install uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+        with:
+          # Install a specific version of uv.
+          version: "0.11.8"
+      - name: Install the project
+        run: uv sync --locked --all-extras --dev
+      - run: uv pip freeze
+      - run: uv pip list
+      - run: uv run pytest
