@@ -642,12 +642,10 @@ def make_gradio_display_styletts2(
 
 
 def create_demo_app_styletts2(
-    config_file: Path,
     model_path: Path,
     output_dir: Path,
     speakers: "dict[str, Path]",
     default_reference: "Path | None" = None,
-    mode: str = "second",
     accelerator: str = "auto",
     allowlist: list[str] = [],
     denylist: list[str] = [],
@@ -668,7 +666,7 @@ def create_demo_app_styletts2(
     require_ffmpeg()
     device = get_device_from_accelerator(accelerator)
 
-    model, mel_transform = load_styletts2_model(config_file, model_path, mode, device)
+    model, mel_transform = load_styletts2_model(model_path, device)
     output_dir.mkdir(exist_ok=True, parents=True)
 
     # Pre-compute style encodings for each named speaker

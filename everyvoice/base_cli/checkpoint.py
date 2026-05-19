@@ -122,6 +122,17 @@ def summarize_hfgl_generator_model(model_path: Path, checkpoint: dict) -> None:
     print(summary(vocoder_model, None, verbose=0))
 
 
+def summarize_styletts2_model(model_path: Path, checkpoint: dict) -> None:
+    from torchinfo import summary
+
+    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.lightning import (
+        StyleTTS2Module,
+    )
+
+    model = StyleTTS2Module.load_from_checkpoint(model_path)
+    print(summary(model, None, verbose=0))
+
+
 def summarize_unknown_model(model_path: Path, checkpoint: dict) -> None:
     from tabulate import tabulate
 
@@ -194,6 +205,7 @@ def inspect(
 
     if show_architecture:
         checkpoint = load_checkpoint(model_path, minimal=False)
+
         if "model_info" in checkpoint:
             print(
                 "Inspecting checkpoint according to its model info:",
@@ -203,6 +215,7 @@ def inspect(
                 "FastSpeech2": summarize_fs2_model,
                 "HiFiGAN": summarize_hfgl_model,
                 "HiFiGANGenerator": summarize_hfgl_generator_model,
+                "StyleTTS2Module": summarize_styletts2_model,
             }
             summarizer = model_summarizers.get(checkpoint["model_info"]["name"], None)
             if summarizer:
