@@ -41,9 +41,21 @@ jobs:
           # Install a specific version of uv.
           version: "0.11.8"
       - name: Install the project
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked
       - run: uv pip freeze
       - run: uv pip list
+      - name: Make sure the CLI stays fast
+        run: |
+          source .venv/bin/activate
+          ./profile-help-ci.sh "${{ github.event.pull_request.head.sha }}"
+      - name: Report help speed in PR
+        if: github.event_name == 'pull_request'
+        uses: mshick/add-pr-comment@7c1a3a3e5a072270dc21c0639df39ca11e860b2b # v3.5.0
+        with:
+          preformatted: true
+          message-path: import-message.txt
+      - name: Install test dependencies
+        run: uv sync --locked --extra test
       - name: Run tests
         run: |
           cd everyvoice
@@ -58,14 +70,6 @@ jobs:
         with:
           fail_ci_if_error: false # optional (default = false)
           token: ${{ secrets.CODECOV_TOKEN }}
-      - name: Make sure the CLI stays fast
-        run: ./profile-help-ci.sh "${{ github.event.pull_request.head.sha }}"
-      - name: Report help speed in PR
-        if: github.event_name == 'pull_request'
-        uses: mshick/add-pr-comment@7c1a3a3e5a072270dc21c0639df39ca11e860b2b # v3.5.0
-        with:
-          preformatted: true
-          message-path: import-message.txt
 
   test-on-windows:
     runs-on: windows-latest
@@ -101,7 +105,7 @@ jobs:
           # Install a specific version of uv.
           version: "0.11.8"
       - name: Install the project
-        run: uv sync --locked --all-extras --dev
+        run: uv sync --locked --extra test
       - run: uv pip freeze
       - run: uv pip list
       - name: Run tests
@@ -146,7 +150,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          submodules: recursive
+          sparse-checkout: pyproject.toml
+          submodules: false
       - run: pip install licensecheck --no-warn-conflicts
       - name: Run license check overall
         run: |
