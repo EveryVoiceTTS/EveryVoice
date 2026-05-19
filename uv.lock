@@ -754,7 +754,6 @@ dependencies = [
 [package.optional-dependencies]
 dev = [
     { name = "black" },
-    { name = "chardet" },
     { name = "coverage" },
     { name = "diff-cover" },
     { name = "flake8" },
@@ -783,6 +782,7 @@ docs = [
     { name = "mkdocstrings", extra = ["python"] },
 ]
 test = [
+    { name = "coverage" },
     { name = "jsonschema" },
     { name = "pep440" },
     { name = "playwright" },
@@ -798,9 +798,9 @@ torch = [
 requires-dist = [
     { name = "anytree", specifier = ">=2.12.1" },
     { name = "black", marker = "extra == 'dev'", specifier = "~=24.3" },
-    { name = "chardet", marker = "extra == 'dev'", specifier = "<6" },
     { name = "clipdetect", specifier = ">=0.1.4" },
     { name = "coverage", marker = "extra == 'dev'" },
+    { name = "coverage", marker = "extra == 'test'" },
     { name = "deepdiff", specifier = ">=6.5.0" },
     { name = "diff-cover", marker = "extra == 'dev'" },
     { name = "einops", specifier = "==0.5.0" },
