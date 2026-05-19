@@ -39,9 +39,6 @@ from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
     synthesize as synthesize_styletts2,
 )
 from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.train import (
-    Mode as StyleTTS2Mode,
-)
-from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.train import (
     train as train_styletts2,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.check_data import (
@@ -855,12 +852,6 @@ def demo_text_to_spec(
     short_help="Launch a Gradio demo for an end-to-end (StyleTTS2) model",
 )
 def demo_text_to_wav(
-    config_file: Annotated[
-        Path,
-        typer_file_argument(
-            help="The path to your StyleTTS2 EveryVoice config file (everyvoice-text-to-wav.yaml)."
-        ),
-    ],
     model_path: Annotated[
         Path,
         typer_file_argument(help="The path to a trained StyleTTS2 checkpoint (.ckpt)."),
@@ -909,12 +900,6 @@ def demo_text_to_wav(
         "-o",
         exists=False,
         help="The directory where your synthesized audio should be written.",
-    ),
-    mode: StyleTTS2Mode = typer.Option(
-        StyleTTS2Mode.second,
-        "--mode",
-        "-m",
-        help="Training mode the checkpoint was produced by ('second' or 'finetune' for inference).",
     ),
     accelerator: str = typer.Option(
         "auto",
@@ -975,9 +960,22 @@ def demo_text_to_wav(
         with open(denylist) as f:
             denylist_data = [line.strip() for line in f if line.strip()]
 
+    import json
+
+    import torch
+
     print("INFO - Starting the StyleTTS2 demo with the following parameters:")
-    print(f"  - Config File:    {config_file}")
     print(f"  - Model Path:     {model_path}")
+    try:
+        _state = torch.load(model_path, map_location="cpu", weights_only=False)
+        _hp = _state.get("hyper_parameters", {})
+        print(f"  - Mode:           {_hp.get('mode', 'unknown')} (from checkpoint)")
+        if "config" in _hp:
+            print("  - Checkpoint config:")
+            print(json.dumps(_hp["config"], indent=4, default=str))
+        del _state
+    except Exception as e:
+        print(f"  - (Could not read checkpoint config: {e})")
     if speakers_dict:
         for name, path in speakers_dict.items():
             print(f"  - Speaker:        {name} = {path}")
@@ -985,7 +983,6 @@ def demo_text_to_wav(
         print(f"  - Reference:      {reference}")
     print(f"  - Allowlist:      {allowlist if allowlist else 'None'}")
     print(f"  - Denylist:       {denylist if denylist else 'None'}")
-    print(f"  - Mode:           {mode.value}")
     print(f"  - Output Dir:     {output_dir}")
     print(f"  - Accelerator:    {accelerator}")
     print(f"  - Port:           {port}")
@@ -997,12 +994,10 @@ def demo_text_to_wav(
 
     with spinner("Loading model"):
         demo = create_demo_app_styletts2(
-            config_file=config_file,
             model_path=model_path,
             output_dir=output_dir,
             speakers=speakers_dict,
             default_reference=default_reference,
-            mode=mode.value,
             accelerator=accelerator,
             allowlist=allowlist_data,
             denylist=denylist_data,
@@ -1024,6 +1019,8 @@ app.add_typer(
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
 SCHEMAS_TO_OUTPUT: dict[str, Any] = {}  # dict[str, type[BaseModel]]
+
+
 @app.command(hidden=True)
 def update_schemas(
     out_dir: Annotated[
