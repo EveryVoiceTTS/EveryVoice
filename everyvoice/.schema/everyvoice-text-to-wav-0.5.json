@@ -445,6 +445,61 @@
       "title": "Punctuation",
       "type": "object"
     },
+    "StyleTTS2ASRConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "description": "Source for the ASR text-aligner checkpoint.",
+      "properties": {
+        "repo_id": {
+          "default": "everyvoice/styletts2-asr-aligner",
+          "description": "HuggingFace repo ID for the ASR text-aligner.",
+          "title": "Repo Id",
+          "type": "string"
+        },
+        "checkpoint_filename": {
+          "default": "epoch_00080.pth",
+          "description": "Filename of the model checkpoint within the HuggingFace repo.",
+          "title": "Checkpoint Filename",
+          "type": "string"
+        },
+        "config_filename": {
+          "default": "config.yml",
+          "description": "Filename of the model config within the HuggingFace repo.",
+          "title": "Config Filename",
+          "type": "string"
+        },
+        "local_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Local path to the checkpoint file. If set, overrides repo_id/checkpoint_filename.",
+          "title": "Local Checkpoint"
+        },
+        "local_config": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Local path to the config file. If set, overrides repo_id/config_filename.",
+          "title": "Local Config"
+        }
+      },
+      "title": "StyleTTS2ASRConfig",
+      "type": "object"
+    },
     "StyleTTS2DecoderConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -653,6 +708,41 @@
       "title": "StyleTTS2DiffusionTransformerConfig",
       "type": "object"
     },
+    "StyleTTS2JDCConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "description": "Source for the JDC F0 extractor checkpoint.",
+      "properties": {
+        "repo_id": {
+          "default": "everyvoice/styletts2-jdc-f0",
+          "description": "HuggingFace repo ID for the JDC F0 extractor.",
+          "title": "Repo Id",
+          "type": "string"
+        },
+        "filename": {
+          "default": "bst.t7",
+          "description": "Filename of the checkpoint within the HuggingFace repo.",
+          "title": "Filename",
+          "type": "string"
+        },
+        "local_path": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Local path to the checkpoint. If set, overrides repo_id/filename.",
+          "title": "Local Path"
+        }
+      },
+      "title": "StyleTTS2JDCConfig",
+      "type": "object"
+    },
     "StyleTTS2LossConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
@@ -845,38 +935,89 @@
       "title": "StyleTTS2OptimizerConfig",
       "type": "object"
     },
+    "StyleTTS2PLBERTConfig": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "description": "Source for the PLBERT text encoder checkpoint.",
+      "properties": {
+        "repo_id": {
+          "default": "papercup-ai/multilingual-pl-bert",
+          "description": "HuggingFace repo ID for the PLBERT text encoder.",
+          "title": "Repo Id",
+          "type": "string"
+        },
+        "checkpoint_filename": {
+          "default": "step_1000000.t7",
+          "description": "Filename of the checkpoint within the HuggingFace repo.",
+          "title": "Checkpoint Filename",
+          "type": "string"
+        },
+        "config_filename": {
+          "default": "config.yml",
+          "description": "Filename of the model config within the HuggingFace repo.",
+          "title": "Config Filename",
+          "type": "string"
+        },
+        "local_checkpoint": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Local path to the checkpoint file. If set, overrides repo_id/checkpoint_filename.",
+          "title": "Local Checkpoint"
+        },
+        "local_config": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Local path to the config file. If set, overrides repo_id/config_filename.",
+          "title": "Local Config"
+        }
+      },
+      "title": "StyleTTS2PLBERTConfig",
+      "type": "object"
+    },
     "StyleTTS2PretrainedConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
-      "description": "Paths to the frozen pretrained models bundled with StyleTTS2.",
+      "description": "Sources for the frozen pretrained models used by StyleTTS2.",
       "properties": {
-        "f0_path": {
-          "default": "styletts2/pretrained/jdc/bst.t7",
-          "description": "Path to the JDC F0 extractor checkpoint.",
-          "format": "path",
-          "title": "F0 Path",
-          "type": "string"
+        "f0": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/StyleTTS2JDCConfig"
+            }
+          ],
+          "description": "JDC F0 extractor source (HuggingFace repo or local path)."
         },
-        "asr_config": {
-          "default": "styletts2/pretrained/asr/config.yml",
-          "description": "Path to the ASR model config.",
-          "format": "path",
-          "title": "Asr Config",
-          "type": "string"
+        "asr": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/StyleTTS2ASRConfig"
+            }
+          ],
+          "description": "ASR text-aligner source (HuggingFace repo or local paths)."
         },
-        "asr_path": {
-          "default": "styletts2/pretrained/asr/epoch_00080.pth",
-          "description": "Path to the ASR model checkpoint.",
-          "format": "path",
-          "title": "Asr Path",
-          "type": "string"
-        },
-        "plbert_dir": {
-          "default": "styletts2/pretrained/plbert",
-          "description": "Directory containing the PLBERT checkpoint and config.",
-          "format": "path",
-          "title": "Plbert Dir",
-          "type": "string"
+        "plbert": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/StyleTTS2PLBERTConfig"
+            }
+          ],
+          "description": "PLBERT text encoder source (HuggingFace repo or local paths)."
         },
         "pretrained_symbols": {
           "description": "Ordered symbol list that matches the pretrained text-encoder embedding table. The index of each symbol here is its embedding-table row. Override only if you are using a custom pretrained text encoder.",
