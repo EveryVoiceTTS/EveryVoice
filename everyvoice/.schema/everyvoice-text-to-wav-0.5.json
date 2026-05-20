@@ -479,7 +479,7 @@
             }
           ],
           "default": null,
-          "description": "Local path to the checkpoint file. If set, overrides repo_id/checkpoint_filename.",
+          "description": "Local path to the checkpoint file. If set, overrides repo_id/checkpoint_filename. Warning: this path is expanded (via os.path.expandvars and os.path.expanduser) when the config is loaded, and the resolved absolute path is what gets embedded in saved checkpoints. This may make your checkpoints less portable to other machines. Environment variables (e.g. $HOME or ${MY_MODELS}) and '~' are supported.",
           "title": "Local Checkpoint"
         },
         "local_config": {
@@ -493,7 +493,7 @@
             }
           ],
           "default": null,
-          "description": "Local path to the config file. If set, overrides repo_id/config_filename.",
+          "description": "Local path to the config file. If set, overrides repo_id/config_filename. Warning: this path is expanded (via os.path.expandvars and os.path.expanduser) when the config is loaded, and the resolved absolute path is what gets embedded in saved checkpoints. This may make your checkpoints less portable to other machines. Environment variables (e.g. $HOME or ${MY_MODELS}) and '~' are supported.",
           "title": "Local Config"
         }
       },
@@ -736,7 +736,7 @@
             }
           ],
           "default": null,
-          "description": "Local path to the checkpoint. If set, overrides repo_id/filename.",
+          "description": "Local path to the checkpoint. If set, overrides repo_id/filename. Warning: this path is expanded (via os.path.expandvars and os.path.expanduser) when the config is loaded, and the resolved absolute path is what gets embedded in saved checkpoints. This may make your checkpoints less portable to other machines. Environment variables (e.g. $HOME or ${MY_MODELS}) and '~' are supported.",
           "title": "Local Path"
         }
       },
@@ -969,7 +969,7 @@
             }
           ],
           "default": null,
-          "description": "Local path to the checkpoint file. If set, overrides repo_id/checkpoint_filename.",
+          "description": "Local path to the checkpoint file. If set, overrides repo_id/checkpoint_filename. Warning: this path is expanded (via os.path.expandvars and os.path.expanduser) when the config is loaded, and the resolved absolute path is what gets embedded in saved checkpoints. This may make your checkpoints less portable to other machines. Environment variables (e.g. $HOME or ${MY_MODELS}) and '~' are supported.",
           "title": "Local Checkpoint"
         },
         "local_config": {
@@ -983,7 +983,7 @@
             }
           ],
           "default": null,
-          "description": "Local path to the config file. If set, overrides repo_id/config_filename.",
+          "description": "Local path to the config file. If set, overrides repo_id/config_filename. Warning: this path is expanded (via os.path.expandvars and os.path.expanduser) when the config is loaded, and the resolved absolute path is what gets embedded in saved checkpoints. This may make your checkpoints less portable to other machines. Environment variables (e.g. $HOME or ${MY_MODELS}) and '~' are supported.",
           "title": "Local Config"
         }
       },
