@@ -63,7 +63,6 @@ dependencies = [
   "nltk==3.9.3",
   "packaging>=22.0",
   "pandas~=2.0",
-  "protobuf~=4.25", # https://github.com/EveryVoiceTTS/EveryVoice/issues/387
   "pydantic[email]>=2.4.2,<2.8.0",
   "pympi-ling",
   "pyworld-prebuilt==0.3.4.4",
@@ -102,8 +101,6 @@ torch = [
 ]
 dev = [
   "black~=24.3",
-  "coverage",
-  "chardet<6", # requests<=2.32.5 not compat with chardet>=6, remove this on next requests release
   "diff-cover",
   "flake8>=4.0.1",
   "gitlint-core>=0.19.0",
@@ -118,6 +115,7 @@ dev = [
   "everyvoice[test]",
 ]
 test = [
+  "coverage",
   "jsonschema>=4.17.3",
   "pep440>=0.1.2",
   "playwright>=1.52.0",
