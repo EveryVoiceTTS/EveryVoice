@@ -947,7 +947,7 @@
           "type": "string"
         },
         "checkpoint_filename": {
-          "default": "step_1000000.t7",
+          "default": "step_1100000.t7",
           "description": "Filename of the checkpoint within the HuggingFace repo.",
           "title": "Checkpoint Filename",
           "type": "string"
