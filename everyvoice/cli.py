@@ -659,317 +659,118 @@ AllowedDemoOutputFormats = Enum(  # type: ignore
     [("all", "all")] + [(i.name, i.value) for i in SynthesizeOutputFormats],
 )
 
-
-# Add the demo commands
-demo_group = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    context_settings={"help_option_names": ["-h", "--help"]},
-    rich_markup_mode="markdown",
-    cls=TyperGroupOrderAsDeclared,
-    help="""
-    # Demo Help
-
-        - **text-to-spec** --- Launch an interactive Gradio demo for a two-stage (FastSpeech2 + HiFiGAN) model.
-
-        - **text-to-wav** --- Launch an interactive Gradio demo for an end-to-end (StyleTTS2) model.
-    """,
-)
+_VOCODER_CLASS_NAMES = {"HiFiGAN", "HiFiGANGenerator"}
+_FS2_CLASS_NAMES = {"FastSpeech2"}
+_STYLETTS2_CLASS_NAMES = {"StyleTTS2Module"}
 
 
-@demo_group.command(
-    name="text-to-spec",
-    short_help="Launch a Gradio demo for a text-to-spec (FastSpeech2 + HiFiGAN) model",
-)
-@merge_args(inference_base_command_interface)
-def demo_text_to_spec(
-    text_to_spec_model: Annotated[
-        Path,
-        typer_file_argument(
-            help="The path to a trained text-to-spec (i.e., feature prediction) EveryVoice model."
-        ),
-    ],
-    spec_to_wav_model: Annotated[
-        Path, typer_file_argument(help="The path to a trained vocoder.")
-    ],
-    allowlist: Annotated[
-        Optional[Path],
-        typer_file_option(
-            "--allowlist",
-            help="A plain text file containing a list of words or utterances to allow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are disallowed.",
-        ),
-    ] = None,
-    denylist: Annotated[
-        Optional[Path],
-        typer_file_option(
-            "--denylist",
-            help="A plain text file containing a list of words or utterances to disallow synthesizing. Words/utterances should be separated by a new line in a plain text file. All other words are allowed. IMPORTANT: there are many ways to 'hack' the denylist that we do not protect against. We suggest using the 'allowlist' instead for maximum security if you know the full list of utterances you want to allow synthesis for.",
-        ),
-    ] = None,
-    languages: list[str] = typer.Option(
-        ["all"],
-        "--language",
-        "-l",
-        help="Specify languages to be included in the demo. Must be supported by your model. Example: everyvoice demo text-to-spec TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --language eng --language fin",
-    ),
-    speakers: list[str] = typer.Option(
-        ["all"],
-        "--speaker",
-        "-s",
-        help="Specify speakers to be included in the demo. Must be supported by your model. Example: everyvoice demo text-to-spec TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --speaker speaker_1 --speaker Sue",
-    ),
-    outputs: list[AllowedDemoOutputFormats] = typer.Option(
-        ["all"],
-        "--output-format",
-        "-O",
-        help="Specify output formats to be included in the demo. Example: everyvoice demo text-to-spec TEXT_TO_SPEC_MODEL SPEC_TO_WAV_MODEL --output-format wav --output-format readalong-html",
-    ),
-    output_dir: Path = typer_directory_option(
-        "synthesis_output",
-        "--output-dir",
-        "-o",
-        exists=False,
-        help="The directory where your synthesized audio should be written",
-    ),
-    accelerator: str = typer.Option(
-        "auto",
-        "--accelerator",
-        "-a",
-        help="Specify the Pytorch Lightning accelerator to use",
-    ),
-    port: int = typer.Option(7860, "--port", "-p", help="The port to run the demo on."),
-    share: bool = typer.Option(
-        False,
-        "--share",
-        help="Share the demo using Gradio's share feature. This will make the demo accessible from the internet.",
-    ),
-    server_name: str = typer.Option(
-        "0.0.0.0",
-        "--server-name",
-        "-n",
-        help="The server name to run the demo on. This is useful if you want to run the demo on a specific IP address.",
-    ),
-    ui_config_file: Annotated[
-        Optional[Path],
-        typer_file_option(
-            "--ui-config-file",
-            "-C",
-            help="""A path to a configuration file that will be used to override parts of the default configuration for the demo UI. This is useful if you want to override some of the text in the UI.
-        The config file should be a valid JSON FORMAT. The expected optional values and types are:
+def _peek_model_class(checkpoint_path: Path) -> str:
+    """Load a checkpoint header and return the stored model class name.
 
-            "app_title": string,
-            "app_description": string,
-            "app_instructions": string,
-            "languages": dict ["id":"name"],
-            "speakers":  dict ["id":"name"],
-            "input_text_label": string,
-            "duration_multiplier_label": string,
-            "language_label": string,
-            "speaker_label": string,
-            "output_format_label":string,
-            "synthesize_label": string,
-            "file_output_label": string
+    Returns an empty string for legacy checkpoints that predate the model_info field.
+    Raises typer.BadParameter if the file cannot be read as a PyTorch checkpoint.
+    """
+    import torch
 
-        """,
-        ),
-    ] = None,
-    **kwargs,
-):
-    """Launch an interactive Gradio demo for a two-stage (FastSpeech2 + HiFiGAN) model."""
-    if allowlist and denylist:
+    try:
+        ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    except Exception as e:
         raise typer.BadParameter(
-            "You provided a value for both the allowlist and the denylist but you can only provide one."
+            f"Could not read checkpoint '{checkpoint_path}': {e}",
+            param_hint="CHECKPOINT",
         )
-
-    allowlist_data = []
-    denylist_data = []
-    ui_config_json: dict | None = None
-
-    if allowlist:
-        with open(allowlist) as f:
-            allowlist_data = [x.strip() for x in f]
-
-    if denylist:
-        with open(denylist) as f:
-            denylist_data = [x.strip() for x in f]
-
-    # print the parameters to the console
-    print("INFO - Starting the demo with the following parameters:")
-    print(f"  - Text-to-Spec Model: {text_to_spec_model}")
-    print(f"  - Spec-to-Wav Model: {spec_to_wav_model}")
-    print(f"  - Languages: {languages}")
-    print(f"  - Speakers: {speakers}")
-    print(f"  - Outputs: {outputs}")
-    print(f"  - Output Directory: {output_dir}")
-    print(f"  - Accelerator: {accelerator}")
-    print(f"  - Allowlist: {allowlist_data if allowlist else 'None'}")
-    print(f"  - Denylist: {denylist_data if denylist else 'None'}")
-    print(f"  - Port: {port}")
-    print(f"  - Share: {share}")
-    print(f"  - Server Name: {server_name}")
-    if ui_config_file:
-        print(f"  - UI Config file path: {ui_config_file}")
-        with open(ui_config_file) as f:
-            try:
-                ui_config_json = json.load(f)
-                print("\t config loaded")
-            except Exception as e:
-                raise typer.BadParameter(
-                    f"Your config file {ui_config_file} has errors\n {e}"
-                )
-    else:
-        print("  - UI Config file path: None")
-
-    with spinner("Loading software"):
-        from everyvoice.demo.app import create_demo_app
-
-    with spinner("Loading models"):
-        demo = create_demo_app(
-            text_to_spec_model_path=text_to_spec_model,
-            spec_to_wav_model_path=spec_to_wav_model,
-            languages=languages,
-            speakers=speakers,
-            outputs=outputs,
-            output_dir=output_dir,
-            accelerator=accelerator,
-            allowlist=allowlist_data,
-            denylist=denylist_data,
-            app_ui_config=ui_config_json,
-            **kwargs,
-        )
-
-    demo.launch(
-        share=share,
-        server_port=port,
-        server_name=server_name,
-        # explicitly give permission to gradio to write to the output directory and temp directory
-        allowed_paths=[str(output_dir), tempfile.gettempdir()],
-    )
+    return ckpt.get("model_info", {}).get("name", "")
 
 
-@demo_group.command(
-    name="text-to-wav",
-    short_help="Launch a Gradio demo for an end-to-end (StyleTTS2) model",
-)
-def demo_text_to_wav(
-    model_path: Annotated[
-        Path,
-        typer_file_argument(help="The path to a trained StyleTTS2 checkpoint (.ckpt)."),
-    ],
-    reference: Optional[Path] = typer.Option(
-        None,
-        "--reference",
-        "-r",
-        help="Path to a reference audio file that sets the default speaker style in the UI. "
-        "Use --speaker for a named multi-speaker dropdown.",
-        exists=True,
-    ),
-    speaker: list[str] = typer.Option(
-        [],
-        "--speaker",
-        "-s",
-        help="Named speaker defined as 'Display Name=path/to/audio.wav'. "
-        "Repeat the flag to add multiple speakers. "
-        "Their style encodings are pre-computed at startup and shown in a dropdown. "
-        "Example: everyvoice demo text-to-wav CONFIG MODEL --speaker 'Alice=alice.wav' --speaker 'Bob=bob.wav'",
-    ),
-    allowlist: Annotated[
-        Optional[Path],
-        typer_file_option(
-            "--allowlist",
-            help="A plain text file containing a list of words or utterances to allow synthesizing. "
-            "Words/utterances should be separated by a new line in a plain text file. "
-            "All other words are disallowed.",
-        ),
-    ] = None,
-    denylist: Annotated[
-        Optional[Path],
-        typer_file_option(
-            "--denylist",
-            help="A plain text file containing a list of words or utterances to disallow synthesizing. "
-            "Words/utterances should be separated by a new line in a plain text file. "
-            "All other words are allowed. "
-            "IMPORTANT: there are many ways to 'hack' the denylist that we do not protect against. "
-            "We suggest using the 'allowlist' instead for maximum security if you know the full list "
-            "of utterances you want to allow synthesis for.",
-        ),
-    ] = None,
-    output_dir: Path = typer_directory_option(
-        "synthesis_output",
-        "--output-dir",
-        "-o",
-        exists=False,
-        help="The directory where your synthesized audio should be written.",
-    ),
-    accelerator: str = typer.Option(
-        "auto",
-        "--accelerator",
-        "-a",
-        help="Specify the Pytorch Lightning accelerator to use.",
-    ),
-    port: int = typer.Option(7860, "--port", "-p", help="The port to run the demo on."),
-    share: bool = typer.Option(
-        False,
-        "--share",
-        help="Share the demo using Gradio's share feature. This will make the demo accessible from the internet.",
-    ),
-    server_name: str = typer.Option(
-        "0.0.0.0",
-        "--server-name",
-        "-n",
-        help="The server name to run the demo on. This is useful if you want to run the demo on a specific IP address.",
-    ),
-):
-    """Launch an interactive Gradio demo for an end-to-end (StyleTTS2) model."""
-    if not speaker and reference is None:
-        raise typer.BadParameter(
-            "Provide at least one --speaker 'Name=path/to/audio.wav' or a --reference path.",
-            param_hint="--speaker / --reference",
-        )
-    if allowlist and denylist:
-        raise typer.BadParameter(
-            "You provided a value for both the allowlist and the denylist but you can only provide one."
-        )
+def _load_list_file(path: Optional[Path]) -> list[str]:
+    """Read a plain-text word/utterance list from *path*, one entry per line."""
+    if path is None:
+        return []
+    with open(path) as f:
+        return [line.strip() for line in f if line.strip()]
 
-    # Parse --speaker "Display Name=path/to/audio.wav" entries
+
+def _parse_ref_speakers(ref_speaker: list[str]) -> dict[str, Path]:
+    """Parse --ref-speaker 'Name=path' values into a display-name → Path mapping."""
     speakers_dict: dict[str, Path] = {}
-    for s in speaker:
+    for s in ref_speaker:
         if "=" not in s:
             raise typer.BadParameter(
-                f"Speaker '{s}' must be in the format 'Display Name=path/to/audio.wav'.",
-                param_hint="--speaker",
+                f"--ref-speaker '{s}' must be in the format 'Display Name=path/to/audio.wav'.",
+                param_hint="--ref-speaker",
             )
         display_name, path_str = s.split("=", 1)
         audio_path = Path(path_str.strip()).expanduser()
         if not audio_path.exists():
             raise typer.BadParameter(
-                f"Speaker audio file not found: {audio_path}",
-                param_hint="--speaker",
+                f"Reference audio file not found: {audio_path}",
+                param_hint="--ref-speaker",
             )
         speakers_dict[display_name.strip()] = audio_path
+    return speakers_dict
 
-    # --reference with no --speaker → reference-upload mode (no speaker dropdown)
+
+def _load_fs2_ui_config(ui_config_file: Optional[Path]) -> "dict | None":
+    """Read and JSON-parse the FS2 UI config file, or return None if not given."""
+    if ui_config_file is None:
+        print("  - UI Config file: None")
+        return None
+    print(f"  - UI Config file: {ui_config_file}")
+    with open(ui_config_file) as f:
+        try:
+            ui_config_json = json.load(f)
+            print("\t config loaded")
+            return ui_config_json
+        except Exception as e:
+            raise typer.BadParameter(
+                f"Your config file {ui_config_file} has errors\n {e}"
+            )
+
+
+def _run_styletts2_demo(
+    checkpoint: Path,
+    ref_speaker: list[str],
+    reference: Optional[Path],
+    speakers: list[str],
+    vocoder: Optional[Path],
+    allowlist: Optional[Path],
+    denylist: Optional[Path],
+    allowlist_data: list[str],
+    denylist_data: list[str],
+    output_dir: Path,
+    accelerator: str,
+    port: int,
+    share: bool,
+    server_name: str,
+) -> None:
+    """Validate StyleTTS2-specific options and launch the Gradio demo."""
+    if vocoder is not None:
+        raise typer.BadParameter(
+            "StyleTTS2 does not use a separate vocoder. Remove --vocoder.",
+            param_hint="--vocoder",
+        )
+    if speakers != ["all"]:
+        raise typer.BadParameter(
+            "StyleTTS2 does not use --speaker as a filter. "
+            "To define named speakers with reference audio use --ref-speaker 'Name=path/to/audio.wav'.",
+            param_hint="--speaker",
+        )
+    if not ref_speaker and reference is None:
+        raise typer.BadParameter(
+            "Provide at least one --ref-speaker 'Name=path/to/audio.wav' or a --reference path.",
+            param_hint="--ref-speaker / --reference",
+        )
+
+    speakers_dict = _parse_ref_speakers(ref_speaker)
     default_reference = reference if not speakers_dict else None
-
-    allowlist_data: list[str] = []
-    denylist_data: list[str] = []
-    if allowlist:
-        with open(allowlist) as f:
-            allowlist_data = [line.strip() for line in f if line.strip()]
-    if denylist:
-        with open(denylist) as f:
-            denylist_data = [line.strip() for line in f if line.strip()]
-
-    import json
 
     import torch
 
     print("INFO - Starting the StyleTTS2 demo with the following parameters:")
-    print(f"  - Model Path:     {model_path}")
+    print(f"  - Checkpoint:     {checkpoint}")
     try:
-        _state = torch.load(model_path, map_location="cpu", weights_only=False)
+        _state = torch.load(checkpoint, map_location="cpu", weights_only=False)
         _hp = _state.get("hyper_parameters", {})
-        print(f"  - Mode:           {_hp.get('mode', 'unknown')} (from checkpoint)")
         if "config" in _hp:
             print("  - Checkpoint config:")
             print(json.dumps(_hp["config"], indent=4, default=str))
@@ -978,7 +779,7 @@ def demo_text_to_wav(
         print(f"  - (Could not read checkpoint config: {e})")
     if speakers_dict:
         for name, path in speakers_dict.items():
-            print(f"  - Speaker:        {name} = {path}")
+            print(f"  - Ref speaker:    {name} = {path}")
     else:
         print(f"  - Reference:      {reference}")
     print(f"  - Allowlist:      {allowlist if allowlist else 'None'}")
@@ -993,8 +794,8 @@ def demo_text_to_wav(
         from everyvoice.demo.app import create_demo_app_styletts2
 
     with spinner("Loading model"):
-        demo = create_demo_app_styletts2(
-            model_path=model_path,
+        demo_app = create_demo_app_styletts2(
+            model_path=checkpoint,
             output_dir=output_dir,
             speakers=speakers_dict,
             default_reference=default_reference,
@@ -1003,7 +804,7 @@ def demo_text_to_wav(
             denylist=denylist_data,
         )
 
-    demo.launch(
+    demo_app.launch(
         share=share,
         server_port=port,
         server_name=server_name,
@@ -1011,11 +812,283 @@ def demo_text_to_wav(
     )
 
 
-app.add_typer(
-    demo_group,
+def _run_fs2_demo(
+    checkpoint: Path,
+    vocoder: Optional[Path],
+    speakers: list[str],
+    languages: list[str],
+    outputs: list,
+    ui_config_file: Optional[Path],
+    ref_speaker: list[str],
+    reference: Optional[Path],
+    allowlist: Optional[Path],
+    denylist: Optional[Path],
+    allowlist_data: list[str],
+    denylist_data: list[str],
+    output_dir: Path,
+    accelerator: str,
+    port: int,
+    share: bool,
+    server_name: str,
+    **kwargs,
+) -> None:
+    """Validate FastSpeech2-specific options and launch the Gradio demo."""
+    if vocoder is None:
+        raise typer.BadParameter(
+            "FastSpeech2 requires a vocoder checkpoint. "
+            "Pass it with --vocoder path/to/hifigan.ckpt.",
+            param_hint="--vocoder",
+        )
+    if ref_speaker:
+        raise typer.BadParameter(
+            "--ref-speaker is only used with StyleTTS2 models. "
+            "To filter FastSpeech2 speakers use --speaker.",
+            param_hint="--ref-speaker",
+        )
+    if reference is not None:
+        raise typer.BadParameter(
+            "--reference is only used with StyleTTS2 models.",
+            param_hint="--reference",
+        )
+
+    print("INFO - Starting the demo with the following parameters:")
+    print(f"  - Checkpoint:     {checkpoint}")
+    print(f"  - Vocoder:        {vocoder}")
+    print(f"  - Languages:      {languages}")
+    print(f"  - Speakers:       {speakers}")
+    print(f"  - Outputs:        {outputs}")
+    print(f"  - Output Dir:     {output_dir}")
+    print(f"  - Accelerator:    {accelerator}")
+    print(f"  - Allowlist:      {allowlist_data if allowlist else 'None'}")
+    print(f"  - Denylist:       {denylist_data if denylist else 'None'}")
+    print(f"  - Port:           {port}")
+    print(f"  - Share:          {share}")
+    print(f"  - Server Name:    {server_name}")
+    ui_config_json = _load_fs2_ui_config(ui_config_file)
+
+    with spinner("Loading software"):
+        from everyvoice.demo.app import create_demo_app
+
+    with spinner("Loading models"):
+        demo_app = create_demo_app(
+            text_to_spec_model_path=checkpoint,
+            spec_to_wav_model_path=vocoder,
+            languages=languages,
+            speakers=speakers,
+            outputs=outputs,
+            output_dir=output_dir,
+            accelerator=accelerator,
+            allowlist=allowlist_data,
+            denylist=denylist_data,
+            app_ui_config=ui_config_json,
+            **kwargs,
+        )
+
+    demo_app.launch(
+        share=share,
+        server_port=port,
+        server_name=server_name,
+        allowed_paths=[str(output_dir), tempfile.gettempdir()],
+    )
+
+
+@app.command(
     name="demo",
-    short_help="Launch an interactive Gradio demo for your EveryVoice models",
+    short_help="Launch an interactive Gradio demo for any EveryVoice model",
 )
+@merge_args(inference_base_command_interface)
+def demo(
+    checkpoint: Annotated[
+        Path,
+        typer_file_argument(
+            help="Path to a trained EveryVoice checkpoint (.ckpt). "
+            "The model type is detected automatically from the checkpoint. "
+            "For FastSpeech2 models also pass --vocoder."
+        ),
+    ],
+    # ---- FastSpeech2 options ------------------------------------------------
+    vocoder: Annotated[
+        Optional[Path],
+        typer_file_option(
+            "--vocoder",
+            "-V",
+            help="[FastSpeech2] Path to a trained HiFiGAN vocoder checkpoint. "
+            "Required when the primary checkpoint is a FastSpeech2 model. "
+            "Not used with StyleTTS2 checkpoints.",
+            rich_help_panel="FastSpeech2 (text-to-spec) Options",
+        ),
+    ] = None,
+    speakers: list[str] = typer.Option(
+        ["all"],
+        "--speaker",
+        "-s",
+        help="[FastSpeech2] Speaker names to expose in the demo UI. "
+        "Repeat the flag to include multiple speakers. "
+        "Defaults to all speakers in the model. "
+        "Not applicable to StyleTTS2 — use --ref-speaker instead.",
+        rich_help_panel="FastSpeech2 (text-to-spec) Options",
+    ),
+    languages: list[str] = typer.Option(
+        ["all"],
+        "--language",
+        "-l",
+        help="[FastSpeech2] Languages to expose in the demo UI. "
+        "Repeat the flag to include multiple languages. "
+        "Defaults to all languages in the model.",
+        rich_help_panel="FastSpeech2 (text-to-spec) Options",
+    ),
+    outputs: list[AllowedDemoOutputFormats] = typer.Option(
+        ["all"],
+        "--output-format",
+        "-O",
+        help="[FastSpeech2] Output formats to expose in the demo UI.",
+        rich_help_panel="FastSpeech2 (text-to-spec) Options",
+    ),
+    ui_config_file: Annotated[
+        Optional[Path],
+        typer_file_option(
+            "--ui-config-file",
+            "-C",
+            help="[FastSpeech2] JSON file to override UI labels (app_title, app_description, "
+            "app_instructions, speakers, languages, input_text_label, "
+            "duration_multiplier_label, language_label, speaker_label, "
+            "output_format_label, synthesize_label, file_output_label).",
+            rich_help_panel="FastSpeech2 (text-to-spec) Options",
+        ),
+    ] = None,
+    # ---- StyleTTS2 options --------------------------------------------------
+    ref_speaker: list[str] = typer.Option(
+        [],
+        "--ref-speaker",
+        "-R",
+        help="[StyleTTS2] Named speaker with reference audio, in the format "
+        "'Display Name=path/to/audio.wav'. "
+        "Repeat the flag to add multiple speakers. "
+        "Their style encodings are pre-computed at startup and shown in a dropdown. "
+        "Example: --ref-speaker 'Eric=eric.wav' --ref-speaker 'Darlene=darlene.wav'",
+        rich_help_panel="StyleTTS2 (text-to-wav) Options",
+    ),
+    reference: Optional[Path] = typer.Option(
+        None,
+        "--reference",
+        "-r",
+        help="[StyleTTS2] Default reference audio file that sets the initial speaker style. "
+        "Use this for reference-upload mode (no speaker dropdown). "
+        "Use --ref-speaker instead to pre-define named speakers.",
+        exists=True,
+        rich_help_panel="StyleTTS2 (text-to-wav) Options",
+    ),
+    # ---- Shared options -----------------------------------------------------
+    allowlist: Annotated[
+        Optional[Path],
+        typer_file_option(
+            "--allowlist",
+            help="Plain text file with allowed words or utterances (one per line). "
+            "All other input is rejected. Cannot be combined with --denylist.",
+        ),
+    ] = None,
+    denylist: Annotated[
+        Optional[Path],
+        typer_file_option(
+            "--denylist",
+            help="Plain text file with disallowed words or utterances (one per line). "
+            "All other input is allowed. Cannot be combined with --allowlist. "
+            "IMPORTANT: there are many ways to bypass a denylist. "
+            "Use --allowlist for maximum security.",
+        ),
+    ] = None,
+    output_dir: Path = typer_directory_option(
+        "synthesis_output",
+        "--output-dir",
+        "-o",
+        exists=False,
+        help="Directory where synthesized audio files are written.",
+    ),
+    accelerator: str = typer.Option(
+        "auto",
+        "--accelerator",
+        "-a",
+        help="PyTorch Lightning accelerator (e.g. 'auto', 'cpu', 'gpu').",
+    ),
+    port: int = typer.Option(7860, "--port", "-p", help="Port to serve the demo on."),
+    share: bool = typer.Option(
+        False,
+        "--share",
+        help="Publish the demo via Gradio's share tunnel (accessible from the internet).",
+    ),
+    server_name: str = typer.Option(
+        "0.0.0.0",
+        "--server-name",
+        "-n",
+        help="Host/IP address to bind the demo server to.",
+    ),
+    **kwargs,
+):
+    """Launch an interactive Gradio demo for any EveryVoice model.
+
+    The model type is detected automatically from the checkpoint.
+    Pass a single checkpoint for **StyleTTS2** (text-to-wav) models:
+
+        everyvoice demo path/to/styletts2.ckpt --ref-speaker 'Eric=eric.wav'
+
+    Pass a FastSpeech2 (text-to-spec) checkpoint plus a vocoder (spec-to-wav) for **FastSpeech2 + HiFiGAN** models:
+
+        everyvoice demo path/to/fs2.ckpt --vocoder path/to/hifigan.ckpt
+    """
+    if allowlist and denylist:
+        raise typer.BadParameter(
+            "Provide either --allowlist or --denylist, not both.",
+        )
+
+    model_class = _peek_model_class(checkpoint)
+
+    if model_class in _VOCODER_CLASS_NAMES:
+        raise typer.BadParameter(
+            f"'{checkpoint}' appears to be a standalone vocoder checkpoint ({model_class}). "
+            "Pass your FastSpeech2 checkpoint as the CHECKPOINT argument and provide "
+            "this vocoder with --vocoder.",
+            param_hint="CHECKPOINT",
+        )
+    if model_class not in _FS2_CLASS_NAMES | _STYLETTS2_CLASS_NAMES:
+        raise typer.BadParameter(
+            f"Unrecognized model type '{model_class}' in checkpoint '{checkpoint}'. "
+            "Expected a FastSpeech2 or StyleTTS2 checkpoint.",
+            param_hint="CHECKPOINT",
+        )
+
+    allowlist_data = _load_list_file(allowlist)
+    denylist_data = _load_list_file(denylist)
+
+    shared = dict(
+        allowlist=allowlist,
+        denylist=denylist,
+        allowlist_data=allowlist_data,
+        denylist_data=denylist_data,
+        output_dir=output_dir,
+        accelerator=accelerator,
+        port=port,
+        share=share,
+        server_name=server_name,
+    )
+
+    if model_class in _STYLETTS2_CLASS_NAMES:
+        _run_styletts2_demo(
+            checkpoint, ref_speaker, reference, speakers, vocoder, **shared  # type: ignore[arg-type]
+        )
+    else:
+        _run_fs2_demo(
+            checkpoint,
+            vocoder,
+            speakers,
+            languages,
+            outputs,
+            ui_config_file,
+            ref_speaker,
+            reference,
+            **shared,  # type: ignore[arg-type]
+            **kwargs,
+        )
+
 
 # Deferred full initialization to optimize the CLI, but still exposed for unit testing.
 SCHEMAS_TO_OUTPUT: dict[str, Any] = {}  # dict[str, type[BaseModel]]
