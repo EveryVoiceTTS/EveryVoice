@@ -463,16 +463,18 @@ class CLITest(TestCase):
         self.assertNotIn(b"pydantic", result.stderr, msg.format("pydantic"))
 
     def test_demo_with_bad_args(self):
-        result = self.runner.invoke(app, ["demo", "text-to-spec"])
+        # No checkpoint → missing argument
+        result = self.runner.invoke(app, ["demo"])
         assert result.exit_code != 0
         assert "Missing argument" in result.output
 
+        # Invalid --output-format value
         result = self.runner.invoke(
             app,
             [
                 "demo",
-                "text-to-spec",
                 os.devnull,
+                "--vocoder",
                 os.devnull,
                 "--output-format",
                 "not-a-format",
@@ -592,6 +594,10 @@ class CLITest(TestCase):
             # ):
             with (
                 mock.patch(
+                    "everyvoice.cli._peek_model_class",
+                    return_value="FastSpeech2",
+                ),
+                mock.patch(
                     "everyvoice.demo.app.load_model_from_checkpoint",
                     side_effect=self.mock_demo_load_model_from_checkpoint,
                 ),
@@ -613,8 +619,8 @@ class CLITest(TestCase):
                     app,
                     [
                         "demo",
-                        "text-to-spec",
                         str(spec_model_path),
+                        "--vocoder",
                         str(vocoder_path),
                         "--port",
                         port,
@@ -624,9 +630,9 @@ class CLITest(TestCase):
                     ],
                 )
             assert result.exit_code == 0
-            assert f"  - Port: {port}" in result.output
-            assert "  - Share: True" in result.output
-            assert f"  - Server Name: {ip}" in result.output
+            assert f"  - Port:           {port}" in result.output
+            assert "  - Share:          True" in result.output
+            assert f"  - Server Name:    {ip}" in result.output
 
     def mock_demo_load_model_from_checkpoint(
         *_arg, **kwargs
@@ -708,6 +714,10 @@ class CLITest(TestCase):
 
             with (
                 mock.patch(
+                    "everyvoice.cli._peek_model_class",
+                    return_value="FastSpeech2",
+                ),
+                mock.patch(
                     "everyvoice.demo.app.load_model_from_checkpoint",
                     side_effect=self.mock_demo_load_model_from_checkpoint,
                 ),
@@ -729,8 +739,8 @@ class CLITest(TestCase):
                     app,
                     [
                         "demo",
-                        "text-to-spec",
                         str(spec_model_path),
+                        "--vocoder",
                         str(vocoder_path),
                         "--port",
                         port,
@@ -796,6 +806,10 @@ class CLITest(TestCase):
 
             with (
                 mock.patch(
+                    "everyvoice.cli._peek_model_class",
+                    return_value="FastSpeech2",
+                ),
+                mock.patch(
                     "everyvoice.demo.app.load_model_from_checkpoint",
                     side_effect=self.mock_demo_load_model_from_checkpoint,
                 ),
@@ -817,8 +831,8 @@ class CLITest(TestCase):
                     app,
                     [
                         "demo",
-                        "text-to-spec",
                         str(spec_model_path),
+                        "--vocoder",
                         str(vocoder_path),
                         "--port",
                         port,
@@ -911,6 +925,105 @@ class CLITest(TestCase):
             "Speaker option has been activated, but valid speakers have not been provided. The model has been trained with ['default'] speakers. Please select either 'all' or at least some of them.",
             str(cm.exception),
         )
+
+    def test_demo_dispatch_styletts2_rejects_vocoder_flag(self):
+        """Passing --vocoder with a StyleTTS2 checkpoint should produce a clear error."""
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            import torch
+
+            tmpdir = Path(tmpdir_str)
+            fake_ckpt = tmpdir / "styletts2.ckpt"
+            torch.save(
+                {
+                    "model_info": {"name": "StyleTTS2Module"},
+                    "hyper_parameters": {"mode": "second", "config": {}},
+                    "state_dict": {},
+                },
+                fake_ckpt,
+            )
+            fake_vocoder = tmpdir / "hifigan.ckpt"
+            fake_vocoder.touch()
+
+            result = self.runner.invoke(
+                app,
+                [
+                    "demo",
+                    str(fake_ckpt),
+                    "--vocoder",
+                    str(fake_vocoder),
+                    "--ref-speaker",
+                    f"Eric={fake_ckpt}",  # reuse fake_ckpt as a dummy audio file
+                ],
+            )
+            assert result.exit_code != 0
+            assert "StyleTTS2 does not use a separate vocoder" in result.output
+
+    def test_demo_dispatch_fs2_requires_vocoder(self):
+        """Invoking demo with a FastSpeech2 checkpoint but no --vocoder should error."""
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
+                tmpdir / "spec_model"
+            )
+
+            with mock.patch(
+                "everyvoice.cli._peek_model_class",
+                return_value="FastSpeech2",
+            ):
+                result = self.runner.invoke(
+                    app,
+                    ["demo", str(spec_model_path)],
+                )
+            assert result.exit_code != 0
+            assert "FastSpeech2 requires a vocoder checkpoint" in result.output
+
+    def test_demo_dispatch_fs2_rejects_ref_speaker(self):
+        """Passing --ref-speaker with a FastSpeech2 checkpoint should produce a clear error."""
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            tmpdir = Path(tmpdir_str)
+            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
+                tmpdir / "vocoder"
+            )
+            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
+                tmpdir / "spec_model"
+            )
+
+            with mock.patch(
+                "everyvoice.cli._peek_model_class",
+                return_value="FastSpeech2",
+            ):
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "demo",
+                        str(spec_model_path),
+                        "--vocoder",
+                        str(vocoder_path),
+                        "--ref-speaker",
+                        f"Eric={spec_model_path}",
+                    ],
+                )
+            assert result.exit_code != 0
+            assert "--ref-speaker is only used with StyleTTS2" in result.output
+
+    def test_demo_dispatch_vocoder_checkpoint_as_primary(self):
+        """Passing a HiFiGAN checkpoint as the primary CHECKPOINT should give a helpful error."""
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            import torch
+
+            tmpdir = Path(tmpdir_str)
+            fake_vocoder_ckpt = tmpdir / "hifigan.ckpt"
+            torch.save(
+                {"model_info": {"name": "HiFiGAN"}, "state_dict": {}},
+                fake_vocoder_ckpt,
+            )
+
+            result = self.runner.invoke(
+                app,
+                ["demo", str(fake_vocoder_ckpt)],
+            )
+            assert result.exit_code != 0
+            assert "appears to be a standalone vocoder checkpoint" in result.output
 
     def test_rename_speaker(self):
         with tempfile.TemporaryDirectory() as tmpdir_str:
