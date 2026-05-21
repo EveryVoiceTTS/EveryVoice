@@ -474,6 +474,244 @@ def load_model_from_checkpoint(
     return model, vocoder_model, vocoder_config, device
 
 
+def synthesize_audio_styletts2(
+    text: str,
+    speaker: "str | None",  # selected display name from dropdown, or None in reference-upload mode
+    user_reference,  # filepath from Gradio Audio component, or None if not uploaded / cleared
+    diffusion_steps: int,
+    embedding_scale: float,
+    acoustic_blend: float,
+    prosody_blend: float,
+    *,
+    module,
+    mel_transform,
+    device,
+    output_dir: Path,
+    speaker_ref_s: "dict[str, torch.Tensor]",  # pre-computed at startup; empty in reference-only mode
+    default_ref_s: "torch.Tensor | None",  # pre-computed from --reference; None in speaker mode
+    allowlist: list[str],
+    denylist: list[str],
+) -> str:
+    """Synthesize one utterance with StyleTTS2 and return the path to the saved WAV."""
+    if not text or not text.strip():
+        raise gr.Error("Please provide text to synthesize.")
+
+    norm_text = normalize_text(text)
+    if allowlist and norm_text not in allowlist:
+        raise gr.Error(
+            f"The text '{text}' is not allowed to be synthesized by this model. "
+            "Please contact the model owner."
+        )
+    if denylist:
+        for word in norm_text.split():
+            if word in denylist:
+                raise gr.Error(
+                    f"The text '{text}' contains a word that is not allowed. "
+                    "Please contact the model owner."
+                )
+
+    # Determine ref_s — prefer user-uploaded audio, then pre-loaded speaker, then default
+    if user_reference is not None:
+        from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
+            load_reference_style,
+        )
+
+        try:
+            ref_s = load_reference_style(
+                module, mel_transform, Path(user_reference), device
+            )
+        except Exception as e:
+            raise gr.Error(f"Could not load reference audio: {e}")
+    elif speaker is not None and speaker in speaker_ref_s:
+        ref_s = speaker_ref_s[speaker]
+    elif default_ref_s is not None:
+        ref_s = default_ref_s
+    else:
+        raise gr.Error(
+            "No reference audio available. Please upload a reference audio file."
+        )
+
+    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.text_utils import (
+        TextCleaner,
+    )
+
+    text_cleaner = TextCleaner()
+    tokens = torch.LongTensor(text_cleaner(text)).unsqueeze(0).to(device)
+    if tokens.numel() == 0:
+        raise gr.Error(f"Text produced no tokens: {text!r}")
+    input_lengths = torch.LongTensor([tokens.size(1)]).to(device)
+
+    try:
+        audio = module._synthesize_text(
+            tokens,
+            input_lengths,
+            ref_s=ref_s,
+            diffusion_steps=diffusion_steps,
+            embedding_scale=embedding_scale,
+            acoustic_blend=acoustic_blend,
+            prosody_blend=prosody_blend,
+        )
+    except Exception as e:
+        raise gr.Error(str(e))
+
+    import soundfile as sf
+
+    out_path = output_dir / (slugify(text[:50]) + ".wav")
+    sf.write(str(out_path), audio, module.sr)
+    return str(out_path)
+
+
+def make_gradio_display_styletts2(
+    synthesize_fn,
+    speaker_list: "GradioChoices",
+    default_reference: "Path | None" = None,
+) -> "gr.Blocks":
+    """Build the Gradio Blocks for the StyleTTS2 demo.
+
+    When ``speaker_list`` is non-empty a speaker dropdown is shown and the
+    reference audio widget becomes an optional style override.  When it is
+    empty the reference audio widget is the primary input (reference-upload
+    mode) and the ``speaker`` argument is pre-bound as ``None``.
+    """
+    has_speakers = bool(speaker_list)
+    interactive_speaker = len(speaker_list) > 1
+
+    with gr.Blocks() as demo:
+        gr.Markdown("<h1 align='center'>EveryVoice StyleTTS2 Demo</h1>")
+        with gr.Row():
+            with gr.Column():
+                inp_text = gr.Text(
+                    placeholder="This text will be turned into speech.",
+                    label="Input Text",
+                )
+                inputs = [inp_text]
+
+                if has_speakers:
+                    inp_speaker = gr.Dropdown(
+                        choices=speaker_list,
+                        value=speaker_list[0][1],
+                        interactive=interactive_speaker,
+                        label="Speaker",
+                    )
+                    inputs.append(inp_speaker)
+                else:
+                    synthesize_fn = partial(synthesize_fn, speaker=None)
+
+                inp_reference = gr.Audio(
+                    value=(
+                        str(default_reference)
+                        if (not has_speakers and default_reference)
+                        else None
+                    ),
+                    label=(
+                        "Override Reference Audio (optional)"
+                        if has_speakers
+                        else "Reference Audio"
+                    ),
+                    type="filepath",
+                )
+                inputs.append(inp_reference)
+
+                with gr.Accordion("Advanced synthesis options", open=False):
+                    inp_diffusion_steps = gr.Slider(
+                        1, 20, value=5, step=1, label="Diffusion Steps"
+                    )
+                    inp_embedding_scale = gr.Slider(
+                        0.1, 3.0, value=1.0, step=0.1, label="Embedding Scale"
+                    )
+                    inp_acoustic_blend = gr.Slider(
+                        0.0, 1.0, value=0.3, step=0.05, label="Acoustic Blend"
+                    )
+                    inp_prosody_blend = gr.Slider(
+                        0.0, 1.0, value=0.7, step=0.05, label="Prosody Blend"
+                    )
+                inputs.extend(
+                    [
+                        inp_diffusion_steps,
+                        inp_embedding_scale,
+                        inp_acoustic_blend,
+                        inp_prosody_blend,
+                    ]
+                )
+                btn = gr.Button("Synthesize")
+            with gr.Column():
+                out_audio = gr.Audio(format="wav", label="Output Audio")
+
+        btn.click(synthesize_fn, inputs=inputs, outputs=[out_audio])
+    return demo
+
+
+def create_demo_app_styletts2(
+    model_path: Path,
+    output_dir: Path,
+    speakers: "dict[str, Path]",
+    default_reference: "Path | None" = None,
+    accelerator: str = "auto",
+    allowlist: list[str] = [],
+    denylist: list[str] = [],
+) -> "gr.Blocks":
+    """Load a StyleTTS2 model and return a Gradio Blocks demo app.
+
+    ``speakers`` maps display names to reference audio paths; their style
+    encodings are pre-computed at startup so each synthesis call is fast.
+    When ``speakers`` is empty the demo falls back to reference-upload mode
+    using ``default_reference`` as the pre-populated audio widget value.
+    """
+    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
+        load_reference_style,
+        load_styletts2_model,
+    )
+    from everyvoice.utils.heavy import get_device_from_accelerator
+
+    require_ffmpeg()
+    device = get_device_from_accelerator(accelerator)
+
+    model, mel_transform = load_styletts2_model(model_path, device)
+    output_dir.mkdir(exist_ok=True, parents=True)
+
+    # Pre-compute style encodings for each named speaker
+    speaker_ref_s: dict[str, torch.Tensor] = {}
+    for display_name, audio_path in speakers.items():
+        logger.info(
+            f"Pre-computing style encoding for speaker '{display_name}' from {audio_path}"
+        )
+        speaker_ref_s[display_name] = load_reference_style(
+            model, mel_transform, audio_path, device
+        )
+
+    # Pre-compute the default reference encoding so synthesis never re-reads disk
+    default_ref_s: "torch.Tensor | None" = None
+    if default_reference is not None and default_reference.exists():
+        logger.info(
+            f"Pre-computing style encoding for default reference {default_reference}"
+        )
+        default_ref_s = load_reference_style(
+            model, mel_transform, default_reference, device
+        )
+
+    norm_allowlist = [normalize_text(w) for w in allowlist]
+    norm_denylist = [normalize_text(w) for w in denylist]
+
+    synthesize_fn = partial(
+        synthesize_audio_styletts2,
+        module=model,
+        mel_transform=mel_transform,
+        device=device,
+        output_dir=output_dir,
+        speaker_ref_s=speaker_ref_s,
+        default_ref_s=default_ref_s,
+        allowlist=norm_allowlist,
+        denylist=norm_denylist,
+    )
+
+    speaker_list: GradioChoices = [(name, name) for name in speakers]
+    return make_gradio_display_styletts2(
+        synthesize_fn,
+        speaker_list,
+        default_reference=default_reference if not speakers else None,
+    )
+
+
 def create_demo_app(
     text_to_spec_model_path: os.PathLike,
     spec_to_wav_model_path: os.PathLike,
