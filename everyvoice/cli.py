@@ -67,7 +67,6 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
-from everyvoice.utils import spinner
 from everyvoice.wizard import (
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
@@ -790,6 +789,8 @@ def _run_styletts2_demo(
     print(f"  - Share:          {share}")
     print(f"  - Server Name:    {server_name}")
 
+    from everyvoice.utils import spinner
+
     with spinner("Loading software"):
         from everyvoice.demo.app import create_demo_app_styletts2
 
@@ -865,6 +866,8 @@ def _run_fs2_demo(
     print(f"  - Share:          {share}")
     print(f"  - Server Name:    {server_name}")
     ui_config_json = _load_fs2_ui_config(ui_config_file)
+
+    from everyvoice.utils import spinner
 
     with spinner("Loading software"):
         from everyvoice.demo.app import create_demo_app
