@@ -354,11 +354,15 @@ VERBOSE_OVERRIDE = bool(os.environ.get("EVERYVOICE_VERBOSE_TESTS", False))
 
 
 def flatten_log(log_output: str) -> str:
-    """Replace newlines and other sequences of whitespace by a single space.
+    """Normalize Rich/Typer CLI output to a plain, single-line string.
 
     Usage: assert "some text" in flatten_log(captured_output)
 
-    Avoids having to use self.assertRegex everywhere just because of rich or pretty
-    printing of messages over multiple lines.
+    Strips ANSI escape codes (emitted when FORCE_COLOR=1 in CI), removes Rich
+    panel box-drawing characters (╭ ╮ ╰ ╯ │ ─), and collapses all remaining
+    whitespace to single spaces — so that substrings remain continuous regardless
+    of terminal-width word-wrap or colour formatting.
     """
+    log_output = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", log_output)
+    log_output = re.sub(r"[╭╮╰╯│─]+", " ", log_output)
     return re.sub(r"\s+", " ", log_output)
