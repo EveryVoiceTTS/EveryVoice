@@ -657,13 +657,6 @@ class CLITest(TestCase):
 
         return model, {}, {}, "cpu"  # Mock return values for the test
 
-    @staticmethod
-    def strip_ansi(text: str) -> str:
-        """Remove ANSI escape codes from text (e.g. CI output with FORCE_COLOR=1)."""
-        import re
-
-        return re.sub(r"\x1b\[[0-9;]*m", "", text)
-
     def mock_fuction_placeholder(self, *args, **kwargs):
         """
         Mock function to replace any function that we are not testing.
@@ -963,7 +956,7 @@ class CLITest(TestCase):
                 ],
             )
             assert result.exit_code != 0
-            assert "StyleTTS2 does not use a separate vocoder" in self.strip_ansi(
+            assert "StyleTTS2 does not use a separate vocoder" in flatten_log(
                 result.output
             )
 
@@ -984,7 +977,7 @@ class CLITest(TestCase):
                     ["demo", str(spec_model_path)],
                 )
             assert result.exit_code != 0
-            assert "FastSpeech2 requires a vocoder checkpoint" in self.strip_ansi(
+            assert "FastSpeech2 requires a vocoder checkpoint" in flatten_log(
                 result.output
             )
 
@@ -1015,7 +1008,7 @@ class CLITest(TestCase):
                     ],
                 )
             assert result.exit_code != 0
-            assert "--ref-speaker is only used with StyleTTS2" in self.strip_ansi(
+            assert "--ref-speaker is only used with StyleTTS2" in flatten_log(
                 result.output
             )
 
@@ -1036,7 +1029,7 @@ class CLITest(TestCase):
                 ["demo", str(fake_vocoder_ckpt)],
             )
             assert result.exit_code != 0
-            assert "appears to be a standalone vocoder checkpoint" in self.strip_ansi(
+            assert "appears to be a standalone vocoder checkpoint" in flatten_log(
                 result.output
             )
 
