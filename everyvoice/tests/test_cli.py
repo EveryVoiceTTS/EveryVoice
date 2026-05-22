@@ -657,6 +657,13 @@ class CLITest(TestCase):
 
         return model, {}, {}, "cpu"  # Mock return values for the test
 
+    @staticmethod
+    def strip_ansi(text: str) -> str:
+        """Remove ANSI escape codes from text (e.g. CI output with FORCE_COLOR=1)."""
+        import re
+
+        return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
     def mock_fuction_placeholder(self, *args, **kwargs):
         """
         Mock function to replace any function that we are not testing.
@@ -956,7 +963,9 @@ class CLITest(TestCase):
                 ],
             )
             assert result.exit_code != 0
-            assert "StyleTTS2 does not use a separate vocoder" in result.output
+            assert "StyleTTS2 does not use a separate vocoder" in self.strip_ansi(
+                result.output
+            )
 
     def test_demo_dispatch_fs2_requires_vocoder(self):
         """Invoking demo with a FastSpeech2 checkpoint but no --vocoder should error."""
@@ -975,7 +984,9 @@ class CLITest(TestCase):
                     ["demo", str(spec_model_path)],
                 )
             assert result.exit_code != 0
-            assert "FastSpeech2 requires a vocoder checkpoint" in result.output
+            assert "FastSpeech2 requires a vocoder checkpoint" in self.strip_ansi(
+                result.output
+            )
 
     def test_demo_dispatch_fs2_rejects_ref_speaker(self):
         """Passing --ref-speaker with a FastSpeech2 checkpoint should produce a clear error."""
@@ -1004,7 +1015,9 @@ class CLITest(TestCase):
                     ],
                 )
             assert result.exit_code != 0
-            assert "--ref-speaker is only used with StyleTTS2" in result.output
+            assert "--ref-speaker is only used with StyleTTS2" in self.strip_ansi(
+                result.output
+            )
 
     def test_demo_dispatch_vocoder_checkpoint_as_primary(self):
         """Passing a HiFiGAN checkpoint as the primary CHECKPOINT should give a helpful error."""
@@ -1023,7 +1036,9 @@ class CLITest(TestCase):
                 ["demo", str(fake_vocoder_ckpt)],
             )
             assert result.exit_code != 0
-            assert "appears to be a standalone vocoder checkpoint" in result.output
+            assert "appears to be a standalone vocoder checkpoint" in self.strip_ansi(
+                result.output
+            )
 
     def test_rename_speaker(self):
         with tempfile.TemporaryDirectory() as tmpdir_str:
