@@ -35,6 +35,9 @@ from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     extract_segments_from_textgrid,
 )
+from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.fetch_pretrained import (
+    fetch_pretrained as fetch_pretrained_styletts2,
+)
 from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
     synthesize as synthesize_styletts2,
 )
@@ -601,6 +604,34 @@ app.add_typer(
     synthesize_group,
     name="synthesize",
     short_help="Synthesize using your pre-trained EveryVoice models",
+)
+
+# Add fetch-pretrained commands
+fetch_pretrained_group = typer.Typer(
+    pretty_exceptions_show_locals=False,
+    no_args_is_help=True,
+    context_settings={"help_option_names": ["-h", "--help"]},
+    rich_markup_mode="markdown",
+    cls=TyperGroupOrderAsDeclared,
+    help="""
+    # Fetch Pretrained Models
+
+    Download pretrained model weights from HuggingFace before running a training
+    job on a cluster node that has no internet access.  Run this command on the
+    head node first; the files are cached by the HuggingFace hub and reused
+    automatically during training.
+    """,
+)
+
+fetch_pretrained_group.command(
+    name="text-to-wav",
+    short_help="Download pretrained weights for StyleTTS2 training",
+)(fetch_pretrained_styletts2)
+
+app.add_typer(
+    fetch_pretrained_group,
+    name="fetch-pretrained",
+    short_help="Download pretrained model weights from HuggingFace",
 )
 
 # Add the checkpoint commands
