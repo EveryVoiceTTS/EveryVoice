@@ -220,6 +220,7 @@ def main(
 @app.command(
     short_help="Evaluate your synthesized audio",
     name="evaluate",
+    no_args_is_help=True,
     help="""
     # Evalution help
 
@@ -275,9 +276,11 @@ def evaluate(
         subjective_model, s_sr = load_squim_subjective_model()
         HEADERS.append("MOS")
 
-    if audio_file and audio_directory:
+    if (audio_file and audio_directory) or (
+        audio_file is None and audio_directory is None
+    ):
         print(
-            "Sorry, please choose to evaluate either a single file or an entire directory. Got values for both."
+            "Sorry, please choose to evaluate either a single file or an entire directory."
         )
         sys.exit(1)
 
@@ -472,6 +475,7 @@ def new_project(
 # Add preprocess to root
 app.command(
     short_help="Preprocess your data",
+    no_args_is_help=True,
     help=f"""
     # Preprocess Help
 
@@ -492,6 +496,7 @@ app.command(
 app.command(
     "check-data",
     short_help="Check your data for outliers or any anomalies",
+    no_args_is_help=True,
     help="""
     # Check Data Help
 
@@ -928,6 +933,7 @@ def _run_fs2_demo(
 
 @app.command(
     name="demo",
+    no_args_is_help=True,
     short_help="Launch an interactive Gradio demo for any EveryVoice model",
 )
 @merge_args(inference_base_command_interface)
@@ -1197,7 +1203,9 @@ def update_schemas(
         )
 
 
-@app.command()
+@app.command(
+    no_args_is_help=True,
+)
 def g2p(
     lang_id: Annotated[str, typer.Argument(help="language id")],
     # Ignoring mypy since class FileText(io.TextIOWrapper)
