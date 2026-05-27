@@ -718,6 +718,7 @@ dependencies = [
     { name = "g2p" },
     { name = "gradio" },
     { name = "grapheme" },
+    { name = "ilt-monotonic-align" },
     { name = "ilt-panphon" },
     { name = "ipatok" },
     { name = "librosa" },
@@ -725,7 +726,6 @@ dependencies = [
     { name = "loguru" },
     { name = "matplotlib" },
     { name = "merge-args" },
-    { name = "monotonic-align" },
     { name = "munch" },
     { name = "nltk" },
     { name = "packaging" },
@@ -809,6 +809,7 @@ requires-dist = [
     { name = "gitlint-core", marker = "extra == 'dev'", specifier = ">=0.19.0" },
     { name = "gradio", specifier = ">=5.9.1" },
     { name = "grapheme", specifier = ">=0.6.0" },
+    { name = "ilt-monotonic-align" },
     { name = "ilt-panphon", specifier = ">=0.20.1,<0.21" },
     { name = "ipatok", specifier = ">=0.4.1" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5.10.1" },
@@ -826,7 +827,6 @@ requires-dist = [
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.2.5" },
     { name = "mkdocs-typer", marker = "extra == 'docs'", specifier = ">=0.0.3" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.22.0" },
-    { name = "monotonic-align", git = "https://github.com/resemble-ai/monotonic_align.git" },
     { name = "munch", specifier = ">=4.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "nltk", specifier = "==3.9.3" },
@@ -1378,6 +1378,17 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/8f/23/9f81bf2cba846b06e158da561f15cac04222e9972ab79918f87732193c00/ilt_editdistance-0.8.2-cp312-cp312-win_amd64.whl", hash = "sha256:2951e390bd890718ade37805f37ec8cf5c8848349b2c6199faa7d38b12c5ccd0", size = 94831, upload-time = "2025-11-13T21:33:53.339Z" },
     { url = "https://files.pythonhosted.org/packages/60/10/dbb44138a916af5ded2e566e707991b2ed9b748202eaedca0a68733263e4/ilt_editdistance-0.8.2-cp312-cp312-win_arm64.whl", hash = "sha256:61f7238a219aed335508f718516f63a6a58dc9506c1b9f820f5f2a17a21ca650", size = 91628, upload-time = "2025-11-13T21:33:54.733Z" },
 ]
+
+[[package]]
+name = "ilt-monotonic-align"
+version = "1.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/f6/bb/6226f2f506b8f05f670d440c87e212d1eeba0b16e76cf806822bf2542389/ilt_monotonic_align-1.2.1.tar.gz", hash = "sha256:db7b5cfb8be76a24655ff75484fae3f8819370f1ab5184e9e64d0681906549e4", size = 606739, upload-time = "2026-05-27T19:25:32.877Z" }
 
 [[package]]
 name = "ilt-panphon"
@@ -2078,15 +2089,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/29/33/c225eaf898634bdda489a6766fc35d1683c640bffe0e0acd10646b13536d/mkdocstrings_python-2.0.3.tar.gz", hash = "sha256:c518632751cc869439b31c9d3177678ad2bfa5c21b79b863956ad68fc92c13b8", size = 199083, upload-time = "2026-02-20T10:38:36.368Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/32/28/79f0f8de97cce916d5ae88a7bee1ad724855e83e6019c0b4d5b3fabc80f3/mkdocstrings_python-2.0.3-py3-none-any.whl", hash = "sha256:0b83513478bdfd803ff05aa43e9b1fca9dd22bcd9471f09ca6257f009bc5ee12", size = 104779, upload-time = "2026-02-20T10:38:34.517Z" },
-]
-
-[[package]]
-name = "monotonic-align"
-version = "1.2"
-source = { git = "https://github.com/resemble-ai/monotonic_align.git#c6e5e6cb19882164027eb6e35118e841eed9298e" }
-dependencies = [
-    { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
-    { name = "numpy", version = "2.4.4", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
 ]
 
 [[package]]

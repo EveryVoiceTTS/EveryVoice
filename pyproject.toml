@@ -76,7 +76,7 @@ dependencies = [
   "transformers>=4.30",
   "einops-exts",
   "torch==2.7.1",
-  "monotonic-align",
+  "ilt-monotonic-align",
   "torchaudio==2.7.1",
   "torchinfo==1.8.0",
   "tqdm>=4.66.0",
@@ -86,10 +86,6 @@ dependencies = [
   "soundfile>=0.13.1",
 ]
 dynamic = ["version"]
-
-[tool.uv.sources]
-# monotonic_align has no PyPI release; install from source
-monotonic-align = { git = "https://github.com/resemble-ai/monotonic_align.git" }
 
 [project.optional-dependencies]
 # [Specifying GPU version of pytorch for python package in pyproject.toml](https://discuss.pytorch.org/t/specifying-gpu-version-of-pytorch-for-python-package-in-pyproject-toml/209157)
