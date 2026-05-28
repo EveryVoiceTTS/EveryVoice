@@ -463,10 +463,11 @@ class CLITest(TestCase):
         self.assertNotIn(b"pydantic", result.stderr, msg.format("pydantic"))
 
     def test_demo_with_bad_args(self):
-        # No checkpoint → missing argument
+        # No checkpoint → help message
         result = self.runner.invoke(app, ["demo"])
-        assert result.exit_code != 0
-        assert "Missing argument" in result.output
+        assert result.exit_code == 0
+        # the runner calls "root" instead of "everyvoice"
+        assert "Usage: root demo [OPTIONS] CHECKPOINT" in flatten_log(result.output)
 
         # Invalid --output-format value
         result = self.runner.invoke(
