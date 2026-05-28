@@ -230,297 +230,311 @@ class ConfigFormatStep(Step):
             FastSpeech2ModelConfig,
             FeaturePredictionConfig,
         )
+        from everyvoice.utils import spinner
 
         assert self.state is not None
-        output_path = (
-            Path(self.state[StepNames.output_step]) / self.state[StepNames.name_step]
-        ).expanduser()
-        # create_config_files
-        config_dir = output_path / "config"
-        config_dir.absolute().mkdir(exist_ok=True, parents=True)
-        # preprocessed dir
-        preprocessed_dir = output_path / "preprocessed"
-        preprocessed_dir.absolute().mkdir(parents=True, exist_ok=True)
-        # used in configs
-        preprocessed_dir_relative_to_configs = Path("..") / "preprocessed"
-        # log dir
-        log_dir = output_path / "logs_and_checkpoints"
-        log_dir.absolute().mkdir(parents=True, exist_ok=True)
-        log_dir_relative_to_configs = Path("..") / "logs_and_checkpoints"
-        datasets = []
-        # Text Configuration
-        symbols = {}
-        multispeaker = False
-        cache_speaker = None
-        dataset_cleaners: dict[str, list] = {}  # map label->cleaners
-        dataset_langs: dict[str, list[str]] = {}  # map label->lang codes
-        for dataset in [key for key in self.state.keys() if key.startswith("dataset_")]:
-            dataset_state = self.state[dataset]
-            # Get the name of the dataset, which is going to be its label
-            dataset_name = dataset_state[StepNames.dataset_name_step]
-            # Add Cleaners
-            dataset_cleaners[dataset_name] = DEFAULT_CLEANERS + [
-                TextProcessingStep.process_lookup[x]["fn"]
-                for x in dataset_state.get(StepNames.text_processing_step, [])
-            ]
-            # Gather languages for per-language cleaner config and determining multilingual
-            dataset_langs[dataset_name] = sorted(
-                set(item["language"] for item in dataset_state["filelist_data"])
-            )
-            # Gather Symbols for Text Configuration
-            # rename keys based on dataset name:
-            dataset_symbols = {
-                f"{dataset_name}_{k}": v
-                for k, v in dataset_state[StepNames.symbol_set_step].items()
-            }
-            symbols.update(dataset_symbols)
-            # Check if the filelists has more than one distinct speaker and adjust Config corrspondingly
-            if not multispeaker:
-                for item in dataset_state["filelist_data"]:
-                    if item["speaker"] != cache_speaker and cache_speaker is not None:
-                        multispeaker = True
-                        break
-                    if cache_speaker is None:
-                        cache_speaker = item["speaker"]
-            # Dataset Configs
-            wavs_dir = Path(dataset_state[StepNames.wavs_dir_step]).expanduser()
-            if not wavs_dir.is_absolute():
-                if not output_path.is_absolute():
-                    for _ in config_dir.parts:
-                        wavs_dir = Path("..") / wavs_dir
-                else:
-                    wavs_dir = Path.cwd() / wavs_dir
-            new_filelist_path = (
-                Path("..") / f"{dataset_name}-filelist.psv"
+        with spinner("Preparing your configuration files"):
+            output_path = (
+                Path(self.state[StepNames.output_step])
+                / self.state[StepNames.name_step]
             ).expanduser()
-            filelist_data = dataset_state["filelist_data"]
-            for i, entry in enumerate(filelist_data):
-                # Remove .wav if it was added to the basename
-                if entry["basename"].endswith(".wav"):
-                    entry["basename"] = entry["basename"].replace(".wav", "")
-                # Remove unknown columns
-                filelist_data[i] = {
-                    k: v
-                    for k, v in entry.items()
-                    if k is not None and not k.startswith("unknown")
+            # create_config_files
+            config_dir = output_path / "config"
+            config_dir.absolute().mkdir(exist_ok=True, parents=True)
+            # preprocessed dir
+            preprocessed_dir = output_path / "preprocessed"
+            preprocessed_dir.absolute().mkdir(parents=True, exist_ok=True)
+            # used in configs
+            preprocessed_dir_relative_to_configs = Path("..") / "preprocessed"
+            # log dir
+            log_dir = output_path / "logs_and_checkpoints"
+            log_dir.absolute().mkdir(parents=True, exist_ok=True)
+            log_dir_relative_to_configs = Path("..") / "logs_and_checkpoints"
+            datasets = []
+            # Text Configuration
+            symbols = {}
+            multispeaker = False
+            cache_speaker = None
+            dataset_cleaners: dict[str, list] = {}  # map label->cleaners
+            dataset_langs: dict[str, list[str]] = {}  # map label->lang codes
+            for dataset in [
+                key for key in self.state.keys() if key.startswith("dataset_")
+            ]:
+                dataset_state = self.state[dataset]
+                # Get the name of the dataset, which is going to be its label
+                dataset_name = dataset_state[StepNames.dataset_name_step]
+                # Add Cleaners
+                dataset_cleaners[dataset_name] = DEFAULT_CLEANERS + [
+                    TextProcessingStep.process_lookup[x]["fn"]
+                    for x in dataset_state.get(StepNames.text_processing_step, [])
+                ]
+                # Gather languages for per-language cleaner config and determining multilingual
+                dataset_langs[dataset_name] = sorted(
+                    set(item["language"] for item in dataset_state["filelist_data"])
+                )
+                # Gather Symbols for Text Configuration
+                # rename keys based on dataset name:
+                dataset_symbols = {
+                    f"{dataset_name}_{k}": v
+                    for k, v in dataset_state[StepNames.symbol_set_step].items()
                 }
-            write_filelist(filelist_data, (config_dir / new_filelist_path).absolute())
-            sox_effects = dataset_state["sox_effects"]
-            filelist_loader = generic_psv_filelist_reader
-
-            datasets.append(
-                Dataset(
-                    label=dataset_name,
-                    data_dir=wavs_dir,
-                    filelist=new_filelist_path,
-                    filelist_loader=filelist_loader,
-                    sox_effects=sox_effects,
-                    permissions_obtained=True,  # If you get this far, you've answered the Dataset Permission Attestation step correctly
+                symbols.update(dataset_symbols)
+                # Check if the filelists has more than one distinct speaker and adjust Config corrspondingly
+                if not multispeaker:
+                    for item in dataset_state["filelist_data"]:
+                        if (
+                            item["speaker"] != cache_speaker
+                            and cache_speaker is not None
+                        ):
+                            multispeaker = True
+                            break
+                        if cache_speaker is None:
+                            cache_speaker = item["speaker"]
+                # Dataset Configs
+                wavs_dir = Path(dataset_state[StepNames.wavs_dir_step]).expanduser()
+                if not wavs_dir.is_absolute():
+                    if not output_path.is_absolute():
+                        for _ in config_dir.parts:
+                            wavs_dir = Path("..") / wavs_dir
+                    else:
+                        wavs_dir = Path.cwd() / wavs_dir
+                new_filelist_path = (
+                    Path("..") / f"{dataset_name}-filelist.psv"
+                ).expanduser()
+                filelist_data = dataset_state["filelist_data"]
+                for i, entry in enumerate(filelist_data):
+                    # Remove .wav if it was added to the basename
+                    if entry["basename"].endswith(".wav"):
+                        entry["basename"] = entry["basename"].replace(".wav", "")
+                    # Remove unknown columns
+                    filelist_data[i] = {
+                        k: v
+                        for k, v in entry.items()
+                        if k is not None and not k.startswith("unknown")
+                    }
+                write_filelist(
+                    filelist_data, (config_dir / new_filelist_path).absolute()
                 )
-            )
+                sox_effects = dataset_state["sox_effects"]
+                filelist_loader = generic_psv_filelist_reader
 
-        if dataset_cleaners:
-            global_cleaners = ordered_intersection(dataset_cleaners.values())
-        else:
-            global_cleaners = DEFAULT_CLEANERS
+                datasets.append(
+                    Dataset(
+                        label=dataset_name,
+                        data_dir=wavs_dir,
+                        filelist=new_filelist_path,
+                        filelist_loader=filelist_loader,
+                        sox_effects=sox_effects,
+                        permissions_obtained=True,  # If you get this far, you've answered the Dataset Permission Attestation step correctly
+                    )
+                )
 
-        # In the wizard, we initialize the language-specific cleaners for each
-        # language in the data based as the intersection of the dataset cleaners
-        # for datasets containing that language.
-        language_codes = sorted(
-            set(lang for langs in dataset_langs.values() for lang in langs)
-        )
-        multilingual = len(language_codes) > 1
-        language_cleaners: dict[str, list] = {}
-        for lang in language_codes:
-            datasets_containing_lang = [
-                label for label, langs in dataset_langs.items() if lang in langs
-            ]
-            language_cleaners[lang] = ordered_intersection(
-                dataset_cleaners[label] for label in datasets_containing_lang
-            )
-
-        # Remove redundant cleaner definitions to make the output config leaner
-        # and easier to read.
-        for cleaners in language_cleaners.values():
-            if cleaners != global_cleaners:
-                break  # found a non-redundant language cleaner -- keep them all
-        else:
-            language_cleaners.clear()  # all language cleaners are redundant
-
-            # when language cleaners are all redundant, consider removing dataset cleaners too
-            for cleaners in dataset_cleaners.values():
-                if cleaners != global_cleaners:
-                    break  # found a non-redundant dataset cleaner -- keep them all
+            if dataset_cleaners:
+                global_cleaners = ordered_intersection(dataset_cleaners.values())
             else:
-                dataset_cleaners.clear()  # all dataset cleaners are redundant
+                global_cleaners = DEFAULT_CLEANERS
 
-        text_config = TextConfig(
-            symbols=Symbols(**symbols),
-            g2p_engines=self.state.get("custom_g2p", {}),
-            cleaners=global_cleaners,
-            language_cleaners=language_cleaners,
-            dataset_cleaners=dataset_cleaners,
-        )
-        strong: str = "".join(
-            [
-                char
-                for char in (
-                    text_config.symbols.punctuation.question_symbols
-                    + text_config.symbols.punctuation.periods
-                    + text_config.symbols.punctuation.exclamations
+            # In the wizard, we initialize the language-specific cleaners for each
+            # language in the data based as the intersection of the dataset cleaners
+            # for datasets containing that language.
+            language_codes = sorted(
+                set(lang for langs in dataset_langs.values() for lang in langs)
+            )
+            multilingual = len(language_codes) > 1
+            language_cleaners: dict[str, list] = {}
+            for lang in language_codes:
+                datasets_containing_lang = [
+                    label for label, langs in dataset_langs.items() if lang in langs
+                ]
+                language_cleaners[lang] = ordered_intersection(
+                    dataset_cleaners[label] for label in datasets_containing_lang
                 )
-                if is_sentence_final(char)
-            ]
-        )
-        weak: str = "".join(
-            text_config.symbols.punctuation.commas
-            + text_config.symbols.punctuation.semi_colons
-            + text_config.symbols.punctuation.colons
-        )
-        text_config.boundaries = {
-            lang: LanguageBoundaries(strong=strong, weak=weak)
-            for lang in language_codes
-        }
-        text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
-        write_dict_to_config(
-            json.loads(text_config.model_dump_json(exclude_none=False)),
-            (config_dir / text_config_path).absolute(),
-        )
-        # Contact
-        CONTACT_INFO = ContactInformation(
-            contact_name=self.state[StepNames.contact_name_step],
-            contact_email=self.state[StepNames.contact_email_step],
-        )
 
-        with init_context({"writing_config": config_dir.resolve()}):
-            # Preprocessing Config
-            preprocessed_training_filelist_path = (
-                preprocessed_dir_relative_to_configs / "training_filelist.psv"
+            # Remove redundant cleaner definitions to make the output config leaner
+            # and easier to read.
+            for cleaners in language_cleaners.values():
+                if cleaners != global_cleaners:
+                    break  # found a non-redundant language cleaner -- keep them all
+            else:
+                language_cleaners.clear()  # all language cleaners are redundant
+
+                # when language cleaners are all redundant, consider removing dataset cleaners too
+                for cleaners in dataset_cleaners.values():
+                    if cleaners != global_cleaners:
+                        break  # found a non-redundant dataset cleaner -- keep them all
+                else:
+                    dataset_cleaners.clear()  # all dataset cleaners are redundant
+
+            text_config = TextConfig(
+                symbols=Symbols(**symbols),
+                g2p_engines=self.state.get("custom_g2p", {}),
+                cleaners=global_cleaners,
+                language_cleaners=language_cleaners,
+                dataset_cleaners=dataset_cleaners,
             )
-            preprocessed_validation_filelist_path = (
-                preprocessed_dir_relative_to_configs / "validation_filelist.psv"
+            strong: str = "".join(
+                [
+                    char
+                    for char in (
+                        text_config.symbols.punctuation.question_symbols
+                        + text_config.symbols.punctuation.periods
+                        + text_config.symbols.punctuation.exclamations
+                    )
+                    if is_sentence_final(char)
+                ]
             )
-            preprocessing_config = PreprocessingConfig(
-                dataset=self.state[StepNames.name_step],
-                save_dir=preprocessed_dir_relative_to_configs,
-                source_data=datasets,
+            weak: str = "".join(
+                text_config.symbols.punctuation.commas
+                + text_config.symbols.punctuation.semi_colons
+                + text_config.symbols.punctuation.colons
             )
-            preprocessing_config_path = Path(
-                f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.{self.response}"
-            )
+            text_config.boundaries = {
+                lang: LanguageBoundaries(strong=strong, weak=weak)
+                for lang in language_codes
+            }
+            text_config_path = Path(f"{TEXT_CONFIG_FILENAME_PREFIX}.{self.response}")
             write_dict_to_config(
-                json.loads(preprocessing_config.model_dump_json(exclude_none=False)),
-                (config_dir / preprocessing_config_path).absolute(),
+                json.loads(text_config.model_dump_json(exclude_none=False)),
+                (config_dir / text_config_path).absolute(),
+            )
+            # Contact
+            CONTACT_INFO = ContactInformation(
+                contact_name=self.state[StepNames.contact_name_step],
+                contact_email=self.state[StepNames.contact_email_step],
             )
 
-            # Create Feature Prediction Config
-            fp_logger = LoggerConfig(
-                name="FeaturePredictionExperiment", save_dir=log_dir_relative_to_configs
-            )
-            fp_config = FeaturePredictionConfig(
-                contact=CONTACT_INFO,
-                model=FastSpeech2ModelConfig(
-                    multilingual=multilingual,
-                    multispeaker=multispeaker,
-                ),
-                training=BaseTrainingConfig(
-                    training_filelist=preprocessed_training_filelist_path,
-                    validation_filelist=preprocessed_validation_filelist_path,
-                    logger=fp_logger,
-                ).model_dump(),
-            )
-            fp_config_path = Path(
-                f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}"
-            )
-            fp_config_json = json.loads(
-                fp_config.model_dump_json(
-                    exclude_none=False, exclude={"preprocessing": True, "text": True}
+            with init_context({"writing_config": config_dir.resolve()}):
+                # Preprocessing Config
+                preprocessed_training_filelist_path = (
+                    preprocessed_dir_relative_to_configs / "training_filelist.psv"
+                )
+                preprocessed_validation_filelist_path = (
+                    preprocessed_dir_relative_to_configs / "validation_filelist.psv"
+                )
+                preprocessing_config = PreprocessingConfig(
+                    dataset=self.state[StepNames.name_step],
+                    save_dir=preprocessed_dir_relative_to_configs,
+                    source_data=datasets,
+                )
+                preprocessing_config_path = Path(
+                    f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.{self.response}"
+                )
+                write_dict_to_config(
+                    json.loads(
+                        preprocessing_config.model_dump_json(exclude_none=False)
+                    ),
+                    (config_dir / preprocessing_config_path).absolute(),
+                )
+
+                # Create Feature Prediction Config
+                fp_logger = LoggerConfig(
+                    name="FeaturePredictionExperiment",
+                    save_dir=log_dir_relative_to_configs,
+                )
+                fp_config = FeaturePredictionConfig(
+                    contact=CONTACT_INFO,
+                    model=FastSpeech2ModelConfig(
+                        multilingual=multilingual,
+                        multispeaker=multispeaker,
+                    ),
+                    training=BaseTrainingConfig(
+                        training_filelist=preprocessed_training_filelist_path,
+                        validation_filelist=preprocessed_validation_filelist_path,
+                        logger=fp_logger,
+                    ).model_dump(),
+                )
+                fp_config_path = Path(
+                    f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}"
+                )
+                fp_config_json = json.loads(
+                    fp_config.model_dump_json(
+                        exclude_none=False,
+                        exclude={"preprocessing": True, "text": True},
+                    )
+                )
+                fp_config_json["path_to_preprocessing_config_file"] = str(
+                    preprocessing_config_path
+                )
+                fp_config_json["path_to_text_config_file"] = str(text_config_path)
+                write_dict_to_config(
+                    fp_config_json,
+                    (config_dir / fp_config_path).absolute(),
+                )
+
+                # Create Vocoder Config
+                vocoder_logger = LoggerConfig(
+                    name="VocoderExperiment", save_dir=log_dir_relative_to_configs
+                )
+                vocoder_config = VocoderConfig(
+                    contact=CONTACT_INFO,
+                    training=BaseTrainingConfig(
+                        training_filelist=preprocessed_training_filelist_path,
+                        validation_filelist=preprocessed_validation_filelist_path,
+                        logger=vocoder_logger,
+                    ).model_dump(),
+                )
+                vocoder_config_path = Path(
+                    f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
+                )
+                vocoder_config_json = json.loads(
+                    vocoder_config.model_dump_json(
+                        exclude_none=False, exclude={"preprocessing": True}
+                    )
+                )
+                vocoder_config_json["path_to_preprocessing_config_file"] = str(
+                    preprocessing_config_path
+                )
+                write_dict_to_config(
+                    vocoder_config_json,
+                    (config_dir / vocoder_config_path).absolute(),
+                )
+
+                # E2E Config
+                from everyvoice.model.e2e import StyleTTS2_lightning
+
+                st_dir = Path(StyleTTS2_lightning.__path__[0])
+
+                e2e_logger = LoggerConfig(
+                    name="E2E-Experiment", save_dir=log_dir_relative_to_configs
+                )
+                e2e_config = E2EConfig(
+                    contact=CONTACT_INFO,
+                    model=StyleTTS2ModelConfig(multispeaker=multispeaker),
+                    preprocessing=preprocessing_config,  # TODO: should we use the default 24kHz sampling rate that StyleTTS2 usually uses? if so, the hop size, upsample rates etc will also need to change
+                    training=StyleTTS2TrainingConfig(
+                        ood_data=st_dir
+                        / "data"
+                        / "OOD_texts.txt",  # TODO: We should absolutely not just use English OOD for everything, but I'm undecided about how to incorporate this into the wizard/preprocessing pipelines for now, so punting this to later.
+                        training_filelist=preprocessed_training_filelist_path,
+                        validation_filelist=preprocessed_validation_filelist_path,
+                        logger=e2e_logger,
+                    ).model_dump(),
+                )
+                e2e_config_json = json.loads(
+                    e2e_config.model_dump_json(
+                        exclude_none=False,
+                    )
+                )
+                e2e_config_json["path_to_preprocessing_config_file"] = str(
+                    preprocessing_config_path
+                )
+                e2e_config_json["path_to_text_config_file"] = str(text_config_path)
+                e2e_config_path = Path(
+                    f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
+                )
+                write_dict_to_config(
+                    e2e_config_json,
+                    (config_dir / e2e_config_path).absolute(),
+                )
+
+            rich_print(
+                Panel(
+                    f"You've finished configuring your dataset. Your files are located at {config_dir.absolute()}",
+                    title="Congratulations 🎉",
+                    subtitle="Next Steps Documentation: https://docs.everyvoice.ca/stable/guides",
+                    border_style=Style(color="#0B4F19"),
                 )
             )
-            fp_config_json["path_to_preprocessing_config_file"] = str(
-                preprocessing_config_path
-            )
-            fp_config_json["path_to_text_config_file"] = str(text_config_path)
-            write_dict_to_config(
-                fp_config_json,
-                (config_dir / fp_config_path).absolute(),
-            )
-
-            # Create Vocoder Config
-            vocoder_logger = LoggerConfig(
-                name="VocoderExperiment", save_dir=log_dir_relative_to_configs
-            )
-            vocoder_config = VocoderConfig(
-                contact=CONTACT_INFO,
-                training=BaseTrainingConfig(
-                    training_filelist=preprocessed_training_filelist_path,
-                    validation_filelist=preprocessed_validation_filelist_path,
-                    logger=vocoder_logger,
-                ).model_dump(),
-            )
-            vocoder_config_path = Path(
-                f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
-            )
-            vocoder_config_json = json.loads(
-                vocoder_config.model_dump_json(
-                    exclude_none=False, exclude={"preprocessing": True}
-                )
-            )
-            vocoder_config_json["path_to_preprocessing_config_file"] = str(
-                preprocessing_config_path
-            )
-            write_dict_to_config(
-                vocoder_config_json,
-                (config_dir / vocoder_config_path).absolute(),
-            )
-
-            # E2E Config
-            from everyvoice.model.e2e import StyleTTS2_lightning
-
-            st_dir = Path(StyleTTS2_lightning.__path__[0])
-
-            e2e_logger = LoggerConfig(
-                name="E2E-Experiment", save_dir=log_dir_relative_to_configs
-            )
-            e2e_config = E2EConfig(
-                contact=CONTACT_INFO,
-                model=StyleTTS2ModelConfig(multispeaker=multispeaker),
-                preprocessing=preprocessing_config,  # TODO: should we use the default 24kHz sampling rate that StyleTTS2 usually uses? if so, the hop size, upsample rates etc will also need to change
-                training=StyleTTS2TrainingConfig(
-                    ood_data=st_dir
-                    / "data"
-                    / "OOD_texts.txt",  # TODO: We should absolutely not just use English OOD for everything, but I'm undecided about how to incorporate this into the wizard/preprocessing pipelines for now, so punting this to later.
-                    training_filelist=preprocessed_training_filelist_path,
-                    validation_filelist=preprocessed_validation_filelist_path,
-                    logger=e2e_logger,
-                ).model_dump(),
-            )
-            e2e_config_json = json.loads(
-                e2e_config.model_dump_json(
-                    exclude_none=False,
-                )
-            )
-            e2e_config_json["path_to_preprocessing_config_file"] = str(
-                preprocessing_config_path
-            )
-            e2e_config_json["path_to_text_config_file"] = str(text_config_path)
-            e2e_config_path = Path(
-                f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
-            )
-            write_dict_to_config(
-                e2e_config_json,
-                (config_dir / e2e_config_path).absolute(),
-            )
-
-        rich_print(
-            Panel(
-                f"You've finished configuring your dataset. Your files are located at {config_dir.absolute()}",
-                title="Congratulations 🎉",
-                subtitle="Next Steps Documentation: https://docs.everyvoice.ca/stable/guides",
-                border_style=Style(color="#0B4F19"),
-            )
-        )
 
 
 class MoreDatasetsStep(Step):
