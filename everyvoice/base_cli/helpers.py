@@ -128,13 +128,12 @@ def preprocess_base_command(
     cpus: Optional[int],
     overwrite: bool,
     debug: bool,
+    ood_data_file: Optional[Path] = None,
 ):
     from everyvoice.preprocessor import Preprocessor
 
     config = load_config_base_command(model_config, config_args, config_file)
     preprocessor = Preprocessor(config)
-    if isinstance(config, StyleTTS2Config):
-        steps = ["audio", "text"]
     if (
         (isinstance(config, FastSpeech2Config) or isinstance(config, StyleTTS2Config))
         and config.model.target_text_representation_level
@@ -147,6 +146,8 @@ def preprocess_base_command(
         to_process=steps,
         debug=debug,
     )
+    if ood_data_file is not None:
+        preprocessor.preprocess_ood(ood_data_file)
     return preprocessor, config, steps
 
 

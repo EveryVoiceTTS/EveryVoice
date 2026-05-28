@@ -1368,5 +1368,64 @@ class PreprocessingHierarchyTest(TestCase):
                 assert len(files) == 5
 
 
+class OODPreprocessingTest(PreprocessedAudioFixture, TestCase):
+    """Unit tests for Preprocessor.preprocess_ood()"""
+
+    def test_ood_plain_text_produces_psv(self):
+        """Plain-text OOD file (no |) writes ood.psv with language='und' for every row."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ood_file = Path(tmpdir) / "ood.txt"
+            ood_file.write_text(
+                "Hello world\nThis is a test sentence\n", encoding="utf-8"
+            )
+
+            preprocessor = Preprocessor(self.fp_config)
+            preprocessor.save_dir = Path(tmpdir)
+            with (
+                mute_logger("everyvoice.preprocessor"),
+                capture_stdout(),
+                capture_stderr(),
+            ):
+                preprocessor.preprocess_ood(ood_file)
+
+            output_psv = Path(tmpdir) / "ood.psv"
+            assert output_psv.exists(), "ood.psv was not created"
+            rows = generic_psv_filelist_reader(output_psv)
+            assert len(rows) == 2
+            assert all(
+                r["language"] == "und" for r in rows
+            ), "Expected language='und' for plain-text mode"
+            assert all(
+                "character_tokens" in r for r in rows
+            ), "Missing character_tokens column"
+
+    def test_ood_language_annotated_sets_language(self):
+        """Language-annotated OOD file (language|text) assigns the specified language to each row."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ood_file = Path(tmpdir) / "ood_lang.txt"
+            ood_file.write_text(
+                "eng|Hello world\nfra|Bonjour le monde\n", encoding="utf-8"
+            )
+
+            preprocessor = Preprocessor(self.fp_config)
+            preprocessor.save_dir = Path(tmpdir)
+            with (
+                mute_logger("everyvoice.preprocessor"),
+                capture_stdout(),
+                capture_stderr(),
+            ):
+                preprocessor.preprocess_ood(ood_file)
+
+            output_psv = Path(tmpdir) / "ood.psv"
+            assert output_psv.exists(), "ood.psv was not created"
+            rows = generic_psv_filelist_reader(output_psv)
+            assert len(rows) == 2
+            languages = {r["language"] for r in rows}
+            assert languages == {
+                "eng",
+                "fra",
+            }, f"Unexpected language values: {languages}"
+
+
 if __name__ == "__main__":
     main(sys.argv)

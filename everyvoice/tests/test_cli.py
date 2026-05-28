@@ -439,6 +439,7 @@ class CLITest(TestCase):
                 app,
                 [
                     "preprocess",
+                    "text-to-spec",
                     str(self.config_dir / "everyvoice-spec-to-wav.yaml"),
                 ],
             )
@@ -447,6 +448,25 @@ class CLITest(TestCase):
                 "We are expecting a FastSpeech2Config but it looks like you provided a HiFiGANConfig",
                 "\n".join(output),
             )
+
+    def test_preprocess_without_subcommand_shows_subcommands(self):
+        """Bare 'everyvoice preprocess <config>' without a subcommand should guide the user."""
+        result = self.runner.invoke(
+            app,
+            [
+                "preprocess",
+                str(self.config_dir / "everyvoice-shared-data.yaml"),
+            ],
+        )
+        # Should not silently succeed with no work done; help text with subcommand names shown
+        assert "text-to-spec" in result.output
+        assert "text-to-wav" in result.output
+
+    def test_preprocess_text_to_wav_help_has_ood_option(self):
+        """'everyvoice preprocess text-to-wav --help' should expose --ood-data-file."""
+        result = self.runner.invoke(app, ["preprocess", "text-to-wav", "--help"])
+        assert result.exit_code == 0
+        assert "--ood-data-file" in result.output
 
     def test_expensive_imports_are_tucked_away(self):
         """Make sure expensive imports are tucked away form the CLI help"""
