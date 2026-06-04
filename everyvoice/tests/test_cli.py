@@ -465,7 +465,9 @@ class CLITest(TestCase):
     def test_demo_with_bad_args(self):
         # No checkpoint → help message
         result = self.runner.invoke(app, ["demo"])
-        assert result.exit_code == 0
+        # Exit code for no-arg-is-help is 0 with click<=8.1.8 and typer<=0.23.2,
+        # 2 if either is more recent
+        assert result.exit_code in (0, 2)
         # the runner calls "root" instead of "everyvoice"
         assert "Usage: root demo [OPTIONS] CHECKPOINT" in flatten_log(result.output)
 
