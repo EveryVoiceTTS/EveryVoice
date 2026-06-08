@@ -754,7 +754,12 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     for character in ("é", "É", "é"):  # nfc(é), nfc(É), nfd(é)
                         assert character in symbols
                 result = runner.invoke(
-                    app, ["preprocess", "config/everyvoice-text-to-spec.yaml"]
+                    app,
+                    [
+                        "preprocess",
+                        "text-to-spec",
+                        "config/everyvoice-text-to-spec.yaml",
+                    ],
                 )
                 if result.exit_code != 0 or stubs.VERBOSE_OVERRIDE:
                     print(result.output)
@@ -1371,60 +1376,117 @@ class PreprocessingHierarchyTest(TestCase):
 class OODPreprocessingTest(PreprocessedAudioFixture, TestCase):
     """Unit tests for Preprocessor.preprocess_ood()"""
 
-    def test_ood_plain_text_produces_psv(self):
-        """Plain-text OOD file (no |) writes ood.psv with language='und' for every row."""
+    def _run_preprocess_ood(self, preprocessor, ood_raw_data):
+        with (
+            mute_logger("everyvoice.preprocessor"),
+            capture_stdout(),
+            capture_stderr(),
+        ):
+            preprocessor.preprocess_ood(ood_raw_data)
+
+    def test_ood_characters_writes_per_language_psv(self):
+        """Characters-mode OOD writes {save_dir}/ood/{lang}.psv with character_tokens."""
+        from everyvoice.config.type_definitions import DatasetTextRepresentation
+
         with tempfile.TemporaryDirectory() as tmpdir:
-            ood_file = Path(tmpdir) / "ood.txt"
+            ood_file = Path(tmpdir) / "eng.txt"
             ood_file.write_text(
                 "Hello world\nThis is a test sentence\n", encoding="utf-8"
             )
 
             preprocessor = Preprocessor(self.fp_config)
             preprocessor.save_dir = Path(tmpdir)
-            with (
-                mute_logger("everyvoice.preprocessor"),
-                capture_stdout(),
-                capture_stderr(),
-            ):
-                preprocessor.preprocess_ood(ood_file)
+            self._run_preprocess_ood(
+                preprocessor,
+                {"eng": (ood_file, DatasetTextRepresentation.characters)},
+            )
 
-            output_psv = Path(tmpdir) / "ood.psv"
-            assert output_psv.exists(), "ood.psv was not created"
+            output_psv = Path(tmpdir) / "ood" / "eng.psv"
+            assert output_psv.exists(), "ood/eng.psv was not created"
             rows = generic_psv_filelist_reader(output_psv)
             assert len(rows) == 2
-            assert all(
-                r["language"] == "und" for r in rows
-            ), "Expected language='und' for plain-text mode"
+            assert all(r["language"] == "eng" for r in rows)
             assert all(
                 "character_tokens" in r for r in rows
-            ), "Missing character_tokens column"
+            ), "Missing character_tokens"
 
-    def test_ood_language_annotated_sets_language(self):
-        """Language-annotated OOD file (language|text) assigns the specified language to each row."""
+    def test_ood_phones_skips_g2p(self):
+        """Phones-mode OOD writes phone_tokens without character_tokens."""
+        from everyvoice.config.type_definitions import DatasetTextRepresentation
+
         with tempfile.TemporaryDirectory() as tmpdir:
-            ood_file = Path(tmpdir) / "ood_lang.txt"
+            ood_file = Path(tmpdir) / "eng_phones.txt"
+            # Minimal IPA-like strings — exact symbols don't matter for this structural test.
+            ood_file.write_text("h ɛ l oʊ\nw ɝ l d\n", encoding="utf-8")
+
+            preprocessor = Preprocessor(self.fp_config)
+            preprocessor.save_dir = Path(tmpdir)
+            self._run_preprocess_ood(
+                preprocessor,
+                {"eng": (ood_file, DatasetTextRepresentation.ipa_phones)},
+            )
+
+            output_psv = Path(tmpdir) / "ood" / "eng.psv"
+            assert output_psv.exists(), "ood/eng.psv was not created"
+            rows = generic_psv_filelist_reader(output_psv)
+            assert len(rows) == 2
+            assert all("phones" in r for r in rows), "Missing phones column"
+            assert all(
+                "character_tokens" not in r for r in rows
+            ), "character_tokens should not be present for phones-mode OOD"
+
+    def test_ood_psv_header_is_detected(self):
+        """A PSV file with a basename|characters|speaker header is read correctly."""
+        from everyvoice.config.type_definitions import DatasetTextRepresentation
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ood_file = Path(tmpdir) / "ood.txt"
             ood_file.write_text(
-                "eng|Hello world\nfra|Bonjour le monde\n", encoding="utf-8"
+                "basename|characters|speaker\n"
+                "utt_000|Hello world|spk1\n"
+                "utt_001|This is a test|spk1\n",
+                encoding="utf-8",
             )
 
             preprocessor = Preprocessor(self.fp_config)
             preprocessor.save_dir = Path(tmpdir)
-            with (
-                mute_logger("everyvoice.preprocessor"),
-                capture_stdout(),
-                capture_stderr(),
-            ):
-                preprocessor.preprocess_ood(ood_file)
+            self._run_preprocess_ood(
+                preprocessor,
+                {"eng": (ood_file, DatasetTextRepresentation.characters)},
+            )
 
-            output_psv = Path(tmpdir) / "ood.psv"
-            assert output_psv.exists(), "ood.psv was not created"
-            rows = generic_psv_filelist_reader(output_psv)
-            assert len(rows) == 2
-            languages = {r["language"] for r in rows}
-            assert languages == {
-                "eng",
-                "fra",
-            }, f"Unexpected language values: {languages}"
+            rows = generic_psv_filelist_reader(Path(tmpdir) / "ood" / "eng.psv")
+            assert len(rows) == 2, f"Expected 2 rows, got {len(rows)}"
+            assert rows[0]["characters"] == "Hello world"
+            assert rows[1]["characters"] == "This is a test"
+            assert all("character_tokens" in r for r in rows)
+
+    def test_ood_multiple_languages_write_separate_files(self):
+        """Multiple languages each get their own PSV file."""
+        from everyvoice.config.type_definitions import DatasetTextRepresentation
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            eng_file = Path(tmpdir) / "eng.txt"
+            fra_file = Path(tmpdir) / "fra.txt"
+            eng_file.write_text("Hello world\n", encoding="utf-8")
+            fra_file.write_text("Bonjour le monde\n", encoding="utf-8")
+
+            preprocessor = Preprocessor(self.fp_config)
+            preprocessor.save_dir = Path(tmpdir)
+            self._run_preprocess_ood(
+                preprocessor,
+                {
+                    "eng": (eng_file, DatasetTextRepresentation.characters),
+                    "fra": (fra_file, DatasetTextRepresentation.characters),
+                },
+            )
+
+            for lang in ("eng", "fra"):
+                psv = Path(tmpdir) / "ood" / f"{lang}.psv"
+                assert psv.exists(), f"ood/{lang}.psv was not created"
+                rows = generic_psv_filelist_reader(psv)
+                assert len(rows) == 1
+                assert rows[0]["language"] == lang
 
 
 if __name__ == "__main__":

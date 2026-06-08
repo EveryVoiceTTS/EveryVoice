@@ -10,6 +10,8 @@
   - info@everyvoice.ca
 - - Output Path Step
   - .
+- - Model Type Step
+  - FastSpeech2
 - - Filelist Step
   - data/nfd-mixed-case.psv
 - - Dataset Permission Step

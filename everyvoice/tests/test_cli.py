@@ -462,11 +462,10 @@ class CLITest(TestCase):
         assert "text-to-spec" in result.output
         assert "text-to-wav" in result.output
 
-    def test_preprocess_text_to_wav_help_has_ood_option(self):
-        """'everyvoice preprocess text-to-wav --help' should expose --ood-data-file."""
+    def test_preprocess_text_to_wav_help(self):
+        """'everyvoice preprocess text-to-wav --help' should exit cleanly."""
         result = self.runner.invoke(app, ["preprocess", "text-to-wav", "--help"])
         assert result.exit_code == 0
-        assert "--ood-data-file" in result.output
 
     def test_expensive_imports_are_tucked_away(self):
         """Make sure expensive imports are tucked away form the CLI help"""
