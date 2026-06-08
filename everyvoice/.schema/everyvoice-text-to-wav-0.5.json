@@ -190,6 +190,15 @@
       "title": "Dataset",
       "type": "object"
     },
+    "DatasetTextRepresentation": {
+      "enum": [
+        "characters",
+        "phones",
+        "arpabet"
+      ],
+      "title": "DatasetTextRepresentation",
+      "type": "string"
+    },
     "HiFiGANResblock": {
       "enum": [
         "1",
@@ -248,6 +257,86 @@
         }
       },
       "title": "LoggerConfig",
+      "type": "object"
+    },
+    "OODDataHFSource": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "description": "A HuggingFace-hosted OOD text file.",
+      "properties": {
+        "repo_id": {
+          "description": "HuggingFace repository ID, e.g. 'everyvoice/ood-english'.",
+          "title": "Repo Id",
+          "type": "string"
+        },
+        "filename": {
+          "default": "ood.txt",
+          "description": "Filename within the repository.",
+          "title": "Filename",
+          "type": "string"
+        },
+        "revision": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Git revision (branch, tag, or commit SHA) to pin.",
+          "title": "Revision"
+        }
+      },
+      "required": [
+        "repo_id"
+      ],
+      "title": "OODDataHFSource",
+      "type": "object"
+    },
+    "OODDataSource": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "additionalProperties": false,
+      "description": "A single per-language OOD data source \u2014 either a local file or a HuggingFace repo file.",
+      "properties": {
+        "local_path": {
+          "anyOf": [
+            {
+              "format": "path",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Path to a local plain-text file (one utterance per line).",
+          "title": "Local Path"
+        },
+        "hf": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OODDataHFSource"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "HuggingFace-hosted file to download via huggingface_hub."
+        },
+        "text_representation": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/DatasetTextRepresentation"
+            }
+          ],
+          "default": "characters",
+          "description": "The text representation of the source data. Use 'characters' if the file contains raw text (G2P will be applied if available). Use 'phones' if already IPA-transcribed (G2P skipped). Use 'arpabet' if in ARPAbet notation (converted to IPA, G2P skipped)."
+        }
+      },
+      "title": "OODDataSource",
       "type": "object"
     },
     "PreprocessingConfig": {
@@ -1302,12 +1391,19 @@
           "title": "Root Path",
           "type": "string"
         },
-        "ood_data": {
-          "default": "data/OOD_texts.txt",
-          "description": "Path to out-of-distribution texts used for validation audio generation.",
-          "format": "path",
-          "title": "Ood Data",
-          "type": "string"
+        "ood_raw_data": {
+          "additionalProperties": {
+            "$ref": "#/$defs/OODDataSource"
+          },
+          "description": "Per-language sources of raw OOD text, keyed by ISO language code (e.g. 'eng'). Each source is a local plain-text file or a HuggingFace repo file. Run 'everyvoice preprocess text-to-wav' to tokenize these into {preprocessing.save_dir}/ood/{lang}.psv before training.",
+          "title": "Ood Raw Data",
+          "type": "object"
+        },
+        "use_validation_as_ood": {
+          "default": false,
+          "description": "Fall back to the validation split as OOD reference text when no preprocessed OOD data is found. Acceptable in applied settings but pollutes the train/val split \u2014 do not use when reporting research results.",
+          "title": "Use Validation As Ood",
+          "type": "boolean"
         },
         "min_length": {
           "default": 50,
