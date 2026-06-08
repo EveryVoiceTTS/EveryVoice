@@ -1,4 +1,5 @@
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import questionary
@@ -43,6 +44,7 @@ from everyvoice.wizard.utils import (
     sanitize_paths,
     write_dict_to_config,
 )
+from everyvoice.wizard.validators import validate_path
 
 
 class NameStep(Step):
@@ -206,6 +208,203 @@ class OutputPathStep(Step):
         )
 
 
+class ModelTypeStep(Step):
+    DEFAULT_NAME = StepNames.model_type_step
+    REVERSIBLE = True
+    choices = ("FastSpeech2", "StyleTTS2", "both")
+
+    def prompt(self):
+        rich_print(
+            Panel(
+                "[bold]FastSpeech2[/bold]: A text-to-spec[trogram] model. Trains faster, and doesn't need as much data."
+                "Even if you want to use StyleTTS2, we recommend starting with FastSpeech2 to make sure your data is OK"
+                "and to debug issues. This model requires a vocoder - we recommend using the EveryVoice pretrained one."
+                "\n\n"
+                "[bold]StyleTTS2[/bold]: An end-to-end text-to-wav[eform] model that produces audio "
+                "directly. Requires the same data as FastSpeech2 but also requires some extra text (without audio)."
+                "\n\n"
+                "[bold]both[/bold]: Configure all models: FastSpeech2, HiFiGAN vocoder, and "
+                "StyleTTS2.",
+                title="Model Options",
+            )
+        )
+        return get_response_from_menu_prompt(
+            "Which model(s) would you like to configure?",
+            self.choices,
+        )
+
+    def validate(self, response):
+        return response in self.choices
+
+    def effect(self):
+        rich_print(f"Configuring [bold]{self.response}[/bold].")
+
+
+class OODDataStep(Step):
+    """Ask user for the OOD data source for a specific language."""
+
+    REVERSIBLE = True
+    choices = (
+        "local: provide a path to a local plain-text file",
+        "hf: download from a HuggingFace Hub repository",
+        "validation: use the validation split (warning: pollutes train/validation separation)",
+    )
+
+    def __init__(self, lang: str, **kwargs):
+        super().__init__(**kwargs)
+        self.lang = lang
+
+    def prompt(self):
+        rich_print(
+            Panel(
+                "OOD (out-of-domain) texts are used by StyleTTS2 for calculating WavLM discriminator loss. "
+                "They should come from outside your training and validation data and be the same language."
+                "It only needs to be text, you do not need accompanying audio for this part.",
+                title=f"OOD Data for '{self.lang}'",
+            )
+        )
+        return get_response_from_menu_prompt(
+            f"Where should OOD reference texts for language '{self.lang}' come from?",
+            self.choices,
+        )
+
+    def validate(self, response):
+        return response in self.choices
+
+    def effect(self):
+        if self.response == self.choices[0]:  # local
+            self.tour.add_step(
+                OODLocalPathStep(
+                    name=f"OOD Local Path Step [{self.lang}]",
+                    lang=self.lang,
+                ),
+                self,
+            )
+        elif self.response == self.choices[1]:  # hf
+            self.tour.add_step(
+                OODHFRepoIDStep(
+                    name=f"OOD HF Repo ID Step [{self.lang}]",
+                    lang=self.lang,
+                ),
+                self,
+            )
+        else:  # validation
+            self.saved_state = {
+                "ood_raw_data": deepcopy(self.state.get("ood_raw_data"))
+            }
+            self.state["ood_raw_data"][self.lang] = {"source_type": "validation"}
+            rich_print(
+                Panel(
+                    "[yellow]Warning: using the validation split as OOD data will pollute your "
+                    "train/validation separation and may make your validation scores unreliable."
+                    "Unless you are training your model for research purposes, this is probably OK."
+                    "[/yellow]",
+                )
+            )
+
+
+class OODLocalPathStep(Step):
+    """Collect a local file path for OOD data for a specific language."""
+
+    REVERSIBLE = True
+
+    def __init__(self, lang: str, **kwargs):
+        super().__init__(**kwargs)
+        self.lang = lang
+
+    def prompt(self):
+        return questionary.path(
+            f"Path to OOD plain-text file for language '{self.lang}': ",
+            style=CUSTOM_QUESTIONARY_STYLE,
+        ).unsafe_ask()
+
+    def sanitize_input(self, response):
+        return sanitize_paths(response)
+
+    def validate(self, response) -> bool:
+        return validate_path(response, is_file=True, exists=True)
+
+    def effect(self):
+        self.saved_state = {"ood_raw_data": deepcopy(self.state.get("ood_raw_data"))}
+        self.state["ood_raw_data"][self.lang] = {
+            "source_type": "local",
+            "local_path": self.response,
+        }
+
+
+class OODHFRepoIDStep(Step):
+    """Collect a HuggingFace repository ID for OOD data for a specific language."""
+
+    REVERSIBLE = True
+
+    def __init__(self, lang: str, **kwargs):
+        super().__init__(**kwargs)
+        self.lang = lang
+
+    def prompt(self):
+        return questionary.text(
+            f"HuggingFace repository ID for '{self.lang}' OOD data "
+            "(e.g. 'everyvoice/StyleTTS2-English-OOD'): ",
+            style=CUSTOM_QUESTIONARY_STYLE,
+        ).unsafe_ask()
+
+    def sanitize_input(self, response):
+        return response.strip()
+
+    def validate(self, response) -> bool:
+        if not response or "/" not in response:
+            rich_print(
+                "Please enter a valid HuggingFace repository ID in the format 'owner/repo'."
+            )
+            return False
+        return True
+
+    def effect(self):
+        self.tour.add_step(
+            OODHFFilenameStep(
+                name=f"OOD HF Filename Step [{self.lang}]",
+                lang=self.lang,
+                repo_id=self.response,
+            ),
+            self,
+        )
+
+
+class OODHFFilenameStep(Step):
+    """Collect the filename within a HuggingFace repository for OOD data."""
+
+    REVERSIBLE = True
+
+    def __init__(self, lang: str, repo_id: str, **kwargs):
+        super().__init__(**kwargs)
+        self.lang = lang
+        self.repo_id = repo_id
+
+    def prompt(self):
+        return questionary.text(
+            f"Filename within '{self.repo_id}' to use as OOD data: ",
+            default="ood.txt",
+            style=CUSTOM_QUESTIONARY_STYLE,
+        ).unsafe_ask()
+
+    def sanitize_input(self, response):
+        return response.strip()
+
+    def validate(self, response) -> bool:
+        if not response:
+            rich_print("Please enter a filename.")
+            return False
+        return True
+
+    def effect(self):
+        self.saved_state = {"ood_raw_data": deepcopy(self.state.get("ood_raw_data"))}
+        self.state["ood_raw_data"][self.lang] = {
+            "source_type": "hf",
+            "repo_id": self.repo_id,
+            "filename": self.response,
+        }
+
+
 class ConfigFormatStep(Step):
     DEFAULT_NAME = StepNames.config_format_step
     # ConfigFormatStep writes the results to disk and exits, so it's not reversible.
@@ -220,7 +419,7 @@ class ConfigFormatStep(Step):
     def validate(self, response):
         return response in ("yaml", "json")
 
-    def effect(self):
+    def effect(self):  # noqa: C901
         from everyvoice.model.e2e.config import (
             E2EConfig,
             StyleTTS2ModelConfig,
@@ -403,6 +602,9 @@ class ConfigFormatStep(Step):
                 contact_email=self.state[StepNames.contact_email_step],
             )
 
+            model_type = self.state.get(StepNames.model_type_step.value, "both")
+            include_fs2 = model_type in ("FastSpeech2", "both")
+            include_st2 = model_type in ("StyleTTS2", "both")
             with init_context({"writing_config": config_dir.resolve()}):
                 # Preprocessing Config
                 preprocessed_training_filelist_path = (
@@ -426,106 +628,124 @@ class ConfigFormatStep(Step):
                     (config_dir / preprocessing_config_path).absolute(),
                 )
 
-                # Create Feature Prediction Config
-                fp_logger = LoggerConfig(
-                    name="FeaturePredictionExperiment",
-                    save_dir=log_dir_relative_to_configs,
-                )
-                fp_config = FeaturePredictionConfig(
-                    contact=CONTACT_INFO,
-                    model=FastSpeech2ModelConfig(
-                        multilingual=multilingual,
-                        multispeaker=multispeaker,
-                    ),
-                    training=BaseTrainingConfig(
-                        training_filelist=preprocessed_training_filelist_path,
-                        validation_filelist=preprocessed_validation_filelist_path,
-                        logger=fp_logger,
-                    ).model_dump(),
-                )
-                fp_config_path = Path(
-                    f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}"
-                )
-                fp_config_json = json.loads(
-                    fp_config.model_dump_json(
-                        exclude_none=False,
-                        exclude={"preprocessing": True, "text": True},
+                if include_fs2:
+                    # Create Feature Prediction Config
+                    fp_logger = LoggerConfig(
+                        name="FeaturePredictionExperiment",
+                        save_dir=log_dir_relative_to_configs,
                     )
-                )
-                fp_config_json["path_to_preprocessing_config_file"] = str(
-                    preprocessing_config_path
-                )
-                fp_config_json["path_to_text_config_file"] = str(text_config_path)
-                write_dict_to_config(
-                    fp_config_json,
-                    (config_dir / fp_config_path).absolute(),
-                )
-
-                # Create Vocoder Config
-                vocoder_logger = LoggerConfig(
-                    name="VocoderExperiment", save_dir=log_dir_relative_to_configs
-                )
-                vocoder_config = VocoderConfig(
-                    contact=CONTACT_INFO,
-                    training=BaseTrainingConfig(
-                        training_filelist=preprocessed_training_filelist_path,
-                        validation_filelist=preprocessed_validation_filelist_path,
-                        logger=vocoder_logger,
-                    ).model_dump(),
-                )
-                vocoder_config_path = Path(
-                    f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
-                )
-                vocoder_config_json = json.loads(
-                    vocoder_config.model_dump_json(
-                        exclude_none=False, exclude={"preprocessing": True}
+                    fp_config = FeaturePredictionConfig(
+                        contact=CONTACT_INFO,
+                        model=FastSpeech2ModelConfig(
+                            multilingual=multilingual,
+                            multispeaker=multispeaker,
+                        ),
+                        training=BaseTrainingConfig(
+                            training_filelist=preprocessed_training_filelist_path,
+                            validation_filelist=preprocessed_validation_filelist_path,
+                            logger=fp_logger,
+                        ).model_dump(),
                     )
-                )
-                vocoder_config_json["path_to_preprocessing_config_file"] = str(
-                    preprocessing_config_path
-                )
-                write_dict_to_config(
-                    vocoder_config_json,
-                    (config_dir / vocoder_config_path).absolute(),
-                )
-
-                # E2E Config
-                from everyvoice.model.e2e import StyleTTS2_lightning
-
-                st_dir = Path(StyleTTS2_lightning.__path__[0])
-
-                e2e_logger = LoggerConfig(
-                    name="E2E-Experiment", save_dir=log_dir_relative_to_configs
-                )
-                e2e_config = E2EConfig(
-                    contact=CONTACT_INFO,
-                    model=StyleTTS2ModelConfig(multispeaker=multispeaker),
-                    preprocessing=preprocessing_config,  # TODO: should we use the default 24kHz sampling rate that StyleTTS2 usually uses? if so, the hop size, upsample rates etc will also need to change
-                    training=StyleTTS2TrainingConfig(
-                        ood_data=st_dir
-                        / "data"
-                        / "OOD_texts.txt",  # TODO: We should absolutely not just use English OOD for everything, but I'm undecided about how to incorporate this into the wizard/preprocessing pipelines for now, so punting this to later.
-                        training_filelist=preprocessed_training_filelist_path,
-                        validation_filelist=preprocessed_validation_filelist_path,
-                        logger=e2e_logger,
-                    ).model_dump(),
-                )
-                e2e_config_json = json.loads(
-                    e2e_config.model_dump_json(
-                        exclude_none=False,
+                    fp_config_path = Path(
+                        f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.{self.response}"
                     )
-                )
-                e2e_config_json["path_to_preprocessing_config_file"] = str(
-                    preprocessing_config_path
-                )
-                e2e_config_json["path_to_text_config_file"] = str(text_config_path)
-                e2e_config_path = Path(
-                    f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
-                )
-                write_dict_to_config(
-                    e2e_config_json,
-                    (config_dir / e2e_config_path).absolute(),
-                )
+                    fp_config_json = json.loads(
+                        fp_config.model_dump_json(
+                            exclude_none=False,
+                            exclude={"preprocessing": True, "text": True},
+                        )
+                    )
+                    fp_config_json["path_to_preprocessing_config_file"] = str(
+                        preprocessing_config_path
+                    )
+                    fp_config_json["path_to_text_config_file"] = str(text_config_path)
+                    write_dict_to_config(
+                        fp_config_json,
+                        (config_dir / fp_config_path).absolute(),
+                    )
+
+                    # Create Vocoder Config
+                    vocoder_logger = LoggerConfig(
+                        name="VocoderExperiment", save_dir=log_dir_relative_to_configs
+                    )
+                    vocoder_config = VocoderConfig(
+                        contact=CONTACT_INFO,
+                        training=BaseTrainingConfig(
+                            training_filelist=preprocessed_training_filelist_path,
+                            validation_filelist=preprocessed_validation_filelist_path,
+                            logger=vocoder_logger,
+                        ).model_dump(),
+                    )
+                    vocoder_config_path = Path(
+                        f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
+                    )
+                    vocoder_config_json = json.loads(
+                        vocoder_config.model_dump_json(
+                            exclude_none=False, exclude={"preprocessing": True}
+                        )
+                    )
+                    vocoder_config_json["path_to_preprocessing_config_file"] = str(
+                        preprocessing_config_path
+                    )
+                    write_dict_to_config(
+                        vocoder_config_json,
+                        (config_dir / vocoder_config_path).absolute(),
+                    )
+
+                if include_st2:
+                    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.ev_config import (
+                        OODDataHFSource,
+                        OODDataSource,
+                    )
+
+                    e2e_logger = LoggerConfig(
+                        name="E2E-Experiment", save_dir=log_dir_relative_to_configs
+                    )
+                    ood_raw_data_wizard = self.state.get("ood_raw_data", {})
+                    ood_raw_data_config = {}
+                    use_validation_as_ood = False
+                    for lang, data in ood_raw_data_wizard.items():
+                        if data["source_type"] == "validation":
+                            use_validation_as_ood = True
+                        elif data["source_type"] == "hf":
+                            ood_raw_data_config[lang] = OODDataSource(
+                                hf=OODDataHFSource(
+                                    repo_id=data["repo_id"],
+                                    filename=data["filename"],
+                                )
+                            )
+                        elif data["source_type"] == "local":
+                            ood_raw_data_config[lang] = OODDataSource(
+                                local_path=Path(data["local_path"]).expanduser()
+                            )
+                    e2e_config = E2EConfig(
+                        contact=CONTACT_INFO,
+                        model=StyleTTS2ModelConfig(multispeaker=multispeaker),
+                        preprocessing=preprocessing_config,
+                        training=StyleTTS2TrainingConfig(
+                            ood_raw_data=ood_raw_data_config,
+                            use_validation_as_ood=use_validation_as_ood,
+                            training_filelist=preprocessed_training_filelist_path,
+                            validation_filelist=preprocessed_validation_filelist_path,
+                            logger=e2e_logger,
+                        ).model_dump(),
+                    )
+                    e2e_config_json = json.loads(
+                        e2e_config.model_dump_json(
+                            exclude_none=False,
+                        )
+                    )
+                    e2e_config_json["path_to_preprocessing_config_file"] = str(
+                        preprocessing_config_path
+                    )
+                    e2e_config_json["path_to_text_config_file"] = str(text_config_path)
+                    e2e_config_path = Path(
+                        f"{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.{self.response}"
+                    )
+                    write_dict_to_config(
+                        e2e_config_json,
+                        (config_dir / e2e_config_path).absolute(),
+                    )
 
             rich_print(
                 Panel(
@@ -572,12 +792,38 @@ class MoreDatasetsStep(Step):
         elif len([key for key in self.state.keys() if key.startswith("dataset_")]) == 0:
             rich_print("No dataset to save, exiting without saving any configuration.")
         else:
-            self.tour.add_step(
-                ConfigFormatStep(name=StepNames.config_format_step), self
-            )
+            model_type = self.state.get(StepNames.model_type_step.value)
+            if model_type in ("StyleTTS2", "both"):
+                language_codes = sorted(
+                    set(
+                        item["language"]
+                        for key in self.state
+                        if key.startswith("dataset_")
+                        for item in self.state[key].get("filelist_data", [])
+                    )
+                )
+                if "ood_raw_data" not in self.state:
+                    self.state["ood_raw_data"] = {}
+                self.tour.add_steps(
+                    [
+                        OODDataStep(
+                            name=f"OOD Data Step [{lang}]",
+                            lang=lang,
+                        )
+                        for lang in language_codes
+                    ]
+                    + [ConfigFormatStep(name=StepNames.config_format_step)],
+                    self,
+                )
+            else:
+                self.tour.add_step(
+                    ConfigFormatStep(name=StepNames.config_format_step), self
+                )
 
     def undo(self):
         if self.response == "yes":
             # delete the dataset from the state
             self.tour.remove_dataset(self.children[0].state_subset)  # type: ignore[misc]
+        else:
+            self.state.pop("ood_raw_data", None)
         super().undo()

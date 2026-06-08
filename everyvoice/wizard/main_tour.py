@@ -2,6 +2,7 @@ from everyvoice.wizard import StepNames
 from everyvoice.wizard.basic import (
     ContactEmailStep,
     ContactNameStep,
+    ModelTypeStep,
     MoreDatasetsStep,
     NameStep,
     OutputPathStep,
@@ -19,6 +20,7 @@ def get_main_wizard_tour(trace: bool = False, debug_state: bool = False) -> Tour
             ContactNameStep(name=StepNames.contact_name_step),
             ContactEmailStep(name=StepNames.contact_email_step),
             OutputPathStep(name=StepNames.output_step),
+            ModelTypeStep(name=StepNames.model_type_step),
         ]
         + get_dataset_steps()
         + [MoreDatasetsStep(name=StepNames.more_datasets_step)],
