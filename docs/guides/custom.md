@@ -58,118 +58,17 @@ cd your_everyvoice_project
 ```
 
 !!! important
-After you run the Configuration Wizard 🧙, please inspect your text configuration `config/{{ config_filename('text') }}` to make sure everything looks right. That is, if some unexpected symbols show up, please inspect your data (if you remove symbols from the configuration here, they will be ignored during training). Sometimes characters that are treated as punctuation by default will need to be removed from the punctuation list if they are treated as non-punctuation in your language.
+    After you run the Configuration Wizard 🧙, please inspect your text configuration `config/{{ config_filename('text') }}` to make sure everything looks right. That is, if some unexpected symbols show up, please inspect your data (if you remove symbols from the configuration here, they will be ignored during training). Sometimes characters that are treated as punctuation by default will need to be removed from the punctuation list if they are treated as non-punctuation in your language.
 
-## Step 5: Run the Preprocessor
+## Step 5: Choose a Model
 
-Your models need to do a number of preprocessing steps in order to prepare for training. To preprocess everything you need, run the following:
+EveryVoice supports two model architectures, and the right choice depends on what you want to prioritize. The Configuration Wizard 🧙 will have already asked you which model you want to train — this section explains the difference so you know what you're getting into.
 
-```bash
-everyvoice preprocess config/{{ config_filename('text-to-spec') }}
-```
+**[FastSpeech2](./fastspeech2.md)** is a two-stage pipeline: a feature prediction network converts text to mel spectrograms, and then a separate vocoder converts those spectrograms to audio. It trains relatively quickly (usually less than a day for most datasets on a single GPU), and produces good, consistent speech. If this is your first time training a TTS model with EveryVoice, or if you want reliable results without a lot of fuss, this is a good place to start. Even if you plan on training a StyleTTS2 model, this is a good low-cost option for training a model with your data. If your system isn't intelligible with FastSpeech2, it certainly won't work with StyleTTS2, and the solution is likely to be found in fixing issues in your data. If your FastSpeech2 system sounds pretty good, and you want to take it to the next level, try StyleTTS2.
 
-## Step 6: Select a Vocoder
+**[StyleTTS2](./styletts2.md)** is an end-to-end model that goes directly from text to audio in a single pass, using a diffusion process to model speaking style and other unlabelled variation (i.e. recording environment, minor dialect differences). At synthesis time it takes a short reference audio clip and uses it to match the style. Training is split into two stages and it takes a lot longer than FastSpeech2 (over a week with multiple GPUs on most datasets), but can produce particularly natural-sounding speech, especially for expressive or varied speaking styles.
 
-You do not need to train your own vocoder.
-EveryVoice is compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint from [the official HiFiGAN implementation](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model), which is very good quality. You can find the EveryVoice-compatible version of this checkpoint [here](https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing).
+If you're not sure which to pick, start with FastSpeech2.
 
-You can download the checkpoint by following the link above, or you can download it using the command line with [gdown](https://pypi.org/project/gdown/). First ensure that you have _gdown_ installed; you can install it with `pip install gdown`. Then to download the checkpoint you can run:
-
-```bash
-gdown https://drive.google.com/uc?id=1-iarZV2hTeociQjTX7l2WShuXalROGQf
-```
-
-Using a pre-trained vocoder is recommended, and the above checkpoint should work well even for new languages after [finetuning](./finetune.md).
-
-### Train your own Vocoder
-
-You might want to train your own vocoder, but this takes a long time (up to 2 weeks on a single GPU), uses a lot of electricity, and unless you know what you are doing, you are unlikely to improve upon the publicly available models discussed above, even for a new language. So we do not recommend it. You are almost always better off just using the pre-trained vocoder and then [finetuning](./finetune.md) on the predictions from your feature prediction network. If you really do want to train your own vocoder though, you can run the following command:
-
-```bash
-everyvoice train spec-to-wav config/{{ config_filename('spec-to-wav') }}
-```
-
-By default, we run our training with PyTorch Lightning's "auto" strategy. But, if you are on a machine where you know the hardware, you can specify it like:
-
-```bash
-everyvoice train spec-to-wav config/{{ config_filename('spec-to-wav') }} -d 1 -a gpu
-```
-
-Which would use the GPU accelerator (`-a gpu`) and specify 1 device/chip (`-d 1`).
-
-## Step 7: Train your Feature Prediction Network
-
-To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the `config/{{ config_filename('text-to-spec') }}`
-
-At the bottom of that file you'll find a key called `vocoder_path`. Add the absolute path to your trained vocoder (here it would be `/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.)
-
-Once you've replaced the `vocoder_path` key, you can train your feature prediction network:
-
-```bash
-everyvoice train text-to-spec config/{{ config_filename('text-to-spec') }}
-```
-
-!!! tip
-While your model is training, you can use TensorBoard to view the logs which will show information about the progress of training and display spectrogram images. If you have provided a `vocoder_path` key, then you will also be able to hear audio in the logs. To use TensorBoard, make sure that your conda environment is activated and run `tensorboard --logdir path/to/logs_and_checkpoints`. Then your logs will be viewable at [http://localhost:6006](http://localhost:6006).
-
-## Step 8 (optional): Finetune your Vocoder
-
-When you have finished training your Feature Prediction Network, we recommend [finetuning](./finetune.md) your vocoder. This step is optional, but it will help get rid of metallic artefacts that are often present if you don't finetune your vocoder. Note, it will likely not help with any mispronounciations. If you notice these types of errors, it is likely due to issues with the training data (e.g. too much variation in pronunciation or recording quality in the dataset, or discrepencies between the recording and transcription.)
-
-## Step 9: Synthesize Speech in Your Language!
-
-#### Command Line
-
-You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export the wav or spectrogram (pt) files.
-
-```bash
-everyvoice synthesize from-text logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1 --output-type wav
-```
-
-#### Demo App
-
-You can also synthesize audio by starting up the EveryVoice Demo using your Feature Prediction and Vocoder checkpoints:
-
-```bash
-everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
-```
-
-And an interactive demo will be available at [http://localhost:7260](http://localhost:7260)
-
-Please consult the demo help for more information on how to use the demo: `everyvoice demo --help`.
-
-You can provide a custom json configuration file to override parts of the user interface the demo by using the `--ui-config-file` or `-C` flag, e.g. `everyvoice demo --ui-config-file=my_config.json  logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt`.
-
-This user interface configuration can provide a custom title (`app_title`), and custom labels for other UI elements as well as display for the languages and speakers. See sample below:
-
-```json
-{
-  "app_title": "My Custom TTS Demo",
-  "app_description": "This is a custom text-to-speech demo for my language.",
-  "app_instructions": "Type your text in the box below and click 'Generate speech' to generate it spoken in the selected language and by the selected speaker.",
-  "languages": {
-    "en": "English",
-    "fr": "French"
-  },
-  "speakers": {
-    "speaker1": "Speaker One",
-    "speaker2": "Speaker Two"
-  },
-  "input_text_label": "Input Text",
-  "duration_multiplier_label": "Duration Multiplier",
-  "language_label": "Language",
-  "speaker_label": "Speaker",
-  "output_format_label": "Output Format",
-  "synthesize_label": "Synthesize",
-  "file_output_label": "File Output"
-}
-```
-
-## Optional: Evaluation
-
-If you want to evaluate the model you just built, you can make use of the `everyvoice evaluate` command. In order to use it, you have to first generate some audio (see step 9) and then you can evaluate either a single file with `everyvoice evaluate -f your_file.wav` or a directory of audio files with `everyvoice evaluate -d path_to_wavs/`. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in [this](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680) paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: `everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav`. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.
-
-Please refer to `everyvoice evaluate --help` for more information.
-
-!!! note
-Automatic evaluation can be helpful, but please take the reported numbers with a grain of salt. They are not always reliable, and do not always correlate well with human judgements.
+- Continue with **[FastSpeech2 →](./fastspeech2.md)**
+- Continue with **[StyleTTS2 →](./styletts2.md)**
