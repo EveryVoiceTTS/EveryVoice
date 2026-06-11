@@ -128,7 +128,6 @@ def preprocess_base_command(
     cpus: Optional[int],
     overwrite: bool,
     debug: bool,
-    ood_data_file: Optional[Path] = None,
 ):
     from everyvoice.preprocessor import Preprocessor
 
@@ -146,8 +145,6 @@ def preprocess_base_command(
         to_process=steps,
         debug=debug,
     )
-    if ood_data_file is not None:
-        preprocessor.preprocess_ood(ood_data_file)
     return preprocessor, config, steps
 
 

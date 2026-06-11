@@ -1223,73 +1223,83 @@ class Preprocessor:
 
         self.save_config_lock(in_progress=False)
 
-    def preprocess_ood(self, ood_data_file: Path):
-        """Preprocess an OOD text file and write ``ood.psv`` to the save directory.
+    def preprocess_ood(
+        self,
+        ood_raw_data: dict[str, "tuple[Path, DatasetTextRepresentation]"],
+    ):
+        """Preprocess per-language OOD text files into ``{save_dir}/ood/{lang}.psv``.
 
-        The input file supports two formats:
+        Each entry in ``ood_raw_data`` maps a language code to ``(path, text_repr)``:
 
-        **Plain text** (one utterance per line, no ``|``):
-            All utterances are assigned ``"und"`` (undetermined).  G2P will not
-            be applied; only character tokenization is produced.  Sufficient for
-            character-based models.
+        * ``path`` — a local plain-text file with one utterance per line.
+        * ``text_repr`` — the representation of the source text:
 
-        **Language-annotated** (``language|text`` per line):
-            The language column is used verbatim, enabling multilingual OOD sets.
-            Use this format for multilingual models.
+          - ``DatasetTextRepresentation.characters``: raw text; character tokens are
+            always produced and phone tokens are added where a G2P engine is available.
+          - ``DatasetTextRepresentation.ipa_phones``: IPA phone strings; G2P is skipped
+            and only phone tokens are produced.
+          - ``DatasetTextRepresentation.arpabet``: ARPAbet notation; converted to IPA
+            then tokenized as phones (G2P skipped).
 
-        Text processing mirrors the main ``text`` preprocessing step: character
-        tokenization is always produced; phone tokenization is added where a G2P
-        engine is registered for the given language.
-
-        The output ``ood.psv`` is picked up automatically by
-        ``StyleTTS2DataModule`` when ``load_for_everyvoice=True``.
-
-        TODO: Update ``FilePathDataset`` OOD sampling to prefer items whose
-        language matches the current training utterance so that multilingual
-        models hear language-appropriate OOD text during validation.
+        Output PSV columns: ``basename``, ``language``, ``speaker``, the raw-text column
+        matching ``text_repr.value`` (``characters``, ``phones``, or ``arpabet``), plus
+        ``character_tokens`` and/or ``phone_tokens`` as produced by ``process_text``.
+        The per-language PSVs are picked up automatically by ``StyleTTS2DataModule``.
         """
         if self.text_processor is None:
             logger.error("Cannot preprocess OOD data: no text processor available.")
             return
 
-        with open(ood_data_file, "r", encoding="utf-8") as fh:
-            raw_lines = [ln.rstrip("\n") for ln in fh if ln.strip()]
-
-        # Detect format from the first line: if it contains '|', assume language|text.
-        language_annotated = raw_lines and "|" in raw_lines[0]
-
         process_fn = functools.partial(
             self.process_text, text_processor=self.text_processor, use_pfs=False
         )
 
-        filelist = []
-        for i, line in enumerate(tqdm(raw_lines, desc="Processing OOD text")):
-            if language_annotated:
-                parts = line.split("|", 1)
-                language, text = parts[0].strip(), (
-                    parts[1].strip() if len(parts) > 1 else ""
-                )
-            else:
-                # Plain-text mode: language unknown, G2P will not be applied.
-                # Use the language-annotated format to enable G2P for phone-based models.
-                language, text = "und", line.strip()
+        ood_dir = self.save_dir / "ood"
+        ood_dir.mkdir(parents=True, exist_ok=True)
 
-            if not text:
-                continue
-
-            item: dict[str, Any] = {
-                "basename": f"ood_{i:06d}",
-                "language": language,
-                "speaker": "ood",
-                "characters": text,
+        for lang, (path, text_repr) in ood_raw_data.items():
+            # Format detection: if the first line is a PSV header containing a
+            # known text column name, read via generic_psv_filelist_reader and
+            # extract that column.  Otherwise treat every line as raw text.
+            with open(path, "r", encoding="utf-8") as fh:
+                first_line = fh.readline()
+            first_fields = {f.strip() for f in first_line.split("|")}
+            _known_text_cols = {
+                DatasetTextRepresentation.characters.value,
+                DatasetTextRepresentation.ipa_phones.value,
+                DatasetTextRepresentation.arpabet.value,
             }
-            characters, phones, _ = process_fn(item)
-            if characters is not None:
-                item["character_tokens"] = characters
-            if phones is not None:
-                item["phone_tokens"] = phones
-            filelist.append(item)
+            if first_fields & _known_text_cols:
+                col = text_repr.value
+                psv_rows = generic_psv_filelist_reader(path)
+                raw_lines = [row[col] for row in psv_rows if row.get(col, "").strip()]
+            else:
+                with open(path, "r", encoding="utf-8") as fh:
+                    raw_lines = [ln.rstrip("\n") for ln in fh if ln.strip()]
 
-        output_path = self.save_dir / "ood.psv"
-        write_filelist(filelist, output_path)
-        logger.info(f"Wrote OOD filelist ({len(filelist)} items) to {output_path}")
+            filelist: list[dict[str, Any]] = []
+            for i, line in enumerate(
+                tqdm(raw_lines, desc=f"Processing OOD text [{lang}]")
+            ):
+                text = line.strip()
+                if not text:
+                    continue
+
+                item: dict[str, Any] = {
+                    "basename": f"ood_{lang}_{i:06d}",
+                    "language": lang,
+                    "speaker": "ood",
+                    text_repr.value: text,
+                }
+                characters, phones, _ = process_fn(item)
+                if characters is not None:
+                    item["character_tokens"] = characters
+                if phones is not None:
+                    item["phone_tokens"] = phones
+                filelist.append(item)
+
+            output_path = ood_dir / f"{lang}.psv"
+            write_filelist(filelist, output_path)
+            logger.info(
+                f"Wrote OOD filelist for '{lang}' ({len(filelist)} items) to {output_path}"
+            )
