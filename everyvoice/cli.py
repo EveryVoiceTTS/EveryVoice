@@ -15,6 +15,7 @@ from rich import print as rich_print
 from rich.panel import Panel
 
 from everyvoice._version import VERSION
+from everyvoice.base_cli import default_typer_args
 from everyvoice.base_cli.checkpoint import inspect, rename_speaker
 from everyvoice.base_cli.interfaces import (
     inference_base_command_interface,
@@ -81,19 +82,8 @@ from everyvoice.wizard import (
     TEXT_TO_WAV_CONFIG_FILENAME_PREFIX,
 )
 
-
-# See https://github.com/tiangolo/typer/issues/428#issuecomment-1238866548
-class TyperGroupOrderAsDeclared(typer.core.TyperGroup):
-    def list_commands(self, ctx):
-        return self.commands.keys()
-
-
 app = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    context_settings={"help_option_names": ["-h", "--help"]},
-    rich_markup_mode="markdown",
-    cls=TyperGroupOrderAsDeclared,
+    **default_typer_args,
     help="""
     # Welcome to the EveryVoice Command Line Interface
 
@@ -360,11 +350,7 @@ class ModelTypes(str, Enum):
 
 # Add the export commands
 export_group = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    context_settings={"help_option_names": ["-h", "--help"]},
-    rich_markup_mode="markdown",
-    cls=TyperGroupOrderAsDeclared,
+    **default_typer_args,
     help="""
     # Export Help
 
@@ -386,11 +372,7 @@ app.add_typer(
 
 # Add the segment commands
 segment_group = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    context_settings={"help_option_names": ["-h", "--help"]},
-    rich_markup_mode="markdown",
-    cls=TyperGroupOrderAsDeclared,
+    **default_typer_args,
     help=CLI_LONG_HELP,
 )
 
@@ -476,15 +458,7 @@ def new_project(
 
 
 preprocess_group = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    context_settings={
-        "allow_extra_args": True,
-        "ignore_unknown_options": True,
-        "help_option_names": ["-h", "--help"],
-    },
-    rich_markup_mode="markdown",
-    cls=TyperGroupOrderAsDeclared,
+    **default_typer_args,
     help="""
     # Preprocess Help
 
@@ -560,11 +534,7 @@ app.command(
 
 # Add the train commands
 train_group = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    context_settings={"help_option_names": ["-h", "--help"]},
-    rich_markup_mode="markdown",
-    cls=TyperGroupOrderAsDeclared,
+    **default_typer_args,
     help="""
     # Train Help
 
@@ -617,11 +587,7 @@ app.add_typer(
 
 # Add synthesize commands
 synthesize_group = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    context_settings={"help_option_names": ["-h", "--help"]},
-    rich_markup_mode="markdown",
-    cls=TyperGroupOrderAsDeclared,
+    **default_typer_args,
     help="""
     # Synthesize Help
 
@@ -655,11 +621,7 @@ app.add_typer(
 
 # Add fetch-pretrained commands
 fetch_pretrained_group = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    context_settings={"help_option_names": ["-h", "--help"]},
-    rich_markup_mode="markdown",
-    cls=TyperGroupOrderAsDeclared,
+    **default_typer_args,
     help="""
     # Fetch Pretrained Models
 
@@ -683,11 +645,7 @@ app.add_typer(
 
 # Add the checkpoint commands
 checkpoint_group = typer.Typer(
-    pretty_exceptions_show_locals=False,
-    no_args_is_help=True,
-    context_settings={"help_option_names": ["-h", "--help"]},
-    rich_markup_mode="markdown",
-    cls=TyperGroupOrderAsDeclared,
+    **default_typer_args,
     help="""
     # Checkpoint Help
 

@@ -11,10 +11,11 @@ from typing import Annotated, Any
 
 import typer
 
+from . import default_typer_args
 from .interfaces import typer_file_argument
 
 app = typer.Typer(
-    pretty_exceptions_show_locals=False,
+    **default_typer_args,
     help="Extract checkpoint's hyperparameters.",
 )
 

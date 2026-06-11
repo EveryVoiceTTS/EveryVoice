@@ -8,9 +8,10 @@ from typing import Annotated
 import typer
 from pydub import AudioSegment
 
+from everyvoice.base_cli import default_typer_args
 from everyvoice.utils import generic_dict_loader, read_festival
 
-app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
+app = typer.Typer(**default_typer_args)
 
 
 class MetadataFileFormat(str, Enum):
