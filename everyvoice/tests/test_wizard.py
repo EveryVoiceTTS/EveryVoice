@@ -484,6 +484,78 @@ class WizardTest(WizardTestBase):
         assert len(step.children) == 0
         assert "No dataset to save" in out.getvalue()
 
+    def test_ood_validation_source(self):
+        """OOD from validation split sets state and adds no child steps."""
+        tour = Tour(
+            "ood-validation",
+            [basic.OODDataStep(lang="und", name="OOD Data Step [und]")],
+        )
+        tour.state["ood_raw_data"] = {}
+        step = tour.steps[0]
+        with patch_menu_prompt(0):  # 0 = validation
+            step.run()
+        assert step.children == ()
+        assert tour.state["ood_raw_data"]["und"] == {"source_type": "validation"}
+
+    def test_ood_local_source(self):
+        """OOD from a local PSV file stores the path and text representation."""
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            ood_file = Path(tmpdir_s) / "ood.psv"
+            ood_file.write_text("basename|characters\nf1|foo bar\n", encoding="utf-8")
+            tour = Tour(
+                "ood-local",
+                [basic.OODDataStep(lang="und", name="OOD Data Step [und]")],
+            )
+            tour.state["ood_raw_data"] = {}
+            step = tour.steps[0]
+            with patch_menu_prompt(1):  # 1 = local
+                step.run()
+            assert len(step.children) == 1
+            assert isinstance(step.children[0], basic.OODLocalPathStep)
+            with patch_questionary(str(ood_file)):
+                step.children[0].run()
+            assert tour.state["ood_raw_data"]["und"] == {
+                "source_type": "local",
+                "local_path": str(ood_file),
+                "text_representation": "characters",
+            }
+
+    def test_ood_hf_source(self):
+        """OOD from HuggingFace stores repo_id and filename; HF network calls are mocked."""
+        import huggingface_hub
+
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            ood_file = Path(tmpdir_s) / "ood.psv"
+            ood_file.write_text("basename|characters\nf1|foo bar\n", encoding="utf-8")
+            tour = Tour(
+                "ood-hf",
+                [basic.OODDataStep(lang="eng", name="OOD Data Step [eng]")],
+            )
+            tour.state["ood_raw_data"] = {}
+            step = tour.steps[0]
+            with patch_menu_prompt(2):  # 2 = hf
+                step.run()
+            assert len(step.children) == 1
+            assert isinstance(step.children[0], basic.OODHFRepoIDStep)
+            repo_step = step.children[0]
+            with monkeypatch(huggingface_hub, "repo_exists", lambda *a, **kw: True):
+                with patch_questionary("everyvoice/StyleTTS2-English-OOD"):
+                    repo_step.run()
+            assert len(repo_step.children) == 1
+            assert isinstance(repo_step.children[0], basic.OODHFFilenameStep)
+            filename_step = repo_step.children[0]
+            with monkeypatch(
+                huggingface_hub, "hf_hub_download", lambda *a, **kw: str(ood_file)
+            ):
+                with patch_questionary("OOD_texts.txt"):
+                    filename_step.run()
+            assert tour.state["ood_raw_data"]["eng"] == {
+                "source_type": "hf",
+                "repo_id": "everyvoice/StyleTTS2-English-OOD",
+                "filename": "OOD_texts.txt",
+                "text_representation": "characters",
+            }
+
     def test_dataset_name(self):
         step = dataset.DatasetNameStep()
         with patch_questionary(("", "bad/name", "good-name"), True):
@@ -1129,7 +1201,11 @@ class WizardTest(WizardTestBase):
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
                         patch_menu_prompt(0),
-                        children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
+                        children_answers=[
+                            RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[en]
+                            RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[es]
+                            RecursiveAnswers(patch_menu_prompt(0)),  # ConfigFormatStep
+                        ],
                     ),
                 ],
             )
@@ -1224,7 +1300,10 @@ class WizardTest(WizardTestBase):
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
                         patch_menu_prompt(0),
-                        children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
+                        children_answers=[
+                            RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[und]
+                            RecursiveAnswers(patch_menu_prompt(0)),  # ConfigFormatStep
+                        ],
                     ),
                 ],
             )
@@ -1318,7 +1397,10 @@ class WizardTest(WizardTestBase):
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
                         patch_menu_prompt(0),
-                        children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
+                        children_answers=[
+                            RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[und]
+                            RecursiveAnswers(patch_menu_prompt(0)),  # ConfigFormatStep
+                        ],
                     ),
                 ],
             )
@@ -1505,7 +1587,10 @@ class WizardTest(WizardTestBase):
                     StepAndAnswer(
                         basic.MoreDatasetsStep(),
                         patch_menu_prompt(0),
-                        children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
+                        children_answers=[
+                            RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[und]
+                            RecursiveAnswers(patch_menu_prompt(0)),  # ConfigFormatStep
+                        ],
                     ),
                 ],
             )
@@ -1595,7 +1680,11 @@ class WizardTest(WizardTestBase):
                 ),
                 RecursiveAnswers(
                     patch_menu_prompt(0),
-                    children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
+                    children_answers=[
+                        RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[eng]
+                        RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[und]
+                        RecursiveAnswers(patch_menu_prompt(0)),  # ConfigFormatStep
+                    ],
                 ),
             ]
             steps_and_answers = [
@@ -1810,7 +1899,10 @@ class WizardTest(WizardTestBase):
                 ),
                 RecursiveAnswers(
                     patch_menu_prompt(0),
-                    children_answers=[RecursiveAnswers(patch_menu_prompt(0))],
+                    children_answers=[
+                        RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[und]
+                        RecursiveAnswers(patch_menu_prompt(0)),  # ConfigFormatStep
+                    ],
                 ),
             ]
             steps_and_answers = [

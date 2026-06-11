@@ -10,8 +10,6 @@
   - info@everyvoice.ca
 - - Output Path Step
   - .
-- - Model Type Step
-  - FastSpeech2
 - - Filelist Step
   - data/nfd-mixed-case.psv
 - - Dataset Permission Step
@@ -78,5 +76,7 @@
   - nfc-only
 - - More Datasets Step
   - 'no'
+- - OOD Data Step [und]
+  - "validation: use the validation split (warning: pollutes train/validation separation). If you don't intend to use StyleTTS2, or if you don't have any more data, please select this option."
 - - Config Format Step
   - 'yaml'
