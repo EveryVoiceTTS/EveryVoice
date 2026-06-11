@@ -62,7 +62,7 @@ cd your_everyvoice_project
 
 ## Step 5: Choose a Model
 
-EveryVoice supports two model architectures, and the right choice depends on what you want to prioritize. The Configuration Wizard 🧙 will have already asked you which model you want to train — this section explains the difference so you know what you're getting into.
+EveryVoice supports two model architectures, and the right choice depends on what you want to prioritize. This section explains the difference so you know what you're getting into.
 
 **[FastSpeech2](./fastspeech2.md)** is a two-stage pipeline: a feature prediction network converts text to mel spectrograms, and then a separate vocoder converts those spectrograms to audio. It trains relatively quickly (usually less than a day for most datasets on a single GPU), and produces good, consistent speech. If this is your first time training a TTS model with EveryVoice, or if you want reliable results without a lot of fuss, this is a good place to start. Even if you plan on training a StyleTTS2 model, this is a good low-cost option for training a model with your data. If your system isn't intelligible with FastSpeech2, it certainly won't work with StyleTTS2, and the solution is likely to be found in fixing issues in your data. If your FastSpeech2 system sounds pretty good, and you want to take it to the next level, try StyleTTS2.
 
