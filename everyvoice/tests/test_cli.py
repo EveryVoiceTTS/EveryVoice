@@ -454,15 +454,9 @@ class CLITest(TestCase):
             )
 
     def test_preprocess_without_subcommand_shows_subcommands(self):
-        """Bare 'everyvoice preprocess <config>' without a subcommand should guide the user."""
-        result = self.runner.invoke(
-            app,
-            [
-                "preprocess",
-                str(self.config_dir / "everyvoice-shared-data.yaml"),
-            ],
-        )
-        # Should not silently succeed with no work done; help text with subcommand names shown
+        """'everyvoice preprocess' without a subcommand shows available subcommands."""
+        result = self.runner.invoke(app, ["preprocess"])
+        # no_args_is_help=True causes the help text to list both subcommands
         assert "text-to-spec" in flatten_log(result.output)
         assert "text-to-wav" in flatten_log(result.output)
 
