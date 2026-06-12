@@ -18,3 +18,8 @@ default_typer_args = {
     "rich_markup_mode": "markdown",
     "cls": TyperGroupOrderAsDeclared,
 }
+
+
+def command(app: typer.Typer, no_args_is_help=True, **argv):
+    """Wrapper around app.command reversing the default value on no_args_is_help"""
+    return app.command(no_args_is_help=no_args_is_help, **argv)

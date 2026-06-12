@@ -11,7 +11,7 @@ from typing import Annotated, Any
 
 import typer
 
-from . import default_typer_args
+from . import command, default_typer_args
 from .interfaces import typer_file_argument
 
 app = typer.Typer(
@@ -154,7 +154,7 @@ def summarize_unknown_model(model_path: Path, checkpoint: dict) -> None:
         )
 
 
-@app.command()
+@command(app)
 def inspect(
     model_path: Annotated[
         Path, typer_file_argument(help="The path to your model checkpoint file.")
@@ -244,7 +244,7 @@ def inspect(
                     pass
 
 
-@app.command()
+@command(app)
 def rename_speaker(
     model_path: Annotated[
         Path, typer_file_argument(help="The path to your model checkpoint file.")

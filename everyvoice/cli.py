@@ -15,7 +15,7 @@ from rich import print as rich_print
 from rich.panel import Panel
 
 from everyvoice._version import VERSION
-from everyvoice.base_cli import default_typer_args
+from everyvoice.base_cli import command, default_typer_args
 from everyvoice.base_cli.checkpoint import inspect, rename_speaker
 from everyvoice.base_cli.interfaces import (
     inference_base_command_interface,
@@ -210,10 +210,10 @@ def main(
         sys.exit(0)
 
 
-@app.command(
+@command(
+    app,
     short_help="Evaluate your synthesized audio",
     name="evaluate",
-    no_args_is_help=True,
     help="""
     # Evalution help
 
@@ -358,7 +358,8 @@ export_group = typer.Typer(
     """,
 )
 
-export_group.command(
+command(
+    export_group,
     short_help=HFG_EXPORT_SHORT_HELP,
     name="spec-to-wav",
     help=HFG_EXPORT_LONG_HELP,
@@ -377,13 +378,15 @@ segment_group = typer.Typer(
 )
 
 
-segment_group.command(
+command(
+    segment_group,
     short_help=ALIGN_SINGLE_SHORT_HELP,
     name="align",
     help=ALIGN_SINGLE_LONG_HELP,
 )(ctc_segment_align_single)
 
-segment_group.command(
+command(
+    segment_group,
     short_help=EXTRACT_SEGMENTS_SHORT_HELP,
     name="extract",
     help=EXTRACT_SEGMENTS_LONG_HELP,
@@ -396,7 +399,9 @@ app.add_typer(
 )
 
 
-@app.command(
+@command(
+    app,
+    no_args_is_help=False,
     short_help="This command will help you create all the configuration necessary for using a new project.",
     help="""
     # This command will help you create all the configuration necessary for using a new project.
@@ -509,10 +514,10 @@ app.add_typer(
 
 
 # Add check_data to root
-app.command(
-    "check-data",
+command(
+    app,
+    name="check-data",
     short_help="Check your data for outliers or any anomalies",
-    no_args_is_help=True,
     help="""
     # Check Data Help
 
@@ -549,9 +554,9 @@ train_group = typer.Typer(
     """,
 )
 
-train_group.command(
+command(
+    train_group,
     name="text-to-spec",
-    no_args_is_help=True,
     short_help="Train your Text-to-Spec (FastSpeech2) model",
     help=f"""Train your text-to-spec model.  For example:
 
@@ -559,9 +564,9 @@ train_group.command(
     """,
 )(train_fs2)
 
-train_group.command(
+command(
+    train_group,
     name="spec-to-wav",
-    no_args_is_help=True,
     short_help="Train your Spec-to-Wav (HiFiGAN) model",
     help=f"""Train your spec-to-wav model.  For example:
 
@@ -569,9 +574,9 @@ train_group.command(
     """,
 )(train_hfg)
 
-train_group.command(
+command(
+    train_group,
     name="text-to-wav",
-    no_args_is_help=True,
     short_help="Train an end-to-end (StyleTTS2) model",
     help=f"""Train an end-to-end text-to-speech model. For example:
 
@@ -600,15 +605,12 @@ synthesize_group = typer.Typer(
     """,
 )
 
-synthesize_group.command(
-    name="from-text",
-)(synthesize_fs2)
+command(synthesize_group, name="from-text")(synthesize_fs2)
 
-synthesize_group.command(
-    name="from-spec",
-)(synthesize_hfg)
+command(synthesize_group, name="from-spec")(synthesize_hfg)
 
-synthesize_group.command(
+command(
+    synthesize_group,
     name="text-to-wav",
     short_help="Synthesize audio from text using a trained StyleTTS2 model",
 )(synthesize_styletts2)
@@ -632,7 +634,8 @@ fetch_pretrained_group = typer.Typer(
     """,
 )
 
-fetch_pretrained_group.command(
+command(
+    fetch_pretrained_group,
     name="text-to-wav",
     short_help="Download pretrained weights for StyleTTS2 training",
 )(fetch_pretrained_styletts2)
@@ -654,12 +657,14 @@ checkpoint_group = typer.Typer(
         - **rename-speaker** --- Rename a speaker in the checkpoint's parameters.
     """,
 )
-checkpoint_group.command(
+command(
+    checkpoint_group,
     name="inspect",
     short_help="Extract structural information from a checkpoint",
 )(inspect)
 
-checkpoint_group.command(
+command(
+    checkpoint_group,
     name="rename-speaker",
     short_help="Rename a speaker in the checkpoint's parameters",
 )(rename_speaker)
@@ -671,7 +676,7 @@ app.add_typer(
 )
 
 
-@app.command(hidden=True, short_help="Inspect a model checkpoint")
+@command(app, hidden=True, short_help="Inspect a model checkpoint")
 def inspect_checkpoint(model_path: Path):
     """
     Inspect a model checkpoint.
@@ -931,9 +936,9 @@ def _run_fs2_demo(
     )
 
 
-@app.command(
+@command(
+    app,
     name="demo",
-    no_args_is_help=True,
     short_help="Launch an interactive Gradio demo for any EveryVoice model",
 )
 @merge_args(inference_base_command_interface)
@@ -1134,7 +1139,7 @@ def demo(
 SCHEMAS_TO_OUTPUT: dict[str, Any] = {}  # dict[str, type[BaseModel]]
 
 
-@app.command(hidden=True)
+@command(app, no_args_is_help=False, hidden=True)
 def update_schemas(
     out_dir: Annotated[
         Optional[Path],
@@ -1203,9 +1208,7 @@ def update_schemas(
         )
 
 
-@app.command(
-    no_args_is_help=True,
-)
+@command(app)
 def g2p(
     lang_id: Annotated[str, typer.Argument(help="language id")],
     # Ignoring mypy since class FileText(io.TextIOWrapper)
