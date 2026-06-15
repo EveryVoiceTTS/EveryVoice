@@ -17,6 +17,9 @@ jobs:
         python-version: ["3.11", "3.12"]
       fail-fast: false
     runs-on: ubuntu-latest
+    env:
+      # Fix a bug in the ffmpeg installation via awalsh128/cache-apt-pkgs-action
+      LD_LIBRARY_PATH: /usr/lib/x86_64-linux-gnu/lapack:/usr/lib/x86_64-linux-gnu/blas
     steps:
       - uses: actions/checkout@v6
         with:
@@ -24,15 +27,9 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
-      - uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05 # v1.6.0
+      - uses: awalsh128/cache-apt-pkgs-action@681749ae568c81c2037cb9185e38b709b261bd2f # v1.6.1
         with:
-          packages: sox
-      - uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # @v3.1, with tool cache
-        id: ffmpeg
-        continue-on-error: true
-      - name: Alternate way to install ffmpeg if need be
-        if: steps.ffmpeg.outcome == 'failure'
-        run: sudo apt-get update && sudo apt-get install ffmpeg
+          packages: sox ffmpeg
       - name: Install uv
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
