@@ -1,6 +1,6 @@
 # Training a StyleTTS2 Model
 
-This page picks up from [Step 5: Choose a Model](./custom.md#step-5-choose-a-model) in the main guide. If you haven't completed Steps 1–4 yet, start there first.
+This page picks up from [Step 5: Choose a Model](./custom.md#step-5-choose-a-model) in the main guide. If you haven't completed [Steps 1–4 in the main guide](./custom.md) yet, start there first.
 
 ## Step 1: Fetch Pretrained Models
 

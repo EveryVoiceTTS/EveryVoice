@@ -1,6 +1,6 @@
 # Training a FastSpeech2 Model
 
-This page picks up from [Step 5: Choose a Model](./custom.md#step-5-choose-a-model) in the main guide. If you haven't completed Steps 1–4 yet, start there first.
+This page picks up from [Step 5: Choose a Model](./custom.md#step-5-choose-a-model) in the main guide. If you haven't completed [Steps 1–4 in the main guide](./custom.md) yet, start there first.
 
 ## Step 1: Run the Preprocessor
 
@@ -13,7 +13,7 @@ everyvoice preprocess text-to-spec config/{{ config_filename('text-to-spec') }}
 ## Step 2: Select a Vocoder
 
 You do not need to train your own vocoder.
-EveryVoice is compatible out-of-the-box with the UNIVERSAL_V1 HiFiGAN checkpoint from [the official HiFiGAN implementation](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model), which is very good quality. You can find the EveryVoice-compatible version of this checkpoint [here](https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing).
+EveryVoice is compatible with the UNIVERSAL_V1 HiFiGAN checkpoint from [the official HiFiGAN implementation](https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model), which is very good quality. You can find the EveryVoice-compatible version of this checkpoint [here](https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing).
 
 You can download the checkpoint by following the link above, or you can download it using the command line with [gdown](https://pypi.org/project/gdown/). First ensure that you have _gdown_ installed; you can install it with `pip install gdown`. Then to download the checkpoint you can run:
 
@@ -43,20 +43,18 @@ Which would use the GPU accelerator (`-a gpu`) and specify 1 device/chip (`-d 1`
 
 To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the `config/{{ config_filename('text-to-spec') }}`
 
-At the bottom of that file you'll find a key called `vocoder_path`. Add the absolute path to your trained vocoder (here it would be `/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.)
-
-Once you've replaced the `vocoder_path` key, you can train your feature prediction network:
+Then, you can train your feature prediction network:
 
 ```bash
 everyvoice train text-to-spec config/{{ config_filename('text-to-spec') }}
 ```
 
 !!! tip
-    While your model is training, you can use TensorBoard to view the logs which will show information about the progress of training and display spectrogram images. If you have provided a `vocoder_path` key, then you will also be able to hear audio in the logs. To use TensorBoard, make sure that your conda environment is activated and run `tensorboard --logdir path/to/logs_and_checkpoints`. Then your logs will be viewable at [http://localhost:6006](http://localhost:6006).
+    While your model is training, you can use TensorBoard to view the logs which will show information about the progress of training and display spectrogram images. At the bottom of the `config/{{ config_filename('text-to-spec') }}` file you'll find a key called `vocoder_path`. Add the absolute path to your trained vocoder (here it would be `/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt` where `/path/to` would be the actual path to it on your computer.) If you provide `vocoder_path` key, then you will also be able to hear audio in the logs. To use TensorBoard, make sure that your conda environment is activated and run `tensorboard --logdir path/to/logs_and_checkpoints`. Then your logs will be viewable at [http://localhost:6006](http://localhost:6006).
 
 ## Step 4 (optional): Finetune your Vocoder
 
-When you have finished training your Feature Prediction Network, we recommend [finetuning](./finetune.md) your vocoder. This step is optional, but it will help get rid of metallic artefacts that are often present if you don't finetune your vocoder. Note, it will likely not help with any mispronounciations. If you notice these types of errors, it is likely due to issues with the training data (e.g. too much variation in pronunciation or recording quality in the dataset, or discrepencies between the recording and transcription.)
+When you have finished training your Feature Prediction Network, we recommend [finetuning](./finetune.md) your vocoder. This step is optional, but it will help get rid of metallic artefacts that are often present if you don't finetune your vocoder. Note, it will likely not help with any mispronounciations. If you notice these types of errors, it is likely due to issues with the training data (e.g. too much variation in pronunciation or recording quality in the dataset, or discrepancies between the recording and transcription.)
 
 ## Step 5: Synthesize Speech in Your Language!
 
