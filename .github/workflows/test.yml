@@ -152,15 +152,18 @@ jobs:
         with:
           sparse-checkout: pyproject.toml
           submodules: false
-      - run: pip install licensecheck --no-warn-conflicts
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          version: "0.11.21"
       - name: Run license check overall
         run: |
-          licensecheck --requirements-paths pyproject.toml --zero \
-            --ignore-packages text-unidecode pympi-ling pyworld pyworld-prebuilt audioread anytree gradio hf-gradio \
+          uvx licensecheck --requirements-paths pyproject.toml --zero \
+            --ignore-packages text-unidecode pympi-ling pyworld pyworld-prebuilt audioread anytree gradio hf-gradio setuptools \
             --skip-dependencies llvmlite \
             --ignore-licenses OTHER/PROPRIETARY || \
           ! echo "Package(s) listed with an X above is/are potentially a problem. Please review their licenses for compatibility with EveryVoice."
       - name: Make sure the PROPRIETARY packages are the known ones
         run: |
-          ! licensecheck --requirements-paths pyproject.toml --format csv 2> /dev/null | grep -v -E 'nvidia-|aiohappyeyeballs' | grep PROPRIETARY || \
+          ! uvx licensecheck --requirements-paths pyproject.toml --format csv 2> /dev/null | grep -v -E 'nvidia-|aiohappyeyeballs' | grep PROPRIETARY || \
           ! echo "Package(s) listed above is/are potentially a problem. Please review their licenses for compatibility with EveryVoice."
