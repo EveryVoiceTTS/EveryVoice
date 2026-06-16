@@ -499,30 +499,6 @@ preprocess_group = typer.Typer(
 )
 
 
-@preprocess_group.callback(invoke_without_command=True)
-def _preprocess_deprecated(ctx: typer.Context):
-    """Deprecated entry point — use a subcommand instead."""
-    if ctx.invoked_subcommand is not None:
-        return
-    suggestion = "text-to-spec"
-    if ctx.args:
-        config_path = Path(ctx.args[0])
-        if config_path.exists():
-            try:
-                from everyvoice.model.e2e.config import StyleTTS2Config
-
-                StyleTTS2Config.load_config_from_path(config_path)
-                suggestion = "text-to-wav"
-            except Exception:
-                pass
-    typer.echo(
-        f"Warning: 'everyvoice preprocess <config>' is deprecated.\n"
-        f"Please use 'everyvoice preprocess {suggestion} <config>' instead.",
-        err=True,
-    )
-    raise typer.Exit(code=1)
-
-
 preprocess_group.command(
     name="text-to-spec",
     no_args_is_help=True,
@@ -545,7 +521,7 @@ preprocess_group.command(
 
     **everyvoice preprocess text-to-wav config/{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
 
-    To also preprocess an out-of-domain (OOD) text file:
+    To also preprocess an out-of-distribution (OOD) text file:
 
     **everyvoice preprocess text-to-wav config/{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml --ood-data-file data/ood_texts.txt**
     """,

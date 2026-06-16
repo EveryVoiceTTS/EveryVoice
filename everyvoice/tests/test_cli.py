@@ -463,7 +463,13 @@ class CLITest(TestCase):
     def test_preprocess_text_to_wav_help(self):
         """'everyvoice preprocess text-to-wav --help' should exit cleanly."""
         result = self.runner.invoke(app, ["preprocess", "text-to-wav", "--help"])
-        assert result.exit_code == 0
+        # Exit code for no-arg-is-help is 0 with click<=8.1.8 and typer<=0.23.2,
+        # 2 if either is more recent
+        assert result.exit_code in (0, 2)
+        assert (
+            "Usage: everyvoice preprocess text-to-wav [OPTIONS] CONFIG_FILE"
+            in flatten_log(result.output)
+        )
 
     def test_expensive_imports_are_tucked_away(self):
         """Make sure expensive imports are tucked away form the CLI help"""

@@ -210,11 +210,11 @@ class OutputPathStep(Step):
 
 
 class OODDataStep(Step):
-    """Ask user for the OOD data source for a specific language."""
+    """Ask user for the out-of-distribution (OOD) data source for a specific language."""
 
     REVERSIBLE = True
     choices = (
-        "validation: use the validation split (warning: pollutes train/validation separation). If you don't intend to use StyleTTS2, or if you don't have any more data, please select this option.",
+        "validation: use the validation split ... (warning: pollutes train/validation separation). ... If you don't intend to use StyleTTS2, or if you don't have any more data, please select this option.",
         "local: provide a path to a local plain-text file",
         "hf: download from a HuggingFace Hub repository",
     )
@@ -226,7 +226,7 @@ class OODDataStep(Step):
     def prompt(self):
         rich_print(
             Panel(
-                "OOD (out-of-domain) texts are used by StyleTTS2 for calculating WavLM discriminator loss. "
+                "OOD (out-of-distribution) texts are used by StyleTTS2 for calculating WavLM discriminator loss. "
                 "They should come from outside your training and validation data and be the same language. "
                 "It only needs to be text, you do not need accompanying audio for this part.",
                 title=f"OOD Data for '{self.lang}'",
@@ -362,20 +362,15 @@ class OODHFRepoIDStep(Step):
                 "Please enter a valid HuggingFace repository ID in the format 'owner/repo'."
             )
             return False
-        try:
-            from huggingface_hub import repo_exists
 
-            if not repo_exists(response, repo_type="dataset"):
-                rich_print(
-                    f"[red]Repository '[bold]{response}[/bold]' was not found on "
-                    "HuggingFace Hub. Please check the ID and try again.[/red]"
-                )
-                return False
-        except Exception:
+        from huggingface_hub import repo_exists
+
+        if not repo_exists(response, repo_type="dataset"):
             rich_print(
-                "[yellow]Could not reach HuggingFace Hub to verify the repository. "
-                "Proceeding anyway.[/yellow]"
+                f"[red]Repository '[bold]{response}[/bold]' was not found on "
+                "HuggingFace Hub. Please check the ID and try again.[/red]"
             )
+            return False
         return True
 
     def effect(self):
@@ -446,11 +441,7 @@ class OODHFFilenameStep(Step):
                 f"[yellow]Could not access repository '[bold]{self.repo_id}[/bold]'. "
                 "Proceeding anyway.[/yellow]"
             )
-        except Exception:
-            rich_print(
-                "[yellow]Could not reach HuggingFace Hub to verify the file. "
-                "Proceeding anyway.[/yellow]"
-            )
+            return False
         return True
 
     def effect(self):
