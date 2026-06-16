@@ -262,7 +262,7 @@
     "OODDataHFSource": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
-      "description": "A HuggingFace-hosted OOD text file.",
+      "description": "A HuggingFace-hosted out-of-distribution (OOD) text file.",
       "properties": {
         "repo_id": {
           "description": "HuggingFace repository ID, e.g. 'everyvoice/ood-english'.",
@@ -298,7 +298,7 @@
     "OODDataSource": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
-      "description": "A single per-language OOD data source \u2014 either a local file or a HuggingFace repo file.",
+      "description": "A single per-language out-of-distribution (OOD) data source \u2014 either a local file or a HuggingFace repo file.",
       "properties": {
         "local_path": {
           "anyOf": [
@@ -1395,20 +1395,20 @@
           "additionalProperties": {
             "$ref": "#/$defs/OODDataSource"
           },
-          "description": "Per-language sources of raw OOD text, keyed by ISO language code (e.g. 'eng'). Each source is a local plain-text file or a HuggingFace repo file. Run 'everyvoice preprocess text-to-wav' to tokenize these into {preprocessing.save_dir}/ood/{lang}.psv before training.",
+          "description": "Per-language sources of raw out-of-distribution (OOD) text, keyed by ISO language code (e.g. 'eng'). Each source is a local plain-text file with a 'phones' or 'characters' header, or a HuggingFace repo file. Run 'everyvoice preprocess text-to-wav' to tokenize these into {preprocessing.save_dir}/ood/{lang}.psv before training.",
           "title": "Ood Raw Data",
           "type": "object"
         },
         "use_validation_as_ood": {
           "default": false,
-          "description": "Fall back to the validation split as OOD reference text when no preprocessed OOD data is found. Acceptable in applied settings but pollutes the train/val split \u2014 do not use when reporting research results.",
+          "description": "Fall back to the validation split as out-of-distribution (OOD) reference text when no preprocessed OOD data is found. Acceptable in applied settings but pollutes the train/val split \u2014 do not use when reporting research results.",
           "title": "Use Validation As Ood",
           "type": "boolean"
         },
-        "min_length": {
+        "OOD_min_length": {
           "default": 50,
           "description": "Minimum text length (characters) when sampling OOD validation texts.",
-          "title": "Min Length",
+          "title": "Ood Min Length",
           "type": "integer"
         },
         "optimizer": {
