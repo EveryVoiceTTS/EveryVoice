@@ -520,6 +520,39 @@ class WizardTest(WizardTestBase):
                 "text_representation": "characters",
             }
 
+    def test_ood_local_source_errors(self):
+        """OOD local path validation rejects: missing file, no PSV headers, wrong column."""
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            ood_file = Path(tmpdir_s) / "ood.psv"
+            ood_file.write_text("basename|characters\nf1|foo bar\n", encoding="utf-8")
+            no_column_file = Path(tmpdir_s) / "no_column.psv"
+            no_column_file.write_text("basename|text\nf1|foo bar\n", encoding="utf-8")
+            tour = Tour(
+                "ood-local-errors",
+                [basic.OODDataStep(lang="und", name="OOD Data Step [und]")],
+            )
+            tour.state["ood_raw_data"] = {}
+            step = tour.steps[0]
+            with patch_menu_prompt(1):  # 1 = local
+                step.run()
+            path_step = step.children[0]
+            # Try: nonexistent file, empty file (os.devnull = no PSV header),
+            # wrong column, then the valid file to end on success
+            with patch_questionary(
+                (
+                    str(Path(tmpdir_s) / "nonexistent.psv"),
+                    os.devnull,
+                    str(no_column_file),
+                    str(ood_file),
+                )
+            ):
+                with capture_stdout() as stdout:
+                    path_step.run()
+            output = flatten_log(stdout.getvalue())
+            assert "doesn't exist" in output
+            assert "does not have a pipe-separated header" in output
+            assert path_step.completed
+
     def test_ood_hf_source(self):
         """OOD from HuggingFace stores repo_id and filename; HF network calls are mocked."""
         import huggingface_hub
@@ -555,6 +588,35 @@ class WizardTest(WizardTestBase):
                 "filename": "OOD_texts.txt",
                 "text_representation": "characters",
             }
+
+    def test_ood_hf_repo_id_errors(self):
+        """OODHFRepoIDStep validation rejects: bad format, repo not found on HF."""
+        import huggingface_hub
+
+        tour = Tour(
+            "ood-hf-errors",
+            [basic.OODDataStep(lang="und", name="OOD Data Step [und]")],
+        )
+        tour.state["ood_raw_data"] = {}
+        step = tour.steps[0]
+        with patch_menu_prompt(2):  # 2 = hf
+            step.run()
+        repo_step = step.children[0]
+        # Try: no slash (bad format), repo not found, then valid repo
+        with monkeypatch(
+            huggingface_hub,
+            "repo_exists",
+            lambda repo_id, **kw: repo_id == "everyvoice/StyleTTS2-English-OOD",
+        ):
+            with patch_questionary(
+                ("noslash", "owner/nonexistent", "everyvoice/StyleTTS2-English-OOD")
+            ):
+                with capture_stdout() as stdout:
+                    repo_step.run()
+        output = flatten_log(stdout.getvalue())
+        assert "valid HuggingFace repository ID" in output
+        assert "was not found on HuggingFace Hub" in output
+        assert repo_step.completed
 
     def test_dataset_name(self):
         step = dataset.DatasetNameStep()
