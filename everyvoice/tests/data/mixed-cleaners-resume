@@ -77,6 +77,6 @@
 - - More Datasets Step
   - 'no'
 - - OOD Data Step [und]
-  - "validation: use the validation split (warning: pollutes train/validation separation). If you don't intend to use StyleTTS2, or if you don't have any more data, please select this option."
+  - "validation: use the validation split ... (warning: pollutes train/validation separation). ... If you don't intend to use StyleTTS2, or if you don't have any more data, please select this option."
 - - Config Format Step
   - 'yaml'

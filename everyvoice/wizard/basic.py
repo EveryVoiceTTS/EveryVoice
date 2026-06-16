@@ -297,7 +297,7 @@ class OODLocalPathStep(Step):
 
     def prompt(self):
         return questionary.path(
-            f"Path to OOD plain-text file for language '{self.lang}': ",
+            f"Path to OOD plain-text file for language '{self.lang}. Your text file should be a pipe separated file (e.g., basename|characters) and must have either a 'characters' or 'phones' column': ",
             style=CUSTOM_QUESTIONARY_STYLE,
         ).unsafe_ask()
 

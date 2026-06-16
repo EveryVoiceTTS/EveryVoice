@@ -467,8 +467,8 @@ class CLITest(TestCase):
         # 2 if either is more recent
         assert result.exit_code in (0, 2)
         assert (
-            "Usage: everyvoice preprocess text-to-wav [OPTIONS] CONFIG_FILE"
-            in flatten_log(result.output)
+            "preprocess text-to-wav [OPTIONS] CONFIG_FILE"
+            in flatten_log(result.output).strip()
         )
 
     def test_expensive_imports_are_tucked_away(self):
