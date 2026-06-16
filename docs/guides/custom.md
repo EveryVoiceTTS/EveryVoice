@@ -39,6 +39,12 @@ You can also use the "festival" format which is like this (example from [Sinhala
 
 In this format, there are corresponding wav files labelled sin_2241_0329430812.wav etc..
 
+### StyleTTS2 OOD Data
+
+One of the models supported by EveryVoice, named StyleTTS2, uses 'out-of-distribution' (OOD) data during training. Unlike standard TTS data, OOD text does **not** need corresponding audio. StyleTTS2 uses a pretrained WavLM discriminator that only judges whether generated audio sounds real or fake, so no audio is required for that loss. For best results, use text from the same language but outside your training set (hence "out of distribution").
+
+The configuration wizard (Step 4) will prompt you for this text. You can point to a file on your computer or on HuggingFace, but it must have a `characters` or `phones` header line. The wizard will also offer to use your validation data as OOD data, but this is not recommended since it can artificially lower your validation loss.
+
 ## Step 3: Install EveryVoice
 
 Head over to the [installation documentation](../install.md) and install EveryVoice
