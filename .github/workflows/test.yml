@@ -158,7 +158,7 @@ jobs:
           version: "0.11.21"
       - name: Run license check overall
         run: |
-          uvx licensecheck --requirements-paths pyproject.toml --zero \
+          uvx licensecheck==2026.0.1 --requirements-paths pyproject.toml --zero \
             --ignore-packages text-unidecode pympi-ling pyworld pyworld-prebuilt audioread anytree gradio hf-gradio setuptools \
             --skip-dependencies llvmlite \
             --ignore-licenses OTHER/PROPRIETARY || \
