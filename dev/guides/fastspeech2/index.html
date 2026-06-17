@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.everyvoice.ca/dev/guides/background/">
+        <link rel="canonical" href="https://docs.everyvoice.ca/dev/guides/fastspeech2/">
       
       
-        <link rel="prev" href="../ethics/">
+        <link rel="prev" href="../custom/">
       
       
-        <link rel="next" href="../custom/">
+        <link rel="next" href="../styletts2/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Background to TTS - EveryVoice TTS Toolkit Documentation</title>
+        <title>Training a FastSpeech2 Model - EveryVoice TTS Toolkit Documentation</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#background-to-text-to-speech" class="md-skip">
+        <a href="#training-a-fastspeech2-model" class="md-skip">
           Skip to content
         </a>
       
@@ -138,7 +138,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Background to TTS
+              Training a FastSpeech2 Model
             
           </span>
         </div>
@@ -440,19 +440,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../background/" class="md-nav__link">
         
   
   
@@ -468,7 +459,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -506,18 +496,20 @@
                 
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" checked>
         
           
           <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
@@ -538,7 +530,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -553,10 +545,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../fastspeech2/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training a FastSpeech2 Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -572,6 +591,137 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-run-the-preprocessor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Run the Preprocessor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-select-a-vocoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Select a Vocoder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 2: Select a Vocoder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#train-your-own-vocoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Train your own Vocoder
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-train-your-feature-prediction-network" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Train your Feature Prediction Network
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-optional-finetune-your-vocoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 (optional): Finetune your Vocoder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-synthesize-speech-in-your-language" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Synthesize Speech in Your Language!
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 5: Synthesize Speech in Your Language!">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Line
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Demo App
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optional-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional: Evaluation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -860,6 +1010,125 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-run-the-preprocessor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Run the Preprocessor
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-select-a-vocoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Select a Vocoder
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 2: Select a Vocoder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#train-your-own-vocoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Train your own Vocoder
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-train-your-feature-prediction-network" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Train your Feature Prediction Network
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-optional-finetune-your-vocoder" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4 (optional): Finetune your Vocoder
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-synthesize-speech-in-your-language" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Synthesize Speech in Your Language!
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 5: Synthesize Speech in Your Language!">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#command-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Command Line
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#demo-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Demo App
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#optional-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional: Evaluation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -878,10 +1147,79 @@
   
 
 
-<h1 id="background-to-text-to-speech">Background to Text-to-Speech<a class="headerlink" href="#background-to-text-to-speech" title="Permanent link">&para;</a></h1>
-<p>Consider what is required in order for speech-based communication to work. A speaker decides to utter a word, contracts their diaphragm to pull air into their lungs, and upon exhaling, returns the air through their vocal tract. They then contort their vocal tract in highly specific ways to reach a series of articulatory targets that they have associated with a particular meaning. The flow of air past these orchestrated contortions causes pressure fluctuations at varying frequencies that, upon impinging on the listener's ear drums, are processed and understood to represent the same meaning the speaker intended - magic!</p>
-<p>The idea of creating machines to simulate speech has origins as early as the 18th century when Hungarian inventor Wolfgang von Kempelen created his <a href="https://www.youtube.com/watch?v=k_YUB_S6Gpo">'speaking machine'</a> to woo crowds. Speech synthesis has since made tremendous gains, and is now employed to solve a variety of real world problems. While von Kempelen's machine attempted to replicate the anatomy required for speech, modern techniques use computers to work with discrete representations of sound and the last decade of improvements to speech synthesis have grown in tandem with the progress of the field of neural network-based machine learning.</p>
-<p>We intend to update this section with a variety of resources to help provide background on Text-to-Speech (TTS). In the meantime, please visit this <a href="https://github.com/NVIDIA/NeMo/blob/stable/tutorials/tts/NeMo_TTS_Primer.ipynb">excellent TTS primer</a> from the NVIDIA NeMo TTS toolkit. If you are interested in more in-depth learning about TTS and speech processing, we recommend the Speech Processing and Speech Synthesis courses on <a href="https://speech.zone/">Speech Zone</a>.</p>
+<h1 id="training-a-fastspeech2-model">Training a FastSpeech2 Model<a class="headerlink" href="#training-a-fastspeech2-model" title="Permanent link">&para;</a></h1>
+<p>This page picks up from <a href="../custom/#step-5-choose-a-model">Step 5: Choose a Model</a> in the main guide. If you haven't completed <a href="../custom/">Steps 1–4 in the main guide</a> yet, start there first.</p>
+<h2 id="step-1-run-the-preprocessor">Step 1: Run the Preprocessor<a class="headerlink" href="#step-1-run-the-preprocessor" title="Permanent link">&para;</a></h2>
+<p>Your model needs to do a number of preprocessing steps in order to prepare for training. To preprocess everything you need, run the following:</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>preprocess<span class="w"> </span>text-to-spec<span class="w"> </span>config/everyvoice-text-to-spec.yaml
+</code></pre></div>
+<h2 id="step-2-select-a-vocoder">Step 2: Select a Vocoder<a class="headerlink" href="#step-2-select-a-vocoder" title="Permanent link">&para;</a></h2>
+<p>You do not need to train your own vocoder.
+EveryVoice is compatible with the UNIVERSAL_V1 HiFiGAN checkpoint from <a href="https://github.com/jik876/hifi-gan?tab=readme-ov-file#pretrained-model">the official HiFiGAN implementation</a>, which is very good quality. You can find the EveryVoice-compatible version of this checkpoint <a href="https://drive.google.com/drive/folders/1ya0U4K2d26DoJamg96cEynMJ1w1Tm8nU?usp=sharing">here</a>.</p>
+<p>You can download the checkpoint by following the link above, or you can download it using the command line with <a href="https://pypi.org/project/gdown/">gdown</a>. First ensure that you have <em>gdown</em> installed; you can install it with <code>pip install gdown</code>. Then to download the checkpoint you can run:</p>
+<div class="highlight"><pre><span></span><code>gdown<span class="w"> </span>https://drive.google.com/uc?id<span class="o">=</span><span class="m">1</span>-iarZV2hTeociQjTX7l2WShuXalROGQf
+</code></pre></div>
+<p>Using a pre-trained vocoder is recommended, and the above checkpoint should work well even for new languages after <a href="../finetune/">finetuning</a>.</p>
+<h3 id="train-your-own-vocoder">Train your own Vocoder<a class="headerlink" href="#train-your-own-vocoder" title="Permanent link">&para;</a></h3>
+<p>You might want to train your own vocoder, but this takes a long time (up to 2 weeks on a single GPU), uses a lot of electricity, and unless you know what you are doing, you are unlikely to improve upon the publicly available models discussed above, even for a new language. So we do not recommend it. You are almost always better off just using the pre-trained vocoder and then <a href="../finetune/">finetuning</a> on the predictions from your feature prediction network. If you really do want to train your own vocoder though, you can run the following command:</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>spec-to-wav<span class="w"> </span>config/everyvoice-spec-to-wav.yaml
+</code></pre></div>
+<p>By default, we run our training with PyTorch Lightning's "auto" strategy. But, if you are on a machine where you know the hardware, you can specify it like:</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>spec-to-wav<span class="w"> </span>config/everyvoice-spec-to-wav.yaml<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span><span class="w"> </span>-a<span class="w"> </span>gpu
+</code></pre></div>
+<p>Which would use the GPU accelerator (<code>-a gpu</code>) and specify 1 device/chip (<code>-d 1</code>).</p>
+<h2 id="step-3-train-your-feature-prediction-network">Step 3: Train your Feature Prediction Network<a class="headerlink" href="#step-3-train-your-feature-prediction-network" title="Permanent link">&para;</a></h2>
+<p>To generate audio when you train your feature prediction network, you need to add your vocoder checkpoint to the <code>config/everyvoice-text-to-spec.yaml</code></p>
+<p>Then, you can train your feature prediction network:</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>train<span class="w"> </span>text-to-spec<span class="w"> </span>config/everyvoice-text-to-spec.yaml
+</code></pre></div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>While your model is training, you can use TensorBoard to view the logs which will show information about the progress of training and display spectrogram images. At the bottom of the <code>config/everyvoice-text-to-spec.yaml</code> file you'll find a key called <code>vocoder_path</code>. Add the absolute path to your trained vocoder (here it would be <code>/path/to/test/logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt</code> where <code>/path/to</code> would be the actual path to it on your computer.) If you provide <code>vocoder_path</code> key, then you will also be able to hear audio in the logs. To use TensorBoard, make sure that your conda environment is activated and run <code>tensorboard --logdir path/to/logs_and_checkpoints</code>. Then your logs will be viewable at <a href="http://localhost:6006">http://localhost:6006</a>.</p>
+</div>
+<h2 id="step-4-optional-finetune-your-vocoder">Step 4 (optional): Finetune your Vocoder<a class="headerlink" href="#step-4-optional-finetune-your-vocoder" title="Permanent link">&para;</a></h2>
+<p>When you have finished training your Feature Prediction Network, we recommend <a href="../finetune/">finetuning</a> your vocoder. This step is optional, but it will help get rid of metallic artefacts that are often present if you don't finetune your vocoder. Note, it will likely not help with any mispronounciations. If you notice these types of errors, it is likely due to issues with the training data (e.g. too much variation in pronunciation or recording quality in the dataset, or discrepancies between the recording and transcription.)</p>
+<h2 id="step-5-synthesize-speech-in-your-language">Step 5: Synthesize Speech in Your Language!<a class="headerlink" href="#step-5-synthesize-speech-in-your-language" title="Permanent link">&para;</a></h2>
+<h4 id="command-line">Command Line<a class="headerlink" href="#command-line" title="Permanent link">&para;</a></h4>
+<p>You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export the wav or spectrogram (pt) files.</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>from-text<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>-t<span class="w"> </span><span class="s2">&quot;මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ&quot;</span><span class="w"> </span>-a<span class="w"> </span>gpu<span class="w"> </span>-d<span class="w"> </span><span class="m">1</span><span class="w"> </span>--output-type<span class="w"> </span>wav
+</code></pre></div>
+<h4 id="demo-app">Demo App<a class="headerlink" href="#demo-app" title="Permanent link">&para;</a></h4>
+<p>You can also synthesize audio by starting up the EveryVoice Demo using your Feature Prediction and Vocoder checkpoints:</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>demo<span class="w"> </span>logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt<span class="w"> </span>logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
+</code></pre></div>
+<p>And an interactive demo will be available at <a href="http://localhost:7260">http://localhost:7260</a></p>
+<p>Please consult the demo help for more information on how to use the demo: <code>everyvoice demo --help</code>.</p>
+<p>You can provide a custom json configuration file to override parts of the user interface the demo by using the <code>--ui-config-file</code> or <code>-C</code> flag, e.g. <code>everyvoice demo --ui-config-file=my_config.json  logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt</code>.</p>
+<p>This user interface configuration can provide a custom title (<code>app_title</code>), and custom labels for other UI elements as well as display for the languages and speakers. See sample below:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;app_title&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;My Custom TTS Demo&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;app_description&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;This is a custom text-to-speech demo for my language.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;app_instructions&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Type your text in the box below and click &#39;Generate speech&#39; to generate it spoken in the selected language and by the selected speaker.&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;languages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;en&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;English&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;fr&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;French&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;speakers&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;speaker1&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Speaker One&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;speaker2&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Speaker Two&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;input_text_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Input Text&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;duration_multiplier_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Duration Multiplier&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;language_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Language&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;speaker_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Speaker&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;output_format_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Output Format&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;synthesize_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Synthesize&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;file_output_label&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;File Output&quot;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="optional-evaluation">Optional: Evaluation<a class="headerlink" href="#optional-evaluation" title="Permanent link">&para;</a></h2>
+<p>If you want to evaluate the model you just built, you can make use of the <code>everyvoice evaluate</code> command. In order to use it, you have to first generate some audio (see Step 5) and then you can evaluate either a single file with <code>everyvoice evaluate -f your_file.wav</code> or a directory of audio files with <code>everyvoice evaluate -d path_to_wavs/</code>. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in <a href="https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680">this</a> paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: <code>everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav</code>. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.</p>
+<p>Please refer to <code>everyvoice evaluate --help</code> for more information.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Automatic evaluation can be helpful, but please take the reported numbers with a grain of salt. They are not always reliable, and do not always correlate well with human judgements.</p>
+</div>
 
 
 
@@ -913,7 +1251,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../ethics/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Ethical Considerations and Consequences of TTS">
+          <a href="../custom/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Customize to your language">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -923,20 +1261,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Ethical Considerations and Consequences of TTS
+                Customize to your language
               </div>
             </div>
           </a>
         
         
           
-          <a href="../custom/" class="md-footer__link md-footer__link--next" aria-label="Next: Customize to your language">
+          <a href="../styletts2/" class="md-footer__link md-footer__link--next" aria-label="Next: Training a StyleTTS2 Model">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Customize to your language
+                Training a StyleTTS2 Model
               </div>
             </div>
             <div class="md-footer__button md-icon">
