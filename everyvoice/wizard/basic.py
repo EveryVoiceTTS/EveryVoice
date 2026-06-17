@@ -302,7 +302,10 @@ class OODLocalPathStep(Step):
         ).unsafe_ask()
 
     def sanitize_input(self, response):
-        return sanitize_paths(response)
+        # Resolve to absolute while the wizard's CWD is the correct reference.
+        # A relative path stored in the config would be resolved against the
+        # config file's directory on load, producing the wrong location.
+        return str(Path(sanitize_paths(response)).resolve())
 
     def validate(self, response) -> bool:
         if not validate_path(response, is_file=True, exists=True):

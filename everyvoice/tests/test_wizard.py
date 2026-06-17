@@ -36,6 +36,7 @@ from everyvoice.tests.stubs import (
     null_patch,
     patch_menu_prompt,
     patch_questionary,
+    temp_chdir,
 )
 from everyvoice.text.phonemizer import AVAILABLE_G2P_ENGINES
 from everyvoice.wizard import StepNames as SN
@@ -516,7 +517,7 @@ class WizardTest(WizardTestBase):
                 step.children[0].run()
             assert tour.state["ood_raw_data"]["und"] == {
                 "source_type": "local",
-                "local_path": str(ood_file),
+                "local_path": str(ood_file.resolve()),
                 "text_representation": "characters",
             }
 
@@ -552,6 +553,34 @@ class WizardTest(WizardTestBase):
             assert "doesn't exist" in output
             assert "does not have a pipe-separated header" in output
             assert path_step.completed
+
+    def test_ood_local_source_relative_path_becomes_absolute(self):
+        """A relative path entered in the wizard is stored as absolute in tour state.
+
+        A relative path saved verbatim would later be resolved against the config file's
+        directory (not the wizard's CWD), producing the wrong location during preprocessing.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir_s:
+            tmpdir = Path(tmpdir_s)
+            ood_file = tmpdir / "ood.psv"
+            ood_file.write_text("basename|characters\nf1|foo bar\n", encoding="utf-8")
+            wizard_cwd = tmpdir / "subdir"
+            wizard_cwd.mkdir()
+            tour = Tour(
+                "ood-local-rel",
+                [basic.OODDataStep(lang="und", name="OOD Data Step [und]")],
+            )
+            tour.state["ood_raw_data"] = {}
+            step = tour.steps[0]
+            with patch_menu_prompt(1):  # 1 = local
+                step.run()
+            # Run the path step from a subdirectory, passing a relative path
+            with temp_chdir(wizard_cwd):
+                with patch_questionary("../ood.psv"):
+                    step.children[0].run()
+            stored = tour.state["ood_raw_data"]["und"]["local_path"]
+            assert Path(stored).is_absolute(), f"expected absolute path, got {stored!r}"
+            assert Path(stored).resolve() == ood_file.resolve()
 
     def test_ood_hf_source(self):
         """OOD from HuggingFace stores repo_id and filename; HF network calls are mocked."""
