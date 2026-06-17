@@ -214,7 +214,7 @@ class OODDataStep(Step):
 
     REVERSIBLE = True
     choices = (
-        "validation: use the validation split ... (warning: pollutes train/validation separation). ... If you don't intend to use StyleTTS2, or if you don't have any more data, please select this option.",
+        "validation: use the validation set data",
         "local: provide a path to a local plain-text file",
         "hf: download from a HuggingFace Hub repository",
     )
@@ -228,7 +228,11 @@ class OODDataStep(Step):
             Panel(
                 "OOD (out-of-distribution) texts are used by StyleTTS2 for calculating WavLM discriminator loss. "
                 "They should come from outside your training and validation data and be the same language. "
-                "It only needs to be text, you do not need accompanying audio for this part.",
+                "It only needs to be text, you do not need accompanying audio for this part. "
+                "If you don't have access to this data you can select 'validation' to use the (automatically generated) data validation set "
+                "If you don't intend to use StyleTTS2, or if you don't have any more data, please select this option. "
+                "If you are building a model for research purposes please be aware that using the validation data in this way could pollute the "
+                "training/validation split and artificially lower your validation loss. ",
                 title=f"OOD Data for '{self.lang}'",
             )
         )
@@ -265,7 +269,7 @@ class OODDataStep(Step):
             rich_print(
                 Panel(
                     "[yellow]Warning: using the validation split as OOD data will pollute your "
-                    "train/validation separation and may make your validation scores unreliable."
+                    "train/validation separation and may make your validation scores unreliable. "
                     "Unless you are training your model for research purposes, this is probably OK."
                     "[/yellow]",
                 )
@@ -297,7 +301,7 @@ class OODLocalPathStep(Step):
 
     def prompt(self):
         return questionary.path(
-            f"Path to OOD plain-text file for language '{self.lang}. Your text file should be a pipe separated file (e.g., basename|characters) and must have either a 'characters' or 'phones' column': ",
+            f"Path to OOD plain-text file for language '{self.lang}. Your text file must be a pipe separated file (e.g., basename|characters) and must have either a 'characters' or a 'phones' column': ",
             style=CUSTOM_QUESTIONARY_STYLE,
         ).unsafe_ask()
 

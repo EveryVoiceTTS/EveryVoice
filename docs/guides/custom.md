@@ -43,7 +43,11 @@ In this format, there are corresponding wav files labelled sin_2241_0329430812.w
 
 One of the models supported by EveryVoice, named StyleTTS2, uses 'out-of-distribution' (OOD) data during training. Unlike standard TTS data, OOD text does **not** need corresponding audio. StyleTTS2 uses a pretrained WavLM discriminator that only judges whether generated audio sounds real or fake, so no audio is required for that loss. For best results, use text from the same language but outside your training set (hence "out of distribution").
 
-The configuration wizard (Step 4) will prompt you for this text. You can point to a file on your computer or on HuggingFace, but it must have a `characters` or `phones` header line. The wizard will also offer to use your validation data as OOD data, but this is not recommended since it can artificially lower your validation loss.
+The configuration wizard (Step 4) will prompt you for this text. You can point to a file on your computer or on HuggingFace, but it must be a pipe-separated-value (PSV) file, with a header line, and containing a `characters` or a `phones` column. At minimum, a plain-text file with `characters` on the first line will do, as long as it can be parsed as a one-column PSV file.
+
+The wizard will also offer to use your validation data as OOD data, but this is not recommended when training StyleTTS2 since it can artificially lower your validation loss.
+
+Note that while the wizard will always ask you for OOD data, it is only used for training StyleTTS2 models, not FastSpeech2 models.
 
 ## Step 3: Install EveryVoice
 
