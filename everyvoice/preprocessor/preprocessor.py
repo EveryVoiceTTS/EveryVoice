@@ -16,7 +16,7 @@ from datetime import datetime
 from glob import glob
 from multiprocessing import Manager
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 import numpy.typing as npt
@@ -1222,3 +1222,84 @@ class Preprocessor:
         )
 
         self.save_config_lock(in_progress=False)
+
+    def preprocess_ood(
+        self,
+        ood_raw_data: dict[str, "tuple[Path, DatasetTextRepresentation]"],
+    ):
+        """Preprocess per-language OOD text files into ``{save_dir}/ood/{lang}.psv``.
+
+        Each entry in ``ood_raw_data`` maps a language code to ``(path, text_repr)``:
+
+        * ``path`` — a local plain-text file with one utterance per line.
+        * ``text_repr`` — the representation of the source text:
+
+          - ``DatasetTextRepresentation.characters``: raw text; character tokens are
+            always produced and phone tokens are added where a G2P engine is available.
+          - ``DatasetTextRepresentation.ipa_phones``: IPA phone strings; G2P is skipped
+            and only phone tokens are produced.
+          - ``DatasetTextRepresentation.arpabet``: ARPAbet notation; converted to IPA
+            then tokenized as phones (G2P skipped).
+
+        Output PSV columns: ``basename``, ``language``, ``speaker``, the raw-text column
+        matching ``text_repr.value`` (``characters``, ``phones``, or ``arpabet``), plus
+        ``character_tokens`` and/or ``phone_tokens`` as produced by ``process_text``.
+        The per-language PSVs are picked up automatically by ``StyleTTS2DataModule``.
+        """
+        if self.text_processor is None:
+            logger.error("Cannot preprocess OOD data: no text processor available.")
+            return
+
+        process_fn = functools.partial(
+            self.process_text, text_processor=self.text_processor, use_pfs=False
+        )
+
+        ood_dir = self.save_dir / "ood"
+        ood_dir.mkdir(parents=True, exist_ok=True)
+
+        for lang, (path, text_repr) in ood_raw_data.items():
+            # Format detection: if the first line is a PSV header containing a
+            # known text column name, read via generic_psv_filelist_reader and
+            # extract that column.  Otherwise treat every line as raw text.
+            with open(path, "r", encoding="utf-8") as fh:
+                first_line = fh.readline()
+            first_fields = {f.strip() for f in first_line.split("|")}
+            _known_text_cols = {
+                DatasetTextRepresentation.characters.value,
+                DatasetTextRepresentation.ipa_phones.value,
+                DatasetTextRepresentation.arpabet.value,
+            }
+            if first_fields & _known_text_cols:
+                col = text_repr.value
+                psv_rows = generic_psv_filelist_reader(path)
+                raw_lines = [row[col] for row in psv_rows if row.get(col, "").strip()]
+            else:
+                with open(path, "r", encoding="utf-8") as fh:
+                    raw_lines = [ln.rstrip("\n") for ln in fh if ln.strip()]
+
+            filelist: list[dict[str, Any]] = []
+            for i, line in enumerate(
+                tqdm(raw_lines, desc=f"Processing OOD text [{lang}]")
+            ):
+                text = line.strip()
+                if not text:
+                    continue
+
+                item: dict[str, Any] = {
+                    "basename": f"ood_{lang}_{i:06d}",
+                    "language": lang,
+                    "speaker": "ood",
+                    text_repr.value: text,
+                }
+                characters, phones, _ = process_fn(item)
+                if characters is not None:
+                    item["character_tokens"] = characters
+                if phones is not None:
+                    item["phone_tokens"] = phones
+                filelist.append(item)
+
+            output_path = ood_dir / f"{lang}.psv"
+            write_filelist(filelist, output_path)
+            logger.info(
+                f"Wrote OOD filelist for '{lang}' ({len(filelist)} items) to {output_path}"
+            )

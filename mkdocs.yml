@@ -59,7 +59,10 @@ nav:
     - Ethical Considerations and Consequences of TTS: guides/ethics.md
     - Background to TTS: guides/background.md
     - Customize to your language: guides/custom.md
-    - How to fine-tune: guides/finetune.md
+    - Model Training:
+      - Training a FastSpeech2 Model: guides/fastspeech2.md
+      - Training a StyleTTS2 Model: guides/styletts2.md
+      - How to fine-tune: guides/finetune.md
   - Reference:
     - How to use: reference/index.md
     - Configuration: reference/configuration.md

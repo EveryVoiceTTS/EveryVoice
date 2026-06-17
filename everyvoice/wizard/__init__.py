@@ -45,3 +45,4 @@ class StepNames(Enum):
     sox_effects_step = "SoX Effects Step"
     more_datasets_step = "More Datasets Step"
     config_format_step = "Config Format Step"
+    ood_data_step = "OOD Data Step"

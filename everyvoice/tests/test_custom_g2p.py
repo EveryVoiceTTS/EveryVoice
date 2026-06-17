@@ -381,7 +381,19 @@ class CustomG2pTest(WizardTestBase):
                 ),
                 RecursiveAnswers(
                     patch_menu_prompt(0),  # no more data
-                    children_answers=[RecursiveAnswers(patch_menu_prompt(0))],  # yaml
+                    children_answers=[
+                        RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[git]
+                        RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[lang1]
+                        RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[my-lang]
+                        RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[str]
+                        RecursiveAnswers(patch_menu_prompt(0)),  # OODDataStep[und]
+                        RecursiveAnswers(
+                            patch_menu_prompt(0)
+                        ),  # OODDataStep[unknown-lang]
+                        RecursiveAnswers(
+                            patch_menu_prompt(0)
+                        ),  # ConfigFormatStep (yaml)
+                    ],
                 ),
             ]
             second_dataset_children_answers = [

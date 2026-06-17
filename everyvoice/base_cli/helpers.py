@@ -133,10 +133,8 @@ def preprocess_base_command(
 
     config = load_config_base_command(model_config, config_args, config_file)
     preprocessor = Preprocessor(config)
-    if isinstance(config, StyleTTS2Config):
-        steps = ["audio", "text"]
     if (
-        (isinstance(config, FastSpeech2Config) or isinstance(config, StyleTTS2Config))
+        (isinstance(config, (FastSpeech2Config, StyleTTS2Config)))
         and config.model.target_text_representation_level
         == TargetTrainingTextRepresentationLevel.phonological_features
     ):

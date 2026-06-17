@@ -319,15 +319,15 @@ class CLITest(TestCase):
                 f.write("asdf")
             result = self.runner.invoke(app, ["update-schemas", "-o", tmpdir_s])
             assert result.exit_code != 0
-            assert "ERROR" in result.output
-            assert "Out of date" in result.output
+            assert "ERROR" in flatten_log(result.output)
+            assert "Out of date" in flatten_log(result.output)
 
         # If everything above passed, running update-schemas should say schemas are up to date
         result = self.runner.invoke(app, ["update-schemas"])
         assert result.exit_code == 0
-        assert "already up to date" in result.output
-        assert "Out of date" not in result.output
-        assert "ERROR" not in result.output
+        assert "already up to date" in flatten_log(result.output)
+        assert "Out of date" not in flatten_log(result.output)
+        assert "ERROR" not in flatten_log(result.output)
 
     def test_evaluate(self):
         result = self.runner.invoke(
@@ -402,15 +402,19 @@ class CLITest(TestCase):
         fp_path, _ = self.get_dummy_models()
         result = self.runner.invoke(app, ["checkpoint", "inspect", str(fp_path)])
         assert result.exit_code == 0
-        assert "according to its model info: {'name': 'FastSpeech2'" in result.output
-        assert "Trainable params" in result.output
+        assert "according to its model info: {'name': 'FastSpeech2'" in flatten_log(
+            result.output
+        )
+        assert "Trainable params" in flatten_log(result.output)
 
     def test_inspect_good_vocoder_checkpoint(self) -> None:
         _, vocoder_path = self.get_dummy_models()
         result = self.runner.invoke(app, ["checkpoint", "inspect", str(vocoder_path)])
         assert result.exit_code == 0
-        assert "according to its model info: {'name': 'HiFiGAN'" in result.output
-        assert "Trainable params: 83,986,835" in result.output
+        assert "according to its model info: {'name': 'HiFiGAN'" in flatten_log(
+            result.output
+        )
+        assert "Trainable params: 83,986,835" in flatten_log(result.output)
 
     def test_export_and_inspect_generator(self) -> None:
         _, vocoder_path = self.get_dummy_models()
@@ -427,8 +431,8 @@ class CLITest(TestCase):
                 app, ["checkpoint", "inspect", str(exported_path)]
             )
             assert result.exit_code == 0
-            assert "HiFiGANGenerator" in result.output
-            assert "Trainable params: 13,254,034" in result.output
+            assert "HiFiGANGenerator" in flatten_log(result.output)
+            assert "Trainable params: 13,254,034" in flatten_log(result.output)
 
     def test_preprocessing_with_wrong_config(self):
         """
@@ -439,6 +443,7 @@ class CLITest(TestCase):
                 app,
                 [
                     "preprocess",
+                    "text-to-spec",
                     str(self.config_dir / "everyvoice-spec-to-wav.yaml"),
                 ],
             )
@@ -447,6 +452,24 @@ class CLITest(TestCase):
                 "We are expecting a FastSpeech2Config but it looks like you provided a HiFiGANConfig",
                 "\n".join(output),
             )
+
+    def test_preprocess_without_subcommand_shows_subcommands(self):
+        """'everyvoice preprocess' without a subcommand shows available subcommands."""
+        result = self.runner.invoke(app, ["preprocess"])
+        # no_args_is_help=True causes the help text to list both subcommands
+        assert "text-to-spec" in flatten_log(result.output)
+        assert "text-to-wav" in flatten_log(result.output)
+
+    def test_preprocess_text_to_wav_help(self):
+        """'everyvoice preprocess text-to-wav --help' should exit cleanly."""
+        result = self.runner.invoke(app, ["preprocess", "text-to-wav", "--help"])
+        # Exit code for no-arg-is-help is 0 with click<=8.1.8 and typer<=0.23.2,
+        # 2 if either is more recent
+        assert result.exit_code in (0, 2)
+        assert (
+            "preprocess text-to-wav [OPTIONS] CONFIG_FILE"
+            in flatten_log(result.output).strip()
+        )
 
     def test_expensive_imports_are_tucked_away(self):
         """Make sure expensive imports are tucked away form the CLI help"""
@@ -484,7 +507,7 @@ class CLITest(TestCase):
             ],
         )
         assert result.exit_code != 0
-        assert "Invalid value" in result.output
+        assert "Invalid value" in flatten_log(result.output)
 
     EMPTY_DEMO_ARGS: dict[str, Any] = {
         "languages": [],
@@ -633,9 +656,9 @@ class CLITest(TestCase):
                     ],
                 )
             assert result.exit_code == 0
-            assert f"  - Port:           {port}" in result.output
-            assert "  - Share:          True" in result.output
-            assert f"  - Server Name:    {ip}" in result.output
+            assert f"Port: {port}" in flatten_log(result.output)
+            assert "Share: True" in flatten_log(result.output)
+            assert f"Server Name: {ip}" in flatten_log(result.output)
 
     def mock_demo_load_model_from_checkpoint(
         *_arg, **kwargs
@@ -1098,7 +1121,9 @@ class CLITest(TestCase):
                 )
                 # print(result.output)
                 assert result.exit_code != 0
-                assert "Speaker 'non_existing_speaker' not found" in result.output
+                assert "Speaker 'non_existing_speaker' not found" in flatten_log(
+                    result.output
+                )
 
     def test_rename_speaker_with_no_speakers(self):
         with tempfile.TemporaryDirectory() as tmpdir_str:
@@ -1124,7 +1149,7 @@ class CLITest(TestCase):
                 )
                 # print(result.output)
                 assert result.exit_code != 0
-                assert "No speakers found" in result.output
+                assert "No speakers found" in flatten_log(result.output)
 
 
 class TestBaseCLIHelper(TestCase):

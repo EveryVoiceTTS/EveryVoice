@@ -105,8 +105,11 @@ training:
   max_epochs: 1000
   max_len: 800
   max_steps: 100000
-  min_length: 50
-  ood_data: data/OOD_texts.txt
+  OOD_min_length: 50
+  ood_raw_data:
+    eng:
+      local_path: data/OOD_texts.txt
+      text_representation: phones
   optimizer: {bert_lr: 1.0e-05, ft_lr: 1.0e-05, lr: 0.0001}
   root_path: .
   save_top_k_ckpts: 5

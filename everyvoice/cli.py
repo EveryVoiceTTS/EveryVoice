@@ -38,6 +38,9 @@ from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
 from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.fetch_pretrained import (
     fetch_pretrained as fetch_pretrained_styletts2,
 )
+from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.preprocess import (
+    preprocess as preprocess_styletts2,
+)
 from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
     synthesize as synthesize_styletts2,
 )
@@ -472,24 +475,63 @@ def new_project(
     )
 
 
-# Add preprocess to root
-app.command(
-    short_help="Preprocess your data",
+preprocess_group = typer.Typer(
+    pretty_exceptions_show_locals=False,
     no_args_is_help=True,
-    help=f"""
+    context_settings={
+        "allow_extra_args": True,
+        "ignore_unknown_options": True,
+        "help_option_names": ["-h", "--help"],
+    },
+    rich_markup_mode="markdown",
+    cls=TyperGroupOrderAsDeclared,
+    help="""
     # Preprocess Help
 
-    This command will preprocess all of the data you need for use with EveryVoice.
+    Preprocess your data before training.
 
-    By default every step of the preprocessor will be done by running:
-    \n\n
-    **everyvoice preprocess config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**
-    \n\n
-    If you only want to process specific things, you can run specific commands by adding them as options for example:
-    \n\n
-    **everyvoice preprocess config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml -s energy -s pitch**
+        - **text-to-spec** --- preprocess data for a FastSpeech2 (text-to-spec) model.
+
+        - **text-to-wav** --- preprocess data for a StyleTTS2 (text-to-wav) model.
+            Only audio and text steps are run; pitch, energy, and spectrogram
+            features are computed on-the-fly during training.
+    """,
+)
+
+
+preprocess_group.command(
+    name="text-to-spec",
+    no_args_is_help=True,
+    short_help="Preprocess data for text-to-spec (FastSpeech2) training",
+    help=f"""Preprocess data for a FastSpeech2 text-to-spec model.
+
+    **everyvoice preprocess text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**
+
+    To run only specific steps:
+
+    **everyvoice preprocess text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml -s energy -s pitch**
     """,
 )(preprocess_fs2)
+
+preprocess_group.command(
+    name="text-to-wav",
+    no_args_is_help=True,
+    short_help="Preprocess data for text-to-wav (StyleTTS2) training",
+    help=f"""Preprocess data for a StyleTTS2 text-to-wav model.
+
+    **everyvoice preprocess text-to-wav config/{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
+
+    To also preprocess an out-of-distribution (OOD) text file:
+
+    **everyvoice preprocess text-to-wav config/{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml --ood-data-file data/ood_texts.txt**
+    """,
+)(preprocess_styletts2)
+
+app.add_typer(
+    preprocess_group,
+    name="preprocess",
+    short_help="Preprocess your data",
+)
 
 
 # Add check_data to root
