@@ -371,11 +371,20 @@ class Tour:
         while node is not None and q_and_a is not None:
             saved_node_name, saved_response = q_and_a
             if saved_node_name.lower() != node.name.lower():
-                rich_print(
-                    f"Error: next tour question is {node.name} but resume list has {saved_node_name} instead.\n"
-                    "Your resume-from file is likely out of sync. Aborting."
+                action = get_response_from_menu_prompt(
+                    f"[red]Error: the next tour question is {node.name} but the resume list has {saved_node_name} instead.\n"
+                    "Your resume-from file is likely out of sync.[/red]\n"
+                    "What would you like to do?",
+                    [
+                        "Continue from here",
+                        "Abort",
+                    ],
+                    return_indices=True,
                 )
-                sys.exit(1)
+                if action == 0:
+                    return node
+                else:
+                    sys.exit(1)
             if node.validate(saved_response):
                 if node.name != "Root":
                     rich_print(

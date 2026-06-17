@@ -2306,9 +2306,19 @@ class WizardTest(WizardTestBase):
                 f.write("".join(progress_lines[:-4]))
                 f.write("".join(progress_lines[-2:]))
                 f.write("".join(progress_lines[-4:-2]))
-            with self.assertRaises(SystemExit), capture_stdout() as out:
+            with (
+                self.assertRaises(SystemExit),
+                patch_menu_prompt(1),  # Abort when out of sync
+                capture_stdout() as out,
+            ):
                 tour.run(resume_from=questions_out_of_order)
             assert "out of sync" in out.getvalue()
+
+            # But we can also recover from out of sync now
+            with patch_menu_prompt(0):  # Continue anyway when out of sync
+                with patch_questionary(["project_name", "Jane Doe", "email@mail.com"]):
+                    tour.run(resume_from=questions_out_of_order)
+            assert tour.state == self.trivial_tour_results
 
             extra_question_not_in_tour = tmpdir / "extra-question"
             with open(extra_question_not_in_tour, "w", encoding="utf8") as f:
