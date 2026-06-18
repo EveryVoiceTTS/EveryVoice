@@ -226,6 +226,9 @@ def train_base_command(
         }
     )
 
+    if devices == "auto":
+        devices = os.environ.get("SLURM_GPUS_ON_NODE", "auto")
+
     lr_monitor = LearningRateMonitor(logging_interval="step")
     logger.info("Starting training.")
     # This callback will always save the last checkpoint
