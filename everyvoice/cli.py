@@ -478,9 +478,9 @@ preprocess_group = typer.Typer(
 )
 
 
-preprocess_group.command(
+command(
+    preprocess_group,
     name="text-to-spec",
-    no_args_is_help=True,
     short_help="Preprocess data for text-to-spec (FastSpeech2) training",
     help=f"""Preprocess data for a FastSpeech2 text-to-spec model.
 
@@ -492,9 +492,9 @@ preprocess_group.command(
     """,
 )(preprocess_fs2)
 
-preprocess_group.command(
+command(
+    preprocess_group,
     name="text-to-wav",
-    no_args_is_help=True,
     short_help="Preprocess data for text-to-wav (StyleTTS2) training",
     help=f"""Preprocess data for a StyleTTS2 text-to-wav model.
 

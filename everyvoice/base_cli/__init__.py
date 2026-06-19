@@ -20,6 +20,15 @@ default_typer_args = {
 }
 
 
-def command(app: typer.Typer, no_args_is_help=True, **argv):
-    """Wrapper around app.command reversing the default value on no_args_is_help"""
-    return app.command(no_args_is_help=no_args_is_help, **argv)
+def command(app: typer.Typer, no_args_is_help=True, **kwargs):
+    """Wrapper around app.command setting no_args_is_help=True by default
+
+    Usage: replace `@app.command(...)` by:
+
+        @command(app, ...)
+
+    When a command has no mandatory arguments or options, revert no_args_is_help:
+
+        @command(app, no_args_is_help=False, ...)
+    """
+    return app.command(no_args_is_help=no_args_is_help, **kwargs)

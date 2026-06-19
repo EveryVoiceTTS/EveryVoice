@@ -8,7 +8,7 @@ from typing import Annotated
 import typer
 from pydub import AudioSegment
 
-from everyvoice.base_cli import default_typer_args
+from everyvoice.base_cli import command, default_typer_args
 from everyvoice.utils import generic_dict_loader, read_festival
 
 app = typer.Typer(**default_typer_args)
@@ -21,7 +21,7 @@ class MetadataFileFormat(str, Enum):
     festival = "festival"
 
 
-@app.command(help="Standalone test script for subsampling corpora.")
+@command(app, help="Standalone test script for subsampling corpora.")
 def subsample(
     metadata_path: str,
     wavs_path: str,
