@@ -71,6 +71,9 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     export as export_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
+    preprocess as preprocess_hfg,
+)
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
@@ -491,6 +494,16 @@ command(
     **everyvoice preprocess text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml -s energy -s pitch**
     """,
 )(preprocess_fs2)
+
+command(
+    preprocess_group,
+    name="spec-to-wav",
+    short_help="Preprocess data for spec-to-wav (HiFiGAN) training",
+    help=f"""Preprocess data for a HiFiGAN spec-to-wav model.
+
+    **everyvoice preprocess spec-to-wav config/{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
+    """,
+)(preprocess_hfg)
 
 command(
     preprocess_group,
