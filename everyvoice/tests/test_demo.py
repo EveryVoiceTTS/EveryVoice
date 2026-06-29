@@ -13,7 +13,6 @@ from typer.testing import CliRunner
 
 from everyvoice.cli import app
 from everyvoice.demo.app import create_demo_app
-from everyvoice.tests.model_stubs import get_stubbed_model, get_stubbed_vocoder
 from everyvoice.tests.stubs import (
     TEST_DATA_DIR,
     flatten_log,
@@ -90,21 +89,19 @@ class TestDemo:
                 outputs=["wav"],
             )
 
-    def test_demo_with_wrong_models(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir_s:
-            tmpdir = Path(tmpdir_s)
-            _, fp_path = get_stubbed_model(tmpdir)
-            _, vocoder_path = get_stubbed_vocoder(tmpdir)
-            with raises(ValueError, match="maybe it's not actually a HiFiGAN model"):
-                create_demo_app(fp_path, fp_path, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
+    def test_demo_with_wrong_models(self, stubbed_model, stubbed_vocoder) -> None:
+        _, fp_path = stubbed_model
+        _, vocoder_path = stubbed_vocoder
+        with raises(ValueError, match="maybe it's not actually a HiFiGAN model"):
+            create_demo_app(fp_path, fp_path, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
 
-            with raises(ValueError, match="maybe it's not actually an fs2 model"):
-                create_demo_app(
-                    vocoder_path,
-                    vocoder_path,
-                    **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
-                    outputs=["wav"],
-                )
+        with raises(ValueError, match="maybe it's not actually an fs2 model"):
+            create_demo_app(
+                vocoder_path,
+                vocoder_path,
+                **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
+                outputs=["wav"],
+            )
 
     def mock_create_demo_app(self, *_args, **_kwargs):
         class MockCreateDemoApp:
@@ -119,61 +116,59 @@ class TestDemo:
 
         return MockCreateDemoApp()
 
-    def test_create_demo_app(self):
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
-            # This test is just to make sure that the demo app can be created with parameters for gradio
-            # and that it doesn't crash.
-            _, vocoder_path = get_stubbed_vocoder(tmpdir / "vocoder")
-            _, spec_model_path = get_stubbed_model(tmpdir / "spec_model")
-            # This test is just to make sure that the demo app params are passed correctly
-            port = 7000
-            ip = "123.456.78.90"
-            # with mock.patch(
-            #    "everyvoice.demo.app.create_demo_app",
-            #    side_effect=self.mock_create_demo_app,
-            # ):
-            with (
-                mock.patch(
-                    "everyvoice.cli._peek_model_class",
-                    return_value="FastSpeech2",
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.load_model_from_checkpoint",
-                    side_effect=self.mock_demo_load_model_from_checkpoint,
-                ),
-                mock.patch(
-                    "everyvoice.base_cli.helpers.inference_base_command",
-                    side_effect=mock_function_placeholder,
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.synthesize_audio",
-                    side_effect=mock_function_placeholder2,
-                ),
-                mock.patch(
-                    "gradio.Blocks.launch",
-                    return_value="Launching gradio app blocks",
-                    side_effect=mock_function_placeholder2,
-                ),
-            ):
-                result = CliRunner().invoke(
-                    app,
-                    [
-                        "demo",
-                        str(spec_model_path),
-                        "--vocoder",
-                        str(vocoder_path),
-                        "--port",
-                        port,
-                        "--share",
-                        "--server-name",
-                        ip,  # Mock IP address
-                    ],
-                )
-            assert result.exit_code == 0
-            assert f"Port: {port}" in flatten_log(result.output)
-            assert "Share: True" in flatten_log(result.output)
-            assert f"Server Name: {ip}" in flatten_log(result.output)
+    def test_create_demo_app(self, stubbed_model, stubbed_vocoder):
+        # This test is just to make sure that the demo app can be created with parameters for gradio
+        # and that it doesn't crash.
+        _, vocoder_path = stubbed_vocoder
+        _, spec_model_path = stubbed_model
+        # This test is just to make sure that the demo app params are passed correctly
+        port = 7000
+        ip = "123.456.78.90"
+        # with mock.patch(
+        #    "everyvoice.demo.app.create_demo_app",
+        #    side_effect=self.mock_create_demo_app,
+        # ):
+        with (
+            mock.patch(
+                "everyvoice.cli._peek_model_class",
+                return_value="FastSpeech2",
+            ),
+            mock.patch(
+                "everyvoice.demo.app.load_model_from_checkpoint",
+                side_effect=self.mock_demo_load_model_from_checkpoint,
+            ),
+            mock.patch(
+                "everyvoice.base_cli.helpers.inference_base_command",
+                side_effect=mock_function_placeholder,
+            ),
+            mock.patch(
+                "everyvoice.demo.app.synthesize_audio",
+                side_effect=mock_function_placeholder2,
+            ),
+            mock.patch(
+                "gradio.Blocks.launch",
+                return_value="Launching gradio app blocks",
+                side_effect=mock_function_placeholder2,
+            ),
+        ):
+            result = CliRunner().invoke(
+                app,
+                [
+                    "demo",
+                    str(spec_model_path),
+                    "--vocoder",
+                    str(vocoder_path),
+                    "--port",
+                    port,
+                    "--share",
+                    "--server-name",
+                    ip,  # Mock IP address
+                ],
+            )
+        assert result.exit_code == 0
+        assert f"Port: {port}" in flatten_log(result.output)
+        assert "Share: True" in flatten_log(result.output)
+        assert f"Server Name: {ip}" in flatten_log(result.output)
 
     def mock_demo_load_model_from_checkpoint(
         *_arg, **kwargs
@@ -198,13 +193,15 @@ class TestDemo:
 
         return model, {}, {}, "cpu"  # Mock return values for the test
 
-    def test_create_demo_app_with_ui_config_file(self) -> None:
+    def test_create_demo_app_with_ui_config_file(
+        self, stubbed_model, stubbed_vocoder
+    ) -> None:
         with tempfile.TemporaryDirectory() as tmpdir_str:
             tmpdir = Path(tmpdir_str)
             # This test is just to make sure that the demo app can be created with parameters for gradio
             # and that it doesn't crash.
-            _, vocoder_path = get_stubbed_vocoder(tmpdir / "vocoder")
-            _, spec_model_path = get_stubbed_model(tmpdir / "spec_model")
+            _, vocoder_path = stubbed_vocoder
+            _, spec_model_path = stubbed_model
 
             # Create a dummy app config file
             config: dict = {
@@ -296,13 +293,15 @@ class TestDemo:
                 in result.output
             )
 
-    def test_create_demo_app_with_malformed_ui_config_file(self):
+    def test_create_demo_app_with_malformed_ui_config_file(
+        self, stubbed_model, stubbed_vocoder
+    ):
         with tempfile.TemporaryDirectory() as tmpdir_str:
             tmpdir = Path(tmpdir_str)
             # This test is just to make sure that the demo app can be created with parameters for gradio
             # and that it doesn't crash.
-            _, vocoder_path = get_stubbed_vocoder(tmpdir / "vocoder")
-            _, spec_model_path = get_stubbed_model(tmpdir / "spec_model")
+            _, vocoder_path = stubbed_vocoder
+            _, spec_model_path = stubbed_model
             # Create a malformed app config file (missing closing brace)
             config = """{
                 "app_title": "Test App",
@@ -475,51 +474,45 @@ class TestDemo:
                 result.output
             )
 
-    def test_demo_dispatch_fs2_requires_vocoder(self):
+    def test_demo_dispatch_fs2_requires_vocoder(self, stubbed_model):
         """Invoking demo with a FastSpeech2 checkpoint but no --vocoder should error."""
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
-            _, spec_model_path = get_stubbed_model(tmpdir / "spec_model")
+        _, spec_model_path = stubbed_model
 
-            with mock.patch(
-                "everyvoice.cli._peek_model_class",
-                return_value="FastSpeech2",
-            ):
-                result = CliRunner().invoke(
-                    app,
-                    ["demo", str(spec_model_path)],
-                )
-            assert result.exit_code != 0
-            assert "FastSpeech2 requires a vocoder checkpoint" in flatten_log(
-                result.output
+        with mock.patch(
+            "everyvoice.cli._peek_model_class",
+            return_value="FastSpeech2",
+        ):
+            result = CliRunner().invoke(
+                app,
+                ["demo", str(spec_model_path)],
             )
+        assert result.exit_code != 0
+        assert "FastSpeech2 requires a vocoder checkpoint" in flatten_log(result.output)
 
-    def test_demo_dispatch_fs2_rejects_ref_speaker(self):
+    def test_demo_dispatch_fs2_rejects_ref_speaker(
+        self, stubbed_model, stubbed_vocoder
+    ):
         """Passing --ref-speaker with a FastSpeech2 checkpoint should produce a clear error."""
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
-            _, vocoder_path = get_stubbed_vocoder(tmpdir / "vocoder")
-            _, spec_model_path = get_stubbed_model(tmpdir / "spec_model")
+        _, vocoder_path = stubbed_vocoder
+        _, spec_model_path = stubbed_model
 
-            with mock.patch(
-                "everyvoice.cli._peek_model_class",
-                return_value="FastSpeech2",
-            ):
-                result = CliRunner().invoke(
-                    app,
-                    [
-                        "demo",
-                        str(spec_model_path),
-                        "--vocoder",
-                        str(vocoder_path),
-                        "--ref-speaker",
-                        f"Eric={spec_model_path}",
-                    ],
-                )
-            assert result.exit_code != 0
-            assert "--ref-speaker is only used with StyleTTS2" in flatten_log(
-                result.output
+        with mock.patch(
+            "everyvoice.cli._peek_model_class",
+            return_value="FastSpeech2",
+        ):
+            result = CliRunner().invoke(
+                app,
+                [
+                    "demo",
+                    str(spec_model_path),
+                    "--vocoder",
+                    str(vocoder_path),
+                    "--ref-speaker",
+                    f"Eric={spec_model_path}",
+                ],
             )
+        assert result.exit_code != 0
+        assert "--ref-speaker is only used with StyleTTS2" in flatten_log(result.output)
 
     def test_demo_dispatch_vocoder_checkpoint_as_primary(self):
         """Passing a HiFiGAN checkpoint as the primary CHECKPOINT should give a helpful error."""
