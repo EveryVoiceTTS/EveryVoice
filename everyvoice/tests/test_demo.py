@@ -1,12 +1,14 @@
 import enum
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 from typing import Any
-from unittest import TestCase, mock
+from unittest import mock
 
 import typer
+from pytest import raises
 from typer.testing import CliRunner
 
 from everyvoice.cli import app
@@ -20,7 +22,7 @@ from everyvoice.tests.stubs import (
 )
 
 
-class TestDemo(TestCase):
+class TestDemo:
     def test_demo_with_bad_args(self):
         # No checkpoint → help message
         result = CliRunner().invoke(app, ["demo"])
@@ -55,60 +57,54 @@ class TestDemo(TestCase):
     def test_create_demo_app_with_errors(self):
         # outputs is the first thing to get checked, because it can be done as
         # a quick check before loading any models.
-        with self.assertRaises(ValueError) as cm:
+        with raises(ValueError, match="Empty outputs list"):
             create_demo_app(
                 text_to_spec_model_path=None,
                 spec_to_wav_model_path=None,
                 **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
                 outputs=[],
             )
-        assert "Empty outputs list" in str(cm.exception)
 
         class WrongEnum(str, enum.Enum):
             foo = "foo"
 
         for outputs in (["wav", WrongEnum.foo], ["textgrid", "foo"]):
-            with self.assertRaises(ValueError) as cm:
+            with raises(ValueError, match="Unknown output format 'foo'"):
                 create_demo_app(
                     text_to_spec_model_path=None,
                     spec_to_wav_model_path=None,
                     **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
                     outputs=outputs,
                 )
-            assert "Unknown output format 'foo'" in str(cm.exception)
 
     def test_demo_with_bad_models(self) -> None:
         devnull = Path(os.devnull)
-        with self.assertRaises(ValueError) as cm:
+        with raises(ValueError, match="It does not appear to be a valid checkpoint"):
             create_demo_app(devnull, devnull, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
-        assert "It does not appear to be a valid checkpoint" in str(cm.exception)
 
-        with self.assertRaises(ValueError) as cm:
+        with raises(ValueError, match="maybe it's not actually a HiFiGAN model"):
             create_demo_app(
                 devnull,
                 TEST_DATA_DIR / "test.ckpt",
                 **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
                 outputs=["wav"],
             )
-        assert "maybe it's not actually a HiFiGAN model" in str(cm.exception)
 
     def test_demo_with_wrong_models(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir_s:
             tmpdir = Path(tmpdir_s)
             _, fp_path = get_stubbed_model(tmpdir)
             _, vocoder_path = get_stubbed_vocoder(tmpdir)
-            with self.assertRaises(ValueError) as cm:
+            with raises(ValueError, match="maybe it's not actually a HiFiGAN model"):
                 create_demo_app(fp_path, fp_path, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
-            assert "maybe it's not actually a HiFiGAN model" in str(cm.exception)
 
-            with self.assertRaises(ValueError) as cm:
+            with raises(ValueError, match="maybe it's not actually an fs2 model"):
                 create_demo_app(
                     vocoder_path,
                     vocoder_path,
                     **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
                     outputs=["wav"],
                 )
-            assert "maybe it's not actually an fs2 model" in str(cm.exception)
 
     def mock_create_demo_app(self, *_args, **_kwargs):
         class MockCreateDemoApp:
@@ -286,18 +282,18 @@ class TestDemo(TestCase):
                 # print(result.output, result.exit_code)  # Debug output
 
             assert result.exit_code == 0
-            self.assertIn(
-                f"Using speakers from app config JSON: [('{config['speakers']['default']}', 'default')]",
-                result.output,
+            assert (
+                f"Using speakers from app config JSON: [('{config['speakers']['default']}', 'default')]"
+                in result.output
             )
-            self.assertIn(
-                f"Using languages from app config JSON: [('{config['languages']['default']}', 'default')]",
-                result.output,
+            assert (
+                f"Using languages from app config JSON: [('{config['languages']['default']}', 'default')]"
+                in result.output
             )
 
-            self.assertIn(
-                f"Using app title from app config JSON: {config['app_title']}",
-                result.output,
+            assert (
+                f"Using app title from app config JSON: {config['app_title']}"
+                in result.output
             )
 
     def test_create_demo_app_with_malformed_ui_config_file(self):
@@ -371,8 +367,8 @@ class TestDemo(TestCase):
                 )
                 # print(result.output, result.exit_code)  # Debug output
             assert result.exit_code != 0
-            self.assertRegex(
-                result.output, r"(?s)Your config file.*malformed.*has.*errors"
+            assert re.search(
+                r"(?s)Your config file.*malformed.*has.*errors", result.output
             )
 
     # unit test for error handling in load_app_ui_labels
@@ -399,7 +395,10 @@ class TestDemo(TestCase):
             },
         }
 
-        with self.assertRaises(typer.BadParameter) as cm:
+        with raises(
+            typer.BadParameter,
+            match="The 'languages' key in the app config JSON does not match the languages provided.",
+        ):
             load_app_ui_labels(
                 config_bad_language,
                 ["all"],
@@ -407,11 +406,10 @@ class TestDemo(TestCase):
                 ["default"],
                 ["default"],
             )
-        self.assertIn(
-            "The 'languages' key in the app config JSON does not match the languages provided.",
-            str(cm.exception),
-        )
-        with self.assertRaises(typer.BadParameter) as cm:
+        with raises(
+            typer.BadParameter,
+            match="The 'speakers' key in the app config JSON does not match the speakers provided.",
+        ):
             load_app_ui_labels(
                 config_bad_speaker,
                 ["all"],
@@ -419,11 +417,10 @@ class TestDemo(TestCase):
                 ["default"],
                 ["default"],
             )
-        self.assertIn(
-            "The 'speakers' key in the app config JSON does not match the speakers provided.",
-            str(cm.exception),
-        )
-        with self.assertRaises(typer.BadParameter) as cm:
+        with raises(
+            typer.BadParameter,
+            match=r"Language option has been activated, but valid languages have not been provided. The model has been trained in \['default'\] languages. Please select either 'all' or at least some of them.",
+        ):
             load_app_ui_labels(
                 config_bad_speaker,
                 ["default"],
@@ -432,11 +429,10 @@ class TestDemo(TestCase):
                 ["default"],
             )
 
-        self.assertIn(
-            "Language option has been activated, but valid languages have not been provided. The model has been trained in ['default'] languages. Please select either 'all' or at least some of them.",
-            str(cm.exception),
-        )
-        with self.assertRaises(typer.BadParameter) as cm:
+        with raises(
+            typer.BadParameter,
+            match=r"Speaker option has been activated, but valid speakers have not been provided. The model has been trained with \['default'\] speakers. Please select either 'all' or at least some of them.",
+        ):
             load_app_ui_labels(
                 config_bad_speaker,
                 ["unknown"],
@@ -444,10 +440,6 @@ class TestDemo(TestCase):
                 ["default"],
                 ["default"],
             )
-        self.assertIn(
-            "Speaker option has been activated, but valid speakers have not been provided. The model has been trained with ['default'] speakers. Please select either 'all' or at least some of them.",
-            str(cm.exception),
-        )
 
     def test_demo_dispatch_styletts2_rejects_vocoder_flag(self):
         """Passing --vocoder with a StyleTTS2 checkpoint should produce a clear error."""
