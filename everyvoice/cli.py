@@ -1333,12 +1333,16 @@ def check_text_config(
     config: Annotated[
         Optional[Path],
         typer_file_option(
-            help="path to text config, i.e., everyvoice-shared-text.yaml"
+            "--config",
+            "-c",
+            help="path to text config, i.e., everyvoice-shared-text.yaml",
         ),
     ] = None,
     model: Annotated[
         Optional[Path],
-        typer_file_option(help="path to a model whose text config will be used"),
+        typer_file_option(
+            "--model", "-m", help="path to a model whose text config will be used"
+        ),
     ] = None,
     text_file: Annotated[
         Optional[Path],
@@ -1351,8 +1355,10 @@ def check_text_config(
     language: Annotated[
         Optional[str],
         typer.Option(
+            "--language",
+            "-l",
             help="language id, required with --text-file, or for a psv file without a language column. "
-            + "Declaring the language is always required, because text normalization can be language specific, and g2p is always language specific."
+            + "Declaring the language is always required, because text normalization can be language specific, and g2p is always language specific.",
         ),
     ] = None,
 ):
