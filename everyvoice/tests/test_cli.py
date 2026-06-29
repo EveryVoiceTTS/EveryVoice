@@ -165,16 +165,12 @@ class CLITest(TestCase):
             VERSION as HFGL_VERSION,
         )
 
-        self.assertEqual(
-            major_minor(VERSION),
-            major_minor(FS2_VERSION),
-            "please keep FastSpeech2_lightning and EveryVoice major.minor verion in sync",
-        )
-        self.assertEqual(
-            major_minor(VERSION),
-            major_minor(HFGL_VERSION),
-            "please keep HiFiGAN_iSTFT_lightning and EveryVoice major.minor version in sync",
-        )
+        assert major_minor(VERSION) == major_minor(
+            FS2_VERSION
+        ), "please keep FastSpeech2_lightning and EveryVoice major.minor verion in sync"
+        assert major_minor(VERSION) == major_minor(
+            HFGL_VERSION
+        ), "please keep HiFiGAN_iSTFT_lightning and EveryVoice major.minor version in sync"
 
     def test_diagnostic(self):
         with capture_stdout():
@@ -228,9 +224,9 @@ class CLITest(TestCase):
                     ],
                 )
                 assert single_text_result.exit_code == 0
-                self.assertEqual(
-                    len(list(Path("single_text/wav").glob("*.wav"))), 1
-                )  # assert synthesizes a single file
+                assert (
+                    len(list(Path("single_text/wav").glob("*.wav"))) == 1
+                ), "should synthesize a single file"
                 filelist_result = self.runner.invoke(
                     app,
                     [
@@ -248,9 +244,9 @@ class CLITest(TestCase):
                     ],
                 )
                 assert filelist_result.exit_code == 0
-                self.assertEqual(
-                    len(list((tmpdir / "filelist" / "wav").glob("*.wav"))), 3
-                )  # assert synthesizes three files
+                assert (
+                    len(list((tmpdir / "filelist" / "wav").glob("*.wav"))) == 3
+                ), "should synthesize three files"
 
     def test_commands_present(self):
         result = self.runner.invoke(app, ["--help"])
@@ -285,11 +281,12 @@ class CLITest(TestCase):
                         obj_instance = obj()
                     except ValidationError:
                         obj_instance = obj(contact=dummy_contact)
-                    self.assertIsNone(
+                    assert (
                         jsonschema.validate(
                             json.loads(obj_instance.model_dump_json()),
                             schema=schema,
                         )
+                        is None
                     )
 
             # Make sure the generated schemas are identical to those saved in the repo,
@@ -305,11 +302,9 @@ class CLITest(TestCase):
                         raise AssertionError(
                             f'Schema file {filename} is missing, please run "everyvoice update-schemas".'
                         ) from e
-                    self.assertEqual(
-                        saved_schema,
-                        new_schema,
-                        'Schemas are out of date, please run "everyvoice update-schemas".',
-                    )
+                    assert (
+                        saved_schema == new_schema
+                    ), 'Schemas are out of date, please run "everyvoice update-schemas".'
 
             # Make sure we can't overwrite existing but out-of-date schemas by accident.
             with open(tmpdir / next(iter(SCHEMAS_TO_OUTPUT)), "w") as f:
@@ -355,12 +350,10 @@ class CLITest(TestCase):
             ],
         )
         assert dir_result.exit_code == 0
-        assert "LJ050-0269", dir_result.stdout in "should print out the basenames"
-        self.assertIn(
-            "Average STOI",
-            dir_result.stdout,
-            "should report metrics in terms of averages",
-        )
+        assert "LJ050-0269" in dir_result.stdout, "should print out the basenames"
+        assert (
+            "Average STOI" in dir_result.stdout
+        ), "should report metrics in terms of averages"
         evaluation_output = TEST_DATA_DIR / "lj" / "wavs" / "evaluation.json"
         assert evaluation_output.exists(), "should print results to a file"
         evaluation_output.unlink()
@@ -370,9 +363,9 @@ class CLITest(TestCase):
             app, ["inspect-checkpoint", str(TEST_DATA_DIR / "test.ckpt")]
         )
         assert result.exit_code == 0
-        self.assertIn(
-            "This command has been renamed to `everyvoice checkpoint inspect`",
-            flatten_log(result.stdout),
+        assert (
+            "This command has been renamed to `everyvoice checkpoint inspect`"
+            in flatten_log(result.stdout)
         )
 
     def test_inspect_checkpoint_help(self):
@@ -384,9 +377,9 @@ class CLITest(TestCase):
             app, ["checkpoint", "inspect", str(TEST_DATA_DIR / "test.ckpt")]
         )
         assert 'global_step": 52256' in result.stdout
-        self.assertIn(
-            "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version.",
-            result.stdout,
+        assert (
+            "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version."
+            in result.stdout
         )
         assert "It appears to have 0.0 M parameters." in result.stdout
         assert "Number of Parameters" in result.stdout
@@ -446,9 +439,9 @@ class CLITest(TestCase):
                 ],
             )
             assert result.exit_code == 1
-            self.assertIn(
-                "We are expecting a FastSpeech2Config but it looks like you provided a HiFiGANConfig",
-                "\n".join(output),
+            assert (
+                "We are expecting a FastSpeech2Config but it looks like you provided a HiFiGANConfig"
+                in "\n".join(output)
             )
 
     def test_preprocess_without_subcommand_shows_subcommands(self):
@@ -480,8 +473,8 @@ class CLITest(TestCase):
         )
 
         msg = '\n\nPlease avoid causing {} being imported from "everyvoice -h".\nIt is a relatively expensive import and slows down shell completion.\nRun "PYTHONPROFILEIMPORTTIME=1 everyvoice -h" and inspect the logs to see why it\'s being imported.'
-        self.assertNotIn(b"shared_types", result.stderr, msg.format("shared_types.py"))
-        self.assertNotIn(b"pydantic", result.stderr, msg.format("pydantic"))
+        assert b"shared_types" not in result.stderr, msg.format("shared_types.py")
+        assert b"pydantic" not in result.stderr, msg.format("pydantic")
 
     def test_g2p(self):
         result = self.runner.invoke(
@@ -497,7 +490,7 @@ class CLITest(TestCase):
 
         assert result.exit_code == 0
         assert "['hello', 'world']" in result.stdout
-        self.assertNotIn("['HELLO', 'WORLD']", result.stdout)
+        assert "['HELLO', 'WORLD']" not in result.stdout
 
     def test_rename_speaker(self):
         with tempfile.TemporaryDirectory() as tmpdir_str:
@@ -526,12 +519,12 @@ class CLITest(TestCase):
                 )
 
                 assert result.exit_code == 0
-                self.assertIn(
-                    "Renamed speaker 'old_speaker' to 'new_speaker'.", result.output
+                assert (
+                    "Renamed speaker 'old_speaker' to 'new_speaker'." in result.output
                 )
-                self.assertIn(
-                    "Updated speakers: {'another_speaker': 1, 'new_speaker': 0}",
-                    result.output,
+                assert (
+                    "Updated speakers: {'another_speaker': 1, 'new_speaker': 0}"
+                    in result.output
                 )
 
     def test_rename_speaker_with_non_existing_speaker(self):
@@ -617,13 +610,12 @@ class TestBaseCLIHelper(TestCase):
             assert hparams.exists()
             with hparams.open(mode="r", encoding="UTF8") as f:
                 config_reloaded = yaml.load(f, Loader=Loader)
-                self.assertEqual(
-                    config.training.logger.save_dir,
-                    Path(config_reloaded["training"]["logger"]["save_dir"]),
+                assert config.training.logger.save_dir == Path(
+                    config_reloaded["training"]["logger"]["save_dir"]
                 )
-                self.assertEqual(
-                    config.training.logger.name,
-                    config_reloaded["training"]["logger"]["name"],
+                assert (
+                    config.training.logger.name
+                    == config_reloaded["training"]["logger"]["name"]
                 )
 
 
