@@ -63,6 +63,20 @@ def major_minor(version):
     return f"{v.major}.{v.minor}"
 
 
+def mock_function_placeholder(*args, **kwargs):
+    """
+    Mock function to replace any function that we are not testing.
+    """
+    print("mock_fuction_placeholder called with args:", args, "and kwargs:", kwargs)
+
+
+def mock_function_placeholder2(**kwargs):
+    """
+    Mock function to replace any function that we are not testing.
+    """
+    print("mock_fuction_placeholder2 called with kwargs:", kwargs)
+
+
 class CLITest(TestCase):
     data_dir = Path(__file__).parent / "data"
     config_dir = Path(__file__).parent / "data" / "relative" / "config"
@@ -587,6 +601,100 @@ class CLITest(TestCase):
         assert "['hello', 'world']" in result.stdout
         self.assertNotIn("['HELLO', 'WORLD']", result.stdout)
 
+    def test_rename_speaker(self):
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            import torch
+
+            tmpdir = Path(tmpdir_str)
+            # Create a test checkpoint file with speakers
+            ckpt = {
+                "hyper_parameters": {
+                    "speaker2id": {"old_speaker": 0, "another_speaker": 1}
+                }
+            }
+            torch.save(ckpt, tmpdir / "test.ckpt")
+
+            with mock.patch("torch.save", side_effect=mock_function_placeholder):
+                # Mock the torch.save function to avoid writing files
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "checkpoint",
+                        "rename-speaker",
+                        str(tmpdir / "test.ckpt"),
+                        "old_speaker",
+                        "new_speaker",
+                    ],
+                )
+
+                assert result.exit_code == 0
+                self.assertIn(
+                    "Renamed speaker 'old_speaker' to 'new_speaker'.", result.output
+                )
+                self.assertIn(
+                    "Updated speakers: {'another_speaker': 1, 'new_speaker': 0}",
+                    result.output,
+                )
+
+    def test_rename_speaker_with_non_existing_speaker(self):
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            import torch
+
+            tmpdir = Path(tmpdir_str)
+            # Create a test checkpoint file with speakers
+            ckpt = {
+                "hyper_parameters": {
+                    "speaker2id": {"old_speaker": 0, "another_speaker": 1}
+                }
+            }
+            torch.save(ckpt, tmpdir / "test.ckpt")
+
+            with mock.patch("torch.save", side_effect=mock_function_placeholder):
+                # Test renaming a non-existing speaker
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "checkpoint",
+                        "rename-speaker",
+                        str(tmpdir / "test.ckpt"),
+                        "non_existing_speaker",
+                        "new_speaker",
+                    ],
+                )
+                # print(result.output)
+                assert result.exit_code != 0
+                assert "Speaker 'non_existing_speaker' not found" in flatten_log(
+                    result.output
+                )
+
+    def test_rename_speaker_with_no_speakers(self):
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            import torch
+
+            tmpdir = Path(tmpdir_str)
+
+            # Create an empty checkpoint file
+            empty_ckpt: dict = {"hyper_parameters": {"speaker2id": {}}}
+            torch.save(empty_ckpt, tmpdir / "empty.ckpt")
+
+            with mock.patch("torch.save", side_effect=mock_function_placeholder):
+                # Test renaming with no speakers in the checkpoint
+                result = self.runner.invoke(
+                    app,
+                    [
+                        "checkpoint",
+                        "rename-speaker",
+                        str(tmpdir / "empty.ckpt"),
+                        "old_speaker",
+                        "new_speaker",
+                    ],
+                )
+                # print(result.output)
+                assert result.exit_code != 0
+                assert "No speakers found" in flatten_log(result.output)
+
+
+class TestDemo(TestCase):
     def mock_create_demo_app(self, *_args, **_kwargs):
         class MockCreateDemoApp:
             def launch(self, *_args, **_kwargs):
@@ -629,19 +737,19 @@ class CLITest(TestCase):
                 ),
                 mock.patch(
                     "everyvoice.base_cli.helpers.inference_base_command",
-                    side_effect=self.mock_fuction_placeholder,
+                    side_effect=mock_function_placeholder,
                 ),
                 mock.patch(
                     "everyvoice.demo.app.synthesize_audio",
-                    side_effect=self.mock_fuction_placeholder2,
+                    side_effect=mock_function_placeholder2,
                 ),
                 mock.patch(
                     "gradio.Blocks.launch",
                     return_value="Launching gradio app blocks",
-                    side_effect=self.mock_fuction_placeholder2,
+                    side_effect=mock_function_placeholder2,
                 ),
             ):
-                result = self.runner.invoke(
+                result = CliRunner().invoke(
                     app,
                     [
                         "demo",
@@ -682,20 +790,6 @@ class CLITest(TestCase):
             )
 
         return model, {}, {}, "cpu"  # Mock return values for the test
-
-    def mock_fuction_placeholder(self, *args, **kwargs):
-        """
-        Mock function to replace any function that we are not testing.
-        """
-        print("mock_fuction_placeholder called with args:", args, "and kwargs:", kwargs)
-        pass
-
-    def mock_fuction_placeholder2(self, **kwargs):
-        """
-        Mock function to replace any function that we are not testing.
-        """
-        print("mock_fuction_placeholder2 called with kwargs:", kwargs)
-        pass
 
     def test_create_demo_app_with_ui_config_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir_str:
@@ -749,19 +843,19 @@ class CLITest(TestCase):
                 ),
                 mock.patch(
                     "everyvoice.base_cli.helpers.inference_base_command",
-                    side_effect=self.mock_fuction_placeholder,
+                    side_effect=mock_function_placeholder,
                 ),
                 mock.patch(
                     "everyvoice.demo.app.synthesize_audio",
-                    side_effect=self.mock_fuction_placeholder2,
+                    side_effect=mock_function_placeholder2,
                 ),
                 mock.patch(
                     "gradio.Blocks.launch",
                     return_value="Launching gradio app blocks",
-                    side_effect=self.mock_fuction_placeholder2,
+                    side_effect=mock_function_placeholder2,
                 ),
             ):
-                result = self.runner.invoke(
+                result = CliRunner().invoke(
                     app,
                     [
                         "demo",
@@ -841,19 +935,19 @@ class CLITest(TestCase):
                 ),
                 mock.patch(
                     "everyvoice.base_cli.helpers.inference_base_command",
-                    side_effect=self.mock_fuction_placeholder,
+                    side_effect=mock_function_placeholder,
                 ),
                 mock.patch(
                     "everyvoice.demo.app.synthesize_audio",
-                    side_effect=self.mock_fuction_placeholder2,
+                    side_effect=mock_function_placeholder2,
                 ),
                 mock.patch(
                     "gradio.Blocks.launch",
                     return_value="Launching gradio app blocks",
-                    side_effect=self.mock_fuction_placeholder2,
+                    side_effect=mock_function_placeholder2,
                 ),
             ):
-                result = self.runner.invoke(
+                result = CliRunner().invoke(
                     app,
                     [
                         "demo",
@@ -970,7 +1064,7 @@ class CLITest(TestCase):
             fake_vocoder = tmpdir / "hifigan.ckpt"
             fake_vocoder.touch()
 
-            result = self.runner.invoke(
+            result = CliRunner().invoke(
                 app,
                 [
                     "demo",
@@ -998,7 +1092,7 @@ class CLITest(TestCase):
                 "everyvoice.cli._peek_model_class",
                 return_value="FastSpeech2",
             ):
-                result = self.runner.invoke(
+                result = CliRunner().invoke(
                     app,
                     ["demo", str(spec_model_path)],
                 )
@@ -1022,7 +1116,7 @@ class CLITest(TestCase):
                 "everyvoice.cli._peek_model_class",
                 return_value="FastSpeech2",
             ):
-                result = self.runner.invoke(
+                result = CliRunner().invoke(
                     app,
                     [
                         "demo",
@@ -1050,7 +1144,7 @@ class CLITest(TestCase):
                 fake_vocoder_ckpt,
             )
 
-            result = self.runner.invoke(
+            result = CliRunner().invoke(
                 app,
                 ["demo", str(fake_vocoder_ckpt)],
             )
@@ -1058,98 +1152,6 @@ class CLITest(TestCase):
             assert "appears to be a standalone vocoder checkpoint" in flatten_log(
                 result.output
             )
-
-    def test_rename_speaker(self):
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            import torch
-
-            tmpdir = Path(tmpdir_str)
-            # Create a test checkpoint file with speakers
-            ckpt = {
-                "hyper_parameters": {
-                    "speaker2id": {"old_speaker": 0, "another_speaker": 1}
-                }
-            }
-            torch.save(ckpt, tmpdir / "test.ckpt")
-
-            with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
-                # Mock the torch.save function to avoid writing files
-                result = self.runner.invoke(
-                    app,
-                    [
-                        "checkpoint",
-                        "rename-speaker",
-                        str(tmpdir / "test.ckpt"),
-                        "old_speaker",
-                        "new_speaker",
-                    ],
-                )
-
-                assert result.exit_code == 0
-                self.assertIn(
-                    "Renamed speaker 'old_speaker' to 'new_speaker'.", result.output
-                )
-                self.assertIn(
-                    "Updated speakers: {'another_speaker': 1, 'new_speaker': 0}",
-                    result.output,
-                )
-
-    def test_rename_speaker_with_non_existing_speaker(self):
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            import torch
-
-            tmpdir = Path(tmpdir_str)
-            # Create a test checkpoint file with speakers
-            ckpt = {
-                "hyper_parameters": {
-                    "speaker2id": {"old_speaker": 0, "another_speaker": 1}
-                }
-            }
-            torch.save(ckpt, tmpdir / "test.ckpt")
-
-            with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
-                # Test renaming a non-existing speaker
-                result = self.runner.invoke(
-                    app,
-                    [
-                        "checkpoint",
-                        "rename-speaker",
-                        str(tmpdir / "test.ckpt"),
-                        "non_existing_speaker",
-                        "new_speaker",
-                    ],
-                )
-                # print(result.output)
-                assert result.exit_code != 0
-                assert "Speaker 'non_existing_speaker' not found" in flatten_log(
-                    result.output
-                )
-
-    def test_rename_speaker_with_no_speakers(self):
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            import torch
-
-            tmpdir = Path(tmpdir_str)
-
-            # Create an empty checkpoint file
-            empty_ckpt: dict = {"hyper_parameters": {"speaker2id": {}}}
-            torch.save(empty_ckpt, tmpdir / "empty.ckpt")
-
-            with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
-                # Test renaming with no speakers in the checkpoint
-                result = self.runner.invoke(
-                    app,
-                    [
-                        "checkpoint",
-                        "rename-speaker",
-                        str(tmpdir / "empty.ckpt"),
-                        "old_speaker",
-                        "new_speaker",
-                    ],
-                )
-                # print(result.output)
-                assert result.exit_code != 0
-                assert "No speakers found" in flatten_log(result.output)
 
 
 class TestBaseCLIHelper(TestCase):
