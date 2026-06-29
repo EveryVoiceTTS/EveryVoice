@@ -366,3 +366,17 @@ def flatten_log(log_output: str) -> str:
     log_output = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", log_output)
     log_output = re.sub(r"[╭╮╰╯│─]+", " ", log_output)
     return re.sub(r"\s+", " ", log_output)
+
+
+def mock_function_placeholder(*args, **kwargs):
+    """
+    Mock function to replace any function that we are not testing.
+    """
+    print("mock_fuction_placeholder called with args:", args, "and kwargs:", kwargs)
+
+
+def mock_function_placeholder2(**kwargs):
+    """
+    Mock function to replace any function that we are not testing.
+    """
+    print("mock_fuction_placeholder2 called with kwargs:", kwargs)
