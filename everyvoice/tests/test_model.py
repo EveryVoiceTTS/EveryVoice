@@ -10,7 +10,6 @@ from unittest import TestCase
 
 import torch
 from pytest import main
-from pytorch_lightning import Trainer
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
@@ -89,6 +88,8 @@ class ModelTest(TestCase):
         we can help allow our models to be loaded by other versions of EveryVoice. This test ensures
         the hyperparameters only contain JSON serializable content
         """
+        from pytorch_lightning import Trainer
+
         SERIAL_SAFE_MODELS = [
             HiFiGAN(
                 HiFiGANConfig.load_config_from_path(

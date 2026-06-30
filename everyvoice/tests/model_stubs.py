@@ -65,6 +65,9 @@ def get_dummy_models(tmp_dir: Path) -> tuple[FastSpeech2, Path, HiFiGAN, Path]:
     fp_trainer.save_checkpoint(dummy_fp_path)
     dummy_vocoder_path = tmp_dir / "vocoder.ckpt"
     vocoder_trainer.save_checkpoint(dummy_vocoder_path)
+    torch.use_deterministic_algorithms(
+        False
+    )  # restore default, for test_synthesize on GPU
 
     return spec_model, dummy_fp_path, vocoder, dummy_vocoder_path
 
