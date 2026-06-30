@@ -278,7 +278,7 @@ class TestDemo:
                         "--language",
                         "default",
                         "--allowlist",
-                        allowlist_file,
+                        str(allowlist_file),
                     ],
                 )
                 # print(result.output, result.exit_code)  # Debug output
