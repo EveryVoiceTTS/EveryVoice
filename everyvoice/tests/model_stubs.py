@@ -116,6 +116,3 @@ def get_stubbed_model(tmp_dir: Path) -> tuple[FastSpeech2, Path]:
     model_path = tmp_dir / "model"
     trainer.save_checkpoint(model_path)
     return model, model_path
-
-
-__all__ = ["get_stubbed_vocoder", "get_stubbed_model"]
