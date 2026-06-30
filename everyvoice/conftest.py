@@ -1,3 +1,8 @@
+"""
+Fixtures shared by all unit tests.
+Places in everyvoice instead of everyvoice/tests so that submodules also see it.
+"""
+
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -12,7 +17,7 @@ if TYPE_CHECKING:
 
 @fixture(scope="session")
 def dummy_models(tmp_path_factory) -> tuple["FastSpeech2", Path, "HiFiGAN", Path]:
-    from .model_stubs import get_dummy_models
+    from .tests.model_stubs import get_dummy_models
 
     return get_dummy_models(tmp_path_factory.mktemp("dummy_models"))
 
