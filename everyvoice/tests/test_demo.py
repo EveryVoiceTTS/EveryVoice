@@ -8,7 +8,7 @@ from typing import Any
 from unittest import mock
 
 import typer
-from pytest import raises
+from pytest import fixture, raises
 from typer.testing import CliRunner
 
 from everyvoice.cli import app
@@ -22,9 +22,14 @@ from everyvoice.tests.stubs import (
 
 
 class TestDemo:
+
+    @fixture(autouse=True)
+    def setup_runner(self):
+        self.runner = CliRunner()
+
     def test_demo_with_bad_args(self):
         # No checkpoint → help message
-        result = CliRunner().invoke(app, ["demo"])
+        result = self.runner.invoke(app, ["demo"])
         # Exit code for no-arg-is-help is 0 with click<=8.1.8 and typer<=0.23.2,
         # 2 if either is more recent
         assert result.exit_code in (0, 2)
@@ -32,7 +37,7 @@ class TestDemo:
         assert "Usage: root demo [OPTIONS] CHECKPOINT" in flatten_log(result.output)
 
         # Invalid --output-format value
-        result = CliRunner().invoke(
+        result = self.runner.invoke(
             app,
             [
                 "demo",
@@ -151,7 +156,7 @@ class TestDemo:
                 side_effect=mock_function_placeholder2,
             ),
         ):
-            result = CliRunner().invoke(
+            result = self.runner.invoke(
                 app,
                 [
                     "demo",
@@ -255,7 +260,7 @@ class TestDemo:
                     side_effect=mock_function_placeholder2,
                 ),
             ):
-                result = CliRunner().invoke(
+                result = self.runner.invoke(
                     app,
                     [
                         "demo",
@@ -345,7 +350,7 @@ class TestDemo:
                     side_effect=mock_function_placeholder2,
                 ),
             ):
-                result = CliRunner().invoke(
+                result = self.runner.invoke(
                     app,
                     [
                         "demo",
@@ -458,7 +463,7 @@ class TestDemo:
             fake_vocoder = tmpdir / "hifigan.ckpt"
             fake_vocoder.touch()
 
-            result = CliRunner().invoke(
+            result = self.runner.invoke(
                 app,
                 [
                     "demo",
@@ -482,7 +487,7 @@ class TestDemo:
             "everyvoice.cli._peek_model_class",
             return_value="FastSpeech2",
         ):
-            result = CliRunner().invoke(
+            result = self.runner.invoke(
                 app,
                 ["demo", str(spec_model_path)],
             )
@@ -500,7 +505,7 @@ class TestDemo:
             "everyvoice.cli._peek_model_class",
             return_value="FastSpeech2",
         ):
-            result = CliRunner().invoke(
+            result = self.runner.invoke(
                 app,
                 [
                     "demo",
@@ -526,7 +531,7 @@ class TestDemo:
                 fake_vocoder_ckpt,
             )
 
-            result = CliRunner().invoke(
+            result = self.runner.invoke(
                 app,
                 ["demo", str(fake_vocoder_ckpt)],
             )

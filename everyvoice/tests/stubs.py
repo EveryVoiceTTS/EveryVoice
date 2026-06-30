@@ -15,6 +15,7 @@ from everyvoice.config.shared_types import ContactInformation
 from everyvoice.wizard import basic, dataset, prompts, tour
 
 TEST_DATA_DIR = Path(__file__).parent / "data"
+CONFIG_DIR = TEST_DATA_DIR / "relative" / "config"
 TEST_CONTACT = ContactInformation(
     contact_name="Test Runner", contact_email="info@everyvoice.ca"
 )

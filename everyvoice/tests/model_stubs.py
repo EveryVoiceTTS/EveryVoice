@@ -13,6 +13,60 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definiti
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import HiFiGAN
+from everyvoice.wizard import (
+    SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
+    TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
+)
+
+from .stubs import CONFIG_DIR
+
+
+def get_dummy_models(tmp_dir: Path) -> tuple[Path, Path]:
+    """Usage: dummy_fp_path, dummy_vocoder_path = get_dummy_models(tmp_dir)"""
+    import random
+
+    import torch
+
+    # Set a manual seed, because some seeds cause the model
+    # to fail to generate a proper wav file. This seed was taken
+    # from running torch.seed() on a working run. Note: this is a bit
+    # brittle, but this test is just to test that the synthesize command
+    # works given two functional checkpoints. Further tests into the effects
+    # of seeds should be looked into.
+    torch.use_deterministic_algorithms(True)
+    torch.manual_seed(10719787423044995460)
+    random.seed(10719787423044995460)
+    vocoder = HiFiGAN(
+        HiFiGANConfig.load_config_from_path(
+            CONFIG_DIR / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+        )
+    )
+    spec_model = FastSpeech2(
+        FastSpeech2Config.load_config_from_path(
+            CONFIG_DIR / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+        ),
+        lang2id={"default": 0},
+        speaker2id={"default": 0},
+        stats=Stats(
+            pitch=StatsInfo(
+                min=150, max=300, std=2.0, mean=0.5, norm_max=1.0, norm_min=0.1
+            ),
+            energy=StatsInfo(
+                min=0.1, max=10.0, std=2.0, mean=0.5, norm_max=1.0, norm_min=0.1
+            ),
+        ),
+    )
+    tmp_dir_str = str(tmp_dir)
+    vocoder_trainer = Trainer(default_root_dir=tmp_dir_str, barebones=True)
+    fp_trainer = Trainer(default_root_dir=tmp_dir_str, barebones=True)
+    vocoder_trainer.strategy.connect(vocoder)
+    fp_trainer.strategy.connect(spec_model)
+    dummy_fp_path = tmp_dir / "fp.ckpt"
+    fp_trainer.save_checkpoint(dummy_fp_path)
+    dummy_vocoder_path = tmp_dir / "vocoder.ckpt"
+    vocoder_trainer.save_checkpoint(dummy_vocoder_path)
+
+    return (dummy_fp_path, dummy_vocoder_path)
 
 
 def get_stubbed_vocoder(tmp_dir: Path) -> tuple[HiFiGAN, Path]:

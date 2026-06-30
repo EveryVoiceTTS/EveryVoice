@@ -7,15 +7,13 @@ import sys
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any
-from unittest import TestCase, mock
+from unittest import mock
 
 import jsonschema
+import pytest
 import yaml
 from packaging.version import Version
 from pydantic import ValidationError
-from pytest import main
-from pytorch_lightning import Trainer
 from typer.testing import CliRunner
 from yaml import CLoader as Loader
 
@@ -30,26 +28,14 @@ from everyvoice.config.shared_types import ContactInformation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
-    FastSpeech2,
-)
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions_heavy import (
-    Stats,
-    StatsInfo,
-)
-from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
-from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 from everyvoice.tests.stubs import (
+    CONFIG_DIR,
     TEST_DATA_DIR,
     capture_logs,
     capture_stdout,
     flatten_log,
     mock_function_placeholder,
     temp_chdir,
-)
-from everyvoice.wizard import (
-    SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
-    TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
 )
 
 EV_DIR = Path(EV_FILE).parent
@@ -60,94 +46,23 @@ def major_minor(version):
     return f"{v.major}.{v.minor}"
 
 
-CONFIG_DIR = TEST_DATA_DIR / "relative" / "config"
+COMMANDS = [
+    "new-project",
+    "train",
+    "synthesize",
+    "preprocess",
+    "checkpoint",
+    "evaluate",
+    "demo",
+    "g2p",
+]
 
 
-class CLITest(TestCase):
-    class_tmp_dir_obj: Any
-    class_tmp_dir: str
-    dummy_fp_path: Path
-    dummy_vocoder_path: Path
+class TestCLI:
 
-    def setUp(self) -> None:
-        super().setUp()
+    @pytest.fixture(autouse=True)
+    def setup_runner(self):
         self.runner = CliRunner()
-        self.commands = [
-            "new-project",
-            "train",
-            "synthesize",
-            "preprocess",
-            "checkpoint",
-            "evaluate",
-            "demo",
-            "g2p",
-        ]
-
-    @classmethod
-    def setUpClass(cls):
-        cls.class_tmp_dir_obj = tempfile.TemporaryDirectory(
-            prefix="ev_test_cli", dir="."
-        )
-        cls.class_tmp_dir = cls.class_tmp_dir_obj.name
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.class_tmp_dir_obj.cleanup()
-        if hasattr(cls, "dummy_fp_path"):
-            del cls.dummy_fp_path
-        if hasattr(cls, "dummy_vocoder_path"):
-            del cls.dummy_vocoder_path
-
-    @classmethod
-    def get_dummy_models(cls) -> tuple[Path, Path]:
-        """Usage: dummy_fp_path, dummy_vocoder_path = self.get_dummy_models()"""
-        if not hasattr(cls, "dummy_fp_path"):
-            import random
-
-            import torch
-
-            # Set a manual seed, because some seeds cause the model
-            # to fail to generate a proper wav file. This seed was taken
-            # from running torch.seed() on a working run. Note: this is a bit
-            # brittle, but this test is just to test that the synthesize command
-            # works given two functional checkpoints. Further tests into the effects
-            # of seeds should be looked into.
-            torch.use_deterministic_algorithms(True)
-            torch.manual_seed(10719787423044995460)
-            random.seed(10719787423044995460)
-            vocoder = HiFiGAN(
-                HiFiGANConfig.load_config_from_path(
-                    CONFIG_DIR / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-                )
-            )
-            spec_model = FastSpeech2(
-                FastSpeech2Config.load_config_from_path(
-                    CONFIG_DIR / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
-                ),
-                lang2id={"default": 0},
-                speaker2id={"default": 0},
-                stats=Stats(
-                    pitch=StatsInfo(
-                        min=150, max=300, std=2.0, mean=0.5, norm_max=1.0, norm_min=0.1
-                    ),
-                    energy=StatsInfo(
-                        min=0.1, max=10.0, std=2.0, mean=0.5, norm_max=1.0, norm_min=0.1
-                    ),
-                ),
-            )
-            tmpdir_str = cls.class_tmp_dir
-            tmpdir = Path(tmpdir_str)
-            vocoder_trainer = Trainer(default_root_dir=tmpdir_str, barebones=True)
-            fp_trainer = Trainer(default_root_dir=tmpdir_str, barebones=True)
-            vocoder_trainer.strategy.connect(vocoder)
-            fp_trainer.strategy.connect(spec_model)
-            cls.dummy_fp_path = tmpdir / "fp.ckpt"
-            fp_trainer.save_checkpoint(cls.dummy_fp_path)
-            cls.dummy_vocoder_path = tmpdir / "vocoder.ckpt"
-            vocoder_trainer.save_checkpoint(cls.dummy_vocoder_path)
-            os.system(f"ls -la {tmpdir_str}")
-
-        return (cls.dummy_fp_path, cls.dummy_vocoder_path)
 
     def test_version(self):
         result = self.runner.invoke(app, ["--version"])
@@ -182,7 +97,7 @@ class CLITest(TestCase):
         # [5:] ignores the header generated by everyvoice --diagnostic and only looks at deps
         assert "torch" in "".join(result.stdout.lower().splitlines()[5:])
 
-    def wip_test_synthesize(self):
+    def test_synthesize(self, dummy_fp_path, dummy_vocoder_path):
         # TODO: Here's a stub for getting synthesis unit tests working
         #       I believe we'll need to also pass a stats object to the created spec_model
         # TODO: add a test for making sure that `preprocessing` and `logs_and_checkpoints` folders don't get created.
@@ -191,9 +106,8 @@ class CLITest(TestCase):
             "1"  # Fallback for running tests on Mac
         )
 
-        fp_path, vocoder_path = self.get_dummy_models()
-        fp_path = fp_path.resolve()
-        vocoder_path = vocoder_path.resolve()
+        fp_path = dummy_fp_path.resolve()
+        vocoder_path = dummy_vocoder_path.resolve()
         with tempfile.TemporaryDirectory() as tmpdir_str:
             tmpdir = Path(tmpdir_str)
             with temp_chdir(tmpdir):
@@ -251,19 +165,19 @@ class CLITest(TestCase):
     def test_commands_present(self):
         result = self.runner.invoke(app, ["--help"])
         # each command has some help
-        for command in self.commands:
+        for command in COMMANDS:
             assert command in result.stdout
         # link to docs is present
         assert "https://docs.everyvoice.ca" in result.stdout
 
     def test_command_help_messages(self):
-        for command in self.commands:
+        for command in COMMANDS:
             result = self.runner.invoke(app, [command, "--help"])
             assert result.exit_code == 0
             result = self.runner.invoke(app, [command, "-h"])
             assert result.exit_code == 0
 
-    def test_update_schemas(self):
+    def test_update_schemas(self, subtests):
         dummy_contact = ContactInformation(
             contact_name="Test Runner", contact_email="info@everyvoice.ca"
         )
@@ -272,7 +186,7 @@ class CLITest(TestCase):
             # Validate that schema generation works correctly.
             _ = self.runner.invoke(app, ["update-schemas", "-o", tmpdir_s])
             for filename, obj in SCHEMAS_TO_OUTPUT.items():
-                with self.subTest(filename=filename, type=obj):
+                with subtests.test(filename=filename, type=obj):
                     with open(tmpdir / filename, encoding="utf8") as f:
                         schema = json.load(f)
                     # serialize the model to json and then validate against the schema
@@ -292,7 +206,7 @@ class CLITest(TestCase):
             # Make sure the generated schemas are identical to those saved in the repo,
             # i.e., that we didn't change the models but forget to update the schemas.
             for filename in SCHEMAS_TO_OUTPUT:
-                with self.subTest(filename=filename):
+                with subtests.test(filename=filename):
                     with open(tmpdir / filename, encoding="utf8") as f:
                         new_schema = f.read()
                     try:
@@ -389,31 +303,36 @@ class CLITest(TestCase):
         assert result.exit_code != 0
         assert "Error loading checkpoint" in str(result.exception)
 
-    def test_inspect_good_fp_checkpoint(self) -> None:
-        fp_path, _ = self.get_dummy_models()
-        result = self.runner.invoke(app, ["checkpoint", "inspect", str(fp_path)])
+    def test_inspect_good_fp_checkpoint(self, dummy_fp_path) -> None:
+        result = self.runner.invoke(app, ["checkpoint", "inspect", str(dummy_fp_path)])
         assert result.exit_code == 0
         assert "according to its model info: {'name': 'FastSpeech2'" in flatten_log(
             result.output
         )
         assert "Trainable params" in flatten_log(result.output)
 
-    def test_inspect_good_vocoder_checkpoint(self) -> None:
-        _, vocoder_path = self.get_dummy_models()
-        result = self.runner.invoke(app, ["checkpoint", "inspect", str(vocoder_path)])
+    def test_inspect_good_vocoder_checkpoint(self, dummy_vocoder_path) -> None:
+        result = self.runner.invoke(
+            app, ["checkpoint", "inspect", str(dummy_vocoder_path)]
+        )
         assert result.exit_code == 0
         assert "according to its model info: {'name': 'HiFiGAN'" in flatten_log(
             result.output
         )
         assert "Trainable params: 83,986,835" in flatten_log(result.output)
 
-    def test_export_and_inspect_generator(self) -> None:
-        _, vocoder_path = self.get_dummy_models()
+    def test_export_and_inspect_generator(self, dummy_vocoder_path) -> None:
         with tempfile.TemporaryDirectory(prefix="generator_", dir=".") as tmpdir_str:
             exported_path = Path(tmpdir_str) / "exported.ckpt"
             result = self.runner.invoke(
                 app,
-                ["export", "spec-to-wav", "-o", str(exported_path), str(vocoder_path)],
+                [
+                    "export",
+                    "spec-to-wav",
+                    "-o",
+                    str(exported_path),
+                    str(dummy_vocoder_path),
+                ],
             )
             assert result.exit_code == 0
             assert exported_path.exists()
@@ -585,7 +504,7 @@ class CLITest(TestCase):
                 assert "No speakers found" in flatten_log(result.output)
 
 
-class TestBaseCLIHelper(TestCase):
+class TestBaseCLIHelper:
     def test_save_configuration_to_log_dir(self):
         with TemporaryDirectory(ignore_cleanup_errors=True) as tempdir_s:
             tempdir = Path(tempdir_s)
@@ -620,4 +539,4 @@ class TestBaseCLIHelper(TestCase):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)
