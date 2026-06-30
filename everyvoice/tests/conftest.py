@@ -11,21 +11,7 @@ if TYPE_CHECKING:
 
 
 @fixture(scope="session")
-def stubbed_model(tmp_path_factory) -> tuple["FastSpeech2", Path]:
-    from .model_stubs import get_stubbed_model
-
-    return get_stubbed_model(tmp_path_factory.mktemp("vocoder"))
-
-
-@fixture(scope="session")
-def stubbed_vocoder(tmp_path_factory) -> tuple["HiFiGAN", Path]:
-    from .model_stubs import get_stubbed_vocoder
-
-    return get_stubbed_vocoder(tmp_path_factory.mktemp("vocoder"))
-
-
-@fixture(scope="session")
-def dummy_models(tmp_path_factory) -> tuple[Path, Path]:
+def dummy_models(tmp_path_factory) -> tuple["FastSpeech2", Path, "HiFiGAN", Path]:
     from .model_stubs import get_dummy_models
 
     return get_dummy_models(tmp_path_factory.mktemp("dummy_models"))
@@ -33,9 +19,21 @@ def dummy_models(tmp_path_factory) -> tuple[Path, Path]:
 
 @fixture(scope="session")
 def dummy_fp_path(dummy_models) -> Path:
-    return dummy_models[0]
+    return dummy_models[1]
 
 
 @fixture(scope="session")
 def dummy_vocoder_path(dummy_models) -> Path:
-    return dummy_models[1]
+    return dummy_models[3]
+
+
+@fixture(scope="session")
+def stubbed_model(dummy_models) -> tuple["FastSpeech2", Path]:
+    dummy_fp, dummy_fp_path, dummy_vocoder, dummy_vocoder_path = dummy_models
+    return dummy_fp, dummy_fp_path
+
+
+@fixture(scope="session")
+def stubbed_vocoder(dummy_models) -> tuple["HiFiGAN", Path]:
+    dummy_fp, dummy_fp_path, dummy_vocoder, dummy_vocoder_path = dummy_models
+    return dummy_vocoder, dummy_vocoder_path
