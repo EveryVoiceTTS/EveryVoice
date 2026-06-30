@@ -17,9 +17,6 @@ from pydantic import ValidationError
 from typer.testing import CliRunner
 from yaml import CLoader as Loader
 
-# required for `./run_tests.py cli` to work, otherwise test_inspect_checkpoint
-# fails with an Intel MKL FATAL ERROR saying it cannot load libtorch_cpu.so
-import everyvoice.tests.test_model  # noqa
 from everyvoice import __file__ as EV_FILE
 from everyvoice._version import VERSION
 from everyvoice.base_cli.helpers import save_configuration_to_log_dir
