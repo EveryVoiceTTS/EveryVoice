@@ -201,7 +201,7 @@ ensure_newline_before_comments = true
 [tool.mypy]
 files = "everyvoice"
 ignore_missing_imports = true
-plugins = ["pydantic.mypy", "numpy.typing.mypy_plugin"]
+plugins = ["pydantic.mypy"]
 check_untyped_defs = false
 
 [tool.pytest.ini_options]
