@@ -278,7 +278,7 @@ def test_create_demo_app_with_ui_config_file(stubbed_model, stubbed_vocoder) -> 
                     "--language",
                     "default",
                     "--allowlist",
-                    allowlist_file,
+                    str(allowlist_file),
                 ],
             )
             # print(result.output, result.exit_code)  # Debug output
