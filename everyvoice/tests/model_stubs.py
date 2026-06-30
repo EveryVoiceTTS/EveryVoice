@@ -21,8 +21,8 @@ from everyvoice.wizard import (
 from .stubs import CONFIG_DIR
 
 
-def get_dummy_models(tmp_dir: Path) -> tuple[Path, Path]:
-    """Usage: dummy_fp_path, dummy_vocoder_path = get_dummy_models(tmp_dir)"""
+def get_dummy_models(tmp_dir: Path) -> tuple[FastSpeech2, Path, HiFiGAN, Path]:
+    """Usage: dummy_fp, dummy_fp_path, dummy_vocoder, dummy_vocoder_path = get_dummy_models(tmp_dir)"""
     import random
 
     import torch
@@ -66,7 +66,7 @@ def get_dummy_models(tmp_dir: Path) -> tuple[Path, Path]:
     dummy_vocoder_path = tmp_dir / "vocoder.ckpt"
     vocoder_trainer.save_checkpoint(dummy_vocoder_path)
 
-    return (dummy_fp_path, dummy_vocoder_path)
+    return spec_model, dummy_fp_path, vocoder, dummy_vocoder_path
 
 
 def get_stubbed_vocoder(tmp_dir: Path) -> tuple[HiFiGAN, Path]:
