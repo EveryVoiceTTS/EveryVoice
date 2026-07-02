@@ -11,6 +11,10 @@ from pydub import AudioSegment
 from everyvoice.base_cli import command, default_typer_args
 from everyvoice.utils import generic_dict_loader, read_festival
 
+# Make sure we always output utf-8, even on Windows
+sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+sys.stderr.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+
 app = typer.Typer(**default_typer_args)
 
 
