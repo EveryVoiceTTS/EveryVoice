@@ -8,6 +8,18 @@ EVERYVOICE_REGRESS_ROOT=$(python -c 'import everyvoice; print(everyvoice.__path_
 
 SGILE_DATASET_ROOT=${SGILE_DATASET_ROOT:-$HOME/sgile/data}
 
+make_symlink () {
+    # Usage: make_symlink LINK_TARGET LINK_NAME
+    # is equivalent to ln -s LINK_TARGET LINK_NAME
+    if [[ $(uname) =~ MINGW ]]; then
+        # Windows via mingw, probably Git Bash: create a "junction" using mklink /j
+        cmd //c "mklink /j $(cygpath -w "$2") $(cygpath -w "$1")"
+    else
+        ln -s "$1" "$2"
+    fi
+}
+
+
 DURATIONS="20 60 180 full"
 
 # Source: https://keithito.com/LJ-Speech-Dataset
@@ -15,9 +27,10 @@ LJ_SPEECH_DATASET=$SGILE_DATASET_ROOT/LJSpeech-1.1
 
 for duration in $DURATIONS; do
     dir=regress-lj-$duration
+    echo "$dir"
     mkdir "$dir"
-    ln -s "$LJ_SPEECH_DATASET/wavs" "$dir"/
-    if [ $duration == 'full' ]; then
+    make_symlink "$LJ_SPEECH_DATASET/wavs" "$dir"/wavs
+    if [[ $duration == 'full' ]]; then
         cat "$LJ_SPEECH_DATASET/metadata.csv" > "$dir"/metadata.csv
     else
         duration_seconds=$(( $duration * 60 )) # Convert the duration from minutes to seconds
@@ -40,9 +53,10 @@ cp "$EVERYVOICE_REGRESS_ROOT"/wait-for-demo-app.py "$dir"/wait-for-demo-app.py
 SinhalaTTS=$SGILE_DATASET_ROOT/SinhalaTTS
 for duration in $DURATIONS; do
     dir=regress-si-$duration
+    echo "$dir"
     mkdir $dir
-    ln -s "$SinhalaTTS/wavs" $dir/
-    if [ $duration == 'full' ]; then
+    make_symlink "$SinhalaTTS/wavs" "$dir"/wavs
+    if [[ $duration == 'full' ]]; then
         cat "$SinhalaTTS/si_lk.lines.txt" > "$dir"/si_lk.lines.txt
     else
         duration_seconds=$(( $duration * 60 )) # Convert the duration from minutes to seconds
@@ -65,9 +79,10 @@ done
 isiXhosa=$SGILE_DATASET_ROOT/OpenSLR32-four-South-Afican-languages/xh_za/za/xho
 for duration in $DURATIONS; do
     dir=regress-xh-$duration
+    echo "$dir"
     mkdir $dir
-    ln -s "$isiXhosa/wavs" $dir/
-    if [ $duration == 'full' ]; then
+    make_symlink "$isiXhosa/wavs" "$dir"/wavs
+    if [[ $duration == 'full' ]]; then
         cat "$isiXhosa/line_index.tsv" > "$dir"/line_index.tsv
     else
         duration_seconds=$(( $duration * 60 )) # Convert the duration from minutes to seconds
@@ -86,6 +101,7 @@ done
 
 dir=regress-mix
 mkdir $dir
+echo "$dir"
 cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-mix "$dir"/wizard-resume
 cat <<'==EOF==' > "$dir"/test.txt
 This is a test.
