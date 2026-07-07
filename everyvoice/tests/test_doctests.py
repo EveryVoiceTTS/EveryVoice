@@ -7,6 +7,7 @@ from pytest import main
 
 import everyvoice.demo.app
 import everyvoice.text
+import everyvoice.text.utils_heavy
 import everyvoice.utils
 import everyvoice.wizard.utils
 
@@ -17,6 +18,7 @@ def test_run_all_doctests(subtests) -> None:
         everyvoice.text.features,
         everyvoice.text.text_processor,
         everyvoice.text.utils,
+        everyvoice.text.utils_heavy,
         everyvoice.utils,
         everyvoice.wizard.utils,
     ):
