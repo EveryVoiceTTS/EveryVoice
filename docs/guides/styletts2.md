@@ -23,6 +23,33 @@ everyvoice preprocess text-to-wav config/{{ config_filename('text-to-wav') }}
 !!! important
     StyleTTS2 training requires a GPU with CUDA. Make sure you are running the following steps on a machine with a compatible GPU.
 
+### Step 2a: Inspect your symbol set
+
+If loading your configuration failed with a `pydantic.ValidationError` mentioning you have some symbols that "are not present in the pretrained StyleTTS2 text-encoder symbol table", it's due to symbols in your data that are incompatible with StyleTTS2 — but it can be fixed! This can happen on any command that loads your `text-to-wav` config, including `everyvoice preprocess` above. If you didn't get this error, please proceed to Step 3.
+
+Unlike EveryVoice's other models, StyleTTS2 uses a pretrained text encoder. That encoder has a fixed embedding table for a specific set of 178 symbols (letters, IPA phones, and punctuation) that it saw during training, and it cannot produce a meaningful embedding for a symbol it has never seen. Because of this, every symbol declared in your `text` configuration's `symbols` must also be a member of that pretrained set.
+
+If your configuration declares a symbol outside that set, EveryVoice will refuse to load the configuration rather than silently proceeding to train a broken model. The error message tells you exactly which symbols are the problem, and, for each one, the closest pretrained symbol it found (using panphon's articulatory-feature distance for IPA phones, edit distance for multigraphs and a last-resort Unicode distance measure otherwise) along with a distance score, e.g.:
+
+```
+Value error, The following symbols declared in your TextConfig are not present in
+the pretrained StyleTTS2 text-encoder symbol table: {'ʒ'}. Either remove them from
+your TextConfig, use a custom pretrained_symbols list, or add 'to_replace' rules to
+substitute them for symbols the pretrained encoder does know. Closest pretrained
+symbols: 'ʒ' is closest to 'ʃ' (distance=0.25).
+```
+
+To fix your model, add a `to_replace` rule to your text configuration for each suggested symbol, e.g.:
+
+```yaml
+text:
+  to_replace:
+    "ʒ": "ʃ"
+```
+
+!!! note
+    A suggested substitution is a starting point, always sanity-check that the suggested symbol is phonetically reasonable for your language before adopting it, while also making sure that you are not mapping multiple symbols to the same symbol. Some symbols may have no close match at all, so the mappings might look fairly bad. My experience is that the model is still able to recover from a few of these bad mappings.
+
 ## Step 3: Train your Model
 
 StyleTTS2 training is split into two stages that must be run in order.
