@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import enum
 import json
 import os
 import subprocess
@@ -8,51 +7,32 @@ import sys
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from typing import Any
-from unittest import TestCase, mock
+from unittest import mock
 
 import jsonschema
-import typer
+import pytest
 import yaml
 from packaging.version import Version
 from pydantic import ValidationError
-from pytest import main
-from pytorch_lightning import Trainer
 from typer.testing import CliRunner
 from yaml import CLoader as Loader
 
-import everyvoice.tests.model_stubs
-
-# required for `./run_tests.py cli` to work, otherwise test_inspect_checkpoint
-# fails with an Intel MKL FATAL ERROR saying it cannot load libtorch_cpu.so
-import everyvoice.tests.test_model  # noqa
 from everyvoice import __file__ as EV_FILE
 from everyvoice._version import VERSION
 from everyvoice.base_cli.helpers import save_configuration_to_log_dir
 from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
 from everyvoice.config.shared_types import ContactInformation
-from everyvoice.demo.app import create_demo_app
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
-    FastSpeech2,
-)
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions_heavy import (
-    Stats,
-    StatsInfo,
-)
-from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
-from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 from everyvoice.tests.stubs import (
+    CONFIG_DIR,
+    TEST_DATA_DIR,
     capture_logs,
     capture_stdout,
     flatten_log,
+    mock_function_placeholder,
     temp_chdir,
-)
-from everyvoice.wizard import (
-    SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,
-    TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX,
 )
 
 EV_DIR = Path(EV_FILE).parent
@@ -63,93 +43,23 @@ def major_minor(version):
     return f"{v.major}.{v.minor}"
 
 
-class CLITest(TestCase):
-    data_dir = Path(__file__).parent / "data"
-    config_dir = Path(__file__).parent / "data" / "relative" / "config"
-    class_tmp_dir_obj: Any
-    class_tmp_dir: str
-    dummy_fp_path: Path
-    dummy_vocoder_path: Path
+COMMANDS = [
+    "new-project",
+    "train",
+    "synthesize",
+    "preprocess",
+    "checkpoint",
+    "evaluate",
+    "demo",
+    "g2p",
+]
 
-    def setUp(self) -> None:
-        super().setUp()
+
+class TestCLI:
+
+    @pytest.fixture(autouse=True)
+    def setup_runner(self):
         self.runner = CliRunner()
-        self.commands = [
-            "new-project",
-            "train",
-            "synthesize",
-            "preprocess",
-            "checkpoint",
-            "evaluate",
-            "demo",
-            "g2p",
-        ]
-
-    @classmethod
-    def setUpClass(cls):
-        cls.class_tmp_dir_obj = tempfile.TemporaryDirectory(
-            prefix="ev_test_cli", dir="."
-        )
-        cls.class_tmp_dir = cls.class_tmp_dir_obj.name
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.class_tmp_dir_obj.cleanup()
-        if hasattr(cls, "dummy_fp_path"):
-            del cls.dummy_fp_path
-        if hasattr(cls, "dummy_vocoder_path"):
-            del cls.dummy_vocoder_path
-
-    @classmethod
-    def get_dummy_models(cls) -> tuple[Path, Path]:
-        """Usage: dummy_fp_path, dummy_vocoder_path = self.get_dummy_models()"""
-        if not hasattr(cls, "dummy_fp_path"):
-            import random
-
-            import torch
-
-            # Set a manual seed, because some seeds cause the model
-            # to fail to generate a proper wav file. This seed was taken
-            # from running torch.seed() on a working run. Note: this is a bit
-            # brittle, but this test is just to test that the synthesize command
-            # works given two functional checkpoints. Further tests into the effects
-            # of seeds should be looked into.
-            torch.use_deterministic_algorithms(True)
-            torch.manual_seed(10719787423044995460)
-            random.seed(10719787423044995460)
-            vocoder = HiFiGAN(
-                HiFiGANConfig.load_config_from_path(
-                    cls.config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-                )
-            )
-            spec_model = FastSpeech2(
-                FastSpeech2Config.load_config_from_path(
-                    cls.config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
-                ),
-                lang2id={"default": 0},
-                speaker2id={"default": 0},
-                stats=Stats(
-                    pitch=StatsInfo(
-                        min=150, max=300, std=2.0, mean=0.5, norm_max=1.0, norm_min=0.1
-                    ),
-                    energy=StatsInfo(
-                        min=0.1, max=10.0, std=2.0, mean=0.5, norm_max=1.0, norm_min=0.1
-                    ),
-                ),
-            )
-            tmpdir_str = cls.class_tmp_dir
-            tmpdir = Path(tmpdir_str)
-            vocoder_trainer = Trainer(default_root_dir=tmpdir_str, barebones=True)
-            fp_trainer = Trainer(default_root_dir=tmpdir_str, barebones=True)
-            vocoder_trainer.strategy.connect(vocoder)
-            fp_trainer.strategy.connect(spec_model)
-            cls.dummy_fp_path = tmpdir / "fp.ckpt"
-            fp_trainer.save_checkpoint(cls.dummy_fp_path)
-            cls.dummy_vocoder_path = tmpdir / "vocoder.ckpt"
-            vocoder_trainer.save_checkpoint(cls.dummy_vocoder_path)
-            os.system(f"ls -la {tmpdir_str}")
-
-        return (cls.dummy_fp_path, cls.dummy_vocoder_path)
 
     def test_version(self):
         result = self.runner.invoke(app, ["--version"])
@@ -167,16 +77,12 @@ class CLITest(TestCase):
             VERSION as HFGL_VERSION,
         )
 
-        self.assertEqual(
-            major_minor(VERSION),
-            major_minor(FS2_VERSION),
-            "please keep FastSpeech2_lightning and EveryVoice major.minor verion in sync",
-        )
-        self.assertEqual(
-            major_minor(VERSION),
-            major_minor(HFGL_VERSION),
-            "please keep HiFiGAN_iSTFT_lightning and EveryVoice major.minor version in sync",
-        )
+        assert major_minor(VERSION) == major_minor(
+            FS2_VERSION
+        ), "please keep FastSpeech2_lightning and EveryVoice major.minor verion in sync"
+        assert major_minor(VERSION) == major_minor(
+            HFGL_VERSION
+        ), "please keep HiFiGAN_iSTFT_lightning and EveryVoice major.minor version in sync"
 
     def test_diagnostic(self):
         with capture_stdout():
@@ -188,7 +94,7 @@ class CLITest(TestCase):
         # [5:] ignores the header generated by everyvoice --diagnostic and only looks at deps
         assert "torch" in "".join(result.stdout.lower().splitlines()[5:])
 
-    def wip_test_synthesize(self):
+    def test_synthesize(self, dummy_fp_path, dummy_vocoder_path):
         # TODO: Here's a stub for getting synthesis unit tests working
         #       I believe we'll need to also pass a stats object to the created spec_model
         # TODO: add a test for making sure that `preprocessing` and `logs_and_checkpoints` folders don't get created.
@@ -197,9 +103,8 @@ class CLITest(TestCase):
             "1"  # Fallback for running tests on Mac
         )
 
-        fp_path, vocoder_path = self.get_dummy_models()
-        fp_path = fp_path.resolve()
-        vocoder_path = vocoder_path.resolve()
+        fp_path = dummy_fp_path.resolve()
+        vocoder_path = dummy_vocoder_path.resolve()
         with tempfile.TemporaryDirectory() as tmpdir_str:
             tmpdir = Path(tmpdir_str)
             with temp_chdir(tmpdir):
@@ -230,9 +135,9 @@ class CLITest(TestCase):
                     ],
                 )
                 assert single_text_result.exit_code == 0
-                self.assertEqual(
-                    len(list(Path("single_text/wav").glob("*.wav"))), 1
-                )  # assert synthesizes a single file
+                assert (
+                    len(list(Path("single_text/wav").glob("*.wav"))) == 1
+                ), "should synthesize a single file"
                 filelist_result = self.runner.invoke(
                     app,
                     [
@@ -250,26 +155,26 @@ class CLITest(TestCase):
                     ],
                 )
                 assert filelist_result.exit_code == 0
-                self.assertEqual(
-                    len(list((tmpdir / "filelist" / "wav").glob("*.wav"))), 3
-                )  # assert synthesizes three files
+                assert (
+                    len(list((tmpdir / "filelist" / "wav").glob("*.wav"))) == 3
+                ), "should synthesize three files"
 
     def test_commands_present(self):
         result = self.runner.invoke(app, ["--help"])
         # each command has some help
-        for command in self.commands:
+        for command in COMMANDS:
             assert command in result.stdout
         # link to docs is present
         assert "https://docs.everyvoice.ca" in result.stdout
 
     def test_command_help_messages(self):
-        for command in self.commands:
+        for command in COMMANDS:
             result = self.runner.invoke(app, [command, "--help"])
             assert result.exit_code == 0
             result = self.runner.invoke(app, [command, "-h"])
             assert result.exit_code == 0
 
-    def test_update_schemas(self):
+    def test_update_schemas(self, subtests):
         dummy_contact = ContactInformation(
             contact_name="Test Runner", contact_email="info@everyvoice.ca"
         )
@@ -278,7 +183,7 @@ class CLITest(TestCase):
             # Validate that schema generation works correctly.
             _ = self.runner.invoke(app, ["update-schemas", "-o", tmpdir_s])
             for filename, obj in SCHEMAS_TO_OUTPUT.items():
-                with self.subTest(filename=filename, type=obj):
+                with subtests.test(filename=filename, type=obj):
                     with open(tmpdir / filename, encoding="utf8") as f:
                         schema = json.load(f)
                     # serialize the model to json and then validate against the schema
@@ -287,17 +192,18 @@ class CLITest(TestCase):
                         obj_instance = obj()
                     except ValidationError:
                         obj_instance = obj(contact=dummy_contact)
-                    self.assertIsNone(
+                    assert (
                         jsonschema.validate(
                             json.loads(obj_instance.model_dump_json()),
                             schema=schema,
                         )
+                        is None
                     )
 
             # Make sure the generated schemas are identical to those saved in the repo,
             # i.e., that we didn't change the models but forget to update the schemas.
             for filename in SCHEMAS_TO_OUTPUT:
-                with self.subTest(filename=filename):
+                with subtests.test(filename=filename):
                     with open(tmpdir / filename, encoding="utf8") as f:
                         new_schema = f.read()
                     try:
@@ -307,11 +213,9 @@ class CLITest(TestCase):
                         raise AssertionError(
                             f'Schema file {filename} is missing, please run "everyvoice update-schemas".'
                         ) from e
-                    self.assertEqual(
-                        saved_schema,
-                        new_schema,
-                        'Schemas are out of date, please run "everyvoice update-schemas".',
-                    )
+                    assert (
+                        saved_schema == new_schema
+                    ), 'Schemas are out of date, please run "everyvoice update-schemas".'
 
             # Make sure we can't overwrite existing but out-of-date schemas by accident.
             with open(tmpdir / next(iter(SCHEMAS_TO_OUTPUT)), "w") as f:
@@ -335,9 +239,9 @@ class CLITest(TestCase):
             [
                 "evaluate",
                 "-f",
-                self.data_dir / "LJ010-0008.wav",
+                TEST_DATA_DIR / "LJ010-0008.wav",
                 "-r",
-                self.data_dir / "lj" / "wavs" / "LJ050-0269.wav",
+                TEST_DATA_DIR / "lj" / "wavs" / "LJ050-0269.wav",
             ],
         )
         assert result.exit_code == 0
@@ -351,30 +255,28 @@ class CLITest(TestCase):
             [
                 "evaluate",
                 "-d",
-                self.data_dir / "lj" / "wavs",
+                TEST_DATA_DIR / "lj" / "wavs",
                 "-r",
-                self.data_dir / "LJ010-0008.wav",
+                TEST_DATA_DIR / "LJ010-0008.wav",
             ],
         )
         assert dir_result.exit_code == 0
-        assert "LJ050-0269", dir_result.stdout in "should print out the basenames"
-        self.assertIn(
-            "Average STOI",
-            dir_result.stdout,
-            "should report metrics in terms of averages",
-        )
-        evaluation_output = self.data_dir / "lj" / "wavs" / "evaluation.json"
+        assert "LJ050-0269" in dir_result.stdout, "should print out the basenames"
+        assert (
+            "Average STOI" in dir_result.stdout
+        ), "should report metrics in terms of averages"
+        evaluation_output = TEST_DATA_DIR / "lj" / "wavs" / "evaluation.json"
         assert evaluation_output.exists(), "should print results to a file"
         evaluation_output.unlink()
 
     def test_old_inspect_checkpoint(self):
         result = self.runner.invoke(
-            app, ["inspect-checkpoint", str(self.data_dir / "test.ckpt")]
+            app, ["inspect-checkpoint", str(TEST_DATA_DIR / "test.ckpt")]
         )
         assert result.exit_code == 0
-        self.assertIn(
-            "This command has been renamed to `everyvoice checkpoint inspect`",
-            flatten_log(result.stdout),
+        assert (
+            "This command has been renamed to `everyvoice checkpoint inspect`"
+            in flatten_log(result.stdout)
         )
 
     def test_inspect_checkpoint_help(self):
@@ -383,12 +285,12 @@ class CLITest(TestCase):
 
     def test_inspect_checkpoint(self):
         result = self.runner.invoke(
-            app, ["checkpoint", "inspect", str(self.data_dir / "test.ckpt")]
+            app, ["checkpoint", "inspect", str(TEST_DATA_DIR / "test.ckpt")]
         )
         assert 'global_step": 52256' in result.stdout
-        self.assertIn(
-            "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version.",
-            result.stdout,
+        assert (
+            "We couldn't read your file, possibly because the version of EveryVoice that created it is incompatible with your installed version."
+            in result.stdout
         )
         assert "It appears to have 0.0 M parameters." in result.stdout
         assert "Number of Parameters" in result.stdout
@@ -398,31 +300,36 @@ class CLITest(TestCase):
         assert result.exit_code != 0
         assert "Error loading checkpoint" in str(result.exception)
 
-    def test_inspect_good_fp_checkpoint(self) -> None:
-        fp_path, _ = self.get_dummy_models()
-        result = self.runner.invoke(app, ["checkpoint", "inspect", str(fp_path)])
+    def test_inspect_good_fp_checkpoint(self, dummy_fp_path) -> None:
+        result = self.runner.invoke(app, ["checkpoint", "inspect", str(dummy_fp_path)])
         assert result.exit_code == 0
         assert "according to its model info: {'name': 'FastSpeech2'" in flatten_log(
             result.output
         )
         assert "Trainable params" in flatten_log(result.output)
 
-    def test_inspect_good_vocoder_checkpoint(self) -> None:
-        _, vocoder_path = self.get_dummy_models()
-        result = self.runner.invoke(app, ["checkpoint", "inspect", str(vocoder_path)])
+    def test_inspect_good_vocoder_checkpoint(self, dummy_vocoder_path) -> None:
+        result = self.runner.invoke(
+            app, ["checkpoint", "inspect", str(dummy_vocoder_path)]
+        )
         assert result.exit_code == 0
         assert "according to its model info: {'name': 'HiFiGAN'" in flatten_log(
             result.output
         )
         assert "Trainable params: 83,986,835" in flatten_log(result.output)
 
-    def test_export_and_inspect_generator(self) -> None:
-        _, vocoder_path = self.get_dummy_models()
+    def test_export_and_inspect_generator(self, dummy_vocoder_path) -> None:
         with tempfile.TemporaryDirectory(prefix="generator_", dir=".") as tmpdir_str:
             exported_path = Path(tmpdir_str) / "exported.ckpt"
             result = self.runner.invoke(
                 app,
-                ["export", "spec-to-wav", "-o", str(exported_path), str(vocoder_path)],
+                [
+                    "export",
+                    "spec-to-wav",
+                    "-o",
+                    str(exported_path),
+                    str(dummy_vocoder_path),
+                ],
             )
             assert result.exit_code == 0
             assert exported_path.exists()
@@ -444,13 +351,13 @@ class CLITest(TestCase):
                 [
                     "preprocess",
                     "text-to-spec",
-                    str(self.config_dir / "everyvoice-spec-to-wav.yaml"),
+                    str(CONFIG_DIR / "everyvoice-spec-to-wav.yaml"),
                 ],
             )
             assert result.exit_code == 1
-            self.assertIn(
-                "We are expecting a FastSpeech2Config but it looks like you provided a HiFiGANConfig",
-                "\n".join(output),
+            assert (
+                "We are expecting a FastSpeech2Config but it looks like you provided a HiFiGANConfig"
+                in "\n".join(output)
             )
 
     def test_preprocess_without_subcommand_shows_subcommands(self):
@@ -482,94 +389,8 @@ class CLITest(TestCase):
         )
 
         msg = '\n\nPlease avoid causing {} being imported from "everyvoice -h".\nIt is a relatively expensive import and slows down shell completion.\nRun "PYTHONPROFILEIMPORTTIME=1 everyvoice -h" and inspect the logs to see why it\'s being imported.'
-        self.assertNotIn(b"shared_types", result.stderr, msg.format("shared_types.py"))
-        self.assertNotIn(b"pydantic", result.stderr, msg.format("pydantic"))
-
-    def test_demo_with_bad_args(self):
-        # No checkpoint → help message
-        result = self.runner.invoke(app, ["demo"])
-        # Exit code for no-arg-is-help is 0 with click<=8.1.8 and typer<=0.23.2,
-        # 2 if either is more recent
-        assert result.exit_code in (0, 2)
-        # the runner calls "root" instead of "everyvoice"
-        assert "Usage: root demo [OPTIONS] CHECKPOINT" in flatten_log(result.output)
-
-        # Invalid --output-format value
-        result = self.runner.invoke(
-            app,
-            [
-                "demo",
-                os.devnull,
-                "--vocoder",
-                os.devnull,
-                "--output-format",
-                "not-a-format",
-            ],
-        )
-        assert result.exit_code != 0
-        assert "Invalid value" in flatten_log(result.output)
-
-    EMPTY_DEMO_ARGS: dict[str, Any] = {
-        "languages": [],
-        "speakers": [],
-        "output_dir": None,
-        "accelerator": None,
-    }
-
-    def test_create_demo_app_with_errors(self):
-        # outputs is the first thing to get checked, because it can be done as
-        # a quick check before loading any models.
-        with self.assertRaises(ValueError) as cm:
-            create_demo_app(
-                text_to_spec_model_path=None,
-                spec_to_wav_model_path=None,
-                **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
-                outputs=[],
-            )
-        assert "Empty outputs list" in str(cm.exception)
-
-        class WrongEnum(str, enum.Enum):
-            foo = "foo"
-
-        for outputs in (["wav", WrongEnum.foo], ["textgrid", "foo"]):
-            with self.assertRaises(ValueError) as cm:
-                create_demo_app(
-                    text_to_spec_model_path=None,
-                    spec_to_wav_model_path=None,
-                    **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
-                    outputs=outputs,
-                )
-            assert "Unknown output format 'foo'" in str(cm.exception)
-
-    def test_demo_with_bad_models(self) -> None:
-        devnull = Path(os.devnull)
-        with self.assertRaises(ValueError) as cm:
-            create_demo_app(devnull, devnull, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
-        assert "It does not appear to be a valid checkpoint" in str(cm.exception)
-
-        with self.assertRaises(ValueError) as cm:
-            create_demo_app(
-                devnull,
-                self.data_dir / "test.ckpt",
-                **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
-                outputs=["wav"],
-            )
-        assert "maybe it's not actually a HiFiGAN model" in str(cm.exception)
-
-    def test_demo_with_wrong_models(self) -> None:
-        fp_path, vocoder_path = self.get_dummy_models()
-        with self.assertRaises(ValueError) as cm:
-            create_demo_app(fp_path, fp_path, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
-        assert "maybe it's not actually a HiFiGAN model" in str(cm.exception)
-
-        with self.assertRaises(ValueError) as cm:
-            create_demo_app(
-                vocoder_path,
-                vocoder_path,
-                **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
-                outputs=["wav"],
-            )
-        assert "maybe it's not actually an fs2 model" in str(cm.exception)
+        assert b"shared_types" not in result.stderr, msg.format("shared_types.py")
+        assert b"pydantic" not in result.stderr, msg.format("pydantic")
 
     def test_g2p(self):
         result = self.runner.invoke(
@@ -577,487 +398,15 @@ class CLITest(TestCase):
             [
                 "g2p",
                 "abc",
-                str(self.data_dir / Path("text.txt")),
+                str(TEST_DATA_DIR / "text.txt"),
                 "--config",
-                str(self.config_dir / Path("everyvoice-shared-text.yaml")),
+                str(CONFIG_DIR / "everyvoice-shared-text.yaml"),
             ],
         )
 
         assert result.exit_code == 0
         assert "['hello', 'world']" in result.stdout
-        self.assertNotIn("['HELLO', 'WORLD']", result.stdout)
-
-    def mock_create_demo_app(self, *_args, **_kwargs):
-        class MockCreateDemoApp:
-            def launch(self, *_args, **_kwargs):
-                print(f"  - Launch Port: {_kwargs['server_port']}")
-                print(f"  - Launch Share: {_kwargs['share']}")
-                print(f"  - Launch Server Name: {_kwargs['server_name']}")
-                if "config_file" in _kwargs:
-                    print(f"  - Config File: {_kwargs['config_file']}")
-                else:
-                    print("  - Config File: None")
-
-        return MockCreateDemoApp()
-
-    def test_create_demo_app(self):
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
-            # This test is just to make sure that the demo app can be created with parameters for gradio
-            # and that it doesn't crash.
-            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
-                tmpdir / "vocoder"
-            )
-            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
-                tmpdir / "spec_model"
-            )
-            # This test is just to make sure that the demo app params are passed correctly
-            port = 7000
-            ip = "123.456.78.90"
-            # with mock.patch(
-            #    "everyvoice.demo.app.create_demo_app",
-            #    side_effect=self.mock_create_demo_app,
-            # ):
-            with (
-                mock.patch(
-                    "everyvoice.cli._peek_model_class",
-                    return_value="FastSpeech2",
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.load_model_from_checkpoint",
-                    side_effect=self.mock_demo_load_model_from_checkpoint,
-                ),
-                mock.patch(
-                    "everyvoice.base_cli.helpers.inference_base_command",
-                    side_effect=self.mock_fuction_placeholder,
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.synthesize_audio",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-                mock.patch(
-                    "gradio.Blocks.launch",
-                    return_value="Launching gradio app blocks",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-            ):
-                result = self.runner.invoke(
-                    app,
-                    [
-                        "demo",
-                        str(spec_model_path),
-                        "--vocoder",
-                        str(vocoder_path),
-                        "--port",
-                        port,
-                        "--share",
-                        "--server-name",
-                        ip,  # Mock IP address
-                    ],
-                )
-            assert result.exit_code == 0
-            assert f"Port: {port}" in flatten_log(result.output)
-            assert "Share: True" in flatten_log(result.output)
-            assert f"Server Name: {ip}" in flatten_log(result.output)
-
-    def mock_demo_load_model_from_checkpoint(
-        *_arg, **kwargs
-    ) -> tuple:  # [FastSpeech2, torch.nn.Module, dict, torch.device]:
-        print(
-            "mock_demo_load_model_from_checkpoint called with args:",
-            _arg,
-            "and kwargs:",
-            kwargs,
-        )
-
-        class model:
-            from types import SimpleNamespace
-
-            lang2id = {"default": 0}
-            speaker2id = {"default": 0}
-            model_data = {"use_global_style_token_module": False}
-            config_data = {"model": SimpleNamespace(**model_data)}
-            config = SimpleNamespace(
-                **config_data,
-            )
-
-        return model, {}, {}, "cpu"  # Mock return values for the test
-
-    def mock_fuction_placeholder(self, *args, **kwargs):
-        """
-        Mock function to replace any function that we are not testing.
-        """
-        print("mock_fuction_placeholder called with args:", args, "and kwargs:", kwargs)
-        pass
-
-    def mock_fuction_placeholder2(self, **kwargs):
-        """
-        Mock function to replace any function that we are not testing.
-        """
-        print("mock_fuction_placeholder2 called with kwargs:", kwargs)
-        pass
-
-    def test_create_demo_app_with_ui_config_file(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
-            # This test is just to make sure that the demo app can be created with parameters for gradio
-            # and that it doesn't crash.
-            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
-                tmpdir / "vocoder"
-            )
-            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
-                tmpdir / "spec_model"
-            )
-
-            # Create a dummy app config file
-            config: dict = {
-                "app_title": "Test App",
-                "app_description": "This is a test app description.",
-                "app_instructions": "These are test app instructions.",
-                "speakers": {
-                    "default": "Person A",
-                },
-                "languages": {
-                    "default": "English",
-                },
-                "input_text_label": "Input Text",
-                "duration_multiplier_label": "Duration Multiplier",
-                "language_label": "Language",
-                "speaker_label": "Speaker",
-                "output_format_label": "Output Format",
-                "synthesize_label": "Synthesize",
-                "file_output_label": "File Output",
-            }
-            config_file = tmpdir / "demo_config.json"
-            with config_file.open("w", encoding="utf8") as f:
-                json.dump(config, f)
-            allowlist_file = tmpdir / "allowlist.txt"
-            with allowlist_file.open("w", encoding="utf8") as f:
-                f.write("hey\nyes\nword")
-            # This test is just to make sure that the demo app params are passed correctly
-            port = "7000"
-            ip = "123.456.78.90"
-
-            with (
-                mock.patch(
-                    "everyvoice.cli._peek_model_class",
-                    return_value="FastSpeech2",
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.load_model_from_checkpoint",
-                    side_effect=self.mock_demo_load_model_from_checkpoint,
-                ),
-                mock.patch(
-                    "everyvoice.base_cli.helpers.inference_base_command",
-                    side_effect=self.mock_fuction_placeholder,
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.synthesize_audio",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-                mock.patch(
-                    "gradio.Blocks.launch",
-                    return_value="Launching gradio app blocks",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-            ):
-                result = self.runner.invoke(
-                    app,
-                    [
-                        "demo",
-                        str(spec_model_path),
-                        "--vocoder",
-                        str(vocoder_path),
-                        "--port",
-                        port,
-                        "--server-name",
-                        ip,  # Mock IP address
-                        "--ui-config-file",
-                        str(config_file),
-                        "--speaker",
-                        "default",
-                        "--language",
-                        "default",
-                        "--allowlist",
-                        allowlist_file,
-                    ],
-                )
-                # print(result.output, result.exit_code)  # Debug output
-
-            assert result.exit_code == 0
-            self.assertIn(
-                f"Using speakers from app config JSON: [('{config['speakers']['default']}', 'default')]",
-                result.output,
-            )
-            self.assertIn(
-                f"Using languages from app config JSON: [('{config['languages']['default']}', 'default')]",
-                result.output,
-            )
-
-            self.assertIn(
-                f"Using app title from app config JSON: {config['app_title']}",
-                result.output,
-            )
-
-    def test_create_demo_app_with_malformed_ui_config_file(self):
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
-            # This test is just to make sure that the demo app can be created with parameters for gradio
-            # and that it doesn't crash.
-            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
-                tmpdir / "vocoder"
-            )
-            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
-                tmpdir / "spec_model"
-            )
-            # Create a malformed app config file (missing closing brace)
-            config = """{
-                "app_title": "Test App",
-                "app_description": "This is a test app description.",
-                "app_instructions": "These are test app instructions.",
-                "input_text_label": "Input Text",
-                "duration_multiplier_label": "Duration Multiplier",
-                "language_label": "Language",
-                "speaker_label": "Speaker",
-                "output_format_label": "Output Format",
-                "synthesize_label": "Synthesize",
-                "file_output_label": "File Output",
-            """
-            config_file = tmpdir / "malformed_demo_config.json"
-            with config_file.open("w", encoding="utf8") as f:
-                f.write(config)
-            # This test is just to make sure that the demo app params are passed correctly
-            port = "7000"
-            ip = "123.456.78.90"
-
-            with (
-                mock.patch(
-                    "everyvoice.cli._peek_model_class",
-                    return_value="FastSpeech2",
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.load_model_from_checkpoint",
-                    side_effect=self.mock_demo_load_model_from_checkpoint,
-                ),
-                mock.patch(
-                    "everyvoice.base_cli.helpers.inference_base_command",
-                    side_effect=self.mock_fuction_placeholder,
-                ),
-                mock.patch(
-                    "everyvoice.demo.app.synthesize_audio",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-                mock.patch(
-                    "gradio.Blocks.launch",
-                    return_value="Launching gradio app blocks",
-                    side_effect=self.mock_fuction_placeholder2,
-                ),
-            ):
-                result = self.runner.invoke(
-                    app,
-                    [
-                        "demo",
-                        str(spec_model_path),
-                        "--vocoder",
-                        str(vocoder_path),
-                        "--port",
-                        port,
-                        "--server-name",
-                        ip,  # Mock IP address
-                        "--ui-config-file",
-                        str(config_file),
-                        "--speaker",
-                        "default",
-                        "--language",
-                        "default",
-                    ],
-                )
-                # print(result.output, result.exit_code)  # Debug output
-            assert result.exit_code != 0
-            self.assertRegex(
-                result.output, r"(?s)Your config file.*malformed.*has.*errors"
-            )
-
-    # unit test for error handling in load_app_ui_labels
-    def test_create_demo_load_app_ui_labels_errors(self):
-        from everyvoice.demo.app import load_app_ui_labels
-
-        # Create a dummy app config file
-        config_bad_speaker = {
-            "app_title": "Test App",
-            "speakers": {
-                "unknown": "Person A",
-            },
-            "languages": {
-                "default": "English",
-            },
-        }
-        config_bad_language = {
-            "app_title": "Test App",
-            "speakers": {
-                "default": "Person A",
-            },
-            "languages": {
-                "unknown": "English",
-            },
-        }
-
-        with self.assertRaises(typer.BadParameter) as cm:
-            load_app_ui_labels(
-                config_bad_language,
-                ["all"],
-                ["all"],
-                ["default"],
-                ["default"],
-            )
-        self.assertIn(
-            "The 'languages' key in the app config JSON does not match the languages provided.",
-            str(cm.exception),
-        )
-        with self.assertRaises(typer.BadParameter) as cm:
-            load_app_ui_labels(
-                config_bad_speaker,
-                ["all"],
-                ["all"],
-                ["default"],
-                ["default"],
-            )
-        self.assertIn(
-            "The 'speakers' key in the app config JSON does not match the speakers provided.",
-            str(cm.exception),
-        )
-        with self.assertRaises(typer.BadParameter) as cm:
-            load_app_ui_labels(
-                config_bad_speaker,
-                ["default"],
-                ["unknown"],
-                ["default"],
-                ["default"],
-            )
-
-        self.assertIn(
-            "Language option has been activated, but valid languages have not been provided. The model has been trained in ['default'] languages. Please select either 'all' or at least some of them.",
-            str(cm.exception),
-        )
-        with self.assertRaises(typer.BadParameter) as cm:
-            load_app_ui_labels(
-                config_bad_speaker,
-                ["unknown"],
-                ["default"],
-                ["default"],
-                ["default"],
-            )
-        self.assertIn(
-            "Speaker option has been activated, but valid speakers have not been provided. The model has been trained with ['default'] speakers. Please select either 'all' or at least some of them.",
-            str(cm.exception),
-        )
-
-    def test_demo_dispatch_styletts2_rejects_vocoder_flag(self):
-        """Passing --vocoder with a StyleTTS2 checkpoint should produce a clear error."""
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            import torch
-
-            tmpdir = Path(tmpdir_str)
-            fake_ckpt = tmpdir / "styletts2.ckpt"
-            torch.save(
-                {
-                    "model_info": {"name": "StyleTTS2Module"},
-                    "hyper_parameters": {"mode": "second", "config": {}},
-                    "state_dict": {},
-                },
-                fake_ckpt,
-            )
-            fake_vocoder = tmpdir / "hifigan.ckpt"
-            fake_vocoder.touch()
-
-            result = self.runner.invoke(
-                app,
-                [
-                    "demo",
-                    str(fake_ckpt),
-                    "--vocoder",
-                    str(fake_vocoder),
-                    "--ref-speaker",
-                    f"Eric={fake_ckpt}",  # reuse fake_ckpt as a dummy audio file
-                ],
-            )
-            assert result.exit_code != 0
-            assert "StyleTTS2 does not use a separate vocoder" in flatten_log(
-                result.output
-            )
-
-    def test_demo_dispatch_fs2_requires_vocoder(self):
-        """Invoking demo with a FastSpeech2 checkpoint but no --vocoder should error."""
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
-            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
-                tmpdir / "spec_model"
-            )
-
-            with mock.patch(
-                "everyvoice.cli._peek_model_class",
-                return_value="FastSpeech2",
-            ):
-                result = self.runner.invoke(
-                    app,
-                    ["demo", str(spec_model_path)],
-                )
-            assert result.exit_code != 0
-            assert "FastSpeech2 requires a vocoder checkpoint" in flatten_log(
-                result.output
-            )
-
-    def test_demo_dispatch_fs2_rejects_ref_speaker(self):
-        """Passing --ref-speaker with a FastSpeech2 checkpoint should produce a clear error."""
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            tmpdir = Path(tmpdir_str)
-            _, vocoder_path = everyvoice.tests.model_stubs.get_stubbed_vocoder(
-                tmpdir / "vocoder"
-            )
-            _, spec_model_path = everyvoice.tests.model_stubs.get_stubbed_model(
-                tmpdir / "spec_model"
-            )
-
-            with mock.patch(
-                "everyvoice.cli._peek_model_class",
-                return_value="FastSpeech2",
-            ):
-                result = self.runner.invoke(
-                    app,
-                    [
-                        "demo",
-                        str(spec_model_path),
-                        "--vocoder",
-                        str(vocoder_path),
-                        "--ref-speaker",
-                        f"Eric={spec_model_path}",
-                    ],
-                )
-            assert result.exit_code != 0
-            assert "--ref-speaker is only used with StyleTTS2" in flatten_log(
-                result.output
-            )
-
-    def test_demo_dispatch_vocoder_checkpoint_as_primary(self):
-        """Passing a HiFiGAN checkpoint as the primary CHECKPOINT should give a helpful error."""
-        with tempfile.TemporaryDirectory() as tmpdir_str:
-            import torch
-
-            tmpdir = Path(tmpdir_str)
-            fake_vocoder_ckpt = tmpdir / "hifigan.ckpt"
-            torch.save(
-                {"model_info": {"name": "HiFiGAN"}, "state_dict": {}},
-                fake_vocoder_ckpt,
-            )
-
-            result = self.runner.invoke(
-                app,
-                ["demo", str(fake_vocoder_ckpt)],
-            )
-            assert result.exit_code != 0
-            assert "appears to be a standalone vocoder checkpoint" in flatten_log(
-                result.output
-            )
+        assert "['HELLO', 'WORLD']" not in result.stdout
 
     def test_rename_speaker(self):
         with tempfile.TemporaryDirectory() as tmpdir_str:
@@ -1072,7 +421,7 @@ class CLITest(TestCase):
             }
             torch.save(ckpt, tmpdir / "test.ckpt")
 
-            with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
+            with mock.patch("torch.save", side_effect=mock_function_placeholder):
                 # Mock the torch.save function to avoid writing files
                 result = self.runner.invoke(
                     app,
@@ -1086,12 +435,12 @@ class CLITest(TestCase):
                 )
 
                 assert result.exit_code == 0
-                self.assertIn(
-                    "Renamed speaker 'old_speaker' to 'new_speaker'.", result.output
+                assert (
+                    "Renamed speaker 'old_speaker' to 'new_speaker'." in result.output
                 )
-                self.assertIn(
-                    "Updated speakers: {'another_speaker': 1, 'new_speaker': 0}",
-                    result.output,
+                assert (
+                    "Updated speakers: {'another_speaker': 1, 'new_speaker': 0}"
+                    in result.output
                 )
 
     def test_rename_speaker_with_non_existing_speaker(self):
@@ -1107,7 +456,7 @@ class CLITest(TestCase):
             }
             torch.save(ckpt, tmpdir / "test.ckpt")
 
-            with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
+            with mock.patch("torch.save", side_effect=mock_function_placeholder):
                 # Test renaming a non-existing speaker
                 result = self.runner.invoke(
                     app,
@@ -1135,7 +484,7 @@ class CLITest(TestCase):
             empty_ckpt: dict = {"hyper_parameters": {"speaker2id": {}}}
             torch.save(empty_ckpt, tmpdir / "empty.ckpt")
 
-            with mock.patch("torch.save", side_effect=self.mock_fuction_placeholder):
+            with mock.patch("torch.save", side_effect=mock_function_placeholder):
                 # Test renaming with no speakers in the checkpoint
                 result = self.runner.invoke(
                     app,
@@ -1152,7 +501,7 @@ class CLITest(TestCase):
                 assert "No speakers found" in flatten_log(result.output)
 
 
-class TestBaseCLIHelper(TestCase):
+class TestBaseCLIHelper:
     def test_save_configuration_to_log_dir(self):
         with TemporaryDirectory(ignore_cleanup_errors=True) as tempdir_s:
             tempdir = Path(tempdir_s)
@@ -1177,15 +526,14 @@ class TestBaseCLIHelper(TestCase):
             assert hparams.exists()
             with hparams.open(mode="r", encoding="UTF8") as f:
                 config_reloaded = yaml.load(f, Loader=Loader)
-                self.assertEqual(
-                    config.training.logger.save_dir,
-                    Path(config_reloaded["training"]["logger"]["save_dir"]),
+                assert config.training.logger.save_dir == Path(
+                    config_reloaded["training"]["logger"]["save_dir"]
                 )
-                self.assertEqual(
-                    config.training.logger.name,
-                    config_reloaded["training"]["logger"]["name"],
+                assert (
+                    config.training.logger.name
+                    == config_reloaded["training"]["logger"]["name"]
                 )
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)
