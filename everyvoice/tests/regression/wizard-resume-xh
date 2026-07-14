@@ -1,5 +1,5 @@
 - - EveryVoice Wizard
-  - 0.2.0a1
+  - 0.5.0
 - - Root
   - null
 - - Name Step
@@ -51,5 +51,7 @@
   - xho-regress
 - - More Datasets Step
   - 'no'
+- - OOD Data Step [und]
+  - 'validation: use the validation set data'
 - - Config Format Step
   - 'yaml'
