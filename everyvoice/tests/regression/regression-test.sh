@@ -81,6 +81,7 @@ r "coverage run -p -m everyvoice synthesize from-spec \
 
 # Spin up the demo and exercise it with Playwright in headless mode
 if [[ -f ../run-demo-app.sh && -f ../test-demo-app.py ]]; then
+    export LC_ALL=C  # gradio is locale aware, but test with default English aria-labels
     bash ../run-demo-app.sh &
     DEMO_PID=$!
     sleep 10
