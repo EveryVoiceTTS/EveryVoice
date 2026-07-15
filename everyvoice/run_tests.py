@@ -16,8 +16,10 @@ from loguru import logger
 
 SUBMODULE_SUITES: dict[str, tuple[str, ...]] = {
     "fs2": ("/model/feature_prediction/FastSpeech2_lightning/fs2/tests",),
+    "styletts2": ("/model/e2e/StyleTTS2_lightning/styletts2/tests",),
     "wav2vec2aligner": ("/model/aligner/wav2vec2aligner/aligner/tests",),
 }
+print(str(Path(__file__).parent.resolve()))
 SUITES: dict[str, tuple[str, ...]] = {
     "all": (),  # relies on discovery for collection
     "config": ("test_configs",),
@@ -28,6 +30,7 @@ SUITES: dict[str, tuple[str, ...]] = {
     "cli": (
         "test_wizard",
         "test_cli",
+        "test_demo",
         "test_wizard_helpers",
         "test_subsample",
         "test_custom_g2p",
@@ -44,6 +47,7 @@ dev_suites = (
     "cli",
     "evaluation",
     "fs2",
+    "styletts2",
     "wav2vec2aligner",
 )
 SUITE_NAMES = ["all", "dev"] + sorted(SUITES.keys())
