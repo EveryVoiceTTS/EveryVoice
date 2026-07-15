@@ -46,13 +46,19 @@ def major_minor(version):
 
 COMMANDS = [
     "new-project",
+    "preprocess",
     "train",
     "synthesize",
-    "preprocess",
+    "demo",
+    "check-data",
+    "check-text-config",
     "checkpoint",
     "evaluate",
-    "demo",
+    "export",
+    "fetch-pretrained",
     "g2p",
+    "export",
+    "segment",
 ]
 
 
@@ -177,6 +183,18 @@ class TestCLI:
             assert result.exit_code == 0
             result = self.runner.invoke(app, [command, "-h"])
             assert result.exit_code == 0
+
+    def test_command_list_uptodate(self):
+        # Make sure we've listed all commands in COMMANDS. We could construct the list
+        # from app.registered_{groups,commands} instead, but then we would not catch any
+        # issues where that stopped working if Typer changed their internals.
+        for group in app.registered_groups:
+            if not group.hidden:
+                assert group.name in COMMANDS, f"please add {group.name} to COMMANDS"
+        for cmd in app.registered_commands:
+            if not cmd.hidden:
+                name = cmd.name or cmd.callback.__name__.replace("_", "-")
+                assert name in COMMANDS, f"please add {name} to COMMANDS"
 
     def test_update_schemas(self, subtests):
         dummy_contact = ContactInformation(
