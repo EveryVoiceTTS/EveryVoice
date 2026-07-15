@@ -522,6 +522,70 @@ class TestCLI:
                 assert result.exit_code != 0
                 assert "No speakers found" in flatten_log(result.output)
 
+    def test_check_text_config(self, dummy_fp_path, tmp_path, subtests):
+        text_file = str(tmp_path / "test.txt")
+        with open(text_file, "w", encoding="utf-8") as f:
+            f.write("Some text éçà\n")
+        psv_file = str(tmp_path / "test.psv")
+        with open(psv_file, "w", encoding="utf-8") as f:
+            f.write("language|characters\nund|Some test éçà\n")
+        expected_output_strings = (
+            "The following characters are missing from your text config",
+            "'é'",
+            "'ç'",
+            "'à'",
+            "The following phones are missing from your text config",
+            "'t͡ʃ'",
+        )
+
+        model_or_config = (
+            ("--model", dummy_fp_path),
+            ("--config", str(CONFIG_DIR / "everyvoice-shared-text.yaml")),
+        )
+        text_or_psv = (
+            ("--text-file", text_file, "--language", "und"),
+            ("--psv-file", psv_file),
+        )
+
+        for m_or_c in model_or_config:
+            for t_or_p in text_or_psv:
+                with subtests.test(model_or_config=m_or_c[0], text_or_psv=t_or_p[0]):
+                    result = self.runner.invoke(
+                        app, ["check-text-config", *m_or_c, *t_or_p]
+                    )
+                    flat_output = flatten_log(result.output)
+                    for x in expected_output_strings:
+                        assert x in flat_output
+
+    def test_check_text_config_cli_errors(self, dummy_fp_path, tmp_path):
+        text_file = str(tmp_path / "text.txt")
+        with open(text_file, "w", encoding="utf-8") as f:
+            f.write("Some text éçà\n")
+
+        result = self.runner.invoke(
+            app,
+            [
+                "check-text-config",
+                "--config",
+                str(CONFIG_DIR / "everyvoice-shared-text.yaml"),
+                "--text-file",
+                text_file,
+            ],
+        )
+        assert result.exit_code != 0
+        assert "--language is required with --text-file" in flatten_log(result.output)
+
+        result = self.runner.invoke(
+            app,
+            [
+                "check-text-config",
+                "--config",
+                str(CONFIG_DIR / "everyvoice-shared-text.yaml"),
+            ],
+        )
+        assert result.exit_code != 0
+        assert "One of --" in flatten_log(result.output)
+
 
 class TestBaseCLIHelper:
     def test_save_configuration_to_log_dir(self):
