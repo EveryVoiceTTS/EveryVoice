@@ -86,8 +86,27 @@ from everyvoice.wizard import (
     TEXT_TO_WAV_CONFIG_FILENAME_PREFIX,
 )
 
+
+# For the main `everyvoice` command, TyperGroupOrderAsDeclared doesn't work because
+# single commands gets listed first, followed by sub-command groups. There are so many
+# top-level commands and command groups now that it gets quite confusing, so let's order
+# them logically for the main ones, and alphabetically for the rest.
+class MainCommandOrder(typer.core.TyperGroup):
+    def list_commands(self, ctx):
+        # Order will be these first, then the rest alphabetically
+        order = (
+            "new-project",
+            "preprocess",
+            "train",
+            "synthesize",
+            "demo",
+        )
+        order_d = {x: i for i, x in enumerate(order)}
+        return sorted(self.commands.keys(), key=lambda x: (order_d.get(x, 100), x))
+
+
 app = typer.Typer(
-    **default_typer_args,
+    **{**default_typer_args, "cls": MainCommandOrder},
     help="""
     # Welcome to the EveryVoice Command Line Interface
 
@@ -406,7 +425,7 @@ app.add_typer(
 @command(
     app,
     no_args_is_help=False,
-    short_help="This command will help you create all the configuration necessary for using a new project.",
+    short_help="Create configuration files for a new project",
     help="""
     # This command will help you create all the configuration necessary for using a new project.
 
@@ -414,10 +433,9 @@ app.add_typer(
 
     In order to get started, please:
 
-        1. make sure your audio data is available on your computer and in .wav format
+    1. Make sure your audio data is available on your computer and in .wav format.
 
-        2. have a 'metadata' file that minimally has two columns, one for the text of the audio and one for the basename of the file
-
+    2. Have a 'metadata' file that minimally has two columns, one for the text of the audio and one for the basename of the file.
 
     ## Extra details and examples
 
