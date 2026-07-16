@@ -1308,7 +1308,8 @@ def open_text_or_psv_file(
         if language is None:
             raise typer.BadParameter("--language is required with --text-file.")
         records = [{"characters": line, "language": language} for line in text_lines]
-    elif psv_file:
+    else:
+        assert psv_file
         records = generic_psv_filelist_reader(psv_file)
         if "language" not in records[0]:
             if language is None:
@@ -1317,8 +1318,6 @@ def open_text_or_psv_file(
                 )
             for record in records:
                 record["language"] = language
-    else:
-        assert False
     return records
 
 
@@ -1329,9 +1328,15 @@ def get_text_config_from_config_or_model(config: Optional[Path], model: Optional
 
     if config:
         text_config: TextConfig = TextConfig.load_config_from_path(config)
-    elif model:
+    else:
+        assert model
         with spinner("Loading model"):
-            checkpoint = load_checkpoint(model)
+            try:
+                checkpoint = load_checkpoint(model)
+            except Exception as e:
+                raise typer.BadParameter(
+                    f"Model/checkpoint '{model}' does not appear to be valid.\nError from loader: {e}"
+                )
         # print("Looking for text config")
         model_config = checkpoint["hyper_parameters"]["config"]
         if "text" in model_config:
@@ -1341,7 +1346,7 @@ def get_text_config_from_config_or_model(config: Optional[Path], model: Optional
         else:
             # Models without text config, e.g., a HiFiGan Vocoder, are not accepted here
             raise typer.BadParameter(
-                f"Model/checkpoint {model} does not have an embedded text configuration."
+                f"Model/checkpoint '{model}' does not have an embedded text configuration."
             )
     return text_config
 

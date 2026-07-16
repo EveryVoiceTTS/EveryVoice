@@ -38,6 +38,10 @@ def load_checkpoint(model_path: Path, minimal=True) -> dict[str, Any]:
     """
     import torch
 
+    # torch.load on en empty file yields a core dump, avoid that with an early check
+    if not model_path.exists() or model_path.stat().st_size == 0:
+        raise ValueError(f"Model {model_path} does not exist or is empty")
+
     checkpoint = torch.load(
         model_path, map_location=torch.device("cpu"), weights_only=True
     )
@@ -180,13 +184,16 @@ def inspect(
                 return json.loads(obj.model_dump_json())
             return super().default(obj)
 
-    if show_config:
+    def my_load_checkpoint(model_path, minimal):
         try:
-            checkpoint = load_checkpoint(model_path, minimal=True)
+            return load_checkpoint(model_path, minimal=minimal)
         except Exception as e:
-            raise ValueError(
-                f"Error loading checkpoint '{model_path}'. It might have been created with a different version of EveryVoice that is not compatible."
-            ) from e
+            raise typer.BadParameter(
+                f"Error loading checkpoint '{model_path}'. It might have been created with a different version of EveryVoice that is not compatible.\nError from loader: {e}"
+            )
+
+    if show_config:
+        checkpoint = my_load_checkpoint(model_path, minimal=True)
         config = json.dumps(
             checkpoint,
             ensure_ascii=False,
@@ -203,7 +210,7 @@ def inspect(
         print(config)
 
     if show_architecture:
-        checkpoint = load_checkpoint(model_path, minimal=False)
+        checkpoint = my_load_checkpoint(model_path, minimal=False)
 
         if "model_info" in checkpoint:
             print(
