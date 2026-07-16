@@ -128,6 +128,13 @@ docs = [
   "mike>=1.1.2",
 ]
 
+[tool.uv]
+override-dependencies = [
+  # replace unmaintained pydub, which gradio requests, by pydub_ng
+  "pydub; python_version < '0'",
+  "pydub-ng>=0.2.0",
+]
+
 [project.scripts]
 everyvoice = "everyvoice.cli:app"
 
