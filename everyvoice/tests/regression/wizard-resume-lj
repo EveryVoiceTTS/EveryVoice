@@ -1,5 +1,5 @@
 - - EveryVoice Wizard
-  - 0.2.0a1
+  - 0.5.0
 - - Root
   - null
 - - Name Step
@@ -50,5 +50,7 @@
   - lj2k
 - - More Datasets Step
   - 'no'
+- - OOD Data Step [eng]
+  - 'validation: use the validation set data'
 - - Config Format Step
   - 'yaml'

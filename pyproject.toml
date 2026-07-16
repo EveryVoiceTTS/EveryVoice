@@ -210,6 +210,7 @@ testpaths = [
   "everyvoice/tests/test_*.py",
   "everyvoice/model/*/*/*/tests/test_*.py",
 ]
+norecursedirs = [ "build", "dist", ".git", "regress*", "*venv*", ".mypy_cache" ]
 filterwarnings = [
   "ignore:Can't initialize NVML:UserWarning",
   "ignore:.*use of fork.. may lead to deadlocks in the child.:DeprecationWarning",

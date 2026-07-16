@@ -31,8 +31,7 @@ r() {
     return $rc
 }
 
-echo "Start at $(date)"
-date > START
+echo "Start at $(date)" | tee START
 
 trap 'echo "Failed or killed at $(date)"; date | tee FAILED > DONE' 0
 
@@ -51,7 +50,8 @@ cd regress || { echo "ERROR: Cannot cd into regress directory, aborting."; exit 
 trap 'echo "Failed or killed at $(date)"; date | tee ../FAILED > ../DONE' 0
 
 # Preprocess
-r "coverage run -p -m everyvoice preprocess config/everyvoice-text-to-spec.yaml"
+r "coverage run -p -m everyvoice preprocess text-to-spec config/everyvoice-text-to-spec.yaml" ||
+{ echo ERROR: Preprocess failed, aborting.; exit 1; }
 
 # Train the fs2 model
 r "coverage run -p -m everyvoice train text-to-spec config/everyvoice-text-to-spec.yaml --config-args training.max_steps=$MAX_STEPS --config-args training.max_epochs=$MAX_EPOCHS"
@@ -81,6 +81,7 @@ r "coverage run -p -m everyvoice synthesize from-spec \
 
 # Spin up the demo and exercise it with Playwright in headless mode
 if [[ -f ../run-demo-app.sh && -f ../test-demo-app.py ]]; then
+    export LC_ALL=C  # gradio is locale aware, but test with default English aria-labels
     bash ../run-demo-app.sh &
     DEMO_PID=$!
     sleep 10
@@ -94,6 +95,5 @@ fi
 # TODO: use coverage analysis to find the next priority things to add here
 
 
-echo "Done at $(date)"
-date > ../DONE
+echo "Done at $(date)" | tee ../DONE
 trap - 0

@@ -43,7 +43,7 @@ for DIR in regress-*; do
     popd
 done
 
-coverage run -p -m everyvoice test 2>&1
+coverage run -p -m pytest ../../../.. 2>&1
 
 JOB_COUNT=$(find . -maxdepth 1 -name regress-\* | wc -l)
 while true; do
