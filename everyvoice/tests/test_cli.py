@@ -320,7 +320,7 @@ class TestCLI:
     def test_inspect_not_a_checkpoint(self) -> None:
         result = self.runner.invoke(app, ["checkpoint", "inspect", os.devnull])
         assert result.exit_code != 0
-        assert "Error loading checkpoint" in str(result.exception)
+        assert "Error loading checkpoint" in str(result.output)
 
     def test_inspect_good_fp_checkpoint(self, dummy_fp_path) -> None:
         result = self.runner.invoke(app, ["checkpoint", "inspect", str(dummy_fp_path)])
@@ -529,6 +529,9 @@ class TestCLI:
         psv_file = str(tmp_path / "test.psv")
         with open(psv_file, "w", encoding="utf-8") as f:
             f.write("language|characters\nund|Some test éçà\n")
+        one_column_psv = str(tmp_path / "one_column.psv")
+        with open(one_column_psv, "w", encoding="utf-8") as f:
+            f.write("characters\nSome test éçà\n")
         expected_output_strings = (
             "The following characters are missing from your text config",
             "'é'",
@@ -545,6 +548,7 @@ class TestCLI:
         text_or_psv = (
             ("--text-file", text_file, "--language", "und"),
             ("--psv-file", psv_file),
+            ("--psv-file", one_column_psv, "--language", "und"),
         )
 
         for m_or_c in model_or_config:
@@ -557,34 +561,66 @@ class TestCLI:
                     for x in expected_output_strings:
                         assert x in flat_output
 
-    def test_check_text_config_cli_errors(self, dummy_fp_path, tmp_path):
+    def test_check_text_config_cli_errors(
+        self, dummy_fp_path, dummy_vocoder_path, tmp_path
+    ):
         text_file = str(tmp_path / "text.txt")
         with open(text_file, "w", encoding="utf-8") as f:
             f.write("Some text éçà\n")
+        one_column_psv = str(tmp_path / "one_column.psv")
+        with open(one_column_psv, "w", encoding="utf-8") as f:
+            f.write("characters\nSome test éçà\n")
+        config = str(CONFIG_DIR / "everyvoice-shared-text.yaml")
 
         result = self.runner.invoke(
-            app,
-            [
-                "check-text-config",
-                "--config",
-                str(CONFIG_DIR / "everyvoice-shared-text.yaml"),
-                "--text-file",
-                text_file,
-            ],
+            app, ["check-text-config", "--config", config, "--text-file", text_file]
         )
         assert result.exit_code != 0
         assert "--language is required with --text-file" in flatten_log(result.output)
 
+        result = self.runner.invoke(app, ["check-text-config", "--language", "und"])
+        assert result.exit_code != 0
+        assert "One of --" in flatten_log(result.output)
+
         result = self.runner.invoke(
             app,
             [
                 "check-text-config",
                 "--config",
-                str(CONFIG_DIR / "everyvoice-shared-text.yaml"),
+                config,
+                "--psv-file",
+                os.devnull,
+                "--text-file",
+                os.devnull,
             ],
         )
         assert result.exit_code != 0
-        assert "One of --" in flatten_log(result.output)
+        assert "Please specify only one of --" in flatten_log(result.output)
+
+        result = self.runner.invoke(
+            app,
+            ["check-text-config", "--config", config, "--psv-file", one_column_psv],
+        )
+        assert result.exit_code != 0
+        assert (
+            "--language is required for a psv file without a language column"
+            in flatten_log(result.output)
+        )
+
+        text_args = ("--text-file", text_file, "--language", "und")
+        result = self.runner.invoke(
+            app, ["check-text-config", "--model", os.devnull, *text_args]
+        )
+        assert result.exit_code != 0
+        assert "does not appear to be valid" in flatten_log(result.output)
+
+        result = self.runner.invoke(
+            app, ["check-text-config", "--model", dummy_vocoder_path, *text_args]
+        )
+        assert result.exit_code != 0
+        assert "does not have an embedded text configuration" in flatten_log(
+            result.output
+        )
 
 
 class TestBaseCLIHelper:
