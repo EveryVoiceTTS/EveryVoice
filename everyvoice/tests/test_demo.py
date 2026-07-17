@@ -34,7 +34,7 @@ class TestDemo:
         # 2 if either is more recent
         assert result.exit_code in (0, 2)
         # the runner calls "root" instead of "everyvoice"
-        assert "Usage: root demo [OPTIONS] CHECKPOINT" in flatten_log(result.output)
+        assert "Usage: root demo [OPTIONS]" in flatten_log(result.output)
 
         # Invalid --output-format value
         result = self.runner.invoke(

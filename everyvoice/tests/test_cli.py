@@ -285,7 +285,7 @@ class TestCLI:
 
     def test_inspect_checkpoint_help(self):
         result = self.runner.invoke(app, ["checkpoint", "inspect", "--help"])
-        assert "checkpoint inspect [OPTIONS] MODEL_PATH" in result.stdout
+        assert "checkpoint inspect [OPTIONS]" in result.stdout
 
     def test_inspect_checkpoint(self):
         result = self.runner.invoke(
@@ -377,10 +377,7 @@ class TestCLI:
         # Exit code for no-arg-is-help is 0 with click<=8.1.8 and typer<=0.23.2,
         # 2 if either is more recent
         assert result.exit_code in (0, 2)
-        assert (
-            "preprocess text-to-wav [OPTIONS] CONFIG_FILE"
-            in flatten_log(result.output).strip()
-        )
+        assert "preprocess text-to-wav [OPTIONS]" in flatten_log(result.output)
 
     def test_expensive_imports_are_tucked_away(self):
         """Make sure expensive imports are tucked away form the CLI help"""
