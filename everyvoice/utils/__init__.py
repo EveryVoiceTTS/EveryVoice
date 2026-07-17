@@ -1,5 +1,4 @@
 import csv
-import json
 import os
 import re
 import sys
@@ -11,8 +10,6 @@ from itertools import islice
 from pathlib import Path
 from typing import Any, Optional
 from unicodedata import normalize
-
-import yaml
 
 from everyvoice import exceptions, logger
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
@@ -137,6 +134,10 @@ def _flatten(structure, key="", path="", flattened=None):
 
 
 def load_config_from_json_or_yaml_path(path: Path):
+    import json
+
+    import yaml
+
     if not path.exists():
         raise ValueError(f"Config file '{path}' does not exist")
     with open(path, "r", encoding="utf8") as f:

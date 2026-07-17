@@ -1,8 +1,6 @@
-import json
 import platform
 import subprocess
 import sys
-import tempfile
 from enum import Enum
 from io import TextIOWrapper
 from pathlib import Path
@@ -255,6 +253,8 @@ def evaluate(
         ),
     ] = None,
 ):
+    import json
+
     from tabulate import tabulate
     from tqdm import tqdm
 
@@ -765,6 +765,8 @@ def _parse_ref_speakers(ref_speaker: list[str]) -> dict[str, Path]:
 
 def _load_fs2_ui_config(ui_config_file: Optional[Path]) -> "dict | None":
     """Read and JSON-parse the FS2 UI config file, or return None if not given."""
+    import json
+
     if ui_config_file is None:
         print("  - UI Config file: None")
         return None
@@ -816,6 +818,9 @@ def _run_styletts2_demo(
 
     speakers_dict = _parse_ref_speakers(ref_speaker)
     default_reference = reference if not speakers_dict else None
+
+    import json
+    import tempfile
 
     import torch
 
@@ -924,6 +929,8 @@ def _run_fs2_demo(
     from everyvoice.utils import spinner
 
     with spinner("Loading software"):
+        import tempfile
+
         from everyvoice.demo.app import create_demo_app
 
     with spinner("Loading models"):
@@ -1169,6 +1176,8 @@ def update_schemas(
         schema_dir_path = out_dir
 
     # Defer somewhat slow imports to optimize CLI
+    import json
+
     from everyvoice.config.preprocessing_config import PreprocessingConfig
     from everyvoice.config.text_config import TextConfig
     from everyvoice.model.e2e.config import E2EConfig
