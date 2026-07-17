@@ -389,9 +389,7 @@ command(
 )(export_hfg)
 
 app.add_typer(
-    export_group,
-    name="export",
-    short_help="Export your EveryVoice models",
+    export_group, name="export", short_help="Commands to export your EveryVoice models"
 )
 
 # Add the segment commands
@@ -416,9 +414,7 @@ command(
 )(extract_segments_from_textgrid)
 
 app.add_typer(
-    segment_group,
-    name="segment",
-    short_help="Align and segment audio",
+    segment_group, name="segment", short_help="Commands to align and segment audio"
 )
 
 
@@ -538,7 +534,9 @@ command(
     """,
 )(preprocess_styletts2)
 
-app.add_typer(preprocess_group, name="preprocess", short_help="Preprocess your data")
+app.add_typer(
+    preprocess_group, name="preprocess", short_help="Commands to preprocess your data"
+)
 
 
 # Add the train commands
@@ -589,9 +587,7 @@ command(
 )(train_styletts2)
 
 app.add_typer(
-    train_group,
-    name="train",
-    short_help="Train your EveryVoice models",
+    train_group, name="train", short_help="Commands to train your EveryVoice models"
 )
 
 # Add synthesize commands
@@ -622,7 +618,7 @@ command(
 app.add_typer(
     synthesize_group,
     name="synthesize",
-    short_help="Synthesize using your pre-trained EveryVoice models",
+    short_help="Commands to synthesize using your pre-trained EveryVoice models",
 )
 
 # Add fetch-pretrained commands
@@ -647,7 +643,7 @@ command(
 app.add_typer(
     fetch_pretrained_group,
     name="fetch-pretrained",
-    short_help="Download pretrained model weights from HuggingFace",
+    short_help="Commands to download pretrained model weights from HuggingFace",
 )
 
 # check group
@@ -717,7 +713,7 @@ def open_text_or_psv_file(
 
 
 def get_text_config_from_config_or_model(config: Optional[Path], model: Optional[Path]):
-    """Helper for chec_text_config: load a TextConfig from a config file or model file"""
+    """Helper for check_text_config: load a TextConfig from a config file or model file"""
     from everyvoice.config.text_config import TextConfig
     from everyvoice.utils import spinner
 
@@ -841,7 +837,9 @@ def check_text_config(
         )
 
 
-app.add_typer(check_group, name="check", short_help="Check your data and/or config")
+app.add_typer(
+    check_group, name="check", short_help="Commands to check your data and/or config"
+)
 
 # Add the checkpoint commands
 checkpoint_group = typer.Typer(**default_typer_args)
@@ -860,7 +858,7 @@ command(
 app.add_typer(
     checkpoint_group,
     name="checkpoint",
-    short_help="Inspect and rename speakers in your EveryVoice checkpoints",
+    short_help="Commands to inspect and rename speakers in your EveryVoice checkpoints",
 )
 
 
