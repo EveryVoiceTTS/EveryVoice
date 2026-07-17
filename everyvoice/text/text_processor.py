@@ -4,9 +4,9 @@ from typing import Optional, overload
 
 import numpy as np
 import numpy.typing as npt
-from loguru import logger
 from nltk.tokenize import RegexpTokenizer
 
+from everyvoice import logger
 from everyvoice.config.text_config import TextConfig
 from everyvoice.exceptions import OutOfVocabularySymbolError
 from everyvoice.text.features import (

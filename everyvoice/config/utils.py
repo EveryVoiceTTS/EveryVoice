@@ -2,10 +2,10 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Annotated, Any, Optional
 
-from loguru import logger
 from pydantic import PlainSerializer, WithJsonSchema
 from pydantic.functional_validators import BeforeValidator
 
+from everyvoice import logger
 from everyvoice.utils import load_config_from_json_or_yaml_path
 
 from .validation_helpers import (

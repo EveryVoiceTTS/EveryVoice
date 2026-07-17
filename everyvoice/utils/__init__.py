@@ -13,9 +13,8 @@ from typing import Any, Optional
 from unicodedata import normalize
 
 import yaml
-from loguru import logger
 
-from everyvoice import exceptions
+from everyvoice import exceptions, logger
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 
 # Regular expression matching whitespace:

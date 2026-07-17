@@ -8,9 +8,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from loguru import logger
-
-from everyvoice import wizard
+from everyvoice import logger, wizard
 from everyvoice.config.shared_types import ContactInformation
 from everyvoice.wizard import basic, dataset, prompts, tour
 

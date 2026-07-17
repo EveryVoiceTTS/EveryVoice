@@ -2,10 +2,10 @@ import importlib
 from pathlib import Path
 from typing import Annotated
 
-from loguru import logger
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import Self
 
+from everyvoice import logger
 from everyvoice.config.shared_types import ConfigModel, init_context
 from everyvoice.config.utils import PossiblySerializedCallable
 from everyvoice.config.validation_helpers import string_to_callable

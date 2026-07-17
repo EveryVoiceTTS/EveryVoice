@@ -15,9 +15,9 @@ from typing import Optional, Union
 
 import yaml
 from deepdiff import DeepDiff
-from loguru import logger
 from pydantic import ValidationError
 
+from everyvoice import logger
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import InvalidConfiguration
 from everyvoice.model.e2e.config import StyleTTS2Config
