@@ -2,10 +2,8 @@
 CLI command to inspect EveryVoice's checkpoints.
 """
 
-import json
 import warnings
 from collections import defaultdict
-from json import JSONEncoder
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -18,25 +16,6 @@ app = typer.Typer(
     **default_typer_args,
     help="Extract checkpoint's hyperparameters.",
 )
-
-
-class CheckpointEncoder(JSONEncoder):
-    """
-    Helper JSON Encoder for missing `torch.Tensor` & `pydantic.BaseModel`.
-    """
-
-    def default(self, obj: Any):
-        """
-        Extends json to handle `torch.Tensor` and `pydantic.BaseModel`.
-        """
-        import torch
-        from pydantic import BaseModel
-
-        if isinstance(obj, torch.Tensor):
-            return list(obj.shape)
-        elif isinstance(obj, BaseModel):
-            return json.loads(obj.model_dump_json())
-        return super().default(obj)
 
 
 def summarize_statedict(ckpt: dict) -> dict:
@@ -181,6 +160,25 @@ def inspect(
     used during training, the model's architecture and the number of weights
     per layer and total weight count.
     """
+    import json
+
+    class CheckpointEncoder(json.JSONEncoder):
+        """
+        Helper JSON Encoder for missing `torch.Tensor` & `pydantic.BaseModel`.
+        """
+
+        def default(self, obj: Any):
+            """
+            Extends json to handle `torch.Tensor` and `pydantic.BaseModel`.
+            """
+            import torch
+            from pydantic import BaseModel
+
+            if isinstance(obj, torch.Tensor):
+                return list(obj.shape)
+            elif isinstance(obj, BaseModel):
+                return json.loads(obj.model_dump_json())
+            return super().default(obj)
 
     if show_config:
         try:

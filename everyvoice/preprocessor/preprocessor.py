@@ -23,7 +23,6 @@ import numpy.typing as npt
 import torch
 import torchaudio
 from joblib import Parallel, delayed
-from loguru import logger
 from rich import print as rich_print
 from rich.panel import Panel
 from rich.style import Style
@@ -31,6 +30,7 @@ from tabulate import tabulate
 from torchaudio.functional import resample
 from tqdm import tqdm
 
+from everyvoice import logger
 from everyvoice.config.type_definitions import (
     DatasetTextRepresentation,
     TargetTrainingTextRepresentationLevel,

@@ -5,19 +5,16 @@
     inferring information from the function signature while still keeping code DRY.
 """
 
-import json
 import os
-import tempfile
 import textwrap
 from pathlib import Path
 from pprint import pformat
 from typing import Optional, Union
 
-import yaml
 from deepdiff import DeepDiff
-from loguru import logger
 from pydantic import ValidationError
 
+from everyvoice import logger
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import InvalidConfiguration
 from everyvoice.model.e2e.config import StyleTTS2Config
@@ -155,6 +152,10 @@ def save_configuration_to_log_dir(
     Adds a logging file to the module's logger.
     Records to hparams.yaml the function's configuration.
     """
+    import json
+
+    import yaml
+
     log_dir = config.training.logger.save_dir / config.training.logger.name
     log_dir.mkdir(exist_ok=True, parents=True)
     logger.add(log_dir / "log")
@@ -354,6 +355,8 @@ def train_base_command(
             # the configuration in model_obj.config, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
             trainer.fit(model_obj, data)
         else:
+            import tempfile
+
             import torch
 
             logger.info(f"Resuming from checkpoint '{last_ckpt}'")

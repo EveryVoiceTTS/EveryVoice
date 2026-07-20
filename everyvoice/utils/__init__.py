@@ -1,5 +1,4 @@
 import csv
-import json
 import os
 import re
 import sys
@@ -12,10 +11,7 @@ from pathlib import Path
 from typing import Any, Optional
 from unicodedata import normalize
 
-import yaml
-from loguru import logger
-
-from everyvoice import exceptions
+from everyvoice import exceptions, logger
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 
 # Regular expression matching whitespace:
@@ -138,6 +134,10 @@ def _flatten(structure, key="", path="", flattened=None):
 
 
 def load_config_from_json_or_yaml_path(path: Path):
+    import json
+
+    import yaml
+
     if not path.exists():
         raise ValueError(f"Config file '{path}' does not exist")
     with open(path, "r", encoding="utf8") as f:

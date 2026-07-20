@@ -3,8 +3,9 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Optional
 
-from loguru import logger
 from pydantic import ValidationInfo
+
+from everyvoice import logger
 
 
 def callable_to_string(function: Callable) -> str:

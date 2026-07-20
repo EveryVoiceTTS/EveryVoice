@@ -9,8 +9,8 @@ from unicodedata import normalize
 import gradio as gr
 import torch
 import typer
-from loguru import logger
 
+from everyvoice import logger
 from everyvoice.cli import AllowedDemoOutputFormats
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
