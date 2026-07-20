@@ -731,9 +731,11 @@ def get_text_config_from_config_or_model(config: Optional[Path], model: Optional
         # print("Looking for text config")
         model_config = checkpoint["hyper_parameters"]["config"]
         if "text" in model_config:
-            # Question: FS2 models have text config, do any others have it?
-            # For other models that have it, are they in the same place in the metadata?
+            # FS2 models have hyper_parameters.config.text
             text_config = TextConfig(**model_config["text"])
+        elif "ev_config" in model_config and "text" in model_config["ev_config"]:
+            # StyleTTS2 models have hyper_parameters.config.ev_config.text
+            text_config = TextConfig(**model_config["ev_config"]["text"])
         else:
             # Models without text config, e.g., a HiFiGan Vocoder, are not accepted here
             raise typer.BadParameter(
