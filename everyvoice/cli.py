@@ -14,7 +14,8 @@ from rich.panel import Panel
 
 from everyvoice._version import VERSION
 from everyvoice.base_cli import command, default_typer_args
-from everyvoice.base_cli.checkpoint import inspect, rename_speaker
+from everyvoice.base_cli.check_group import check_group
+from everyvoice.base_cli.checkpoint import checkpoint_group
 from everyvoice.base_cli.interfaces import (
     inference_base_command_interface,
     typer_directory_option,
@@ -45,9 +46,6 @@ from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
 )
 from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.train import (
     train as train_styletts2,
-)
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.check_data import (
-    check_data_command,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.preprocess import (
     preprocess as preprocess_fs2,
@@ -83,8 +81,27 @@ from everyvoice.wizard import (
     TEXT_TO_WAV_CONFIG_FILENAME_PREFIX,
 )
 
+
+# For the main `everyvoice` command, TyperGroupOrderAsDeclared doesn't work because
+# single commands gets listed first, followed by sub-command groups. There are so many
+# top-level commands and command groups now that it gets quite confusing, so let's order
+# them logically for the main ones, and alphabetically for the rest.
+class MainCommandOrder(typer.core.TyperGroup):
+    def list_commands(self, ctx):
+        # Order will be these first, then the rest alphabetically
+        order = (
+            "new-project",
+            "preprocess",
+            "train",
+            "synthesize",
+            "demo",
+        )
+        order_d = {x: i for i, x in enumerate(order)}
+        return sorted(self.commands.keys(), key=lambda x: (order_d.get(x, 100), x))
+
+
 app = typer.Typer(
-    **default_typer_args,
+    **{**default_typer_args, "cls": MainCommandOrder},
     help="""
     # Welcome to the EveryVoice Command Line Interface
 
@@ -369,9 +386,7 @@ command(
 )(export_hfg)
 
 app.add_typer(
-    export_group,
-    name="export",
-    short_help="Export your EveryVoice models",
+    export_group, name="export", short_help="Commands to export your EveryVoice models"
 )
 
 # Add the segment commands
@@ -396,16 +411,14 @@ command(
 )(extract_segments_from_textgrid)
 
 app.add_typer(
-    segment_group,
-    name="segment",
-    short_help="Align and segment audio",
+    segment_group, name="segment", short_help="Commands to align and segment audio"
 )
 
 
 @command(
     app,
     no_args_is_help=False,
-    short_help="This command will help you create all the configuration necessary for using a new project.",
+    short_help="Create configuration files for a new project",
     help="""
     # This command will help you create all the configuration necessary for using a new project.
 
@@ -413,10 +426,9 @@ app.add_typer(
 
     In order to get started, please:
 
-        1. make sure your audio data is available on your computer and in .wav format
+    1. Make sure your audio data is available on your computer and in .wav format.
 
-        2. have a 'metadata' file that minimally has two columns, one for the text of the audio and one for the basename of the file
-
+    2. Have a 'metadata' file that minimally has two columns, one for the text of the audio and one for the basename of the file.
 
     ## Extra details and examples
 
@@ -520,34 +532,8 @@ command(
 )(preprocess_styletts2)
 
 app.add_typer(
-    preprocess_group,
-    name="preprocess",
-    short_help="Preprocess your data",
+    preprocess_group, name="preprocess", short_help="Commands to preprocess your data"
 )
-
-
-# Add check_data to root
-command(
-    app,
-    name="check-data",
-    short_help="Check your data for outliers or any anomalies",
-    help="""
-    # Check Data Help
-
-    This command will check all of your data to help you find anomalies and outliers.
-
-    To check your data, make sure you've run preprocessing first (everyvoice preprocess --help).
-    Then you need to briefly and partially train a text-to-spec model. We recommend 100-1000 steps to start.
-
-    Then, with your partially trained model you can run the data checker:
-    \n\n
-    **everyvoice check-data config/everyvoice-text-to-spec.yaml logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt**
-    \n\n
-
-    This will output two files - one containing some basic statistics for your data and the other containing losses for each datapoint as calculated by your model.
-
-    """,
-)(check_data_command)
 
 
 # Add the train commands
@@ -598,9 +584,7 @@ command(
 )(train_styletts2)
 
 app.add_typer(
-    train_group,
-    name="train",
-    short_help="Train your EveryVoice models",
+    train_group, name="train", short_help="Commands to train your EveryVoice models"
 )
 
 # Add synthesize commands
@@ -631,7 +615,7 @@ command(
 app.add_typer(
     synthesize_group,
     name="synthesize",
-    short_help="Synthesize using your pre-trained EveryVoice models",
+    short_help="Commands to synthesize using your pre-trained EveryVoice models",
 )
 
 # Add fetch-pretrained commands
@@ -656,36 +640,19 @@ command(
 app.add_typer(
     fetch_pretrained_group,
     name="fetch-pretrained",
-    short_help="Download pretrained model weights from HuggingFace",
+    short_help="Commands to download pretrained model weights from HuggingFace",
 )
 
-# Add the checkpoint commands
-checkpoint_group = typer.Typer(
-    **default_typer_args,
-    help="""
-    # Checkpoint Help
-
-        - **inspect** --- Extract structural information from a checkpoint.
-
-        - **rename-speaker** --- Rename a speaker in the checkpoint's parameters.
-    """,
+# Add the check command group
+app.add_typer(
+    check_group, name="check", short_help="Commands to check your data and/or config"
 )
-command(
-    checkpoint_group,
-    name="inspect",
-    short_help="Extract structural information from a checkpoint",
-)(inspect)
 
-command(
-    checkpoint_group,
-    name="rename-speaker",
-    short_help="Rename a speaker in the checkpoint's parameters",
-)(rename_speaker)
-
+# Add the checkpoint command group
 app.add_typer(
     checkpoint_group,
     name="checkpoint",
-    short_help="Inspect and rename speakers in your EveryVoice checkpoints",
+    short_help="Commands to inspect and rename speakers in your EveryVoice checkpoints",
 )
 
 
@@ -778,7 +745,7 @@ def _load_fs2_ui_config(ui_config_file: Optional[Path]) -> "dict | None":
             return ui_config_json
         except Exception as e:
             raise typer.BadParameter(
-                f"Your config file {ui_config_file} has errors\n {e}"
+                f"Your config file {ui_config_file} has errors.\n {e}"
             )
 
 

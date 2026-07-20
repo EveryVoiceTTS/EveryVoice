@@ -46,13 +46,18 @@ def major_minor(version):
 
 COMMANDS = [
     "new-project",
+    "preprocess",
     "train",
     "synthesize",
-    "preprocess",
+    "demo",
+    "check",
     "checkpoint",
     "evaluate",
-    "demo",
+    "export",
+    "fetch-pretrained",
     "g2p",
+    "export",
+    "segment",
 ]
 
 
@@ -167,7 +172,7 @@ class TestCLI:
         result = self.runner.invoke(app, ["--help"])
         # each command has some help
         for command in COMMANDS:
-            assert command in result.stdout
+            assert command in flatten_log(result.stdout)
         # link to docs is present
         assert "https://docs.everyvoice.ca" in result.stdout
 
@@ -177,6 +182,18 @@ class TestCLI:
             assert result.exit_code == 0
             result = self.runner.invoke(app, [command, "-h"])
             assert result.exit_code == 0
+
+    def test_command_list_uptodate(self):
+        # Make sure we've listed all commands in COMMANDS. We could construct the list
+        # from app.registered_{groups,commands} instead, but then we would not catch any
+        # issues where that stopped working if Typer changed their internals.
+        for group in app.registered_groups:
+            if not group.hidden:
+                assert group.name in COMMANDS, f"please add {group.name} to COMMANDS"
+        for cmd in app.registered_commands:
+            if not cmd.hidden:
+                name = cmd.name or cmd.callback.__name__.replace("_", "-")
+                assert name in COMMANDS, f"please add {name} to COMMANDS"
 
     def test_update_schemas(self, subtests):
         dummy_contact = ContactInformation(
@@ -302,7 +319,7 @@ class TestCLI:
     def test_inspect_not_a_checkpoint(self) -> None:
         result = self.runner.invoke(app, ["checkpoint", "inspect", os.devnull])
         assert result.exit_code != 0
-        assert "Error loading checkpoint" in str(result.exception)
+        assert "Error loading checkpoint" in str(result.output)
 
     def test_inspect_good_fp_checkpoint(self, dummy_fp_path) -> None:
         result = self.runner.invoke(app, ["checkpoint", "inspect", str(dummy_fp_path)])
@@ -500,6 +517,107 @@ class TestCLI:
                 # print(result.output)
                 assert result.exit_code != 0
                 assert "No speakers found" in flatten_log(result.output)
+
+    def test_check_text_config(self, dummy_fp_path, tmp_path, subtests):
+        text_file = str(tmp_path / "test.txt")
+        with open(text_file, "w", encoding="utf-8") as f:
+            f.write("Some text éçà\n")
+        psv_file = str(tmp_path / "test.psv")
+        with open(psv_file, "w", encoding="utf-8") as f:
+            f.write("language|characters\nund|Some test éçà\n")
+        one_column_psv = str(tmp_path / "one_column.psv")
+        with open(one_column_psv, "w", encoding="utf-8") as f:
+            f.write("characters\nSome test éçà\n")
+        expected_output_strings = (
+            "The following characters are missing from your text config",
+            "'é'",
+            "'ç'",
+            "'à'",
+            "The following phones are missing from your text config",
+            "'t͡ʃ'",
+        )
+
+        model_or_config = (
+            ("--model", dummy_fp_path),
+            ("--config", str(CONFIG_DIR / "everyvoice-shared-text.yaml")),
+        )
+        text_or_psv = (
+            ("--text-file", text_file, "--language", "und"),
+            ("--psv-file", psv_file),
+            ("--psv-file", one_column_psv, "--language", "und"),
+        )
+
+        for m_or_c in model_or_config:
+            for t_or_p in text_or_psv:
+                with subtests.test(model_or_config=m_or_c[0], text_or_psv=t_or_p[0]):
+                    result = self.runner.invoke(
+                        app, ["check", "text-config", *m_or_c, *t_or_p]
+                    )
+                    flat_output = flatten_log(result.output)
+                    for x in expected_output_strings:
+                        assert x in flat_output
+
+    def test_check_text_config_cli_errors(
+        self, dummy_fp_path, dummy_vocoder_path, tmp_path
+    ):
+        text_file = str(tmp_path / "text.txt")
+        with open(text_file, "w", encoding="utf-8") as f:
+            f.write("Some text éçà\n")
+        one_column_psv = str(tmp_path / "one_column.psv")
+        with open(one_column_psv, "w", encoding="utf-8") as f:
+            f.write("characters\nSome test éçà\n")
+        config = str(CONFIG_DIR / "everyvoice-shared-text.yaml")
+
+        result = self.runner.invoke(
+            app, ["check", "text-config", "--config", config, "--text-file", text_file]
+        )
+        assert result.exit_code != 0
+        assert "--language is required with --text-file" in flatten_log(result.output)
+
+        result = self.runner.invoke(app, ["check", "text-config", "--language", "und"])
+        assert result.exit_code != 0
+        assert "One of --" in flatten_log(result.output)
+
+        result = self.runner.invoke(
+            app,
+            [
+                "check",
+                "text-config",
+                "--config",
+                config,
+                "--psv-file",
+                os.devnull,
+                "--text-file",
+                os.devnull,
+            ],
+        )
+        assert result.exit_code != 0
+        assert "Please specify only one of --" in flatten_log(result.output)
+
+        result = self.runner.invoke(
+            app,
+            ["check", "text-config", "--config", config, "--psv-file", one_column_psv],
+        )
+        assert result.exit_code != 0
+        assert (
+            "--language is required for a psv file without a language column"
+            in flatten_log(result.output)
+        )
+
+        text_args = ("--text-file", text_file, "--language", "und")
+        result = self.runner.invoke(
+            app, ["check", "text-config", "--model", os.devnull, *text_args]
+        )
+        assert result.exit_code != 0
+        assert "does not appear to be valid" in flatten_log(result.output)
+
+        result = self.runner.invoke(
+            app, ["check", "text-config", "--model", dummy_vocoder_path, *text_args]
+        )
+        assert result.exit_code != 0
+        assert "does not have an embedded text configuration" in flatten_log(
+            result.output
+        )
 
 
 class TestBaseCLIHelper:
