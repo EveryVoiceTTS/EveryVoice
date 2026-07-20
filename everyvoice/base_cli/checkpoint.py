@@ -12,10 +12,7 @@ import typer
 from . import command, default_typer_args
 from .interfaces import typer_file_argument
 
-app = typer.Typer(
-    **default_typer_args,
-    help="Extract checkpoint's hyperparameters.",
-)
+checkpoint_group = typer.Typer(**default_typer_args)
 
 
 def summarize_statedict(ckpt: dict) -> dict:
@@ -137,7 +134,9 @@ def summarize_unknown_model(model_path: Path, checkpoint: dict) -> None:
         )
 
 
-@command(app)
+@command(
+    checkpoint_group, short_help="Extract structural information from a checkpoint"
+)
 def inspect(
     model_path: Annotated[
         Path, typer_file_argument(help="The path to your model checkpoint file.")
@@ -249,7 +248,7 @@ def inspect(
                     pass
 
 
-@command(app)
+@command(checkpoint_group, short_help="Rename a speaker in the checkpoint's parameters")
 def rename_speaker(
     model_path: Annotated[
         Path, typer_file_argument(help="The path to your model checkpoint file.")
