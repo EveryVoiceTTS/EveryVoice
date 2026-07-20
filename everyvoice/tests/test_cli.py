@@ -50,8 +50,7 @@ COMMANDS = [
     "train",
     "synthesize",
     "demo",
-    "check-data",
-    "check-text-config",
+    "check",
     "checkpoint",
     "evaluate",
     "export",
@@ -173,7 +172,7 @@ class TestCLI:
         result = self.runner.invoke(app, ["--help"])
         # each command has some help
         for command in COMMANDS:
-            assert command in result.stdout
+            assert command in flatten_log(result.stdout)
         # link to docs is present
         assert "https://docs.everyvoice.ca" in result.stdout
 
@@ -552,7 +551,7 @@ class TestCLI:
             for t_or_p in text_or_psv:
                 with subtests.test(model_or_config=m_or_c[0], text_or_psv=t_or_p[0]):
                     result = self.runner.invoke(
-                        app, ["check-text-config", *m_or_c, *t_or_p]
+                        app, ["check", "text-config", *m_or_c, *t_or_p]
                     )
                     flat_output = flatten_log(result.output)
                     for x in expected_output_strings:
@@ -570,19 +569,20 @@ class TestCLI:
         config = str(CONFIG_DIR / "everyvoice-shared-text.yaml")
 
         result = self.runner.invoke(
-            app, ["check-text-config", "--config", config, "--text-file", text_file]
+            app, ["check", "text-config", "--config", config, "--text-file", text_file]
         )
         assert result.exit_code != 0
         assert "--language is required with --text-file" in flatten_log(result.output)
 
-        result = self.runner.invoke(app, ["check-text-config", "--language", "und"])
+        result = self.runner.invoke(app, ["check", "text-config", "--language", "und"])
         assert result.exit_code != 0
         assert "One of --" in flatten_log(result.output)
 
         result = self.runner.invoke(
             app,
             [
-                "check-text-config",
+                "check",
+                "text-config",
                 "--config",
                 config,
                 "--psv-file",
@@ -596,7 +596,7 @@ class TestCLI:
 
         result = self.runner.invoke(
             app,
-            ["check-text-config", "--config", config, "--psv-file", one_column_psv],
+            ["check", "text-config", "--config", config, "--psv-file", one_column_psv],
         )
         assert result.exit_code != 0
         assert (
@@ -606,13 +606,13 @@ class TestCLI:
 
         text_args = ("--text-file", text_file, "--language", "und")
         result = self.runner.invoke(
-            app, ["check-text-config", "--model", os.devnull, *text_args]
+            app, ["check", "text-config", "--model", os.devnull, *text_args]
         )
         assert result.exit_code != 0
         assert "does not appear to be valid" in flatten_log(result.output)
 
         result = self.runner.invoke(
-            app, ["check-text-config", "--model", dummy_vocoder_path, *text_args]
+            app, ["check", "text-config", "--model", dummy_vocoder_path, *text_args]
         )
         assert result.exit_code != 0
         assert "does not have an embedded text configuration" in flatten_log(
