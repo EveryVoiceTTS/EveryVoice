@@ -2,6 +2,7 @@
 Particularly useful for mapping symbols to StyleTTS2 pre-trained text encoder.
 """
 
+from functools import cache
 from typing import Callable, NamedTuple, Sequence
 
 import numpy as np
@@ -51,8 +52,14 @@ def find_optimal_mapping(
     return mapping
 
 
+@cache
 def _is_recognized_ipa(symbol: str) -> bool:
-    """Whether panphon can derive articulatory features for symbol at all."""
+    """Whether panphon can derive articulatory features for symbol at all.
+
+    Cached because find_optimal_mapping's distance matrix calls this once per
+    (a, b) pair via styletts2_symbol_distance, re-checking the same symbol up
+    to len(symbol_set) times over rather than once.
+    """
     return bool(_distance.fm.word_to_vector_list(symbol, numeric=True))
 
 

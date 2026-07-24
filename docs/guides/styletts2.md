@@ -29,17 +29,33 @@ If loading your configuration failed with a `pydantic.ValidationError` mentionin
 
 Unlike EveryVoice's other models, StyleTTS2 uses a pretrained text encoder. That encoder has a fixed embedding table for a specific set of 178 symbols (letters, IPA phones, and punctuation) that it saw during training, and it cannot produce a meaningful embedding for a symbol it has never seen. Because of this, every symbol declared in your `text` configuration's `symbols` must also be a member of that pretrained set.
 
-If your configuration declares a symbol outside that set, EveryVoice will refuse to load the configuration rather than silently proceeding to train a broken model. The error message tells you exactly which symbols are the problem, and, for each one, the closest pretrained symbol it found (using panphon's articulatory-feature distance for IPA phones, edit distance for multigraphs and a last-resort Unicode distance measure otherwise) along with a distance score, e.g.:
+If your configuration declares a symbol outside that set, EveryVoice will refuse to load the configuration rather than silently proceeding to train a broken model, e.g.:
 
 ```
 Value error, The following symbols declared in your TextConfig are not present in
-the pretrained StyleTTS2 text-encoder symbol table: {'ʒ'}. Either remove them from
-your TextConfig, use a custom pretrained_symbols list, or add 'to_replace' rules to
-substitute them for symbols the pretrained encoder does know. Closest pretrained
-symbols: 'ʒ' is closest to 'ʃ' (distance=0.25).
+the pretrained StyleTTS2 text-encoder symbol table: {'ʒ'}. Change them in your text,
+remove them from your TextConfig, or run 'everyvoice check pretrained-symbols
+--config <this config>' to get suggested 'to_replace' substitutions for the closest
+pretrained symbols.
 ```
 
-To fix your model, add a `to_replace` rule to your text configuration for each suggested symbol, e.g.:
+This check runs on every config load, so it only tells you *which* symbols are the problem. Finding a replacement for each one is a comparatively slow search, so it's kept out of this fast path and left to a command you run on demand:
+
+```bash
+everyvoice check pretrained-symbols --config config/{{ config_filename('text-to-wav') }}
+```
+
+For each problem symbol, this prints the closest pretrained symbol it found (using panphon's articulatory-feature distance for IPA phones, edit distance for multigraphs, and a last-resort Unicode distance measure otherwise), along with a distance score, formatted as a ready-to-paste `to_replace` block, e.g.:
+
+```
+The following symbols declared in your text config are not present in the
+pretrained text-encoder symbol table: ['ʒ']
+Suggested substitutions — copy into your text config's 'to_replace':
+to_replace:
+  'ʒ': 'ʃ'  # distance=0.25
+```
+
+To fix your model, copy the suggested block into your text configuration, e.g.:
 
 ```yaml
 text:

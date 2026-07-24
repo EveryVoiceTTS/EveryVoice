@@ -1,5 +1,5 @@
 import re
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import grapheme
 import regex
@@ -7,6 +7,22 @@ from ipatok import tokenise
 
 from everyvoice.config.utils import PossiblySerializedCallable
 from everyvoice.exceptions import ConfigError
+
+if TYPE_CHECKING:
+    from everyvoice.text.text_processor import TextProcessor
+
+
+def declared_content_symbols(tp: "TextProcessor") -> list[str]:
+    """The user-declared content symbols (letters, IPA phones, etc.) a pretrained
+    text encoder's symbol table would need to cover.
+
+    Excludes the pad symbol, ``<SIL>``, and EveryVoice's internal punctuation
+    tokens (``<EXCL>``, ``<COMMA>``, …), which a pretrained model's remapping
+    layer handles on its own and don't need to be in the pretrained table.
+    """
+    _skip = {tp._pad_symbol, "<SIL>"}
+    _skip |= set(tp.punctuation_internal_hash.values())
+    return [s for s in tp.config.symbols.all_except_punctuation if s not in _skip]
 
 
 def get_symbols_from_checkpoint_symbol_dict(symbols: dict) -> list[str]:
