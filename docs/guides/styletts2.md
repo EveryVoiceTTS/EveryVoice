@@ -55,7 +55,7 @@ Which would use the GPU accelerator (`-a gpu`) and specify 4 devices/chips (`-d 
 StyleTTS2 generates speech by sampling a speaking style from a short reference audio clip. The reference audio should be a clean recording of a few seconds, but it doesn't need to match the text you want to synthesize. You can use any recording from your training data as a reference.
 
 ```bash
-everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/checkpoints/last.ckpt \
+everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/last.ckpt \
     --reference path/to/reference.wav \
     --text "your text here"
 ```
@@ -63,7 +63,7 @@ everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/checkpoint
 You can pass `--text` multiple times to synthesize several utterances at once:
 
 ```bash
-everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/checkpoints/last.ckpt \
+everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/last.ckpt \
     --reference path/to/reference.wav \
     --text "First sentence." \
     --text "Second sentence."

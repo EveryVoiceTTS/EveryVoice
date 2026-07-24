@@ -79,6 +79,33 @@ r "coverage run -p -m everyvoice synthesize from-spec \
     --model '$VOCODER'"
 
 
+# Train the StyleTTS2 end-to-end (text-to-wav) model
+E2E_EPOCHS_1ST=2
+E2E_EPOCHS_2ND=2
+
+r "coverage run -p -m everyvoice fetch-pretrained text-to-wav config/everyvoice-text-to-wav.yaml"
+
+r "coverage run -p -m everyvoice preprocess text-to-wav config/everyvoice-text-to-wav.yaml" ||
+{ echo ERROR: Preprocess for text-to-wav failed, aborting.; exit 1; }
+
+r "coverage run -p -m everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml --mode first --config-args training.epochs_1st=$E2E_EPOCHS_1ST"
+E2E_STAGE1=logs_and_checkpoints/E2E-Experiment/base/last.ckpt
+ls $E2E_STAGE1 || { echo ERROR: Training the StyleTTS2 stage-1 model failed, aborting.; exit 1; }
+# Stage 2 shares stage 1's log_dir and also writes a "last.ckpt", so copy stage
+# 1's checkpoint aside before it gets overwritten, and point stage 2 at it
+# explicitly -- training.first_stage_path isn't populated automatically.
+FIRST_STAGE_CKPT=logs_and_checkpoints/E2E-Experiment/base/first_stage.ckpt
+cp $E2E_STAGE1 $FIRST_STAGE_CKPT
+
+r "coverage run -p -m everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml --mode second --config-args training.epochs_2nd=$E2E_EPOCHS_2ND --config-args training.first_stage_path=$FIRST_STAGE_CKPT"
+E2E=logs_and_checkpoints/E2E-Experiment/base/last.ckpt
+ls $E2E || { echo ERROR: Training the StyleTTS2 text-to-wav model failed, aborting.; exit 1; }
+
+REF_WAV=$(find wavs -maxdepth 1 -name '*.wav' 2>/dev/null | sort | head -1)
+[[ -z $REF_WAV ]] && REF_WAV=$(find */wavs -maxdepth 1 -name '*.wav' 2>/dev/null | sort | head -1)
+r "coverage run -p -m everyvoice synthesize text-to-wav '$E2E' --reference '$REF_WAV' --text \"\$(head -1 ../test.txt)\" --output-type wav"
+
+
 # Spin up the demo and exercise it with Playwright in headless mode
 if [[ -f ../run-demo-app.sh && -f ../test-demo-app.py ]]; then
     export LC_ALL=C  # gradio is locale aware, but test with default English aria-labels
