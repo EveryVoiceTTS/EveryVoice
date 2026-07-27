@@ -2,6 +2,7 @@
 Particularly useful for mapping symbols to StyleTTS2 pre-trained text encoder.
 """
 
+import unicodedata
 from functools import cache
 from typing import Callable, NamedTuple, Sequence
 
@@ -14,11 +15,53 @@ DistanceFn = Callable[[str, str], float]
 _distance = Distance()
 
 
-def unicode_distance(a: str, b: str) -> int:
-    """A last-ditch effort to find a distance between non-IPA symbols."""
+@cache
+def _symbol_base(symbol: str) -> str:
+    """The base character after stripping combining marks via canonical
+    decomposition, e.g. 'é' -> 'e'."""
+    decomposed = unicodedata.normalize("NFD", symbol)
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
+def _codepoint_tiebreak(a: str, b: str) -> float:
+    """Squash raw codepoint distance into [0, 1) so it can order symbols
+    within a unicode_table_distance tier (e.g. keeping digit '1' closer to
+    '2' than to '4') without its effectively unbounded range (codepoints
+    span up to 0x10FFFF) letting it dominate the tier itself."""
+    raw = abs(ord(a) - ord(b))
+    return raw / (raw + 1000)
+
+
+def unicode_table_distance(a: str, b: str) -> float:
+    """A last-ditch distance between symbols panphon doesn't recognize as IPA,
+    using properties from the Unicode character database.
+
+    Symbols are compared tier by tier, most to least similar, with tiers
+    spaced widely enough that the codepoint tiebreaker used to order symbols
+    within a tier can never cross into the next one:
+      0.0:      identical
+      (0, 1):   share a canonical base letter, e.g. 'é' and 'ê' both -> 'e'
+      [1, 2):   same Unicode general category, e.g. both decimal digits (Nd)
+      [2, 3):   same general category major class, e.g. both letters (L*)
+      [3, 4):   no shared property found
+
+    >>> unicode_table_distance('é', 'ê') < unicode_table_distance('é', 'ç')
+    True
+    """
     assert len(a) == 1
     assert len(b) == 1
-    return abs(ord(a) - ord(b))
+    if a == b:
+        return 0.0
+    tiebreak = _codepoint_tiebreak(a, b)
+    if _symbol_base(a) == _symbol_base(b):
+        return tiebreak
+    category_a = unicodedata.category(a)
+    category_b = unicodedata.category(b)
+    if category_a == category_b:
+        return 1.0 + tiebreak
+    if category_a[0] == category_b[0]:
+        return 2.0 + tiebreak
+    return 3.0 + tiebreak
 
 
 def find_optimal_mapping(
@@ -82,7 +125,7 @@ def styletts2_symbol_distance(a: str, b: str) -> float:
         return float(_distance.weighted_feature_edit_distance(a, b))
     if len(a) > 1 or len(b) > 1:
         return float(_distance.fast_levenshtein_distance(a, b))
-    return float(unicode_distance(a, b))
+    return unicode_table_distance(a, b)
 
 
 class SymbolMappingResult(NamedTuple):
