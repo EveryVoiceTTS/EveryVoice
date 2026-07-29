@@ -138,6 +138,8 @@ jobs:
   # Automated due diligence: Make sure we don't introduce dependencies with incompatible licenses.
   # But: Ignore packages where auto analysis does not work but manual analysis says OK.
   # And: Ignore nvidia-*-cu12 packages used by the GPU back-end: OTHER/PROPRIETARY LICENSE
+  # And: Ignore fsspec which has a BSD-3 license but is not being picked up by licensecheck for some reason:
+  #      https://github.com/fsspec/filesystem_spec?tab=BSD-3-Clause-1-ov-file
   # And: llvmlite crashes licensecheck at the moment, but its license is OK so skip it.
   licensecheck:
     runs-on: ubuntu-latest
@@ -156,5 +158,5 @@ jobs:
       - name: Run license check overall
         run: |
           uvx licensecheck --requirements-paths pyproject.toml --zero \
-            --ignore-packages text-unidecode pympi-ling pyworld pyworld-prebuilt audioread anytree gradio hf-gradio setuptools 'nvidia-*' \
+            --ignore-packages text-unidecode pympi-ling pyworld fsspec pyworld-prebuilt audioread anytree gradio hf-gradio setuptools 'nvidia-*' \
           ! echo "Package(s) listed with an X above is/are potentially a problem. Please review their licenses for compatibility with EveryVoice."

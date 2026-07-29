@@ -8,6 +8,12 @@
   xh) from https://openslr.org/32 into $HOME/sgile/data/OpenSLR32-four-South-Afican-languages
 - See [`prep-datasets.sh`](prep-datasets.sh) to see exactly where these datasets
   are expected to be found.
+- The suite also trains a StyleTTS2 (text-to-wav) model, which needs pretrained
+  F0/ASR/PLBERT/WavLM weights from HuggingFace. `regression-test.sh` fetches
+  these itself via `everyvoice fetch-pretrained text-to-wav`, but if your GPU
+  nodes don't have internet access, run that command yourself from a node that
+  does (once per `config/everyvoice-text-to-wav.yaml`) before submitting jobs,
+  so the weights are already cached.
 - Run this to create the regression testing directory structure:
 
 ```sh
