@@ -1367,8 +1367,8 @@
           "type": "integer"
         },
         "first_stage_path": {
-          "default": "first_stage.pth",
-          "description": "Filename (relative to log_dir) where the stage 1 checkpoint is saved.",
+          "default": "stage-1-last.ckpt",
+          "description": "Filename (relative to log_dir) where the stage 1 checkpoint is saved. The default matches the checkpoint '--mode first' training produces automatically.",
           "title": "First Stage Path",
           "type": "string"
         },
