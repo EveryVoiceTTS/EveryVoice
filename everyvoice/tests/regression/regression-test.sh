@@ -89,16 +89,13 @@ r "coverage run -p -m everyvoice preprocess text-to-wav config/everyvoice-text-t
 { echo ERROR: Preprocess for text-to-wav failed, aborting.; exit 1; }
 
 r "coverage run -p -m everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml --mode first --config-args training.epochs_1st=$E2E_EPOCHS_1ST"
-E2E_STAGE1=logs_and_checkpoints/E2E-Experiment/base/last.ckpt
+E2E_STAGE1=logs_and_checkpoints/E2E-Experiment/base/stage-1-last.ckpt
 ls $E2E_STAGE1 || { echo ERROR: Training the StyleTTS2 stage-1 model failed, aborting.; exit 1; }
-# Stage 2 shares stage 1's log_dir and also writes a "last.ckpt", so copy stage
-# 1's checkpoint aside before it gets overwritten, and point stage 2 at it
-# explicitly -- training.first_stage_path isn't populated automatically.
-FIRST_STAGE_CKPT=logs_and_checkpoints/E2E-Experiment/base/first_stage.ckpt
-cp $E2E_STAGE1 $FIRST_STAGE_CKPT
 
-r "coverage run -p -m everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml --mode second --config-args training.epochs_2nd=$E2E_EPOCHS_2ND --config-args training.first_stage_path=$FIRST_STAGE_CKPT"
-E2E=logs_and_checkpoints/E2E-Experiment/base/last.ckpt
+# Stage 2 automatically picks up stage 1's checkpoint via training.first_stage_path,
+# which defaults to stage-1-last.ckpt in the same log_dir.
+r "coverage run -p -m everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml --mode second --config-args training.epochs_2nd=$E2E_EPOCHS_2ND"
+E2E=logs_and_checkpoints/E2E-Experiment/base/stage-2-last.ckpt
 ls $E2E || { echo ERROR: Training the StyleTTS2 text-to-wav model failed, aborting.; exit 1; }
 
 REF_WAV=$(find wavs -maxdepth 1 -name '*.wav' 2>/dev/null | sort | head -1)
