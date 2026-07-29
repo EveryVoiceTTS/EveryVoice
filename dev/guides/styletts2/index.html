@@ -1068,12 +1068,12 @@
 <p>Which would use the GPU accelerator (<code>-a gpu</code>) and specify 4 devices/chips (<code>-d 4</code>).</p>
 <h2 id="step-4-synthesize-speech-in-your-language">Step 4: Synthesize Speech in Your Language!<a class="headerlink" href="#step-4-synthesize-speech-in-your-language" title="Permanent link">&para;</a></h2>
 <p>StyleTTS2 generates speech by sampling a speaking style from a short reference audio clip. The reference audio should be a clean recording of a few seconds, but it doesn't need to match the text you want to synthesize. You can use any recording from your training data as a reference.</p>
-<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>text-to-wav<span class="w"> </span>logs_and_checkpoints/E2E-Experiment/checkpoints/last.ckpt<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>text-to-wav<span class="w"> </span>logs_and_checkpoints/E2E-Experiment/base/stage-2-last.ckpt<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--reference<span class="w"> </span>path/to/reference.wav<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--text<span class="w"> </span><span class="s2">&quot;your text here&quot;</span>
 </code></pre></div>
 <p>You can pass <code>--text</code> multiple times to synthesize several utterances at once:</p>
-<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>text-to-wav<span class="w"> </span>logs_and_checkpoints/E2E-Experiment/checkpoints/last.ckpt<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>synthesize<span class="w"> </span>text-to-wav<span class="w"> </span>logs_and_checkpoints/E2E-Experiment/base/stage-2-last.ckpt<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--reference<span class="w"> </span>path/to/reference.wav<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--text<span class="w"> </span><span class="s2">&quot;First sentence.&quot;</span><span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--text<span class="w"> </span><span class="s2">&quot;Second sentence.&quot;</span>
