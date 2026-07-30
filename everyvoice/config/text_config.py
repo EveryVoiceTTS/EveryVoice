@@ -2,7 +2,7 @@ import importlib
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import Self
 
 from everyvoice import logger
@@ -255,6 +255,16 @@ class TextConfig(ConfigModel):
         description="Strong and Weak boundaries on which text splitting is to be performed, for every language.",
         examples=["""{'eng': {'strong': '!?.', 'weak': ':;,'}}'"""],
     )
+
+    @field_validator("to_replace")
+    def sort_to_replace_by_key_length(
+        cls, to_replace: dict[str, str]
+    ) -> dict[str, str]:
+        """Longer keys first, so a rule can't consume text that a longer,
+        more specific rule further down the dict would otherwise have matched."""
+        return dict(
+            sorted(to_replace.items(), key=lambda item: len(item[0]), reverse=True)
+        )
 
     def get_cleaners(
         self, *, lang_id: str | None = None, dataset_label: str | None = None

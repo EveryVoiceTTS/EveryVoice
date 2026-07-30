@@ -17,7 +17,7 @@ from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
 from everyvoice.text.textsplit import chunk_text
-from everyvoice.text.utils import is_sentence_final
+from everyvoice.text.utils import apply_to_replace_helper, is_sentence_final
 from everyvoice.utils import (
     collapse_whitespace,
     generic_psv_filelist_reader,
@@ -213,6 +213,19 @@ class TextTest(TestCase):
             to_replace={"x": ""},
         )
         self.assertNotIn("", config.symbols.letters)
+
+    def test_to_replace_sorted_longest_key_first(self):
+        # rules are applied in dict order via re.sub, so a shorter key must
+        # never come before a longer key it's a substring of, or the longer
+        # rule would never get a chance to match
+        config = TextConfig(to_replace={"a": "1", "abc": "2", "ab": "3"})
+        self.assertEqual(list(config.to_replace.keys()), ["abc", "ab", "a"])
+
+    def test_to_replace_helper_applies_longest_key_first(self):
+        # if 'a' were applied before 'abc', 'abc' would become '1bc' before
+        # the 'abc' rule ever got a chance to match
+        config = TextConfig(to_replace={"a": "1", "abc": "2"})
+        self.assertEqual(apply_to_replace_helper("abc", config.to_replace), "2")
 
     def test_bad_symbol_configuration(self):
         with self.assertRaises(ValidationError):
