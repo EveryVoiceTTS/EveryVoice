@@ -71,6 +71,21 @@ class SymbolMappingTest(TestCase):
         assert len(result.suggestions) + len(result.unmapped) == 3
         assert len(result.unmapped) > 0
 
+    def test_suggest_symbol_mapping_never_suggests_digits(self):
+        # digits are presumed to be unexpanded numbers needing text
+        # normalization, not graphemes with a sensible pretrained stand-in
+        result = suggest_symbol_mapping(["5"], ["4", "6"])
+        assert result.suggestions == {}
+        assert result.unmapped == ["5"]
+
+    def test_suggest_symbol_mapping_never_suggests_reserved_targets(self):
+        # a pretrained symbol the caller already uses for something else
+        # (e.g. punctuation) must never be handed out as a substitution,
+        # even if it's the only/closest candidate available
+        result = suggest_symbol_mapping(["ʒ"], ["ʃ"], reserved_targets=["ʃ"])
+        assert result.suggestions == {}
+        assert result.unmapped == ["ʒ"]
+
 
 if __name__ == "__main__":
     main(sys.argv)

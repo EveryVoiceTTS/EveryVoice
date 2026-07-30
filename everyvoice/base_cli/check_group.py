@@ -2,6 +2,7 @@
 CLI command to check EveryVoice data and/or configs
 """
 
+import textwrap
 from pathlib import Path
 from typing import TYPE_CHECKING, Annotated, Any, Optional
 
@@ -342,27 +343,73 @@ def check_pretrained_symbols(
         return
 
     with spinner("Computing symbol-mapping suggestions"):
-        from everyvoice.text.utils_heavy import suggest_symbol_mapping
+        from tabulate import tabulate
 
-        result = suggest_symbol_mapping(ev_symbols, pretrained_symbols)
-    print(
-        "The following symbols declared in your text config are not present "
-        "in the pretrained text-encoder symbol table:",
+        from everyvoice.text.utils_heavy import (
+            is_recognized_ipa_or_latin,
+            suggest_symbol_mapping,
+        )
+
+        result = suggest_symbol_mapping(
+            ev_symbols,
+            pretrained_symbols,
+            reserved_targets=sorted(text_config.symbols.punctuation.all),
+        )
+        low_confidence = sorted(
+            s for s in missing_from_pretrained if not is_recognized_ipa_or_latin(s)
+        )
+
+    def print_symbol_list(header: str, symbols: list[str]) -> None:
+        print(f"\n{header} ({len(symbols)}):")
+        print(
+            textwrap.fill(
+                ", ".join(symbols),
+                width=88,
+                initial_indent="  ",
+                subsequent_indent="  ",
+            )
+        )
+
+    print_symbol_list(
+        "Symbols declared in your text config that are not present in the "
+        "pretrained text-encoder symbol table",
         missing_from_pretrained,
     )
-    if result.suggestions:
-        print(
-            "Suggested substitutions — copy into your text config's "
-            "'to_replace':\nto_replace:"
+    if low_confidence:
+        print_symbol_list(
+            "Of those, symbols that are neither recognized IPA nor Latin-script "
+            "characters. Their suggested substitutions below are based only on "
+            "generic Unicode properties and are likely low quality",
+            low_confidence,
         )
-        for symbol in missing_from_pretrained:
-            target = result.suggestions.get(symbol)
-            if target is not None:
-                print(
-                    f"  {symbol!r}: {target!r}  # distance={result.distances[symbol]:.2f}"
-                )
-    if result.unmapped:
         print(
-            "No suitable pretrained replacement was found for:",
+            "\nConsider romanizing these symbols or converting them to phonemes "
+            "(g2p) before configuring symbols for this pretrained model."
+        )
+    if result.suggestions:
+        rows = [
+            [symbol, result.suggestions[symbol], f"{result.distances[symbol]:.2f}"]
+            for symbol in missing_from_pretrained
+            if symbol in result.suggestions
+        ]
+        print("\nSuggested substitutions:")
+        print(
+            tabulate(
+                rows,
+                headers=["Symbol", "Suggested", "Distance"],
+                tablefmt="simple",
+                disable_numparse=True,
+            )
+        )
+        print("\nCopy into your text config's 'to_replace':\nto_replace:")
+        for symbol, target, _ in rows:
+            print(f"  {symbol!r}: {target!r}")
+    if result.unmapped:
+        print_symbol_list(
+            "\nNo suitable pretrained replacement was found for these symbols:",
             sorted(result.unmapped),
+        )
+        print(
+            "\nIf these are symbols like '1' or '&', they should be expanded into their prounciation forms (e.g. '1' → 'one' or '&' → 'and')."
+            + "\nOtherwise, create a specific to_replace mapping (e.g. '7': 'ʔ'), or remove the sentences containing these symbols from your dataset.\n"
         )

@@ -659,6 +659,9 @@ class TestCLI:
         assert "not present in the pretrained text-encoder symbol table" in flat_output
         assert "가" in flat_output
         assert "to_replace:" in flat_output
+        # '가' is neither IPA nor Latin script, so its suggestion is low quality
+        assert "neither recognized IPA nor Latin-script" in flat_output
+        assert "romanizing" in flat_output
 
     def test_check_pretrained_symbols_suggestions_split_text_config(self, tmp_path):
         """A full model config whose 'text' section lives in a separate file,

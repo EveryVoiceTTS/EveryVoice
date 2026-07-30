@@ -297,13 +297,16 @@ class TextConfig(ConfigModel):
                 cleaners = self.get_cleaners(dataset_label=dataset_label)
                 to_replace = self.get_to_replace(dataset_label=dataset_label)
                 normalized = [normalize_text_helper(x, to_replace, cleaners) for x in v]
-                setattr(self.symbols, k, normalized)
 
                 if "" in normalized or len(normalized) != len(set(normalized)):
                     logger.warning(
                         f"Normalization created a duplicate or inserted '' in {k}={normalized}. "
                         "Please check your shared-text config for problems."
                     )
+
+                # an empty symbol is never meaningful and breaks downstream
+                # assumptions (e.g. distance functions expecting len >= 1)
+                setattr(self.symbols, k, [x for x in normalized if x])
 
         return self
 

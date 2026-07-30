@@ -205,6 +205,15 @@ class TextTest(TestCase):
             len([x for x in duplicate_symbols_text_processor.symbols if x == "e"]), 1
         )
 
+    def test_empty_symbol_dropped_after_normalization(self):
+        # a to_replace rule (or cleaner) that collapses a symbol to '' must not
+        # leave '' in the declared symbol set
+        config = TextConfig(
+            symbols=Symbols(letters=list(string.ascii_letters)),
+            to_replace={"x": ""},
+        )
+        self.assertNotIn("", config.symbols.letters)
+
     def test_bad_symbol_configuration(self):
         with self.assertRaises(ValidationError):
             TextProcessor(

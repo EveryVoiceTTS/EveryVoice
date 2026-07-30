@@ -1,5 +1,11 @@
 """Symbol-mapping helpers built on panphon/scipy.
 Particularly useful for mapping symbols to StyleTTS2 pre-trained text encoder.
+
+Note: many of the mapping functions in this module are only intended to be used
+as hopefully slightly-better-than-random-assignment heuristics. Users should ultimately
+rely on their knowledge of the language they are modelling to choose how symbols should
+be represented in their data
+
 """
 
 import unicodedata
@@ -106,6 +112,28 @@ def _is_recognized_ipa(symbol: str) -> bool:
     return bool(_distance.fm.word_to_vector_list(symbol, numeric=True))
 
 
+def is_recognized_ipa_or_latin(symbol: str) -> bool:
+    """Whether symbol is either a recognized IPA segment or made up entirely of
+    Latin-script characters -- the two categories StyleTTS2's pretrained symbol
+    table is mostly built from (basic a-z plus a handful of IPA letters), so mapping suggestions for such symbols tend to be meaningful.
+
+    Symbols in neither category (e.g. Sinhala, Devanagari, or Thai graphemes)
+    fall back to unicode_table_distance's generic Unicode-property comparison,
+    which produces a low-confidence, largely arbitrary suggestion -- callers
+    should warn that such symbols are better romanized or phonemized first.
+
+    >>> is_recognized_ipa_or_latin('p')
+    True
+    >>> is_recognized_ipa_or_latin('é')
+    True
+    >>> is_recognized_ipa_or_latin('ක')
+    False
+    """
+    return _is_recognized_ipa(symbol) or all(
+        unicodedata.name(c, "").startswith("LATIN") for c in symbol
+    )
+
+
 def styletts2_symbol_distance(a: str, b: str) -> float:
     """Distance between two symbols for mapping onto a pretrained symbol table.
 
@@ -135,47 +163,79 @@ class SymbolMappingResult(NamedTuple):
     unmapped: list[str]
 
 
+# Punctuation-category characters that are nonetheless conventionally read
+# aloud as words, e.g. '&' -> "and". Unicode doesn't separate these from
+# purely typographic punctuation like '.' or ',', so this list is curated.
+_PRONOUNCED_PUNCTUATION = {"&", "@", "#", "%"}
+
+
+def _needs_text_normalization(symbol: str) -> bool:
+    """Whether symbol is made up entirely of characters that are
+    conventionally spelled out by text normalization rather than pronounced
+    or transliterated as-is: digits, currency signs, math symbols (Unicode
+    major classes N/Sc/Sm), or _PRONOUNCED_PUNCTUATION."""
+
+    def _is_unpronounceable(c: str) -> bool:
+        category = unicodedata.category(c)
+        return (
+            category[0] == "N"
+            or category in ("Sc", "Sm")
+            or c in _PRONOUNCED_PUNCTUATION
+        )
+
+    return len(symbol) > 0 and all(_is_unpronounceable(c) for c in symbol)
+
+
 def suggest_symbol_mapping(
     user_symbols: Sequence[str],
     pretrained_symbols: Sequence[str],
     distance_fn: DistanceFn = styletts2_symbol_distance,
+    reserved_targets: Sequence[str] = (),
 ) -> SymbolMappingResult:
-    """Suggest how a user's declared symbols could be aligned onto a fixed pretrained symbol table.
+    """Suggest a one-to-one mapping from user_symbols onto pretrained_symbols.
 
-    Symbols already present in `pretrained_symbols` are left untouched. Symbols
-    that aren't are paired one-to-one with the closest pretrained symbols not
-    already claimed by an exact match, so distinct user symbols never collapse
-    onto the same pretrained symbol. If there are more novel symbols than free
-    pretrained symbols to pair them with, the excess are reported as unmapped
-    rather than given a suggestion.
+    Exact matches are left untouched; the rest are paired with the closest
+    free pretrained symbol, excluding `reserved_targets`, space, '$', and
+    symbols needing text normalization (see `_needs_text_normalization`).
+    Symbols left with no free match are reported as unmapped.
 
     Args:
         user_symbols (Sequence[str]): the symbols declared in a user's TextConfig
         pretrained_symbols (Sequence[str]): the fixed symbol table of a pretrained model
         distance_fn (Callable[[str, str], float]): symbol-pair distance function
+        reserved_targets (Sequence[str]): pretrained symbols to never suggest
 
     Returns:
-        SymbolMappingResult: exact matches, suggested substitutions, their
-            distances, and any symbols that could not be mapped at all
+        SymbolMappingResult: exact matches, suggestions, distances, unmapped
 
     >>> result = suggest_symbol_mapping(['p', 'ʒ'], ['p', 'ʃ'])
     >>> result.exact
     ['p']
     >>> result.suggestions
     {'ʒ': 'ʃ'}
+
+    >>> result = suggest_symbol_mapping(['5', '&'], ['a'])
+    >>> result.suggestions
+    {}
+    >>> sorted(result.unmapped)
+    ['&', '5']
     """
     pretrained_set = set(pretrained_symbols)
     exact = [s for s in user_symbols if s in pretrained_set]
     oov = [s for s in user_symbols if s not in pretrained_set]
-    available = [p for p in pretrained_symbols if p not in set(exact)]
+    needs_normalization = [s for s in oov if _needs_text_normalization(s)]
+    mappable = [s for s in oov if not _needs_text_normalization(s)]
+    # never suggest word-separator space or StyleTTS2's pad symbol as a target
+    excluded_targets = set(exact) | set(reserved_targets) | {" ", "$"}
+    available = [p for p in pretrained_symbols if p not in excluded_targets]
 
     suggestions: dict[str, str] = {}
     distances: dict[str, float] = {}
-    unmapped: list[str] = []
-    if oov:
-        mapping = find_optimal_mapping(oov, available, distance_fn)
+    unmapped: list[str] = list(needs_normalization)
+    if mappable:
+        mapping = find_optimal_mapping(mappable, available, distance_fn)
         mapping_dict = dict(mapping)
-        for symbol in oov:
+        for symbol in mappable:
             target = mapping_dict.get(symbol)
             if target is None:
                 unmapped.append(symbol)
