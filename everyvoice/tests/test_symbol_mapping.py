@@ -86,6 +86,13 @@ class SymbolMappingTest(TestCase):
         assert result.suggestions == {}
         assert result.unmapped == ["ʒ"]
 
+    def test_suggest_symbol_mapping_never_suggests_a_symbols_own_component(self):
+        # 'k' and 'ʷ' are literal substrings of the declared symbol 'k̟ʷ', so
+        # suggesting either as its stand-in would make it indistinguishable
+        # from other symbols built from the same pieces
+        result = suggest_symbol_mapping(["k̟ʷ"], ["k", "ʷ", "q"])
+        assert result.suggestions == {"k̟ʷ": "q"}
+
 
 if __name__ == "__main__":
     main(sys.argv)

@@ -195,9 +195,10 @@ def suggest_symbol_mapping(
     """Suggest a one-to-one mapping from user_symbols onto pretrained_symbols.
 
     Exact matches are left untouched; the rest are paired with the closest
-    free pretrained symbol, excluding `reserved_targets`, space, '$', and
-    symbols needing text normalization (see `_needs_text_normalization`).
-    Symbols left with no free match are reported as unmapped.
+    free pretrained symbol, excluding `reserved_targets`, space, '$', symbols
+    needing text normalization (see `_needs_text_normalization`), and any
+    symbol that is a substring of a declared symbol. Symbols left with no
+    free match are reported as unmapped.
 
     Args:
         user_symbols (Sequence[str]): the symbols declared in a user's TextConfig
@@ -219,15 +220,25 @@ def suggest_symbol_mapping(
     {}
     >>> sorted(result.unmapped)
     ['&', '5']
+
+    >>> result = suggest_symbol_mapping(['kʷ'], ['k', 'q'])
+    >>> result.suggestions
+    {'kʷ': 'q'}
     """
     pretrained_set = set(pretrained_symbols)
     exact = [s for s in user_symbols if s in pretrained_set]
     oov = [s for s in user_symbols if s not in pretrained_set]
     needs_normalization = [s for s in oov if _needs_text_normalization(s)]
     mappable = [s for s in oov if not _needs_text_normalization(s)]
-    # never suggest word-separator space or StyleTTS2's pad symbol as a target
+    # never suggest word-separator space or StyleTTS2's pad symbol as a target,
+    # nor a target that is itself a substring of a declared symbol (whole or in
+    # part) e.g. mapping 'k̟ʷ' to 'k' should not be allowed
     excluded_targets = set(exact) | set(reserved_targets) | {" ", "$"}
-    available = [p for p in pretrained_symbols if p not in excluded_targets]
+    available = [
+        p
+        for p in pretrained_symbols
+        if p not in excluded_targets and not any(p in s for s in user_symbols)
+    ]
 
     suggestions: dict[str, str] = {}
     distances: dict[str, float] = {}
