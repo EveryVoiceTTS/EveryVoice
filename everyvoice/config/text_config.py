@@ -7,6 +7,7 @@ from typing_extensions import Self
 
 from everyvoice import logger
 from everyvoice.config.shared_types import ConfigModel, init_context
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.config.utils import PossiblySerializedCallable
 from everyvoice.config.validation_helpers import string_to_callable
 from everyvoice.text.phonemizer import G2PCallable
@@ -88,6 +89,29 @@ class Symbols(BaseModel):
     def all_except_punctuation(self) -> set[str]:
         """Returns the set containing all characters."""
         return set(w for _, v in self if not isinstance(v, Punctuation) for w in v)
+
+    def for_representation_level(
+        self, level: TargetTrainingTextRepresentationLevel | None
+    ) -> set[str]:
+        """Like all_except_punctuation, but when level is given, only includes
+        {label}_characters/{label}_phones fields matching that level. Fields
+        with no recognized suffix (get_label_from_symbol_key returns None) are
+        always included. level=None preserves all_except_punctuation's full-union
+        behavior."""
+        if level is None:
+            return self.all_except_punctuation
+        suffix = (
+            "characters"
+            if level == TargetTrainingTextRepresentationLevel.characters
+            else "phones"
+        )
+        return set(
+            w
+            for k, v in self
+            if not isinstance(v, Punctuation)
+            and (get_label_from_symbol_key(k) is None or k.endswith(f"_{suffix}"))
+            for w in v
+        )
 
     @model_validator(mode="after")
     def cannot_have_punctuation_in_symbol_set(self) -> "Symbols":

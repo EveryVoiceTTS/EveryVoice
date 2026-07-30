@@ -112,18 +112,25 @@ def _default_styletts2_pretrained_symbols() -> Optional[list[str]]:
 
 def get_text_config_from_config_or_model(
     config: Optional[Path], model: Optional[Path]
-) -> tuple["TextConfig", Optional[list[str]]]:
+) -> tuple[
+    "TextConfig", Optional[list[str]], Optional[TargetTrainingTextRepresentationLevel]
+]:
     """Helper for check_text_config: load a TextConfig from a config file or model file.
 
     Also returns the pretrained text-encoder symbol table declared alongside it,
     if any (currently only StyleTTS2 has one), used to suggest `to_replace`
-    substitutions for symbols missing from it.
+    substitutions for symbols missing from it, and the target text representation
+    level the model actually trains on, if known (None for a bare TextConfig file,
+    which isn't tied to any one model).
     """
     from everyvoice.config.text_config import TextConfig
     from everyvoice.config.utils import load_partials
     from everyvoice.utils import load_config_from_json_or_yaml_path, spinner
 
     pretrained_symbols: Optional[list[str]] = None
+    target_text_representation_level: Optional[
+        TargetTrainingTextRepresentationLevel
+    ] = None
     if config:
         raw_config = load_config_from_json_or_yaml_path(config)
         if isinstance(raw_config, dict) and "VERSION" in raw_config:
@@ -131,6 +138,10 @@ def get_text_config_from_config_or_model(
             # 'text' has a default_factory, so a config that overrides neither
             # it nor path_to_text_config_file simply omits the key.
             text_config: TextConfig = TextConfig(**raw_config.get("text", {}))
+            target_text_representation_level = raw_config.get("model", {}).get(
+                "target_text_representation_level",
+                TargetTrainingTextRepresentationLevel.characters,
+            )
             pretrained = raw_config.get("pretrained")
             if pretrained is not None:
                 pretrained_symbols = (
@@ -153,6 +164,10 @@ def get_text_config_from_config_or_model(
         if "text" in model_config:
             # FS2 models have hyper_parameters.config.text
             text_config = TextConfig(**model_config["text"])
+            target_text_representation_level = model_config.get("model", {}).get(
+                "target_text_representation_level",
+                TargetTrainingTextRepresentationLevel.characters,
+            )
         elif "ev_config" in model_config and "text" in model_config["ev_config"]:
             # StyleTTS2 models have hyper_parameters.config.ev_config.text
             ev_config = model_config["ev_config"]
@@ -160,12 +175,16 @@ def get_text_config_from_config_or_model(
             pretrained_symbols = ev_config.get("pretrained", {}).get(
                 "pretrained_symbols"
             )
+            target_text_representation_level = ev_config.get("model", {}).get(
+                "target_text_representation_level",
+                TargetTrainingTextRepresentationLevel.characters,
+            )
         else:
             # Models without text config, e.g., a HiFiGan Vocoder, are not accepted here
             raise typer.BadParameter(
                 f"Model/checkpoint '{model}' does not have an embedded text configuration."
             )
-    return text_config, pretrained_symbols
+    return text_config, pretrained_symbols, target_text_representation_level
 
 
 @command(
@@ -227,7 +246,7 @@ def check_text_config(
     file_type = "text" if text_file else "psv"
     records = open_text_or_psv_file(text_file, psv_file, language)
 
-    text_config, _ = get_text_config_from_config_or_model(config, model)
+    text_config, _, _ = get_text_config_from_config_or_model(config, model)
 
     # Expensive imports are deferred so we fail fast where we can
     with spinner("Loading software"):
@@ -318,8 +337,8 @@ def check_pretrained_symbols(
 
     require_exactly_one_of(config, "--config", model, "--model")
 
-    text_config, pretrained_symbols = get_text_config_from_config_or_model(
-        config, model
+    text_config, pretrained_symbols, target_text_representation_level = (
+        get_text_config_from_config_or_model(config, model)
     )
     if pretrained_symbols is None:
         raise typer.BadParameter(
@@ -332,7 +351,12 @@ def check_pretrained_symbols(
         from everyvoice.text.text_processor import TextProcessor
         from everyvoice.text.utils import declared_content_symbols
 
-    ev_symbols = declared_content_symbols(TextProcessor(text_config))
+    ev_symbols = declared_content_symbols(
+        TextProcessor(
+            text_config,
+            target_text_representation_level=target_text_representation_level,
+        )
+    )
     pretrained_set = set(pretrained_symbols)
     missing_from_pretrained = sorted(s for s in ev_symbols if s not in pretrained_set)
     if not missing_from_pretrained:

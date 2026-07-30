@@ -22,7 +22,10 @@ def declared_content_symbols(tp: "TextProcessor") -> list[str]:
     """
     _skip = {tp._pad_symbol, "<SIL>"}
     _skip |= set(tp.punctuation_internal_hash.values())
-    return [s for s in tp.config.symbols.all_except_punctuation if s not in _skip]
+    declared = tp.config.symbols.for_representation_level(
+        tp.target_text_representation_level
+    )
+    return [s for s in declared if s not in _skip]
 
 
 def get_symbols_from_checkpoint_symbol_dict(symbols: dict) -> list[str]:

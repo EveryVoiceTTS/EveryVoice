@@ -11,6 +11,7 @@ from pytest import main
 
 from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.tests.stubs import TEST_CONTACT
 from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
@@ -457,6 +458,40 @@ class SymbolsTest(TestCase):
         )
         self.assertSetEqual(
             symbols.all_except_punctuation, {"a", "b", "X", "Y", "Z", "<SIL>"}
+        )
+
+    def test_for_representation_level(self):
+        """Suffixed {label}_characters/{label}_phones fields should only be
+        included for a matching level; unsuffixed fields (like the bare
+        `letters` field here) are always included regardless of level.
+        """
+        symbols = Symbols(
+            letters=["a", "b"],
+            ds1_characters=["X", "Y"],
+            ds1_phones=["p", "q"],
+        )
+        self.assertSetEqual(
+            symbols.for_representation_level(None), symbols.all_except_punctuation
+        )
+        self.assertSetEqual(
+            symbols.for_representation_level(
+                TargetTrainingTextRepresentationLevel.characters
+            ),
+            {"a", "b", "X", "Y", "<SIL>"},
+        )
+        self.assertSetEqual(
+            symbols.for_representation_level(
+                TargetTrainingTextRepresentationLevel.ipa_phones
+            ),
+            {"a", "b", "p", "q", "<SIL>"},
+        )
+        # phonological_features are computed from phone symbols, so they map
+        # to the same _phones suffix as ipa_phones
+        self.assertSetEqual(
+            symbols.for_representation_level(
+                TargetTrainingTextRepresentationLevel.phonological_features
+            ),
+            {"a", "b", "p", "q", "<SIL>"},
         )
 
 
