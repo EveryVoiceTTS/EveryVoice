@@ -1211,7 +1211,7 @@
     "StyleTTS2TrainingConfig": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "additionalProperties": false,
-      "description": "Training hyperparameters for StyleTTS2.\n\nInherits shared fields from BaseTrainingConfig: batch_size,\nsave_top_k_ckpts, ckpt_steps/ckpt_epochs, val_check_interval,\nmax_epochs/max_steps, finetune_checkpoint (\u2192 pretrained_model),\ntraining_filelist (\u2192 data_params.train_data),\nvalidation_filelist (\u2192 data_params.val_data), logger, and data workers.",
+      "description": "Training hyperparameters for StyleTTS2.\n\nInherits shared fields from BaseTrainingConfig: batch_size,\nckpt_steps/ckpt_epochs, val_check_interval, max_epochs/max_steps,\nfinetune_checkpoint (\u2192 pretrained_model), training_filelist (\u2192 data_params.train_data),\nvalidation_filelist (\u2192 data_params.val_data), logger, and data workers.",
       "properties": {
         "batch_size": {
           "default": 2,
@@ -1220,8 +1220,8 @@
           "type": "integer"
         },
         "save_top_k_ckpts": {
-          "default": 5,
-          "description": "The number of checkpoints to save.",
+          "default": 1,
+          "description": "The number of checkpoints to save. StyleTTS2 checkpoints are large, and automating the top-k checkpoints is difficult. For this reason, we typically only save the last checkpoint.",
           "title": "Save Top K Ckpts",
           "type": "integer"
         },
@@ -1367,7 +1367,7 @@
           "type": "integer"
         },
         "first_stage_path": {
-          "default": "stage-1-last.ckpt",
+          "default": "checkpoints/stage-1-last.ckpt",
           "description": "Filename (relative to log_dir) where the stage 1 checkpoint is saved. The default matches the checkpoint '--mode first' training produces automatically.",
           "title": "First Stage Path",
           "type": "string"
