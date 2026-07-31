@@ -655,6 +655,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step 2: Run the Preprocessor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-2a-inspect-your-symbol-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2a: Inspect your symbol set
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -980,6 +997,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Step 2: Run the Preprocessor">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-2a-inspect-your-symbol-set" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2a: Inspect your symbol set
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1049,6 +1083,35 @@
 <div class="admonition important">
 <p class="admonition-title">Important</p>
 <p>StyleTTS2 training requires a GPU with CUDA. Make sure you are running the following steps on a machine with a compatible GPU.</p>
+</div>
+<h3 id="step-2a-inspect-your-symbol-set">Step 2a: Inspect your symbol set<a class="headerlink" href="#step-2a-inspect-your-symbol-set" title="Permanent link">&para;</a></h3>
+<p>If loading your configuration failed with a <code>pydantic.ValidationError</code> mentioning you have some symbols that "are not present in the pretrained StyleTTS2 text-encoder symbol table", it's due to symbols in your data that are incompatible with StyleTTS2 — but it can be fixed! This can happen on any command that loads your <code>text-to-wav</code> config, including <code>everyvoice preprocess</code> above. If you didn't get this error, please proceed to Step 3.</p>
+<p>Unlike EveryVoice's other models, StyleTTS2 uses a pretrained text encoder. That encoder has a fixed embedding table for a specific set of 178 symbols (letters, IPA phones, and punctuation) that it saw during training, and it cannot produce a meaningful embedding for a symbol it has never seen. Because of this, every symbol declared in your <code>text</code> configuration's <code>symbols</code> must also be a member of that pretrained set.</p>
+<p>If your configuration declares a symbol outside that set, EveryVoice will refuse to load the configuration rather than silently proceeding to train a broken model, e.g.:</p>
+<div class="highlight"><pre><span></span><code>Value error, The following symbols declared in your TextConfig are not present in
+the pretrained StyleTTS2 text-encoder symbol table: {&#39;ʒ&#39;}. Change them in your text,
+remove them from your TextConfig, or run &#39;everyvoice check pretrained-symbols
+--config &lt;this config&gt;&#39; to get suggested &#39;to_replace&#39; substitutions for the closest
+pretrained symbols.
+</code></pre></div>
+<p>This check runs on every config load, so it only tells you <em>which</em> symbols are the problem. Finding a replacement for each one is a comparatively slow search, so it's kept out of this fast path and left to a command you run on demand:</p>
+<div class="highlight"><pre><span></span><code>everyvoice<span class="w"> </span>check<span class="w"> </span>pretrained-symbols<span class="w"> </span>--config<span class="w"> </span>config/everyvoice-text-to-wav.yaml
+</code></pre></div>
+<p>For each problem symbol, this prints the closest pretrained symbol it found (using panphon's articulatory-feature distance for IPA phones, edit distance for multigraphs, and a last-resort Unicode distance measure otherwise), along with a distance score, formatted as a ready-to-paste <code>to_replace</code> block, e.g.:</p>
+<div class="highlight"><pre><span></span><code>The following symbols declared in your text config are not present in the
+pretrained text-encoder symbol table: [&#39;ʒ&#39;]
+Suggested substitutions — copy into your text config&#39;s &#39;to_replace&#39;:
+to_replace:
+  &#39;ʒ&#39;: &#39;ʃ&#39;  # distance=0.25
+</code></pre></div>
+<p>To fix your model, copy the suggested block into your text configuration, e.g.:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">text</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">to_replace</span><span class="p">:</span>
+<span class="w">    </span><span class="s">&quot;ʒ&quot;</span><span class="p p-Indicator">:</span><span class="w"> </span><span class="s">&quot;ʃ&quot;</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>A suggested substitution is a starting point, always sanity-check that the suggested symbol is phonetically reasonable for your language before adopting it, while also making sure that you are not mapping multiple symbols to the same symbol. Some symbols may have no close match at all, so the mappings might look fairly bad. My experience is that the model is still able to recover from a few of these bad mappings.</p>
 </div>
 <h2 id="step-3-train-your-model">Step 3: Train your Model<a class="headerlink" href="#step-3-train-your-model" title="Permanent link">&para;</a></h2>
 <p>StyleTTS2 training is split into two stages that must be run in order.</p>
