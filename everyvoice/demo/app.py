@@ -482,6 +482,7 @@ def synthesize_audio_styletts2(
     embedding_scale: float,
     acoustic_blend: float,
     prosody_blend: float,
+    language: "str | None" = None,  # selected language code, or None for monolingual checkpoints
     *,
     module,
     mel_transform,
@@ -541,6 +542,11 @@ def synthesize_audio_styletts2(
         raise gr.Error(f"Text produced no tokens: {text!r}")
     input_lengths = torch.LongTensor([tokens.size(1)]).to(device)
 
+    lang_emb = None
+    if language is not None and hasattr(module, "language_embedding"):
+        lang_id = torch.LongTensor([module.lang2id[language]]).to(device)
+        lang_emb = module.language_embedding(lang_id)
+
     try:
         audio = module._synthesize_text(
             tokens,
@@ -550,6 +556,7 @@ def synthesize_audio_styletts2(
             embedding_scale=embedding_scale,
             acoustic_blend=acoustic_blend,
             prosody_blend=prosody_blend,
+            lang_emb=lang_emb,
         )
     except Exception as e:
         raise gr.Error(str(e))
@@ -565,6 +572,7 @@ def make_gradio_display_styletts2(
     synthesize_fn,
     speaker_list: "GradioChoices",
     default_reference: "Path | None" = None,
+    language_list: "GradioChoices" = [],
 ) -> "gr.Blocks":
     """Build the Gradio Blocks for the StyleTTS2 demo.
 
@@ -572,6 +580,12 @@ def make_gradio_display_styletts2(
     reference audio widget becomes an optional style override.  When it is
     empty the reference audio widget is the primary input (reference-upload
     mode) and the ``speaker`` argument is pre-bound as ``None``.
+
+    When ``language_list`` is non-empty (multilingual checkpoint) a language
+    dropdown is shown. It's always appended to ``inputs`` — as a real
+    dropdown or, when empty, a hidden ``gr.State(None)`` placeholder — rather
+    than being conditionally omitted, so its position never shifts relative
+    to the fixed ``synthesize_fn`` signature.
     """
     has_speakers = bool(speaker_list)
     interactive_speaker = len(speaker_list) > 1
@@ -612,6 +626,18 @@ def make_gradio_display_styletts2(
                 )
                 inputs.append(inp_reference)
 
+                if language_list:
+                    inp_language = gr.Dropdown(
+                        choices=language_list,
+                        value=language_list[0][1],
+                        interactive=len(language_list) > 1,
+                        label="Language",
+                    )
+                else:
+                    # Always present in `inputs` (never conditionally omitted)
+                    # so its position stays fixed regardless of language_list.
+                    inp_language = gr.State(None)
+
                 with gr.Accordion("Advanced synthesis options", open=False):
                     inp_diffusion_steps = gr.Slider(
                         1, 20, value=5, step=1, label="Diffusion Steps"
@@ -631,6 +657,7 @@ def make_gradio_display_styletts2(
                         inp_embedding_scale,
                         inp_acoustic_blend,
                         inp_prosody_blend,
+                        inp_language,
                     ]
                 )
                 btn = gr.Button("Synthesize")
@@ -649,6 +676,7 @@ def create_demo_app_styletts2(
     accelerator: str = "auto",
     allowlist: list[str] = [],
     denylist: list[str] = [],
+    languages: list[str] = ["all"],
 ) -> "gr.Blocks":
     """Load a StyleTTS2 model and return a Gradio Blocks demo app.
 
@@ -656,6 +684,10 @@ def create_demo_app_styletts2(
     encodings are pre-computed at startup so each synthesis call is fast.
     When ``speakers`` is empty the demo falls back to reference-upload mode
     using ``default_reference`` as the pre-populated audio widget value.
+
+    ``languages`` restricts the language dropdown to a subset of the
+    checkpoint's ``lang2id`` (default ``["all"]``). Ignored for monolingual
+    checkpoints — no dropdown is shown in that case.
     """
     from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
         load_reference_style,
@@ -705,10 +737,17 @@ def create_demo_app_styletts2(
     )
 
     speaker_list: GradioChoices = [(name, name) for name in speakers]
+
+    language_list: GradioChoices = []
+    lang2id = getattr(model, "lang2id", {}) or {}
+    if hasattr(model, "language_embedding") and lang2id:
+        language_list = set_language_list(languages, sorted(lang2id))
+
     return make_gradio_display_styletts2(
         synthesize_fn,
         speaker_list,
         default_reference=default_reference if not speakers else None,
+        language_list=language_list,
     )
 
 
