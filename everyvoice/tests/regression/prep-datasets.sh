@@ -63,6 +63,7 @@ for duration in $DURATIONS; do
         python ../subsample.py "$SinhalaTTS/si_lk.lines.txt" "$SinhalaTTS/wavs" -d "$duration_seconds" -f festival > "$dir"/si_lk.lines.txt
     fi
     cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-si "$dir"/wizard-resume
+    cp "$EVERYVOICE_REGRESS_ROOT"/add-styletts2-text-fixes.py "$dir"/add-styletts2-text-fixes.py
     # Source of this sample text: https://en.wikipedia.org/wiki/Sinhala_script CC BY-SA-4.0
     #  - the first line means Sinhala script, found at the top of the page
     #  - the rest is the first verse from the Pali Dhammapada lower on the same page
@@ -89,6 +90,7 @@ for duration in $DURATIONS; do
         python ../subsample.py "$isiXhosa/line_index.tsv" "$isiXhosa/wavs" -d "$duration_seconds" -f tsv > "$dir"/line_index.tsv
     fi
     cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-xh "$dir"/wizard-resume
+    cp "$EVERYVOICE_REGRESS_ROOT"/add-styletts2-text-fixes.py "$dir"/add-styletts2-text-fixes.py
     # Source of this sample text: individual words copied from
     # https://en.wikipedia.org/wiki/Xhosa_language CC BY-SA-4.0
     cat <<'==EOF==' > "$dir"/test.txt
@@ -103,6 +105,7 @@ dir=regress-mix
 mkdir $dir
 echo "$dir"
 cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-mix "$dir"/wizard-resume
+cp "$EVERYVOICE_REGRESS_ROOT"/add-styletts2-text-fixes.py "$dir"/add-styletts2-text-fixes.py
 cat <<'==EOF==' > "$dir"/test.txt
 This is a test.
 සිංහල අක්ෂර මාලාව
