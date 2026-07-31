@@ -81,7 +81,12 @@ class Preprocessor:
         self.audio_config = config.preprocessing.audio
         self.sep = "--"
         self.text_processor = (
-            None if isinstance(config, VocoderConfig) else TextProcessor(config.text)
+            None
+            if isinstance(config, VocoderConfig)
+            else TextProcessor(
+                config.text,
+                target_text_representation_level=config.model.target_text_representation_level,
+            )
         )
         self.overwrite = False
         self.input_sampling_rate = self.audio_config.input_sampling_rate

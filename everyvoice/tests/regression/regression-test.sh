@@ -49,6 +49,13 @@ r "coverage run -p -m everyvoice new-project --resume-from wizard-resume"
 cd regress || { echo "ERROR: Cannot cd into regress directory, aborting."; exit 1; }
 trap 'echo "Failed or killed at $(date)"; date | tee ../FAILED > ../DONE' 0
 
+# Datasets with IPA symbols the pretrained StyleTTS2 symbol table doesn't cover
+# (si, xh, mix) drop a patch script in their directory; apply it if present.
+if [[ -f ../add-styletts2-text-fixes.py ]]; then
+    r "python ../add-styletts2-text-fixes.py" ||
+    { echo ERROR: Patching text configs for StyleTTS2 failed, aborting.; exit 1; }
+fi
+
 # Preprocess
 r "coverage run -p -m everyvoice preprocess text-to-spec config/everyvoice-text-to-spec.yaml" ||
 { echo ERROR: Preprocess failed, aborting.; exit 1; }
@@ -89,13 +96,13 @@ r "coverage run -p -m everyvoice preprocess text-to-wav config/everyvoice-text-t
 { echo ERROR: Preprocess for text-to-wav failed, aborting.; exit 1; }
 
 r "coverage run -p -m everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml --mode first --config-args training.epochs_1st=$E2E_EPOCHS_1ST"
-E2E_STAGE1=logs_and_checkpoints/E2E-Experiment/base/stage-1-last.ckpt
+E2E_STAGE1=logs_and_checkpoints/E2E-Experiment/base/checkpoints/stage-1-last.ckpt
 ls $E2E_STAGE1 || { echo ERROR: Training the StyleTTS2 stage-1 model failed, aborting.; exit 1; }
 
 # Stage 2 automatically picks up stage 1's checkpoint via training.first_stage_path,
-# which defaults to stage-1-last.ckpt in the same log_dir.
+# which defaults to checkpoints/stage-1-last.ckpt in the same log_dir.
 r "coverage run -p -m everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml --mode second --config-args training.epochs_2nd=$E2E_EPOCHS_2ND"
-E2E=logs_and_checkpoints/E2E-Experiment/base/stage-2-last.ckpt
+E2E=logs_and_checkpoints/E2E-Experiment/base/checkpoints/stage-2-last.ckpt
 ls $E2E || { echo ERROR: Training the StyleTTS2 text-to-wav model failed, aborting.; exit 1; }
 
 REF_WAV=$(find wavs -maxdepth 1 -name '*.wav' 2>/dev/null | sort | head -1)

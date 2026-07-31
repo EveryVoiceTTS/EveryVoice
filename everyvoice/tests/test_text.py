@@ -11,13 +11,14 @@ from pytest import main
 
 from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.tests.stubs import TEST_CONTACT
 from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
 from everyvoice.text.textsplit import chunk_text
-from everyvoice.text.utils import is_sentence_final
+from everyvoice.text.utils import apply_to_replace_helper, is_sentence_final
 from everyvoice.utils import (
     collapse_whitespace,
     generic_psv_filelist_reader,
@@ -204,6 +205,28 @@ class TextTest(TestCase):
         self.assertEqual(
             len([x for x in duplicate_symbols_text_processor.symbols if x == "e"]), 1
         )
+
+    def test_empty_symbol_dropped_after_normalization(self):
+        # a to_replace rule (or cleaner) that collapses a symbol to '' must not
+        # leave '' in the declared symbol set
+        config = TextConfig(
+            symbols=Symbols(letters=list(string.ascii_letters)),
+            to_replace={"x": ""},
+        )
+        self.assertNotIn("", config.symbols.letters)
+
+    def test_to_replace_sorted_longest_key_first(self):
+        # rules are applied in dict order via re.sub, so a shorter key must
+        # never come before a longer key it's a substring of, or the longer
+        # rule would never get a chance to match
+        config = TextConfig(to_replace={"a": "1", "abc": "2", "ab": "3"})
+        self.assertEqual(list(config.to_replace.keys()), ["abc", "ab", "a"])
+
+    def test_to_replace_helper_applies_longest_key_first(self):
+        # if 'a' were applied before 'abc', 'abc' would become '1bc' before
+        # the 'abc' rule ever got a chance to match
+        config = TextConfig(to_replace={"a": "1", "abc": "2"})
+        self.assertEqual(apply_to_replace_helper("abc", config.to_replace), "2")
 
     def test_bad_symbol_configuration(self):
         with self.assertRaises(ValidationError):
@@ -435,6 +458,40 @@ class SymbolsTest(TestCase):
         )
         self.assertSetEqual(
             symbols.all_except_punctuation, {"a", "b", "X", "Y", "Z", "<SIL>"}
+        )
+
+    def test_for_representation_level(self):
+        """Suffixed {label}_characters/{label}_phones fields should only be
+        included for a matching level; unsuffixed fields (like the bare
+        `letters` field here) are always included regardless of level.
+        """
+        symbols = Symbols(
+            letters=["a", "b"],
+            ds1_characters=["X", "Y"],
+            ds1_phones=["p", "q"],
+        )
+        self.assertSetEqual(
+            symbols.for_representation_level(None), symbols.all_except_punctuation
+        )
+        self.assertSetEqual(
+            symbols.for_representation_level(
+                TargetTrainingTextRepresentationLevel.characters
+            ),
+            {"a", "b", "X", "Y", "<SIL>"},
+        )
+        self.assertSetEqual(
+            symbols.for_representation_level(
+                TargetTrainingTextRepresentationLevel.ipa_phones
+            ),
+            {"a", "b", "p", "q", "<SIL>"},
+        )
+        # phonological_features are computed from phone symbols, so they map
+        # to the same _phones suffix as ipa_phones
+        self.assertSetEqual(
+            symbols.for_representation_level(
+                TargetTrainingTextRepresentationLevel.phonological_features
+            ),
+            {"a", "b", "p", "q", "<SIL>"},
         )
 
 

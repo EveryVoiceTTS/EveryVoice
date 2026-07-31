@@ -2,11 +2,12 @@ import importlib
 from pathlib import Path
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import Self
 
 from everyvoice import logger
 from everyvoice.config.shared_types import ConfigModel, init_context
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.config.utils import PossiblySerializedCallable
 from everyvoice.config.validation_helpers import string_to_callable
 from everyvoice.text.phonemizer import G2PCallable
@@ -88,6 +89,29 @@ class Symbols(BaseModel):
     def all_except_punctuation(self) -> set[str]:
         """Returns the set containing all characters."""
         return set(w for _, v in self if not isinstance(v, Punctuation) for w in v)
+
+    def for_representation_level(
+        self, level: TargetTrainingTextRepresentationLevel | None
+    ) -> set[str]:
+        """Like all_except_punctuation, but when level is given, only includes
+        {label}_characters/{label}_phones fields matching that level. Fields
+        with no recognized suffix (get_label_from_symbol_key returns None) are
+        always included. level=None preserves all_except_punctuation's full-union
+        behavior."""
+        if level is None:
+            return self.all_except_punctuation
+        suffix = (
+            "characters"
+            if level == TargetTrainingTextRepresentationLevel.characters
+            else "phones"
+        )
+        return set(
+            w
+            for k, v in self
+            if not isinstance(v, Punctuation)
+            and (get_label_from_symbol_key(k) is None or k.endswith(f"_{suffix}"))
+            for w in v
+        )
 
     @model_validator(mode="after")
     def cannot_have_punctuation_in_symbol_set(self) -> "Symbols":
@@ -256,6 +280,16 @@ class TextConfig(ConfigModel):
         examples=["""{'eng': {'strong': '!?.', 'weak': ':;,'}}'"""],
     )
 
+    @field_validator("to_replace")
+    def sort_to_replace_by_key_length(
+        cls, to_replace: dict[str, str]
+    ) -> dict[str, str]:
+        """Longer keys first, so a rule can't consume text that a longer,
+        more specific rule further down the dict would otherwise have matched."""
+        return dict(
+            sorted(to_replace.items(), key=lambda item: len(item[0]), reverse=True)
+        )
+
     def get_cleaners(
         self, *, lang_id: str | None = None, dataset_label: str | None = None
     ) -> list[PossiblySerializedCallable]:
@@ -297,13 +331,16 @@ class TextConfig(ConfigModel):
                 cleaners = self.get_cleaners(dataset_label=dataset_label)
                 to_replace = self.get_to_replace(dataset_label=dataset_label)
                 normalized = [normalize_text_helper(x, to_replace, cleaners) for x in v]
-                setattr(self.symbols, k, normalized)
 
                 if "" in normalized or len(normalized) != len(set(normalized)):
                     logger.warning(
                         f"Normalization created a duplicate or inserted '' in {k}={normalized}. "
                         "Please check your shared-text config for problems."
                     )
+
+                # an empty symbol is never meaningful and breaks downstream
+                # assumptions (e.g. distance functions expecting len >= 1)
+                setattr(self.symbols, k, [x for x in normalized if x])
 
         return self
 

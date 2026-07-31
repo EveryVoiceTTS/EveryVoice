@@ -8,6 +8,7 @@ from nltk.tokenize import RegexpTokenizer
 
 from everyvoice import logger
 from everyvoice.config.text_config import TextConfig
+from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.exceptions import OutOfVocabularySymbolError
 from everyvoice.text.features import (
     DEFAULT_PUNCTUATION_HASH,
@@ -76,8 +77,16 @@ class TextProcessor:
     'h/e/l/l/o/!'
     """
 
-    def __init__(self, config: TextConfig, punctuation_hash=DEFAULT_PUNCTUATION_HASH):
+    def __init__(
+        self,
+        config: TextConfig,
+        punctuation_hash=DEFAULT_PUNCTUATION_HASH,
+        target_text_representation_level: Optional[
+            TargetTrainingTextRepresentationLevel
+        ] = None,
+    ):
         self.config = config
+        self.target_text_representation_level = target_text_representation_level
         self.phonological_feature_calculator: Optional[
             PhonologicalFeatureCalculator
         ] = None
@@ -99,7 +108,9 @@ class TextProcessor:
 
         # Add the internal punctuation IDs to the symbols list
         # Combine all the symbol fields into one list (except for punctuation)
-        symbols = self.config.symbols.all_except_punctuation
+        symbols = self.config.symbols.for_representation_level(
+            self.target_text_representation_level
+        )
         symbols |= set(self.punctuation_internal_hash.values())
         symbols |= self.config.symbols.punctuation.all
         # Note: the TextConfig.clean_symbols() validator applies dataset specific

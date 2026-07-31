@@ -529,11 +529,10 @@ class TestCLI:
         with open(one_column_psv, "w", encoding="utf-8") as f:
             f.write("characters\nSome test éçà\n")
         expected_output_strings = (
-            "The following characters are missing from your text config",
+            "are missing from your text config",
             "'é'",
             "'ç'",
             "'à'",
-            "The following phones are missing from your text config",
             "'t͡ʃ'",
         )
 
@@ -594,6 +593,23 @@ class TestCLI:
         assert result.exit_code != 0
         assert "Please specify only one of --" in flatten_log(result.output)
 
+        raw_metadata_psv = str(tmp_path / "raw_metadata.psv")
+        with open(raw_metadata_psv, "w", encoding="utf-8") as f:
+            f.write("basename|text|language\nLJ001-0001|Some test 123|eng\n")
+        result = self.runner.invoke(
+            app,
+            [
+                "check",
+                "text-config",
+                "--config",
+                config,
+                "--psv-file",
+                raw_metadata_psv,
+            ],
+        )
+        assert result.exit_code != 0
+        assert "has none of the columns" in flatten_log(result.output)
+
         result = self.runner.invoke(
             app,
             ["check", "text-config", "--config", config, "--psv-file", one_column_psv],
@@ -616,6 +632,103 @@ class TestCLI:
         )
         assert result.exit_code != 0
         assert "does not have an embedded text configuration" in flatten_log(
+            result.output
+        )
+
+    def test_check_pretrained_symbols_suggestions(self, tmp_path):
+        """`check pretrained-symbols` given a full model config with a
+        'pretrained' section (as StyleTTS2Config has) should report symbols
+        missing from the pretrained table and suggest copy-pastable
+        'to_replace' substitutions."""
+        config_path = tmp_path / "styletts2-like.yaml"
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.dump(
+                {
+                    "VERSION": "0.1",
+                    "text": {"symbols": {"custom_letters": ["가"]}},
+                    "pretrained": {"pretrained_symbols": ["a", "b", "c"]},
+                },
+                f,
+            )
+
+        result = self.runner.invoke(
+            app, ["check", "pretrained-symbols", "--config", str(config_path)]
+        )
+        flat_output = flatten_log(result.output)
+        assert result.exit_code == 0
+        assert "not present in the pretrained text-encoder symbol table" in flat_output
+        assert "가" in flat_output
+        assert "to_replace:" in flat_output
+        # '가' is neither IPA nor Latin script, so its suggestion is low quality
+        assert "neither recognized IPA nor Latin-script" in flat_output
+        assert "romanizing" in flat_output
+
+    def test_check_pretrained_symbols_suggestions_split_text_config(self, tmp_path):
+        """A full model config whose 'text' section lives in a separate file,
+        referenced via 'path_to_text_config_file' (the normal setup produced by
+        `everyvoice new`, rather than an inline 'text' section), must have that
+        partial resolved the same way the model configs themselves resolve it."""
+        text_config_path = tmp_path / "everyvoice-shared-text.yaml"
+        with open(text_config_path, "w", encoding="utf-8") as f:
+            yaml.dump({"symbols": {"custom_letters": ["가"]}}, f)
+
+        config_path = tmp_path / "styletts2-like.yaml"
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.dump(
+                {
+                    "VERSION": "0.1",
+                    "path_to_text_config_file": "everyvoice-shared-text.yaml",
+                    "pretrained": {"pretrained_symbols": ["a", "b", "c"]},
+                },
+                f,
+            )
+
+        result = self.runner.invoke(
+            app, ["check", "pretrained-symbols", "--config", str(config_path)]
+        )
+        flat_output = flatten_log(result.output)
+        assert result.exit_code == 0
+        assert "not present in the pretrained text-encoder symbol table" in flat_output
+        assert "가" in flat_output
+        assert "to_replace:" in flat_output
+
+    def test_check_pretrained_symbols_all_present(self, tmp_path):
+        """When every declared symbol is already in the pretrained table,
+        `check pretrained-symbols` should say so rather than staying silent."""
+        config_path = tmp_path / "styletts2-like.yaml"
+        with open(config_path, "w", encoding="utf-8") as f:
+            yaml.dump(
+                {
+                    "VERSION": "0.1",
+                    "text": {"symbols": {"custom_letters": ["a"]}},
+                    "pretrained": {"pretrained_symbols": ["a", "b", "c"]},
+                },
+                f,
+            )
+
+        result = self.runner.invoke(
+            app, ["check", "pretrained-symbols", "--config", str(config_path)]
+        )
+        flat_output = flatten_log(result.output)
+        assert result.exit_code == 0
+        assert "are present in the pretrained text-encoder symbol table" in flat_output
+
+    def test_check_pretrained_symbols_cli_errors(self):
+        """Exactly one of --config/--model is required, and a config with no
+        pretrained symbol table (e.g. a bare TextConfig) has nothing to check."""
+        config = str(CONFIG_DIR / "everyvoice-shared-text.yaml")
+        result = self.runner.invoke(
+            app,
+            ["check", "pretrained-symbols", "--config", config, "--model", os.devnull],
+        )
+        assert result.exit_code != 0
+        assert "Please specify only one of --" in flatten_log(result.output)
+
+        result = self.runner.invoke(
+            app, ["check", "pretrained-symbols", "--config", config]
+        )
+        assert result.exit_code != 0
+        assert "has no pretrained text-encoder symbol table" in flatten_log(
             result.output
         )
 
