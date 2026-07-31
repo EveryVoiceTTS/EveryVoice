@@ -754,6 +754,7 @@ def _run_styletts2_demo(
     ref_speaker: list[str],
     reference: Optional[Path],
     speakers: list[str],
+    languages: list[str],
     vocoder: Optional[Path],
     allowlist: Optional[Path],
     denylist: Optional[Path],
@@ -829,6 +830,7 @@ def _run_styletts2_demo(
             accelerator=accelerator,
             allowlist=allowlist_data,
             denylist=denylist_data,
+            languages=languages,
         )
 
     demo_app.launch(
@@ -964,10 +966,11 @@ def demo(
         ["all"],
         "--language",
         "-l",
-        help="[FastSpeech2] Languages to expose in the demo UI. "
+        help="Languages to expose in the demo UI. "
         "Repeat the flag to include multiple languages. "
-        "Defaults to all languages in the model.",
-        rich_help_panel="FastSpeech2 (text-to-spec) Options",
+        "Defaults to all languages in the model. "
+        "Only applicable to multilingual checkpoints; "
+        "No language dropdown shown for monolingual ones.",
     ),
     outputs: list[AllowedDemoOutputFormats] = typer.Option(
         ["all"],
@@ -1105,7 +1108,7 @@ def demo(
 
     if model_class in _STYLETTS2_CLASS_NAMES:
         _run_styletts2_demo(
-            checkpoint, ref_speaker, reference, speakers, vocoder, **shared  # type: ignore[arg-type]
+            checkpoint, ref_speaker, reference, speakers, languages, vocoder, **shared  # type: ignore[arg-type]
         )
     else:
         _run_fs2_demo(

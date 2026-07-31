@@ -112,6 +112,33 @@ everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/stage
     --text "Second sentence."
 ```
 
+## Optional: Multilingual Training
+
+StyleTTS2 can be trained on a mix of languages at once using a learned language embedding, based on the method described in [Wang, Pine & Geng (2026)](https://aclanthology.org/2026.eacl-short.16/). This is useful for combining a low-resource language with a higher-resource one (e.g. English) in a single model, or for doing cross-lingual speaker transfer for the purposes of anonymization (read [Wang, Pine & Geng (2026)](https://aclanthology.org/2026.eacl-short.16/) for more information).
+
+To enable it, set the following in your config:
+
+```yaml
+model:
+  multilingual: true
+  language_embedding_dim: 64  # optional, defaults to 64
+```
+
+Every row in your training and validation filelists must have a `language` value; the set of distinct languages found there becomes the model's language table automatically — there's nothing else to configure.
+
+Both `characters` and `ipa_phones` (`model.target_text_representation_level`) work for multilingual training.
+
+At synthesis time, pass `--language` to select which language embedding to condition on:
+
+```bash
+everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/stage-2-last.ckpt \
+    --reference path/to/reference.wav \
+    --text "your text here" \
+    --language eng
+```
+
+The value must match a language seen during training. The same flag is available in `everyvoice demo`, where it also shows a language dropdown in the UI for multilingual checkpoints.
+
 ## Optional: Evaluation
 
 If you want to evaluate the model you just built, you can make use of the `everyvoice evaluate` command. In order to use it, you have to first generate some audio (see Step 5) and then you can evaluate either a single file with `everyvoice evaluate -f your_file.wav` or a directory of audio files with `everyvoice evaluate -d path_to_wavs/`. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in [this](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680) paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: `everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav`. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.
