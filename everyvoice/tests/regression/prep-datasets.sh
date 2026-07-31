@@ -37,6 +37,7 @@ for duration in $DURATIONS; do
         python ../subsample.py "$LJ_SPEECH_DATASET/metadata.csv" "$LJ_SPEECH_DATASET/wavs" -d $duration_seconds -f psv > "$dir"/metadata.csv
     fi
     cp "$EVERYVOICE_REGRESS_ROOT"/wizard-resume-lj "$dir"/wizard-resume
+    cp "$EVERYVOICE_REGRESS_ROOT"/add-styletts2-text-fixes.py "$dir"/add-styletts2-text-fixes.py
     cat <<'==EOF==' > "$dir"/test.txt
 This is a test.
 I am an anvil.
