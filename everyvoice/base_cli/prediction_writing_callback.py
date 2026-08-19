@@ -23,6 +23,7 @@ class BasePredictionWritingCallback(Callback):
         file_extension: str,
         global_step: int,
         include_global_step_in_filename: bool = False,
+        simple_filenames: bool = False,
     ) -> None:
         super().__init__()
         self.file_extension = file_extension
@@ -30,12 +31,18 @@ class BasePredictionWritingCallback(Callback):
         self.save_dir = save_dir
         self.sep = "--"
         self.include_global_step_in_filename = include_global_step_in_filename
+        self.simple_filenames = simple_filenames
         self.save_dir.mkdir(parents=True, exist_ok=True)
 
     def get_filename(self, basename: str, speaker: str, language: str) -> str:
-        name_parts = [basename, speaker, language, self.file_extension]
-        if self.include_global_step_in_filename:
-            name_parts.insert(-1, self.global_step)
-        path = self.save_dir / self.sep.join(name_parts)
+        if self.simple_filenames:
+            # basename + the real file extension only, e.g. "LJ050-0269.wav"
+            filename = basename + Path(self.file_extension).suffix
+            path = self.save_dir / filename
+        else:
+            name_parts = [basename, speaker, language, self.file_extension]
+            if self.include_global_step_in_filename:
+                name_parts.insert(-1, self.global_step)
+            path = self.save_dir / self.sep.join(name_parts)
         path.parent.mkdir(parents=True, exist_ok=True)
         return str(path)
