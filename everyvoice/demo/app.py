@@ -579,13 +579,12 @@ def make_gradio_display_styletts2(
     When ``speaker_list`` is non-empty a speaker dropdown is shown and the
     reference audio widget becomes an optional style override.  When it is
     empty the reference audio widget is the primary input (reference-upload
-    mode) and the ``speaker`` argument is pre-bound as ``None``.
+    mode) and ``speaker`` is a hidden ``gr.State(None)`` placeholder instead.
 
-    When ``language_list`` is non-empty (multilingual checkpoint) a language
-    dropdown is shown. It's always appended to ``inputs`` — as a real
-    dropdown or, when empty, a hidden ``gr.State(None)`` placeholder — rather
-    than being conditionally omitted, so its position never shifts relative
-    to the fixed ``synthesize_fn`` signature.
+    Both ``speaker`` and ``language`` are always appended to ``inputs`` —
+    as a real dropdown or, when unavailable, a hidden ``gr.State(None)``
+    placeholder — rather than being conditionally omitted, so their
+    positions never shift relative to the fixed ``synthesize_fn`` signature.
     """
     has_speakers = bool(speaker_list)
     interactive_speaker = len(speaker_list) > 1
@@ -607,9 +606,9 @@ def make_gradio_display_styletts2(
                         interactive=interactive_speaker,
                         label="Speaker",
                     )
-                    inputs.append(inp_speaker)
                 else:
-                    synthesize_fn = partial(synthesize_fn, speaker=None)
+                    inp_speaker = gr.State(None)
+                inputs.append(inp_speaker)
 
                 inp_reference = gr.Audio(
                     value=(
