@@ -29,7 +29,10 @@ def load_config_base_command_interface(
     config_file: Annotated[
         Path, typer_file_argument(help="The path to your model configuration file.")
     ],
-    config_args: Annotated[list[str], typer.Option("--config", "-c")] = [],
+    config_args: Annotated[
+        list[str],
+        typer.Option("-c", "--config-args", help="Override the configuration."),
+    ] = [],
 ):
     pass
 
@@ -100,6 +103,9 @@ def train_base_command_interface(
 
 
 def inference_base_command_interface(
-    config_args: Annotated[list[str], typer.Option("--config", "-c")] = [],
+    config_args: Annotated[
+        list[str],
+        typer.Option("-c", "--config-args", help="Override the configuration."),
+    ] = [],
 ):
     pass
