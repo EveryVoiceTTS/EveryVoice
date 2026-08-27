@@ -63,7 +63,10 @@ When you have finished training your Feature Prediction Network, we recommend [f
 You can synthesize by pointing the CLI to your trained feature prediction network and passing in the text. You can export the wav or spectrogram (pt) files.
 
 ```bash
-everyvoice synthesize from-text logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" -a gpu -d 1 --output-type wav
+everyvoice synthesize from-text logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt \
+    --vocoder-path logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt \
+    -t "මෙදා සැරේ සාකච්ඡාවක් විදියට නෙවෙයි නේද පල කරල තියෙන්නෙ" \
+    -a gpu -d 1 --output-type wav
 ```
 
 #### Demo App
@@ -71,7 +74,8 @@ everyvoice synthesize from-text logs_and_checkpoints/FeaturePredictionExperiment
 You can also synthesize audio by starting up the EveryVoice Demo using your Feature Prediction and Vocoder checkpoints:
 
 ```bash
-everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
+everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt \
+    logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
 ```
 
 And an interactive demo will be available at [http://localhost:7260](http://localhost:7260)
