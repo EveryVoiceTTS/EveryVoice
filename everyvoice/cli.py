@@ -524,10 +524,6 @@ command(
     help=f"""Preprocess data for a StyleTTS2 text-to-wav model.
 
     **everyvoice preprocess text-to-wav config/{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
-
-    To also preprocess an out-of-distribution (OOD) text file:
-
-    **everyvoice preprocess text-to-wav config/{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml --ood-data-file data/ood_texts.txt**
     """,
 )(preprocess_styletts2)
 
