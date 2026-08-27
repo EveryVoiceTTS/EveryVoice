@@ -1130,8 +1130,8 @@ To achieve that, each model configuration can also be defined as a path to a con
 <span class="w">    </span><span class="nt">batch_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
 <span class="w">    </span><span class="nt">ckpt_epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
 <span class="w">    </span><span class="l l-Scalar l-Scalar-Plain">...</span>
-<span class="hll"><span class="nt">path_to_preprocessing_config_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-shared-data.yaml&quot;</span>
-</span><span class="hll"><span class="nt">path_to_text_config_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;./config/default/everyvoice-shared-text.yaml&quot;</span>
+<span class="hll"><span class="nt">path_to_preprocessing_config_file</span><span class="p">:</span><span class="w"> </span><span class="s">"./config/default/everyvoice-shared-data.yaml"</span>
+</span><span class="hll"><span class="nt">path_to_text_config_file</span><span class="p">:</span><span class="w"> </span><span class="s">"./config/default/everyvoice-shared-text.yaml"</span>
 </span></code></pre></div>
 <h2 id="serialization">Serialization<a class="headerlink" href="#serialization" title="Permanent link">&para;</a></h2>
 <p>By default configuration objects are serialized as dictionaries, which works as expected with integers, floats, lists, booleans, dicts etc. But there are some cases where you need to specify a Callable in your configuration. For example the {ref}<code>TextConfig</code> has a <code>cleaners</code> field that takes a list of Callables to apply in order to raw text.
@@ -1326,59 +1326,59 @@ for your data. You can share the TextConfig with any models that need it and onl
     <span class="n">symbols</span><span class="p">:</span> <span class="n">Symbols</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">Symbols</span><span class="p">)</span>
     <span class="n">to_replace</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Global text replacements&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Map of match-to-replacement to apply on training and run-time text, before cleaners are applied. Superceded by language_to_replace when processing text in a language which has language-specific text replacements, which are in turn superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Global text replacements"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Map of match-to-replacement to apply on training and run-time text, before cleaners are applied. Superceded by language_to_replace when processing text in a language which has language-specific text replacements, which are in turn superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements."</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">language_to_replace</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Language-specific text replacements&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Map from language code to text replacement maps. Supercedes the global text replacements when defined for a given language. Superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Language-specific text replacements"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Map from language code to text replacement maps. Supercedes the global text replacements when defined for a given language. Superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements."</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">dataset_to_replace</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Dataset-specific text replacements.&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Map from dataset label to replacement maps. Supercedes both the global text replacements and language_to_replace when defined for a given dataset.&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Dataset-specific text replacements."</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Map from dataset label to replacement maps. Supercedes both the global text replacements and language_to_replace when defined for a given dataset."</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">cleaners</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_CLEANERS_S</span><span class="p">,</span>
         <span class="n">validate_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Global cleaners&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Global cleaners"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners."</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">language_cleaners</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Language-specific cleaners&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Map from language code to cleaner lists. Supercedes the global cleaners when defined for a given language. Superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Language-specific cleaners"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Map from language code to cleaner lists. Supercedes the global cleaners when defined for a given language. Superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners."</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">dataset_cleaners</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Dataset-specific cleaners&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Map from dataset label to cleaner lists. Supercedes both the global cleaners and language_cleaners when defined for a given dataset.&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Dataset-specific cleaners"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Map from dataset label to cleaner lists. Supercedes both the global cleaners and language_cleaners when defined for a given dataset."</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">g2p_engines</span><span class="p">:</span> <span class="n">G2P_Engines</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;External G2P&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;User defined or external G2P engines.</span><span class="se">\n</span><span class="s2">See https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P.&quot;</span><span class="p">,</span>
-        <span class="n">examples</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;&quot;{&quot;fr&quot;: &quot;everyvoice_plugin_g2p4example.g2p&quot;}&quot;&quot;&quot;</span><span class="p">],</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"External G2P"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"User defined or external G2P engines.</span><span class="se">\n</span><span class="s2">See https://github.com/EveryVoiceTTS/everyvoice_g2p_template_plugin to implement your own G2P."</span><span class="p">,</span>
+        <span class="n">examples</span><span class="o">=</span><span class="p">[</span><span class="s2">"""{"fr": "everyvoice_plugin_g2p4example.g2p"}"""</span><span class="p">],</span>
     <span class="p">)</span>
     <span class="n">split_text</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Split Text&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Whether or not to perform text splitting (also referred to as text chunking) at inference time. Instead of synthesizing an entire utterance, the utterance will be split into smaller chunks and re-combined after synthesis. This can lead to more natural synthesis for long-form (i.e. paragraph) synthesis.&quot;</span><span class="p">,</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Split Text"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Whether or not to perform text splitting (also referred to as text chunking) at inference time. Instead of synthesizing an entire utterance, the utterance will be split into smaller chunks and re-combined after synthesis. This can lead to more natural synthesis for long-form (i.e. paragraph) synthesis."</span><span class="p">,</span>
     <span class="p">)</span>
     <span class="n">boundaries</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Language</span><span class="p">,</span> <span class="n">LanguageBoundaries</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default</span><span class="o">=</span><span class="p">{},</span>
-        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Boundaries&quot;</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Strong and Weak boundaries on which text splitting is to be performed, for every language.&quot;</span><span class="p">,</span>
-        <span class="n">examples</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&quot;&quot;{&#39;eng&#39;: {&#39;strong&#39;: &#39;!?.&#39;, &#39;weak&#39;: &#39;:;,&#39;}}&#39;&quot;&quot;&quot;</span><span class="p">],</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">"Boundaries"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Strong and Weak boundaries on which text splitting is to be performed, for every language."</span><span class="p">,</span>
+        <span class="n">examples</span><span class="o">=</span><span class="p">[</span><span class="s2">"""{'eng': {'strong': '!?.', 'weak': ':;,'}}'"""</span><span class="p">],</span>
     <span class="p">)</span>
 
-    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">&quot;to_replace&quot;</span><span class="p">)</span>
+    <span class="nd">@field_validator</span><span class="p">(</span><span class="s2">"to_replace"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">sort_to_replace_by_key_length</span><span class="p">(</span>
         <span class="bp">cls</span><span class="p">,</span> <span class="n">to_replace</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Longer keys first, so a rule can&#39;t consume text that a longer,</span>
-<span class="sd">        more specific rule further down the dict would otherwise have matched.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Longer keys first, so a rule can't consume text that a longer,</span>
+<span class="sd">        more specific rule further down the dict would otherwise have matched."""</span>
         <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span>
             <span class="nb">sorted</span><span class="p">(</span><span class="n">to_replace</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">item</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="p">)</span>
@@ -1386,10 +1386,10 @@ for your data. You can share the TextConfig with any models that need it and onl
     <span class="k">def</span><span class="w"> </span><span class="nf">get_cleaners</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lang_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dataset_label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">PossiblySerializedCallable</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the cleaners to apply to a given dataset and language</span>
+<span class="w">        </span><span class="sd">"""Get the cleaners to apply to a given dataset and language</span>
 
 <span class="sd">        Dataset has top precendence, then language, falling back to global cleaners</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">dataset_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset_label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_cleaners</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_cleaners</span><span class="p">[</span><span class="n">dataset_label</span><span class="p">]</span>
         <span class="k">elif</span> <span class="n">lang_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lang_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">language_cleaners</span><span class="p">:</span>
@@ -1400,10 +1400,10 @@ for your data. You can share the TextConfig with any models that need it and onl
     <span class="k">def</span><span class="w"> </span><span class="nf">get_to_replace</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">lang_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dataset_label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get the to_replace filters to apply to a given dataset and language</span>
+<span class="w">        </span><span class="sd">"""Get the to_replace filters to apply to a given dataset and language</span>
 
 <span class="sd">        Dataset has top precendence, then language, falling back to global cleaners</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">dataset_label</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">dataset_label</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_to_replace</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dataset_to_replace</span><span class="p">[</span><span class="n">dataset_label</span><span class="p">]</span>
         <span class="k">elif</span> <span class="n">lang_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">lang_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">language_to_replace</span><span class="p">:</span>
@@ -1411,24 +1411,24 @@ for your data. You can share the TextConfig with any models that need it and onl
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">to_replace</span>
 
-    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"after"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">clean_symbols</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;We should apply all cleaners to the symbols</span>
+<span class="w">        </span><span class="sd">"""We should apply all cleaners to the symbols</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            TextConfig: a text config with cleaned symbols</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">symbols</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;punctuation&quot;</span><span class="p">,</span> <span class="s2">&quot;silence&quot;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">"punctuation"</span><span class="p">,</span> <span class="s2">"silence"</span><span class="p">]:</span>
                 <span class="n">dataset_label</span> <span class="o">=</span> <span class="n">get_label_from_symbol_key</span><span class="p">(</span><span class="n">k</span><span class="p">)</span>
                 <span class="n">cleaners</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cleaners</span><span class="p">(</span><span class="n">dataset_label</span><span class="o">=</span><span class="n">dataset_label</span><span class="p">)</span>
                 <span class="n">to_replace</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_to_replace</span><span class="p">(</span><span class="n">dataset_label</span><span class="o">=</span><span class="n">dataset_label</span><span class="p">)</span>
                 <span class="n">normalized</span> <span class="o">=</span> <span class="p">[</span><span class="n">normalize_text_helper</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">to_replace</span><span class="p">,</span> <span class="n">cleaners</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">v</span><span class="p">]</span>
 
-                <span class="k">if</span> <span class="s2">&quot;&quot;</span> <span class="ow">in</span> <span class="n">normalized</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">normalized</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="s2">""</span> <span class="ow">in</span> <span class="n">normalized</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">normalized</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">normalized</span><span class="p">)):</span>
                     <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">&quot;Normalization created a duplicate or inserted &#39;&#39; in </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">normalized</span><span class="si">}</span><span class="s2">. &quot;</span>
-                        <span class="s2">&quot;Please check your shared-text config for problems.&quot;</span>
+                        <span class="sa">f</span><span class="s2">"Normalization created a duplicate or inserted '' in </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">=</span><span class="si">{</span><span class="n">normalized</span><span class="si">}</span><span class="s2">. "</span>
+                        <span class="s2">"Please check your shared-text config for problems."</span>
                     <span class="p">)</span>
 
                 <span class="c1"># an empty symbol is never meaningful and breaks downstream</span>
@@ -1437,11 +1437,11 @@ for your data. You can share the TextConfig with any models that need it and onl
 
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"after"</span><span class="p">)</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">load_g2p_engines</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Self</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Given `g2p_engines`, populate the global list `AVAILABLE_G2P_ENGINES`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="kn">from</span><span class="w"> </span><span class="nn">everyvoice.text.phonemizer</span><span class="w"> </span><span class="kn">import</span> <span class="n">AVAILABLE_G2P_ENGINES</span>
 
         <span class="k">for</span> <span class="n">lang_id</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">g2p_engines</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
@@ -1449,19 +1449,19 @@ for your data. You can share the TextConfig with any models that need it and onl
 
             <span class="k">if</span> <span class="n">lang_id</span> <span class="ow">in</span> <span class="n">AVAILABLE_G2P_ENGINES</span><span class="p">:</span>
                 <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Overriding g2p for `</span><span class="si">{</span><span class="n">lang_id</span><span class="si">}</span><span class="s2">` with user provided g2p plugin `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">`&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Overriding g2p for `</span><span class="si">{</span><span class="n">lang_id</span><span class="si">}</span><span class="s2">` with user provided g2p plugin `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">`"</span>
                 <span class="p">)</span>
 
             <span class="n">AVAILABLE_G2P_ENGINES</span><span class="p">[</span><span class="n">lang_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">g2p_func</span>
-            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Adding G2P engine from `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` for `</span><span class="si">{</span><span class="n">lang_id</span><span class="si">}</span><span class="s2">`&quot;</span><span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Adding G2P engine from `</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` for `</span><span class="si">{</span><span class="n">lang_id</span><span class="si">}</span><span class="s2">`"</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">load_config_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;TextConfig&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load a config from a path&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load_config_from_path</span><span class="p">(</span><span class="n">path</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"TextConfig"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Load a config from a path"""</span>
         <span class="n">config</span> <span class="o">=</span> <span class="n">load_config_from_json_or_yaml_path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-        <span class="k">with</span> <span class="n">init_context</span><span class="p">({</span><span class="s2">&quot;config_path&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">}):</span>
+        <span class="k">with</span> <span class="n">init_context</span><span class="p">({</span><span class="s2">"config_path"</span><span class="p">:</span> <span class="n">path</span><span class="p">}):</span>
             <span class="n">config</span> <span class="o">=</span> <span class="n">TextConfig</span><span class="p">(</span><span class="o">**</span><span class="n">config</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">config</span>
 </code></pre></div></td></tr></table></div>
@@ -1482,7 +1482,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
 
 <h7 id="everyvoice.config.text_config.TextConfig.cleaners" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">cleaners</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_CLEANERS_S</span><span class="p">,</span> <span class="n">validate_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Global cleaners&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">cleaners</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="n">DEFAULT_CLEANERS_S</span><span class="p">,</span> <span class="n">validate_default</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Global cleaners'</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">'List of cleaners to apply to all datasets and run-time data. Superceded by language_cleaners when processing text in a language which has language-specific cleaners, which are in turn superceded by dataset_cleaners when processing a dataset which has dataset-specific cleaners.'</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
@@ -1524,7 +1524,7 @@ for your data. You can share the TextConfig with any models that need it and onl
 
 
 <h7 id="everyvoice.config.text_config.TextConfig.to_replace" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">to_replace</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">{},</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;Global text replacements&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">&#39;Map of match-to-replacement to apply on training and run-time text, before cleaners are applied. Superceded by language_to_replace when processing text in a language which has language-specific text replacements, which are in turn superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.&#39;</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">to_replace</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="p">{},</span> <span class="n">title</span><span class="o">=</span><span class="s1">'Global text replacements'</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s1">'Map of match-to-replacement to apply on training and run-time text, before cleaners are applied. Superceded by language_to_replace when processing text in a language which has language-specific text replacements, which are in turn superceded by dataset_to_replace when processing a dataset which has dataset-specific text replacements.'</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
@@ -1552,8 +1552,8 @@ for your data. You can share the TextConfig with any models that need it and onl
 </div><h3 id="symbols">Symbols<a class="headerlink" href="#symbols" title="Permanent link">&para;</a></h3>
 <p>Your symbol set is created by taking the union of all values defined. For example:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">symbols</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">dataset_0_characters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;a&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;b&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;c&#39;</span><span class="p p-Indicator">]</span>
-<span class="w">    </span><span class="nt">dataset_1_characters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">&#39;b&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;c&#39;</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">&#39;d&#39;</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">dataset_0_characters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">'a'</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">'b'</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">'c'</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">dataset_1_characters</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">'b'</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">'c'</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">'d'</span><span class="p p-Indicator">]</span>
 </code></pre></div>
 <p>Will create a symbol set equal to <code>{'a', 'b', 'c', 'd'}</code> (i.e. the union of both key/values). This allows you to train models with data from different languages, for example.</p>
 <div class="admonition important">
@@ -1658,71 +1658,71 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">145</span>
 <span class="normal">146</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Symbols</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
     <span class="n">silence</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
-        <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;&lt;SIL&gt;&quot;</span><span class="p">],</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;The symbol(s) used to indicate silence.&quot;</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">[</span><span class="s2">"&lt;SIL&gt;"</span><span class="p">],</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The symbol(s) used to indicate silence."</span>
     <span class="p">)</span>
     <span class="n">punctuation</span><span class="p">:</span> <span class="n">Punctuation</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span>
         <span class="n">default_factory</span><span class="o">=</span><span class="n">Punctuation</span><span class="p">,</span>
-        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;EveryVoice will combine punctuation and normalize it into a set of five permissible types of punctuation to help tractable training.&quot;</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"EveryVoice will combine punctuation and normalize it into a set of five permissible types of punctuation to help tractable training."</span><span class="p">,</span>
     <span class="p">)</span>
-    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">&quot;allow&quot;</span><span class="p">)</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">ConfigDict</span><span class="p">(</span><span class="n">extra</span><span class="o">=</span><span class="s2">"allow"</span><span class="p">)</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">all_except_punctuation</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the set containing all characters.&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Returns the set containing all characters."""</span>
         <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">w</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Punctuation</span><span class="p">)</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">v</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">for_representation_level</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">TargetTrainingTextRepresentationLevel</span> <span class="o">|</span> <span class="kc">None</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Like all_except_punctuation, but when level is given, only includes</span>
+<span class="w">        </span><span class="sd">"""Like all_except_punctuation, but when level is given, only includes</span>
 <span class="sd">        {label}_characters/{label}_phones fields matching that level. Fields</span>
 <span class="sd">        with no recognized suffix (get_label_from_symbol_key returns None) are</span>
-<span class="sd">        always included. level=None preserves all_except_punctuation&#39;s full-union</span>
-<span class="sd">        behavior.&quot;&quot;&quot;</span>
+<span class="sd">        always included. level=None preserves all_except_punctuation's full-union</span>
+<span class="sd">        behavior."""</span>
         <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_except_punctuation</span>
         <span class="n">suffix</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">&quot;characters&quot;</span>
+            <span class="s2">"characters"</span>
             <span class="k">if</span> <span class="n">level</span> <span class="o">==</span> <span class="n">TargetTrainingTextRepresentationLevel</span><span class="o">.</span><span class="n">characters</span>
-            <span class="k">else</span> <span class="s2">&quot;phones&quot;</span>
+            <span class="k">else</span> <span class="s2">"phones"</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="nb">set</span><span class="p">(</span>
             <span class="n">w</span>
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Punctuation</span><span class="p">)</span>
-            <span class="ow">and</span> <span class="p">(</span><span class="n">get_label_from_symbol_key</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">get_label_from_symbol_key</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">"_</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
             <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">v</span>
         <span class="p">)</span>
 
-    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;You cannot have the same symbol defined in punctuation as elsewhere.</span>
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"after"</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Symbols"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""You cannot have the same symbol defined in punctuation as elsewhere.</span>
 
 <span class="sd">        Raises:</span>
 <span class="sd">            ValueError: raised if a symbol from punctuation is found elsewhere</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            Symbols: The validated symbol set</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">for</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">punctuation</span><span class="o">.</span><span class="n">all</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_except_punctuation</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">&quot;Sorry, the symbol &#39;</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">&#39; occurs in both your declared punctuation and in your other symbol set. If you are training a model, please inspect your text configuration and either remove the symbol from the punctuation or other symbol set. If you are trying to use an existing model, it was probably trained with an older version of EveryVoice, please downgrade EveryVoice.&quot;</span>
+                    <span class="sa">f</span><span class="s2">"Sorry, the symbol '</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">' occurs in both your declared punctuation and in your other symbol set. If you are training a model, please inspect your text configuration and either remove the symbol from the punctuation or other symbol set. If you are trying to use an existing model, it was probably trained with an older version of EveryVoice, please downgrade EveryVoice."</span>
                 <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span>
 
-    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Except for `punctuation` &amp; `pad`, all user defined member variables</span>
+    <span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"after"</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Symbols"</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Except for `punctuation` &amp; `pad`, all user defined member variables</span>
 <span class="sd">        have to be a list of strings.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Punctuation</span><span class="p">):</span>
                 <span class="k">continue</span>
-            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;pad&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"pad"</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">v</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> must be a list&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> must be a list"</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
@@ -1840,20 +1840,20 @@ for your data. You can share the TextConfig with any models that need it and onl
 <span class="normal">128</span>
 <span class="normal">129</span>
 <span class="normal">130</span>
-<span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;You cannot have the same symbol defined in punctuation as elsewhere.</span>
+<span class="normal">131</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"after"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cannot_have_punctuation_in_symbol_set</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Symbols"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""You cannot have the same symbol defined in punctuation as elsewhere.</span>
 
 <span class="sd">    Raises:</span>
 <span class="sd">        ValueError: raised if a symbol from punctuation is found elsewhere</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        Symbols: The validated symbol set</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">punctuation</span><span class="o">.</span><span class="n">all</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">punctuation</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_except_punctuation</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">&quot;Sorry, the symbol &#39;</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">&#39; occurs in both your declared punctuation and in your other symbol set. If you are training a model, please inspect your text configuration and either remove the symbol from the punctuation or other symbol set. If you are trying to use an existing model, it was probably trained with an older version of EveryVoice, please downgrade EveryVoice.&quot;</span>
+                <span class="sa">f</span><span class="s2">"Sorry, the symbol '</span><span class="si">{</span><span class="n">punctuation</span><span class="si">}</span><span class="s2">' occurs in both your declared punctuation and in your other symbol set. If you are training a model, please inspect your text configuration and either remove the symbol from the punctuation or other symbol set. If you are trying to use an existing model, it was probably trained with an older version of EveryVoice, please downgrade EveryVoice."</span>
             <span class="p">)</span>
     <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>
@@ -1906,23 +1906,23 @@ behavior.</p>
 <span class="normal">114</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">for_representation_level</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span> <span class="n">level</span><span class="p">:</span> <span class="n">TargetTrainingTextRepresentationLevel</span> <span class="o">|</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Like all_except_punctuation, but when level is given, only includes</span>
+<span class="w">    </span><span class="sd">"""Like all_except_punctuation, but when level is given, only includes</span>
 <span class="sd">    {label}_characters/{label}_phones fields matching that level. Fields</span>
 <span class="sd">    with no recognized suffix (get_label_from_symbol_key returns None) are</span>
-<span class="sd">    always included. level=None preserves all_except_punctuation&#39;s full-union</span>
-<span class="sd">    behavior.&quot;&quot;&quot;</span>
+<span class="sd">    always included. level=None preserves all_except_punctuation's full-union</span>
+<span class="sd">    behavior."""</span>
     <span class="k">if</span> <span class="n">level</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">all_except_punctuation</span>
     <span class="n">suffix</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="s2">&quot;characters&quot;</span>
+        <span class="s2">"characters"</span>
         <span class="k">if</span> <span class="n">level</span> <span class="o">==</span> <span class="n">TargetTrainingTextRepresentationLevel</span><span class="o">.</span><span class="n">characters</span>
-        <span class="k">else</span> <span class="s2">&quot;phones&quot;</span>
+        <span class="k">else</span> <span class="s2">"phones"</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="nb">set</span><span class="p">(</span>
         <span class="n">w</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Punctuation</span><span class="p">)</span>
-        <span class="ow">and</span> <span class="p">(</span><span class="n">get_label_from_symbol_key</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;_</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">))</span>
+        <span class="ow">and</span> <span class="p">(</span><span class="n">get_label_from_symbol_key</span><span class="p">(</span><span class="n">k</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="sa">f</span><span class="s2">"_</span><span class="si">{</span><span class="n">suffix</span><span class="si">}</span><span class="s2">"</span><span class="p">))</span>
         <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">v</span>
     <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
@@ -1961,18 +1961,18 @@ have to be a list of strings.</p>
 <span class="normal">143</span>
 <span class="normal">144</span>
 <span class="normal">145</span>
-<span class="normal">146</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">&quot;after&quot;</span><span class="p">)</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;Symbols&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Except for `punctuation` &amp; `pad`, all user defined member variables</span>
+<span class="normal">146</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@model_validator</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="s2">"after"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">member_must_be_list_of_strings</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">"Symbols"</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Except for `punctuation` &amp; `pad`, all user defined member variables</span>
 <span class="sd">    have to be a list of strings.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">Punctuation</span><span class="p">):</span>
             <span class="k">continue</span>
-        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">&quot;pad&quot;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">k</span> <span class="o">==</span> <span class="s2">"pad"</span><span class="p">:</span>
             <span class="k">continue</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">v</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> must be a list&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> must be a list"</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="bp">self</span>
 </code></pre></div></td></tr></table></div>

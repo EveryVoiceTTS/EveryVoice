@@ -1156,100 +1156,100 @@ We will add a plugins for <a href="https://github.com/neoclide/coc-json">coc-jso
 Let's also add some key bindings to access <code>coc.nvim</code>'s functionalities.
 Refer to <a href="https://github.com/neoclide/coc.nvim#example-vim-configuration">Example Vim configuration</a> for a more complete example.</p>
 <div class="highlight"><pre><span></span><code>call plug#begin()
-Plug &#39;neoclide/coc.nvim&#39;, { &#39;do&#39;: &#39;npm ci&#39; }
+Plug 'neoclide/coc.nvim', { 'do': 'npm ci' }
 
 let g:coc_disable_startup_warning = 1
 
-&quot; Use tab for trigger completion with characters ahead and navigate
-&quot; NOTE: There&#39;s always complete item selected by default, you may want to enable
-&quot; no select by `&quot;suggest.noselect&quot;: true` in your configuration file
-&quot; NOTE: Use command &#39;:verbose imap &lt;tab&gt;&#39; to make sure tab is not mapped by
-&quot; other plugin before putting this into your config
+" Use tab for trigger completion with characters ahead and navigate
+" NOTE: There's always complete item selected by default, you may want to enable
+" no select by `"suggest.noselect": true` in your configuration file
+" NOTE: Use command ':verbose imap &lt;tab&gt;' to make sure tab is not mapped by
+" other plugin before putting this into your config
 inoremap &lt;silent&gt;&lt;expr&gt; &lt;TAB&gt;
 \ coc#pum#visible() ? coc#pum#next(1) :
-\ CheckBackspace() ? &quot;\&lt;Tab&gt;&quot; :
+\ CheckBackspace() ? "\&lt;Tab&gt;" :
 \ coc#refresh()
-inoremap &lt;expr&gt;&lt;S-TAB&gt; coc#pum#visible() ? coc#pum#prev(1) : &quot;\&lt;C-h&gt;&quot;
+inoremap &lt;expr&gt;&lt;S-TAB&gt; coc#pum#visible() ? coc#pum#prev(1) : "\&lt;C-h&gt;"
 
-&quot; Make &lt;CR&gt; to accept selected completion item or notify coc.nvim to format
-&quot; &lt;C-g&gt;u breaks current undo, please make your own choice
+" Make &lt;CR&gt; to accept selected completion item or notify coc.nvim to format
+" &lt;C-g&gt;u breaks current undo, please make your own choice
 inoremap &lt;silent&gt;&lt;expr&gt; &lt;CR&gt; coc#pum#visible() ? coc#pum#confirm()
-\: &quot;\&lt;C-g&gt;u\&lt;CR&gt;\&lt;c-r&gt;=coc#on_enter()\&lt;CR&gt;&quot;
+\: "\&lt;C-g&gt;u\&lt;CR&gt;\&lt;c-r&gt;=coc#on_enter()\&lt;CR&gt;"
 
 function! CheckBackspace() abort
-  let col = col(&#39;.&#39;) - 1
-  return !col || getline(&#39;.&#39;)[col - 1]  =~# &#39;\s&#39;
+  let col = col('.') - 1
+  return !col || getline('.')[col - 1]  =~# '\s'
 endfunction
 
-&quot; Use &lt;c-space&gt; to trigger completion
-if has(&#39;nvim&#39;)
+" Use &lt;c-space&gt; to trigger completion
+if has('nvim')
   inoremap &lt;silent&gt;&lt;expr&gt; &lt;c-space&gt; coc#refresh()
 else
   inoremap &lt;silent&gt;&lt;expr&gt; &lt;c-@&gt; coc#refresh()
 endif
 
-&quot; Use `[g` and `]g` to navigate diagnostics
-&quot; Use `:CocDiagnostics` to get all diagnostics of current buffer in location list
+" Use `[g` and `]g` to navigate diagnostics
+" Use `:CocDiagnostics` to get all diagnostics of current buffer in location list
 nmap &lt;silent&gt; [g &lt;Plug&gt;(coc-diagnostic-prev)
 nmap &lt;silent&gt; ]g &lt;Plug&gt;(coc-diagnostic-next)
 
-&quot; GoTo code navigation
+" GoTo code navigation
 nmap &lt;silent&gt; gd &lt;Plug&gt;(coc-definition)
 nmap &lt;silent&gt; gy &lt;Plug&gt;(coc-type-definition)
 nmap &lt;silent&gt; gi &lt;Plug&gt;(coc-implementation)
 nmap &lt;silent&gt; gr &lt;Plug&gt;(coc-references)
 
-&quot; Use K to show documentation in preview window
+" Use K to show documentation in preview window
 nnoremap &lt;silent&gt; K :call ShowDocumentation()&lt;CR&gt;
 
 function! ShowDocumentation()
-  if CocAction(&#39;hasProvider&#39;, &#39;hover&#39;)
-    call CocActionAsync(&#39;doHover&#39;)
+  if CocAction('hasProvider', 'hover')
+    call CocActionAsync('doHover')
   else
-    call feedkeys(&#39;K&#39;, &#39;in&#39;)
+    call feedkeys('K', 'in')
   endif
 endfunction
 
-&quot; Highlight the symbol and its references when holding the cursor
-autocmd CursorHold * silent call CocActionAsync(&#39;highlight&#39;)
+" Highlight the symbol and its references when holding the cursor
+autocmd CursorHold * silent call CocActionAsync('highlight')
 
-&quot; Symbol renaming
+" Symbol renaming
 nmap &lt;leader&gt;rn &lt;Plug&gt;(coc-rename)
 
-&quot; Formatting selected code
+" Formatting selected code
 xmap &lt;leader&gt;F  &lt;Plug&gt;(coc-format-selected)
 nmap &lt;leader&gt;F  &lt;Plug&gt;(coc-format-selected)
 
 augroup mygroup
 autocmd!
-&quot; Setup formatexpr specified filetype(s)
-autocmd FileType typescript,json setl formatexpr=CocAction(&#39;formatSelected&#39;)
-&quot; Update signature help on jump placeholder
-autocmd User CocJumpPlaceholder call CocActionAsync(&#39;showSignatureHelp&#39;)
+" Setup formatexpr specified filetype(s)
+autocmd FileType typescript,json setl formatexpr=CocAction('formatSelected')
+" Update signature help on jump placeholder
+autocmd User CocJumpPlaceholder call CocActionAsync('showSignatureHelp')
 augroup end
 
-&quot; Applying code actions to the selected code block
-&quot; Example: `&lt;leader&gt;aap` for current paragraph
+" Applying code actions to the selected code block
+" Example: `&lt;leader&gt;aap` for current paragraph
 xmap &lt;leader&gt;a  &lt;Plug&gt;(coc-codeaction-selected)
 nmap &lt;leader&gt;a  &lt;Plug&gt;(coc-codeaction-selected)
 
-&quot; Remap keys for applying code actions at the cursor position
+" Remap keys for applying code actions at the cursor position
 nmap &lt;leader&gt;ac  &lt;Plug&gt;(coc-codeaction-cursor)
-&quot; Remap keys for apply code actions affect whole buffer
+" Remap keys for apply code actions affect whole buffer
 nmap &lt;leader&gt;as  &lt;Plug&gt;(coc-codeaction-source)
-&quot; Apply the most preferred quickfix action to fix diagnostic on the current line
+" Apply the most preferred quickfix action to fix diagnostic on the current line
 nmap &lt;leader&gt;qf  &lt;Plug&gt;(coc-fix-current)
 
-&quot; Remap keys for applying refactor code actions
+" Remap keys for applying refactor code actions
 nmap &lt;silent&gt; &lt;leader&gt;re &lt;Plug&gt;(coc-codeaction-refactor)
 xmap &lt;silent&gt; &lt;leader&gt;r  &lt;Plug&gt;(coc-codeaction-refactor-selected)
 nmap &lt;silent&gt; &lt;leader&gt;r  &lt;Plug&gt;(coc-codeaction-refactor-selected)
 
-&quot; Run the Code Lens action on the current line
+" Run the Code Lens action on the current line
 nmap &lt;leader&gt;cl  &lt;Plug&gt;(coc-codelens-action)
 
-&quot; Map function and class text objects
-&quot; NOTE: Requires &#39;textDocument.documentSymbol&#39; support from the language server
+" Map function and class text objects
+" NOTE: Requires 'textDocument.documentSymbol' support from the language server
 xmap if &lt;Plug&gt;(coc-funcobj-i)
 omap if &lt;Plug&gt;(coc-funcobj-i)
 xmap af &lt;Plug&gt;(coc-funcobj-a)
@@ -1259,59 +1259,59 @@ omap ic &lt;Plug&gt;(coc-classobj-i)
 xmap ac &lt;Plug&gt;(coc-classobj-a)
 omap ac &lt;Plug&gt;(coc-classobj-a)
 
-&quot; Remap &lt;C-f&gt; and &lt;C-b&gt; to scroll float windows/popups
-if has(&#39;nvim-0.4.0&#39;) || has(&#39;patch-8.2.0750&#39;)
-nnoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-f&gt; coc#float#has_scroll() ? coc#float#scroll(1) : &quot;\&lt;C-f&gt;&quot;
-nnoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-b&gt; coc#float#has_scroll() ? coc#float#scroll(0) : &quot;\&lt;C-b&gt;&quot;
-inoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-f&gt; coc#float#has_scroll() ? &quot;\&lt;c-r&gt;=coc#float#scroll(1)\&lt;cr&gt;&quot; : &quot;\&lt;Right&gt;&quot;
-inoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-b&gt; coc#float#has_scroll() ? &quot;\&lt;c-r&gt;=coc#float#scroll(0)\&lt;cr&gt;&quot; : &quot;\&lt;Left&gt;&quot;
-vnoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-f&gt; coc#float#has_scroll() ? coc#float#scroll(1) : &quot;\&lt;C-f&gt;&quot;
-vnoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-b&gt; coc#float#has_scroll() ? coc#float#scroll(0) : &quot;\&lt;C-b&gt;&quot;
+" Remap &lt;C-f&gt; and &lt;C-b&gt; to scroll float windows/popups
+if has('nvim-0.4.0') || has('patch-8.2.0750')
+nnoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-f&gt; coc#float#has_scroll() ? coc#float#scroll(1) : "\&lt;C-f&gt;"
+nnoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-b&gt; coc#float#has_scroll() ? coc#float#scroll(0) : "\&lt;C-b&gt;"
+inoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-f&gt; coc#float#has_scroll() ? "\&lt;c-r&gt;=coc#float#scroll(1)\&lt;cr&gt;" : "\&lt;Right&gt;"
+inoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-b&gt; coc#float#has_scroll() ? "\&lt;c-r&gt;=coc#float#scroll(0)\&lt;cr&gt;" : "\&lt;Left&gt;"
+vnoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-f&gt; coc#float#has_scroll() ? coc#float#scroll(1) : "\&lt;C-f&gt;"
+vnoremap &lt;silent&gt;&lt;nowait&gt;&lt;expr&gt; &lt;C-b&gt; coc#float#has_scroll() ? coc#float#scroll(0) : "\&lt;C-b&gt;"
 endif
 
-&quot; Use CTRL-S for selections ranges
-&quot; Requires &#39;textDocument/selectionRange&#39; support of language server
+" Use CTRL-S for selections ranges
+" Requires 'textDocument/selectionRange' support of language server
 nmap &lt;silent&gt; &lt;C-s&gt; &lt;Plug&gt;(coc-range-select)
 xmap &lt;silent&gt; &lt;C-s&gt; &lt;Plug&gt;(coc-range-select)
 
-&quot; Add `:Format` command to format current buffer
-command! -nargs=0 Format :call CocActionAsync(&#39;format&#39;)
+" Add `:Format` command to format current buffer
+command! -nargs=0 Format :call CocActionAsync('format')
 
-&quot; Add `:Fold` command to fold current buffer
-command! -nargs=? Fold :call     CocAction(&#39;fold&#39;, &lt;f-args&gt;)
+" Add `:Fold` command to fold current buffer
+command! -nargs=? Fold :call     CocAction('fold', &lt;f-args&gt;)
 
-&quot; Add `:OR` command for organize imports of the current buffer
-command! -nargs=0 OR   :call     CocActionAsync(&#39;runCommand&#39;, &#39;editor.action.organizeImport&#39;)
+" Add `:OR` command for organize imports of the current buffer
+command! -nargs=0 OR   :call     CocActionAsync('runCommand', 'editor.action.organizeImport')
 
-&quot; Add (Neo)Vim&#39;s native statusline support
-&quot; NOTE: Please see `:h coc-status` for integrations with external plugins that
-&quot; provide custom statusline: lightline.vim, vim-airline
-set statusline^=%{coc#status()}%{get(b:,&#39;coc_current_function&#39;,&#39;&#39;)}
+" Add (Neo)Vim's native statusline support
+" NOTE: Please see `:h coc-status` for integrations with external plugins that
+" provide custom statusline: lightline.vim, vim-airline
+set statusline^=%{coc#status()}%{get(b:,'coc_current_function','')}
 
-&quot; TODO Space is our Leader, this might interfer with the following:
-&quot; Mappings for CoCList
-&quot; Show all diagnostics
+" TODO Space is our Leader, this might interfer with the following:
+" Mappings for CoCList
+" Show all diagnostics
 nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;a  :&lt;C-u&gt;CocList diagnostics&lt;cr&gt;
-&quot; Manage extensions
+" Manage extensions
 nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;e  :&lt;C-u&gt;CocList extensions&lt;cr&gt;
-&quot; Show commands
+" Show commands
 nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;c  :&lt;C-u&gt;CocList commands&lt;cr&gt;
-&quot; Find symbol of current document
+" Find symbol of current document
 nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;o  :&lt;C-u&gt;CocList outline&lt;cr&gt;
-&quot; Search workspace symbols
+" Search workspace symbols
 nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;s  :&lt;C-u&gt;CocList -I symbols&lt;cr&gt;
-&quot; Do default action for next item
+" Do default action for next item
 nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;j  :&lt;C-u&gt;CocNext&lt;CR&gt;
-&quot; Do default action for previous item
+" Do default action for previous item
 nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;k  :&lt;C-u&gt;CocPrev&lt;CR&gt;
-&quot; Resume latest coc list
+" Resume latest coc list
 nnoremap &lt;silent&gt;&lt;nowait&gt; &lt;space&gt;p  :&lt;C-u&gt;CocListResume&lt;CR&gt;
 call plug#end()
 </code></pre></div>
 <h3 id="install-the-new-plugins">Install the New Plugins<a class="headerlink" href="#install-the-new-plugins" title="Permanent link">&para;</a></h3>
 <p>Plugins don't automatically install themself thus you have to run the following command to install them.
 Start <code>vim</code> then do</p>
-<div class="highlight"><pre><span></span><code>vim<span class="w"> </span>+PlugInstall<span class="w"> </span><span class="s2">&quot;+:CocInstall coc-json&quot;</span><span class="w"> </span><span class="s2">&quot;+:CocInstall coc-yaml&quot;</span><span class="w"> </span>+:qall
+<div class="highlight"><pre><span></span><code>vim<span class="w"> </span>+PlugInstall<span class="w"> </span><span class="s2">"+:CocInstall coc-json"</span><span class="w"> </span><span class="s2">"+:CocInstall coc-yaml"</span><span class="w"> </span>+:qall
 </code></pre></div>
 <h3 id="compile-cocnvim">Compile coc.nvim<a class="headerlink" href="#compile-cocnvim" title="Permanent link">&para;</a></h3>
 <p>Once your plugins are installed, you will need to compile coc.</p>
@@ -1324,53 +1324,53 @@ The following example assumes that you have clone EveryVoice into <code>~/git/Ev
 Make the proper modifications to match where you have cloned EveryVoice.
 Also note that you have to change <code>/home/username</code> with your own username in the yaml section.</p>
 <div class="highlight"><pre><span></span><code><span class="p">{</span>
-<span class="w">  </span><span class="nt">&quot;json.schemas&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="nt">"json.schemas"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-0.1.json&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;fileMatch&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;everyvoice-shared-data.json&quot;</span>
+<span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-0.1.json"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"fileMatch"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"everyvoice-shared-data.json"</span>
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-shared-text-0.1.json&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;fileMatch&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;everyvoice-shared-text.json&quot;</span>
+<span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-shared-text-0.1.json"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"fileMatch"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"everyvoice-shared-text.json"</span>
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-spec-to-wav-0.1.json&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;fileMatch&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;everyvoice-spec-to-wav.json&quot;</span>
+<span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-spec-to-wav-0.1.json"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"fileMatch"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"everyvoice-spec-to-wav.json"</span>
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-spec-0.1.json&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;fileMatch&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;everyvoice-text-to-spec.json&quot;</span>
+<span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-spec-0.1.json"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"fileMatch"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"everyvoice-text-to-spec.json"</span>
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">&quot;url&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-wav-0.1.json&quot;</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;fileMatch&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">        </span><span class="s2">&quot;everyvoice-text-to-wav.json&quot;</span>
+<span class="w">      </span><span class="nt">"url"</span><span class="p">:</span><span class="w"> </span><span class="s2">"file://${userHome}/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-wav-0.1.json"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"fileMatch"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">"everyvoice-text-to-wav.json"</span>
 <span class="w">      </span><span class="p">]</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">],</span>
-<span class="w">  </span><span class="nt">&quot;yaml.schemas&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="nt">&quot;file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-0.1.json&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="s2">&quot;everyvoice-shared-data.yaml&quot;</span>
+<span class="w">  </span><span class="nt">"yaml.schemas"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-shared-data-0.1.json"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">"everyvoice-shared-data.yaml"</span>
 <span class="w">    </span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-shared-text-0.1.json&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="s2">&quot;everyvoice-shared-text.yaml&quot;</span>
+<span class="w">    </span><span class="nt">"file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-shared-text-0.1.json"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">"everyvoice-shared-text.yaml"</span>
 <span class="w">    </span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-spec-to-wav-0.1.json&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="s2">&quot;everyvoice-spec-to-wav.yaml&quot;</span>
+<span class="w">    </span><span class="nt">"file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-spec-to-wav-0.1.json"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">"everyvoice-spec-to-wav.yaml"</span>
 <span class="w">    </span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-spec-0.1.json&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="s2">&quot;everyvoice-text-to-spec.yaml&quot;</span>
+<span class="w">    </span><span class="nt">"file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-spec-0.1.json"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">"everyvoice-text-to-spec.yaml"</span>
 <span class="w">    </span><span class="p">],</span>
-<span class="w">    </span><span class="nt">&quot;file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-wav-0.1.json&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
-<span class="w">      </span><span class="s2">&quot;everyvoice-text-to-wav.yaml&quot;</span>
+<span class="w">    </span><span class="nt">"file://home/username/git/EveryVoice/everyvoice/.schema/everyvoice-text-to-wav-0.1.json"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">"everyvoice-text-to-wav.yaml"</span>
 <span class="w">    </span><span class="p">]</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
