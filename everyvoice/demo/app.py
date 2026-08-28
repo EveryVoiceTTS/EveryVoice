@@ -11,19 +11,16 @@ import torch
 import typer
 
 from everyvoice import logger
-from everyvoice.cli import AllowedDemoOutputFormats
-from everyvoice.config.type_definitions import DatasetTextRepresentation
+from everyvoice.cli import AllowedDemoOutputFormats, peek_text_representation
+from everyvoice.config.type_definitions import (
+    DatasetTextRepresentation,
+    SynthesizeOutputFormats,
+)
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
     synthesize_helper,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
     FastSpeech2,
-)
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
-    SynthesizeOutputFormats,
-)
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.utils import (
-    truncate_basename,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     HiFiGAN,
@@ -31,7 +28,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     HiFiGANGenerator,
     load_hifigan_from_checkpoint,
 )
-from everyvoice.utils import slugify
+from everyvoice.utils import slugify, truncate_basename
 from everyvoice.utils.heavy import get_device_from_accelerator
 
 os.environ["no_proxy"] = "localhost,127.0.0.1,::1"
@@ -57,6 +54,7 @@ def synthesize_audio(
     denylist,
     output_dir: Path,
     include_file_output=True,
+    text_representation: DatasetTextRepresentation = DatasetTextRepresentation.characters,
 ):
     if text == "":
         raise gr.Error(
@@ -94,7 +92,7 @@ def synthesize_audio(
         global_step=text_to_spec_model.config.training.max_steps,
         vocoder_global_step=vocoder_model.config.training.max_steps,
         output_type=(output_format, SynthesizeOutputFormats.wav),
-        text_representation=DatasetTextRepresentation.characters,
+        text_representation=DatasetTextRepresentation(text_representation),
         output_dir=output_dir,
         speaker=speaker,
         duration_control=duration_control,
@@ -334,6 +332,7 @@ def make_gradio_display(
     model: FastSpeech2,
     synthesize_audio_preset: partial,
     app_ui_config: dict[str, str],
+    show_text_type_selector: bool = False,
 ) -> gr.Blocks:
     """Create the Gradio Blocks for the demo app."""
 
@@ -390,6 +389,14 @@ def make_gradio_display(
                         label=app_ui_config.get("speaker_label", "Speaker"),
                     )
                 inputs = [inp_text, inp_slider, inp_lang, inp_speak]
+                if show_text_type_selector:
+                    inp_text_type = gr.Radio(
+                        choices=["characters", "phones"],
+                        value="characters",
+                        label=app_ui_config.get(
+                            "text_input_type_label", "Input Text Type"
+                        ),
+                    )
                 if output_list != [SynthesizeOutputFormats.wav]:
                     with gr.Row():
                         output_format = gr.Dropdown(
@@ -429,9 +436,35 @@ def make_gradio_display(
             synthesize_audio_preset = partial(
                 synthesize_audio_preset, style_reference=None
             )
+
+        # The text-type radio (when shown) is bound via a small wrapper rather
+        # than appended to `inputs` directly: `text_representation` sits after
+        # several conditionally-present/absent parameters (output_format,
+        # style_reference) in synthesize_audio's signature, so its position in
+        # `inputs` can't be relied on to line up. The wrapper reads the radio's
+        # live value as its own first argument and forwards everything else
+        # positionally, unchanged, injecting text_representation by keyword.
+        if show_text_type_selector:
+
+            def synthesize_with_text_type(text_type_choice, *rest, **kwargs):
+                return synthesize_audio_preset(
+                    *rest,
+                    text_representation=DatasetTextRepresentation(text_type_choice),
+                    **kwargs,
+                )
+
+            click_fn = synthesize_with_text_type
+            click_inputs = [inp_text_type, *inputs]
+        else:
+            click_fn = partial(
+                synthesize_audio_preset,
+                text_representation=DatasetTextRepresentation.characters,
+            )
+            click_inputs = inputs
+
         btn.click(
-            synthesize_audio_preset,
-            inputs=inputs,
+            click_fn,
+            inputs=click_inputs,
             outputs=outputs,
         )
     return demo
@@ -476,26 +509,39 @@ def load_model_from_checkpoint(
 
 def synthesize_audio_styletts2(
     text: str,
-    speaker: "str | None",  # selected display name from dropdown, or None in reference-upload mode
+    speaker: (
+        str | None
+    ),  # selected display name from dropdown, or None in reference-upload mode
     user_reference,  # filepath from Gradio Audio component, or None if not uploaded / cleared
     diffusion_steps: int,
     embedding_scale: float,
     acoustic_blend: float,
     prosody_blend: float,
-    language: "str | None" = None,  # selected language code, or None for monolingual checkpoints
+    language: (
+        str | None
+    ) = None,  # selected language code, or None for monolingual checkpoints
+    text_representation: (
+        DatasetTextRepresentation | str
+    ) = DatasetTextRepresentation.characters,  # from a live Radio, or a fixed gr.State when the selector is hidden
     *,
     module,
     mel_transform,
     device,
     output_dir: Path,
-    speaker_ref_s: "dict[str, torch.Tensor]",  # pre-computed at startup; empty in reference-only mode
-    default_ref_s: "torch.Tensor | None",  # pre-computed from --reference; None in speaker mode
+    speaker_ref_s: dict[
+        str, torch.Tensor
+    ],  # pre-computed at startup; empty in reference-only mode
+    default_ref_s: (
+        torch.Tensor | None
+    ),  # pre-computed from --reference; None in speaker mode
     allowlist: list[str],
     denylist: list[str],
 ) -> str:
     """Synthesize one utterance with StyleTTS2 and return the path to the saved WAV."""
     if not text or not text.strip():
         raise gr.Error("Please provide text to synthesize.")
+
+    text_representation = DatasetTextRepresentation(text_representation)
 
     norm_text = normalize_text(text)
     if allowlist and norm_text not in allowlist:
@@ -532,34 +578,55 @@ def synthesize_audio_styletts2(
             "No reference audio available. Please upload a reference audio file."
         )
 
-    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.text_utils import (
-        TextCleaner,
+    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.utils_heavy import (
+        get_styletts2_text_split_params,
     )
+    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.utils import (
+        encode_text_for_inference,
+    )
+    from everyvoice.text.textsplit import chunk_text
 
-    text_cleaner = TextCleaner()
-    tokens = torch.LongTensor(text_cleaner(text)).unsqueeze(0).to(device)
-    if tokens.numel() == 0:
-        raise gr.Error(f"Text produced no tokens: {text!r}")
-    input_lengths = torch.LongTensor([tokens.size(1)]).to(device)
+    split_text, split_params = get_styletts2_text_split_params(
+        module, language, text_representation
+    )
+    chunks = chunk_text(text, *split_params) if split_text else [text]
 
     lang_emb = None
     if language is not None and hasattr(module, "language_embedding"):
         lang_id = torch.LongTensor([module.lang2id[language]]).to(device)
         lang_emb = module.language_embedding(lang_id)
 
-    try:
-        audio = module._synthesize_text(
-            tokens,
-            input_lengths,
-            ref_s=ref_s,
-            diffusion_steps=diffusion_steps,
-            embedding_scale=embedding_scale,
-            acoustic_blend=acoustic_blend,
-            prosody_blend=prosody_blend,
-            lang_emb=lang_emb,
-        )
-    except Exception as e:
-        raise gr.Error(str(e))
+    chunk_wavs = []
+    for chunk in chunks:
+        try:
+            tokens = encode_text_for_inference(
+                module, chunk, language, text_representation
+            ).to(device)
+        except (ValueError, NotImplementedError) as e:
+            raise gr.Error(str(e))
+        input_lengths = torch.LongTensor([tokens.size(1)]).to(device)
+
+        try:
+            chunk_wavs.append(
+                module._synthesize_text(
+                    tokens,
+                    input_lengths,
+                    ref_s=ref_s,
+                    diffusion_steps=diffusion_steps,
+                    embedding_scale=embedding_scale,
+                    acoustic_blend=acoustic_blend,
+                    prosody_blend=prosody_blend,
+                    lang_emb=lang_emb,
+                )
+            )
+        except Exception as e:
+            raise gr.Error(str(e))
+
+    import numpy as np
+
+    # Concatenate per-chunk waveforms with no inserted silence, matching the
+    # CLI's StyleTTS2PredictionWritingWavCallback.
+    audio = np.concatenate(chunk_wavs) if len(chunk_wavs) > 1 else chunk_wavs[0]
 
     import soundfile as sf
 
@@ -570,9 +637,10 @@ def synthesize_audio_styletts2(
 
 def make_gradio_display_styletts2(
     synthesize_fn,
-    speaker_list: "GradioChoices",
-    default_reference: "Path | None" = None,
-    language_list: "GradioChoices" = [],
+    speaker_list: GradioChoices,
+    default_reference: Path | None = None,
+    language_list: GradioChoices = [],
+    show_text_type_selector: bool = False,
 ) -> "gr.Blocks":
     """Build the Gradio Blocks for the StyleTTS2 demo.
 
@@ -581,10 +649,11 @@ def make_gradio_display_styletts2(
     empty the reference audio widget is the primary input (reference-upload
     mode) and ``speaker`` is a hidden ``gr.State(None)`` placeholder instead.
 
-    Both ``speaker`` and ``language`` are always appended to ``inputs`` —
-    as a real dropdown or, when unavailable, a hidden ``gr.State(None)``
-    placeholder — rather than being conditionally omitted, so their
-    positions never shift relative to the fixed ``synthesize_fn`` signature.
+    ``speaker``, ``language``, and (per ``show_text_type_selector``) the
+    input-text-type control are always appended to ``inputs`` — as a real
+    dropdown/radio or, when unavailable, a hidden ``gr.State`` placeholder —
+    rather than being conditionally omitted, so their positions never shift
+    relative to the fixed ``synthesize_fn`` signature.
     """
     has_speakers = bool(speaker_list)
     interactive_speaker = len(speaker_list) > 1
@@ -650,6 +719,18 @@ def make_gradio_display_styletts2(
                     inp_prosody_blend = gr.Slider(
                         0.0, 1.0, value=0.7, step=0.05, label="Prosody Blend"
                     )
+
+                if show_text_type_selector:
+                    inp_text_type = gr.Radio(
+                        choices=["characters", "phones"],
+                        value="characters",
+                        label="Input Text Type",
+                    )
+                else:
+                    # Hidden placeholder: this checkpoint was not trained on
+                    # phones, so it can only ever accept characters.
+                    inp_text_type = gr.State("characters")
+
                 inputs.extend(
                     [
                         inp_diffusion_steps,
@@ -657,6 +738,7 @@ def make_gradio_display_styletts2(
                         inp_acoustic_blend,
                         inp_prosody_blend,
                         inp_language,
+                        inp_text_type,
                     ]
                 )
                 btn = gr.Button("Synthesize")
@@ -670,8 +752,8 @@ def make_gradio_display_styletts2(
 def create_demo_app_styletts2(
     model_path: Path,
     output_dir: Path,
-    speakers: "dict[str, Path]",
-    default_reference: "Path | None" = None,
+    speakers: dict[str, Path],
+    default_reference: Path | None = None,
     accelerator: str = "auto",
     allowlist: list[str] = [],
     denylist: list[str] = [],
@@ -711,7 +793,7 @@ def create_demo_app_styletts2(
         )
 
     # Pre-compute the default reference encoding so synthesis never re-reads disk
-    default_ref_s: "torch.Tensor | None" = None
+    default_ref_s: torch.Tensor | None = None
     if default_reference is not None and default_reference.exists():
         logger.info(
             f"Pre-computing style encoding for default reference {default_reference}"
@@ -742,11 +824,17 @@ def create_demo_app_styletts2(
     if hasattr(model, "language_embedding") and lang2id:
         language_list = set_language_list(languages, sorted(lang2id))
 
+    # Only checkpoints trained on phones benefit from an input-type selector:
+    # characters-only models can't accept phones, and phonological_features
+    # can't be typed by hand, so both cases just hide the control.
+    show_text_type_selector = peek_text_representation(model_path) == "phones"
+
     return make_gradio_display_styletts2(
         synthesize_fn,
         speaker_list,
         default_reference=default_reference if not speakers else None,
         language_list=language_list,
+        show_text_type_selector=show_text_type_selector,
     )
 
 
@@ -815,6 +903,13 @@ def create_demo_app(
         model_languages=model_languages,
         model_speakers=model_speakers,
     )
+    # Only checkpoints trained on phones benefit from an input-type selector:
+    # characters-only models can't accept phones, and phonological_features
+    # can't be typed by hand, so both cases just hide the control.
+    show_text_type_selector = (
+        peek_text_representation(Path(text_to_spec_model_path)) == "phones"
+    )
+
     return make_gradio_display(
         language_list,
         speaker_list,
@@ -823,4 +918,5 @@ def create_demo_app(
         model,
         synthesize_audio_preset,
         app_ui_config,
+        show_text_type_selector=show_text_type_selector,
     )

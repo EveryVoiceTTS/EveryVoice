@@ -1,4 +1,5 @@
 import csv
+import hashlib
 import os
 import re
 import sys
@@ -56,6 +57,53 @@ def slugify(
         return slugified_text
     else:
         return slugified_text[:limit_to_n_characters]
+
+
+BASENAME_MAX_LENGTH = 20
+
+
+def truncate_basename(basename: str) -> str:
+    """
+    Shortens basename to BASENAME_MAX_LENGTH and uses the rest of basename to generate a sha1.
+    This is done to make sure the file name stays short but that two utterances
+    starting with the same prefix doesn't get ovverridden.
+
+    >>> truncate_basename("a short name")
+    'a-short-name'
+
+    >>> len(truncate_basename("this is a very long basename that exceeds the limit"))
+    29
+    """
+    basename_cleaned = slugify(basename)
+    if len(basename_cleaned) <= BASENAME_MAX_LENGTH:
+        return basename_cleaned
+
+    m = hashlib.sha1()
+    m.update(bytes(basename, encoding="UTF-8"))
+    return basename_cleaned[:BASENAME_MAX_LENGTH] + "-" + m.hexdigest()[:8]
+
+
+def resolve_chunked_basename(chunk_basenames: list[str], full_text: str) -> str:
+    """
+    Determine the basename to use for a (possibly multi-chunk) synthesized utterance.
+
+    A filelist-provided basename is duplicated identically across every chunk
+    of the same utterance, so if all of ``chunk_basenames`` agree, that value
+    is a real basename and is used as-is, however long it is: this is what
+    lets synthesized files line up with the filenames a fine-tuning
+    dataloader expects. Otherwise, no real basename was available and each
+    chunk was assigned its own auto-generated slug, so we fall back to
+    slugifying/truncating the reassembled raw text of the whole utterance.
+
+    >>> resolve_chunked_basename(["utt1", "utt1", "utt1"], "some text")
+    'utt1'
+
+    >>> resolve_chunked_basename(["chunk-a", "chunk-b"], "Hello world")
+    'Hello-world'
+    """
+    if len(set(chunk_basenames)) == 1:
+        return chunk_basenames[0]
+    return truncate_basename(slugify(full_text))
 
 
 def filter_dataset_based_on_target_text_representation_level(

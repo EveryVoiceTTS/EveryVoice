@@ -539,3 +539,193 @@ class TestDemo:
             assert "appears to be a standalone vocoder checkpoint" in flatten_log(
                 result.output
             )
+
+    def test_peek_text_representation_real_checkpoint(self, stubbed_model):
+        """A real FastSpeech2 checkpoint (default config) should read back 'characters'."""
+        from everyvoice.cli import peek_text_representation
+
+        _, spec_model_path = stubbed_model
+        assert peek_text_representation(spec_model_path) == "characters"
+
+    def test_peek_text_representation_fs2_shape(self):
+        """FastSpeech2 stores its config directly under hyper_parameters.config.model."""
+        import torch
+
+        from everyvoice.cli import peek_text_representation
+
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            fake_ckpt = Path(tmpdir_str) / "fs2.ckpt"
+            torch.save(
+                {
+                    "hyper_parameters": {
+                        "config": {
+                            "model": {"target_text_representation_level": "phones"}
+                        }
+                    },
+                },
+                fake_ckpt,
+            )
+            assert peek_text_representation(fake_ckpt) == "phones"
+
+    def test_peek_text_representation_styletts2_shape(self):
+        """StyleTTS2 wraps its config under hyper_parameters.config.ev_config.model."""
+        import torch
+
+        from everyvoice.cli import peek_text_representation
+
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            fake_ckpt = Path(tmpdir_str) / "styletts2.ckpt"
+            torch.save(
+                {
+                    "hyper_parameters": {
+                        "config": {
+                            "ev_config": {
+                                "model": {"target_text_representation_level": "phones"}
+                            }
+                        }
+                    },
+                },
+                fake_ckpt,
+            )
+            assert peek_text_representation(fake_ckpt) == "phones"
+
+    def test_peek_text_representation_missing_or_unreadable(self):
+        """Safe default: hide the selector (return "") rather than raising."""
+        from everyvoice.cli import peek_text_representation
+
+        assert peek_text_representation(Path(os.devnull)) == ""
+
+        with tempfile.TemporaryDirectory() as tmpdir_str:
+            import torch
+
+            # A checkpoint with no hyper_parameters/config at all (legacy shape).
+            fake_ckpt = Path(tmpdir_str) / "legacy.ckpt"
+            torch.save({"state_dict": {}}, fake_ckpt)
+            assert peek_text_representation(fake_ckpt) == ""
+
+    def test_create_demo_app_shows_text_type_selector_for_phones_checkpoint(
+        self, stubbed_model, stubbed_vocoder
+    ):
+        """The demo should still build and launch without error when the
+        checkpoint is peeked as phones-trained (input-type selector shown)."""
+        _, vocoder_path = stubbed_vocoder
+        _, spec_model_path = stubbed_model
+
+        with (
+            mock.patch(
+                "everyvoice.cli._peek_model_class",
+                return_value="FastSpeech2",
+            ),
+            mock.patch(
+                "everyvoice.demo.app.peek_text_representation",
+                return_value="phones",
+            ),
+            mock.patch(
+                "everyvoice.demo.app.load_model_from_checkpoint",
+                side_effect=self.mock_demo_load_model_from_checkpoint,
+            ),
+            mock.patch(
+                "everyvoice.base_cli.helpers.inference_base_command",
+                side_effect=mock_function_placeholder,
+            ),
+            mock.patch(
+                "everyvoice.demo.app.synthesize_audio",
+                side_effect=mock_function_placeholder2,
+            ),
+            mock.patch(
+                "gradio.Blocks.launch",
+                return_value="Launching gradio app blocks",
+                side_effect=mock_function_placeholder2,
+            ),
+        ):
+            result = self.runner.invoke(
+                app,
+                [
+                    "demo",
+                    str(spec_model_path),
+                    "--vocoder",
+                    str(vocoder_path),
+                ],
+            )
+        assert result.exit_code == 0
+
+
+class TestStyleTTS2DemoChunking:
+    """The StyleTTS2 demo path should chunk long text the same way its CLI does,
+    concatenating the per-chunk waveforms into a single output file."""
+
+    @staticmethod
+    def _fake_module(split_text: bool):
+        import types
+
+        import numpy as np
+
+        module = types.SimpleNamespace()
+        module.config = {
+            "ev_config": types.SimpleNamespace(
+                text=types.SimpleNamespace(
+                    split_text=split_text,
+                    boundaries={"eng": types.SimpleNamespace(strong="!?.", weak=":;,")},
+                )
+            )
+        }
+        module.sr = 16000
+        module.calls = []  # one entry per _synthesize_text call
+
+        def _synthesize_text(_tokens, _input_lengths, **kwargs):
+            module.calls.append(kwargs)
+            return np.zeros(100, dtype=np.float32)
+
+        module._synthesize_text = _synthesize_text
+        # No language_embedding attribute -> lang_emb stays None
+        return module
+
+    _LONG_TEXT = " ".join(f"This is sentence number {i}." for i in range(20))
+
+    def _synth(self, tmp_path, module):
+        import torch
+
+        from everyvoice.demo.app import synthesize_audio_styletts2
+
+        with mock.patch(
+            "everyvoice.model.e2e.StyleTTS2_lightning.styletts2.utils.encode_text_for_inference",
+            side_effect=lambda *_a, **_kw: torch.zeros((1, 5), dtype=torch.long),
+        ):
+            return synthesize_audio_styletts2(
+                self._LONG_TEXT,
+                "s1",
+                None,
+                5,
+                1.0,
+                0.3,
+                0.7,
+                "eng",
+                module=module,
+                mel_transform=None,
+                device="cpu",
+                output_dir=tmp_path,
+                speaker_ref_s={"s1": torch.zeros(1)},
+                default_ref_s=None,
+                allowlist=[],
+                denylist=[],
+            )
+
+    def test_long_text_is_chunked_and_concatenated(self, tmp_path):
+        import soundfile as sf
+
+        from everyvoice.text.textsplit import chunk_text
+
+        expected_chunks = chunk_text(self._LONG_TEXT, 100, 200, "!?.", ":;,")
+        assert len(expected_chunks) > 1  # sanity: input is long enough to split
+
+        module = self._fake_module(split_text=True)
+        out_path = self._synth(tmp_path, module)
+
+        assert len(module.calls) == len(expected_chunks)
+        audio, _ = sf.read(out_path)
+        assert len(audio) == 100 * len(expected_chunks)
+
+    def test_no_chunking_when_split_text_disabled(self, tmp_path):
+        module = self._fake_module(split_text=False)
+        self._synth(tmp_path, module)
+        assert len(module.calls) == 1
