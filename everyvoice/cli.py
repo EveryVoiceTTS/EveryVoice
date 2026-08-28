@@ -698,6 +698,33 @@ def _peek_model_class(checkpoint_path: Path) -> str:
     return ckpt.get("model_info", {}).get("name", "")
 
 
+def _peek_text_representation(checkpoint_path: Path) -> str:
+    """Load a checkpoint header and return the model's trained text representation.
+
+    Returns "" (safe default: callers should treat this as "hide any input-type
+    selector, assume characters") when the checkpoint can't be read, has no
+    attached config, or predates this field.
+    """
+    import torch
+
+    try:
+        ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
+    except Exception:
+        return ""
+    config = ckpt.get("hyper_parameters", {}).get("config", {})
+    if not isinstance(config, dict):
+        return ""
+    # FastSpeech2 stores its config directly under "model"; StyleTTS2 wraps it
+    # under an "ev_config" key (see StyleTTS2Module.on_save_checkpoint).
+    model_config = config.get("ev_config", config)
+    if not isinstance(model_config, dict):
+        return ""
+    model_section = model_config.get("model", {})
+    if not isinstance(model_section, dict):
+        return ""
+    return model_section.get("target_text_representation_level", "") or ""
+
+
 def _load_list_file(path: Optional[Path]) -> list[str]:
     """Read a plain-text word/utterance list from *path*, one entry per line."""
     if path is None:
