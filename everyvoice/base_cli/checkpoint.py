@@ -107,10 +107,10 @@ def summarize_styletts2_model(model_path: Path, checkpoint: dict) -> None:
     from torchinfo import summary
 
     from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.lightning import (
-        StyleTTS2Module,
+        StyleTTS2,
     )
 
-    model = StyleTTS2Module.load_from_checkpoint(model_path)
+    model = StyleTTS2.load_from_checkpoint(model_path)
     print(summary(model, None, verbose=0))
 
 
@@ -220,6 +220,8 @@ def inspect(
                 "FastSpeech2": summarize_fs2_model,
                 "HiFiGAN": summarize_hfgl_model,
                 "HiFiGANGenerator": summarize_hfgl_generator_model,
+                "StyleTTS2": summarize_styletts2_model,
+                # Pre-rename name still present in older checkpoints.
                 "StyleTTS2Module": summarize_styletts2_model,
             }
             summarizer = model_summarizers.get(checkpoint["model_info"]["name"], None)

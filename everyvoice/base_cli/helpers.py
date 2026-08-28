@@ -19,8 +19,8 @@ from everyvoice.config.type_definitions import TargetTrainingTextRepresentationL
 from everyvoice.exceptions import InvalidConfiguration
 from everyvoice.model.e2e.config import StyleTTS2Config
 from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.lightning import (
+    StyleTTS2,
     StyleTTS2DataModule,
-    StyleTTS2Module,
 )
 from everyvoice.model.feature_prediction.config import FastSpeech2Config
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.dataset import (
@@ -181,7 +181,7 @@ def train_base_command(
         type[FastSpeech2DataModule],
         type[HiFiGANDataModule],
     ],
-    model: Union[type[StyleTTS2Module], type[FastSpeech2], type[HiFiGAN]],
+    model: Union[type[StyleTTS2], type[FastSpeech2], type[HiFiGAN]],
     monitor: str,
     # Must include the above in model-specific command
     config_args: list[str],
@@ -291,9 +291,7 @@ def train_base_command(
             sys.exit(1)
         logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
-        if isinstance(model_obj, StyleTTS2Module) or isinstance(
-            config, StyleTTS2Config
-        ):
+        if isinstance(model_obj, StyleTTS2) or isinstance(config, StyleTTS2Config):
             optimizer_diff = DeepDiff((), ())
             model_diff = DeepDiff((), ())
         else:

@@ -454,6 +454,9 @@ class TestDemo:
             fake_ckpt = tmpdir / "styletts2.ckpt"
             torch.save(
                 {
+                    # "StyleTTS2Module" is the pre-rename class name; older
+                    # checkpoints carry it and must still dispatch to the
+                    # StyleTTS2 demo path.
                     "model_info": {"name": "StyleTTS2Module"},
                     "hyper_parameters": {"mode": "second", "config": {}},
                     "state_dict": {},
@@ -655,13 +658,13 @@ class TestStyleTTS2DemoChunking:
     concatenating the per-chunk waveforms into a single output file."""
 
     @staticmethod
-    def _fake_module(split_text: bool):
+    def _fake_model(split_text: bool):
         import types
 
         import numpy as np
 
-        module = types.SimpleNamespace()
-        module.config = {
+        model = types.SimpleNamespace()
+        model.config = {
             "ev_config": types.SimpleNamespace(
                 text=types.SimpleNamespace(
                     split_text=split_text,
@@ -669,20 +672,20 @@ class TestStyleTTS2DemoChunking:
                 )
             )
         }
-        module.sr = 16000
-        module.calls = []  # one entry per _synthesize_text call
+        model.sr = 16000
+        model.calls = []  # one entry per _synthesize_text call
 
         def _synthesize_text(_tokens, _input_lengths, **kwargs):
-            module.calls.append(kwargs)
+            model.calls.append(kwargs)
             return np.zeros(100, dtype=np.float32)
 
-        module._synthesize_text = _synthesize_text
+        model._synthesize_text = _synthesize_text
         # No language_embedding attribute -> lang_emb stays None
-        return module
+        return model
 
     _LONG_TEXT = " ".join(f"This is sentence number {i}." for i in range(20))
 
-    def _synth(self, tmp_path, module):
+    def _synth(self, tmp_path, model):
         import torch
 
         from everyvoice.demo.app import synthesize_audio_styletts2
@@ -700,7 +703,7 @@ class TestStyleTTS2DemoChunking:
                 0.3,
                 0.7,
                 "eng",
-                module=module,
+                model=model,
                 mel_transform=None,
                 device="cpu",
                 output_dir=tmp_path,
@@ -718,14 +721,14 @@ class TestStyleTTS2DemoChunking:
         expected_chunks = chunk_text(self._LONG_TEXT, 100, 200, "!?.", ":;,")
         assert len(expected_chunks) > 1  # sanity: input is long enough to split
 
-        module = self._fake_module(split_text=True)
-        out_path = self._synth(tmp_path, module)
+        model = self._fake_model(split_text=True)
+        out_path = self._synth(tmp_path, model)
 
-        assert len(module.calls) == len(expected_chunks)
+        assert len(model.calls) == len(expected_chunks)
         audio, _ = sf.read(out_path)
         assert len(audio) == 100 * len(expected_chunks)
 
     def test_no_chunking_when_split_text_disabled(self, tmp_path):
-        module = self._fake_module(split_text=False)
-        self._synth(tmp_path, module)
-        assert len(module.calls) == 1
+        model = self._fake_model(split_text=False)
+        self._synth(tmp_path, model)
+        assert len(model.calls) == 1
