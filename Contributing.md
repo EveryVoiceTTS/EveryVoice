@@ -215,6 +215,7 @@ carefully look at the output for each submodule, making sure you agree with wher
 To publish a new version of the project, follow these steps:
 
 1. **Determine the Version Bump**
+
    Decide whether your changes constitute a:
    - **Major** version bump (breaking changes),
    - **Minor** version bump (new features, backward-compatible, any change to the schema), or
@@ -231,6 +232,7 @@ To publish a new version of the project, follow these steps:
    - Look for references to the current or most recent version and update them if necessary.
 
 4. **Update Schema (for Major/Minor bumps)**
+
    If you bumped a **major** or **minor** version:
    - Run `everyvoice update-schema`. You may need to delete existing schema files if you get an error message, but you should only do so if you are sure that those schema files have not already been published. I.e. we might already have schema files related to an alpha release - those can be overwritten, but we should never change published schema files.
    - Commit the resulting changes.
@@ -247,8 +249,9 @@ To publish a new version of the project, follow these steps:
    ```
 
 7. **Update SchemaStore (for Major/Minor bumps)**
-    Once the CI has built and released your version, if you bumped a major or minor version:
 
-    Submit a PR to [SchemaStore](https://github.com/SchemaStore/schemastore) to update the schema reference.
+   Once the CI has built and released your version, if you bumped a major or minor version:
 
-    The only file you need to change is: `src/api/json/catalog.json`
+   Submit a PR to [SchemaStore](https://github.com/SchemaStore/schemastore) to update the schema reference.
+
+   The only file you need to change is: `src/api/json/catalog.json`

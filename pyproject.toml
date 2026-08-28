@@ -170,6 +170,7 @@ exclude = [
   "setup.cfg",
   "setup.py",
   "tests/",
+  "uv.lock",
   # ".gitignore",  # Needed/Used by hatch to filter-out files
 ]
 
@@ -194,6 +195,7 @@ exclude = [
   "setup.cfg",
   "setup.py",
   "tests/",
+  "uv.lock",
 ]
 
 [tool.isort]
