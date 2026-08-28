@@ -17,3 +17,13 @@ class TargetTrainingTextRepresentationLevel(str, Enum):
     characters = "characters"
     ipa_phones = "phones"
     phonological_features = "phonological_features"
+
+
+class SynthesizeOutputFormats(str, Enum):
+    """Valid output formats for synthesize"""
+
+    wav = "wav"
+    spec = "spec"
+    textgrid = "textgrid"
+    readalong_xml = "readalong-xml"
+    readalong_html = "readalong-html"

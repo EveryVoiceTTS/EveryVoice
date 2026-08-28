@@ -6,6 +6,51 @@
 # License: Apache License 2.0
 
 import re
+from typing import TYPE_CHECKING, Optional
+
+from everyvoice import logger
+
+if TYPE_CHECKING:
+    from everyvoice.config.text_config import TextConfig
+
+
+def resolve_split_params(
+    text_config: "TextConfig",
+    language: Optional[str],
+    *,
+    desired_length: int = 100,
+    max_length: int = 200,
+) -> "tuple[bool, tuple[int, int, str, str]]":
+    """Resolve the parameters for text chunking from a model's ``TextConfig``.
+
+    Returns ``(split_text, (desired_length, max_length, strong_boundaries,
+    weak_boundaries))``, where the second element can be splatted straight into
+    ``chunk_text``. ``desired_length``/``max_length`` are passed through as given
+    -- callers that have per-model length statistics resolve those first and
+    supply them here; the boundary lookup (and its fallbacks) is shared.
+    """
+    split_text: bool = text_config.split_text
+
+    strong_boundaries = ""
+    weak_boundaries = ""
+
+    if split_text:
+        try:
+            effective_language = language or ""
+            strong_boundaries = text_config.boundaries[effective_language].strong
+            weak_boundaries = text_config.boundaries[effective_language].weak
+        except KeyError:
+            logger.warning(
+                f"Boundaries for language '{language}' could not be found in "
+                "TextConfig. Chunking will not be performed."
+            )
+
+    return split_text, (
+        int(desired_length),
+        int(max_length),
+        strong_boundaries,
+        weak_boundaries,
+    )
 
 
 def chunk_text(  # noqa: C901

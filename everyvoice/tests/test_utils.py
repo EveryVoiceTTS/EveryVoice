@@ -22,7 +22,13 @@ from everyvoice.config.validation_helpers import (
     relative_to_absolute_path,
 )
 from everyvoice.tests.stubs import capture_logs, patch_logger
-from everyvoice.utils import write_filelist
+from everyvoice.utils import (
+    BASENAME_MAX_LENGTH,
+    resolve_chunked_basename,
+    slugify,
+    truncate_basename,
+    write_filelist,
+)
 from everyvoice.utils.heavy import get_device_from_accelerator
 
 
@@ -55,6 +61,60 @@ class UtilsTest(TestCase):
             assert headers[2] == "characters"
             assert headers[3] == "phones"
             assert headers[4] == "extra"
+
+
+class TruncateBasenameTest(TestCase):
+    """Testing truncate_basename() (moved here from the FastSpeech2 submodule)."""
+
+    def test_short_name(self):
+        """Short utterances produce file names that are not truncated."""
+        assert truncate_basename("Short utterance") == "Short-utterance"
+
+    def test_long_name(self):
+        """Utterances longer than BASENAME_MAX_LENGTH get truncated and gain a
+        sha1 suffix in case two utterances share a prefix."""
+        output = truncate_basename("A utterance that is too long")
+        assert len(output) == BASENAME_MAX_LENGTH + 1 + 8
+        assert output == "A-utterance-that-is--d607fba8"
+
+    def test_limit(self):
+        """Utterances exactly BASENAME_MAX_LENGTH long are not truncated."""
+        input = "A" * BASENAME_MAX_LENGTH
+        assert truncate_basename(input) == input
+
+    def test_limit_plus_one(self):
+        """One character over the limit triggers truncation."""
+        output = truncate_basename("A" * (BASENAME_MAX_LENGTH + 1))
+        assert len(output) == BASENAME_MAX_LENGTH + 1 + 8
+
+    def test_same_prefix_different_names(self):
+        """Two long utterances with the same prefix yield different file names."""
+        prefix = "A" * BASENAME_MAX_LENGTH
+        output1 = truncate_basename(prefix + "1")
+        output2 = truncate_basename(prefix + "2")
+        assert output1 != output2
+        pattern = re.compile(prefix + r"-[0-9A-Fa-f]{8}")
+        assert pattern.search(output1), f"{output1} does not match {pattern}"
+        assert pattern.search(output2), f"{output2} does not match {pattern}"
+
+
+class ResolveChunkedBasenameTest(TestCase):
+    def test_all_chunks_agree_returns_shared_basename(self):
+        """A filelist basename is duplicated across chunks: use it verbatim,
+        however long, so synthesized files line up with dataloader filenames."""
+        long_name = "a-real-filelist-basename-that-is-quite-long"
+        assert (
+            resolve_chunked_basename([long_name, long_name, long_name], "some text")
+            == long_name
+        )
+
+    def test_mixed_chunks_fall_back_to_truncated_slug(self):
+        """Auto-generated per-chunk slugs disagree, so fall back to a
+        truncated slug of the reassembled text."""
+        full_text = "Hello world"
+        assert resolve_chunked_basename(["chunk-a", "chunk-b"], full_text) == (
+            truncate_basename(slugify(full_text))
+        )
 
 
 class ContextableBaseModel(BaseModel):

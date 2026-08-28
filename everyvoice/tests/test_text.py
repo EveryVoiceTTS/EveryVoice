@@ -13,11 +13,11 @@ from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
-from everyvoice.tests.stubs import TEST_CONTACT
+from everyvoice.tests.stubs import TEST_CONTACT, capture_logs
 from everyvoice.text.features import N_PHONOLOGICAL_FEATURES
 from everyvoice.text.lookups import build_lookup, lookuptables_from_data
 from everyvoice.text.text_processor import JOINER_SUBSTITUTION, TextProcessor
-from everyvoice.text.textsplit import chunk_text
+from everyvoice.text.textsplit import chunk_text, resolve_split_params
 from everyvoice.text.utils import apply_to_replace_helper, is_sentence_final
 from everyvoice.utils import (
     collapse_whitespace,
@@ -567,6 +567,43 @@ class TestTextSplit(TestCase):
         self.assertEqual([a, b], chunk_text(text, 50, 200, strong_boundaries="᙮"))
         # Without custom strong boundary
         self.assertEqual([text], chunk_text(text, 50, 200))
+
+
+class TestResolveSplitParams(TestCase):
+    """The shared boundary/param resolver used by both the FastSpeech2 and
+    StyleTTS2 synthesis paths."""
+
+    def _config(self, split_text=True, boundaries=None):
+        return TextConfig(
+            split_text=split_text,
+            boundaries=boundaries if boundaries is not None else {},
+        )
+
+    def test_split_disabled_returns_empty_boundaries(self):
+        split, params = resolve_split_params(self._config(split_text=False), "eng")
+        assert split is False
+        assert params == (100, 200, "", "")
+
+    def test_known_language_uses_configured_boundaries(self):
+        config = self._config(boundaries={"eng": {"strong": "!?.", "weak": ":;,"}})
+        split, params = resolve_split_params(config, "eng")
+        assert split is True
+        assert params == (100, 200, "!?.", ":;,")
+
+    def test_unknown_language_warns_and_falls_back_to_no_boundaries(self):
+        config = self._config(boundaries={"eng": {"strong": "!?.", "weak": ":;,"}})
+        with capture_logs() as logs:
+            split, params = resolve_split_params(config, "fra")
+        assert split is True
+        assert params == (100, 200, "", "")
+        assert any("could not be found" in message for message in logs)
+
+    def test_desired_and_max_length_passthrough(self):
+        config = self._config(boundaries={"eng": {"strong": "!?.", "weak": ":;,"}})
+        _, params = resolve_split_params(
+            config, "eng", desired_length=42, max_length=99
+        )
+        assert params == (42, 99, "!?.", ":;,")
 
 
 if __name__ == "__main__":

@@ -12,18 +12,15 @@ import typer
 
 from everyvoice import logger
 from everyvoice.cli import AllowedDemoOutputFormats, peek_text_representation
-from everyvoice.config.type_definitions import DatasetTextRepresentation
+from everyvoice.config.type_definitions import (
+    DatasetTextRepresentation,
+    SynthesizeOutputFormats,
+)
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
     synthesize_helper,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
     FastSpeech2,
-)
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
-    SynthesizeOutputFormats,
-)
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.utils import (
-    truncate_basename,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     HiFiGAN,
@@ -31,7 +28,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     HiFiGANGenerator,
     load_hifigan_from_checkpoint,
 )
-from everyvoice.utils import slugify
+from everyvoice.utils import slugify, truncate_basename
 from everyvoice.utils.heavy import get_device_from_accelerator
 
 os.environ["no_proxy"] = "localhost,127.0.0.1,::1"

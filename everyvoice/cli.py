@@ -22,6 +22,7 @@ from everyvoice.base_cli.interfaces import (
     typer_file_argument,
     typer_file_option,
 )
+from everyvoice.config.type_definitions import SynthesizeOutputFormats
 from everyvoice.model.aligner.wav2vec2aligner.aligner.cli import (
     ALIGN_SINGLE_LONG_HELP,
     ALIGN_SINGLE_SHORT_HELP,
@@ -55,9 +56,6 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesiz
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.train import (
     train as train_fs2,
-)
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions import (
-    SynthesizeOutputFormats,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     HFG_EXPORT_LONG_HELP,
