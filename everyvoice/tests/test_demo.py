@@ -542,16 +542,16 @@ class TestDemo:
 
     def test_peek_text_representation_real_checkpoint(self, stubbed_model):
         """A real FastSpeech2 checkpoint (default config) should read back 'characters'."""
-        from everyvoice.cli import _peek_text_representation
+        from everyvoice.cli import peek_text_representation
 
         _, spec_model_path = stubbed_model
-        assert _peek_text_representation(spec_model_path) == "characters"
+        assert peek_text_representation(spec_model_path) == "characters"
 
     def test_peek_text_representation_fs2_shape(self):
         """FastSpeech2 stores its config directly under hyper_parameters.config.model."""
         import torch
 
-        from everyvoice.cli import _peek_text_representation
+        from everyvoice.cli import peek_text_representation
 
         with tempfile.TemporaryDirectory() as tmpdir_str:
             fake_ckpt = Path(tmpdir_str) / "fs2.ckpt"
@@ -565,13 +565,13 @@ class TestDemo:
                 },
                 fake_ckpt,
             )
-            assert _peek_text_representation(fake_ckpt) == "phones"
+            assert peek_text_representation(fake_ckpt) == "phones"
 
     def test_peek_text_representation_styletts2_shape(self):
         """StyleTTS2 wraps its config under hyper_parameters.config.ev_config.model."""
         import torch
 
-        from everyvoice.cli import _peek_text_representation
+        from everyvoice.cli import peek_text_representation
 
         with tempfile.TemporaryDirectory() as tmpdir_str:
             fake_ckpt = Path(tmpdir_str) / "styletts2.ckpt"
@@ -587,13 +587,13 @@ class TestDemo:
                 },
                 fake_ckpt,
             )
-            assert _peek_text_representation(fake_ckpt) == "phones"
+            assert peek_text_representation(fake_ckpt) == "phones"
 
     def test_peek_text_representation_missing_or_unreadable(self):
         """Safe default: hide the selector (return "") rather than raising."""
-        from everyvoice.cli import _peek_text_representation
+        from everyvoice.cli import peek_text_representation
 
-        assert _peek_text_representation(Path(os.devnull)) == ""
+        assert peek_text_representation(Path(os.devnull)) == ""
 
         with tempfile.TemporaryDirectory() as tmpdir_str:
             import torch
@@ -601,7 +601,7 @@ class TestDemo:
             # A checkpoint with no hyper_parameters/config at all (legacy shape).
             fake_ckpt = Path(tmpdir_str) / "legacy.ckpt"
             torch.save({"state_dict": {}}, fake_ckpt)
-            assert _peek_text_representation(fake_ckpt) == ""
+            assert peek_text_representation(fake_ckpt) == ""
 
     def test_create_demo_app_shows_text_type_selector_for_phones_checkpoint(
         self, stubbed_model, stubbed_vocoder

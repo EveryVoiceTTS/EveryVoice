@@ -698,7 +698,7 @@ def _peek_model_class(checkpoint_path: Path) -> str:
     return ckpt.get("model_info", {}).get("name", "")
 
 
-def _peek_text_representation(checkpoint_path: Path) -> str:
+def peek_text_representation(checkpoint_path: Path) -> str:
     """Load a checkpoint header and return the model's trained text representation.
 
     Returns "" (safe default: callers should treat this as "hide any input-type

@@ -11,7 +11,7 @@ import torch
 import typer
 
 from everyvoice import logger
-from everyvoice.cli import AllowedDemoOutputFormats, _peek_text_representation
+from everyvoice.cli import AllowedDemoOutputFormats, peek_text_representation
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
     synthesize_helper,
@@ -811,7 +811,7 @@ def create_demo_app_styletts2(
     # Only checkpoints trained on phones benefit from an input-type selector:
     # characters-only models can't accept phones, and phonological_features
     # can't be typed by hand, so both cases just hide the control.
-    show_text_type_selector = _peek_text_representation(model_path) == "phones"
+    show_text_type_selector = peek_text_representation(model_path) == "phones"
 
     return make_gradio_display_styletts2(
         synthesize_fn,
@@ -891,7 +891,7 @@ def create_demo_app(
     # characters-only models can't accept phones, and phonological_features
     # can't be typed by hand, so both cases just hide the control.
     show_text_type_selector = (
-        _peek_text_representation(Path(text_to_spec_model_path)) == "phones"
+        peek_text_representation(Path(text_to_spec_model_path)) == "phones"
     )
 
     return make_gradio_display(
