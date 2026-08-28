@@ -617,7 +617,7 @@ class TestDemo:
                 return_value="FastSpeech2",
             ),
             mock.patch(
-                "everyvoice.demo.app._peek_text_representation",
+                "everyvoice.demo.app.peek_text_representation",
                 return_value="phones",
             ),
             mock.patch(
