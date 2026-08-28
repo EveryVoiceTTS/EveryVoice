@@ -581,36 +581,55 @@ def synthesize_audio_styletts2(
             "No reference audio available. Please upload a reference audio file."
         )
 
+    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.utils_heavy import (
+        get_styletts2_text_split_params,
+    )
     from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.utils import (
         encode_text_for_inference,
     )
+    from everyvoice.text.textsplit import chunk_text
 
-    try:
-        tokens = encode_text_for_inference(
-            module, text, language, text_representation
-        ).to(device)
-    except (ValueError, NotImplementedError) as e:
-        raise gr.Error(str(e))
-    input_lengths = torch.LongTensor([tokens.size(1)]).to(device)
+    split_text, split_params = get_styletts2_text_split_params(
+        module, language, text_representation
+    )
+    chunks = chunk_text(text, *split_params) if split_text else [text]
 
     lang_emb = None
     if language is not None and hasattr(module, "language_embedding"):
         lang_id = torch.LongTensor([module.lang2id[language]]).to(device)
         lang_emb = module.language_embedding(lang_id)
 
-    try:
-        audio = module._synthesize_text(
-            tokens,
-            input_lengths,
-            ref_s=ref_s,
-            diffusion_steps=diffusion_steps,
-            embedding_scale=embedding_scale,
-            acoustic_blend=acoustic_blend,
-            prosody_blend=prosody_blend,
-            lang_emb=lang_emb,
-        )
-    except Exception as e:
-        raise gr.Error(str(e))
+    chunk_wavs = []
+    for chunk in chunks:
+        try:
+            tokens = encode_text_for_inference(
+                module, chunk, language, text_representation
+            ).to(device)
+        except (ValueError, NotImplementedError) as e:
+            raise gr.Error(str(e))
+        input_lengths = torch.LongTensor([tokens.size(1)]).to(device)
+
+        try:
+            chunk_wavs.append(
+                module._synthesize_text(
+                    tokens,
+                    input_lengths,
+                    ref_s=ref_s,
+                    diffusion_steps=diffusion_steps,
+                    embedding_scale=embedding_scale,
+                    acoustic_blend=acoustic_blend,
+                    prosody_blend=prosody_blend,
+                    lang_emb=lang_emb,
+                )
+            )
+        except Exception as e:
+            raise gr.Error(str(e))
+
+    import numpy as np
+
+    # Concatenate per-chunk waveforms with no inserted silence, matching the
+    # CLI's StyleTTS2PredictionWritingWavCallback.
+    audio = np.concatenate(chunk_wavs) if len(chunk_wavs) > 1 else chunk_wavs[0]
 
     import soundfile as sf
 
