@@ -512,21 +512,31 @@ def load_model_from_checkpoint(
 
 def synthesize_audio_styletts2(
     text: str,
-    speaker: "str | None",  # selected display name from dropdown, or None in reference-upload mode
+    speaker: (
+        str | None
+    ),  # selected display name from dropdown, or None in reference-upload mode
     user_reference,  # filepath from Gradio Audio component, or None if not uploaded / cleared
     diffusion_steps: int,
     embedding_scale: float,
     acoustic_blend: float,
     prosody_blend: float,
-    language: "str | None" = None,  # selected language code, or None for monolingual checkpoints
-    text_representation: "DatasetTextRepresentation | str" = DatasetTextRepresentation.characters,  # from a live Radio, or a fixed gr.State when the selector is hidden
+    language: (
+        str | None
+    ) = None,  # selected language code, or None for monolingual checkpoints
+    text_representation: (
+        DatasetTextRepresentation | str
+    ) = DatasetTextRepresentation.characters,  # from a live Radio, or a fixed gr.State when the selector is hidden
     *,
     module,
     mel_transform,
     device,
     output_dir: Path,
-    speaker_ref_s: "dict[str, torch.Tensor]",  # pre-computed at startup; empty in reference-only mode
-    default_ref_s: "torch.Tensor | None",  # pre-computed from --reference; None in speaker mode
+    speaker_ref_s: dict[
+        str, torch.Tensor
+    ],  # pre-computed at startup; empty in reference-only mode
+    default_ref_s: (
+        torch.Tensor | None
+    ),  # pre-computed from --reference; None in speaker mode
     allowlist: list[str],
     denylist: list[str],
 ) -> str:
@@ -611,9 +621,9 @@ def synthesize_audio_styletts2(
 
 def make_gradio_display_styletts2(
     synthesize_fn,
-    speaker_list: "GradioChoices",
-    default_reference: "Path | None" = None,
-    language_list: "GradioChoices" = [],
+    speaker_list: GradioChoices,
+    default_reference: Path | None = None,
+    language_list: GradioChoices = [],
     show_text_type_selector: bool = False,
 ) -> "gr.Blocks":
     """Build the Gradio Blocks for the StyleTTS2 demo.
@@ -726,8 +736,8 @@ def make_gradio_display_styletts2(
 def create_demo_app_styletts2(
     model_path: Path,
     output_dir: Path,
-    speakers: "dict[str, Path]",
-    default_reference: "Path | None" = None,
+    speakers: dict[str, Path],
+    default_reference: Path | None = None,
     accelerator: str = "auto",
     allowlist: list[str] = [],
     denylist: list[str] = [],
@@ -767,7 +777,7 @@ def create_demo_app_styletts2(
         )
 
     # Pre-compute the default reference encoding so synthesis never re-reads disk
-    default_ref_s: "torch.Tensor | None" = None
+    default_ref_s: torch.Tensor | None = None
     if default_reference is not None and default_reference.exists():
         logger.info(
             f"Pre-computing style encoding for default reference {default_reference}"
