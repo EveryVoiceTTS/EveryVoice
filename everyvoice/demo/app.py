@@ -524,7 +524,7 @@ def synthesize_audio_styletts2(
         DatasetTextRepresentation | str
     ) = DatasetTextRepresentation.characters,  # from a live Radio, or a fixed gr.State when the selector is hidden
     *,
-    module,
+    model,
     mel_transform,
     device,
     output_dir: Path,
@@ -565,7 +565,7 @@ def synthesize_audio_styletts2(
 
         try:
             ref_s = load_reference_style(
-                module, mel_transform, Path(user_reference), device
+                model, mel_transform, Path(user_reference), device
             )
         except Exception as e:
             raise gr.Error(f"Could not load reference audio: {e}")
@@ -587,20 +587,20 @@ def synthesize_audio_styletts2(
     from everyvoice.text.textsplit import chunk_text
 
     split_text, split_params = get_styletts2_text_split_params(
-        module, language, text_representation
+        model, language, text_representation
     )
     chunks = chunk_text(text, *split_params) if split_text else [text]
 
     lang_emb = None
-    if language is not None and hasattr(module, "language_embedding"):
-        lang_id = torch.LongTensor([module.lang2id[language]]).to(device)
-        lang_emb = module.language_embedding(lang_id)
+    if language is not None and hasattr(model, "language_embedding"):
+        lang_id = torch.LongTensor([model.lang2id[language]]).to(device)
+        lang_emb = model.language_embedding(lang_id)
 
     chunk_wavs = []
     for chunk in chunks:
         try:
             tokens = encode_text_for_inference(
-                module, chunk, language, text_representation
+                model, chunk, language, text_representation
             ).to(device)
         except (ValueError, NotImplementedError) as e:
             raise gr.Error(str(e))
@@ -608,7 +608,7 @@ def synthesize_audio_styletts2(
 
         try:
             chunk_wavs.append(
-                module._synthesize_text(
+                model._synthesize_text(
                     tokens,
                     input_lengths,
                     ref_s=ref_s,
@@ -631,7 +631,7 @@ def synthesize_audio_styletts2(
     import soundfile as sf
 
     out_path = output_dir / (slugify(text[:50]) + ".wav")
-    sf.write(str(out_path), audio, module.sr)
+    sf.write(str(out_path), audio, model.sr)
     return str(out_path)
 
 
@@ -807,7 +807,7 @@ def create_demo_app_styletts2(
 
     synthesize_fn = partial(
         synthesize_audio_styletts2,
-        module=model,
+        model=model,
         mel_transform=mel_transform,
         device=device,
         output_dir=output_dir,

@@ -675,7 +675,8 @@ AllowedDemoOutputFormats = Enum(  # type: ignore
 
 _VOCODER_CLASS_NAMES = {"HiFiGAN", "HiFiGANGenerator"}
 _FS2_CLASS_NAMES = {"FastSpeech2"}
-_STYLETTS2_CLASS_NAMES = {"StyleTTS2Module"}
+# "StyleTTS2Module" is the pre-rename name still present in older checkpoints.
+_STYLETTS2_CLASS_NAMES = {"StyleTTS2", "StyleTTS2Module"}
 
 
 def _peek_model_class(checkpoint_path: Path) -> str:
@@ -713,7 +714,7 @@ def peek_text_representation(checkpoint_path: Path) -> str:
     if not isinstance(config, dict):
         return ""
     # FastSpeech2 stores its config directly under "model"; StyleTTS2 wraps it
-    # under an "ev_config" key (see StyleTTS2Module.on_save_checkpoint).
+    # under an "ev_config" key (see StyleTTS2.on_save_checkpoint).
     model_config = config.get("ev_config", config)
     if not isinstance(model_config, dict):
         return ""
