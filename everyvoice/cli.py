@@ -8,7 +8,6 @@ from textwrap import dedent
 from typing import Annotated, Any, Optional
 
 import typer
-from merge_args import merge_args
 from rich import print as rich_print
 from rich.panel import Panel
 
@@ -17,7 +16,8 @@ from everyvoice.base_cli import command, default_typer_args
 from everyvoice.base_cli.check_group import check_group
 from everyvoice.base_cli.checkpoint import checkpoint_group
 from everyvoice.base_cli.interfaces import (
-    inference_base_command_interface,
+    AcceleratorOption,
+    ConfigArgsOption,
     typer_directory_option,
     typer_file_argument,
     typer_file_option,
@@ -952,7 +952,6 @@ def _run_fs2_demo(
     name="demo",
     short_help="Launch an interactive Gradio demo for any EveryVoice model",
 )
-@merge_args(inference_base_command_interface)
 def demo(
     checkpoint: Annotated[
         Path,
@@ -1061,12 +1060,7 @@ def demo(
         exists=False,
         help="Directory where synthesized audio files are written.",
     ),
-    accelerator: str = typer.Option(
-        "auto",
-        "--accelerator",
-        "-a",
-        help="PyTorch Lightning accelerator (e.g. 'auto', 'cpu', 'gpu').",
-    ),
+    accelerator: Annotated[str, AcceleratorOption] = "auto",
     port: int = typer.Option(7860, "--port", "-p", help="Port to serve the demo on."),
     share: bool = typer.Option(
         False,
@@ -1079,7 +1073,7 @@ def demo(
         "-n",
         help="Host/IP address to bind the demo server to.",
     ),
-    **kwargs,
+    config_args: Annotated[list[str], ConfigArgsOption] = [],
 ):
     """Launch an interactive Gradio demo for any EveryVoice model.
 
@@ -1126,6 +1120,7 @@ def demo(
         port=port,
         share=share,
         server_name=server_name,
+        config_args=config_args,
     )
 
     if model_class in _STYLETTS2_CLASS_NAMES:
@@ -1143,7 +1138,6 @@ def demo(
             ref_speaker,
             reference,
             **shared,  # type: ignore[arg-type]
-            **kwargs,
         )
 
 
