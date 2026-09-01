@@ -495,24 +495,11 @@ command(
     preprocess_group,
     name="text-to-spec",
     short_help="Preprocess data for text-to-spec (FastSpeech2) training",
-    help=f"""Preprocess data for a FastSpeech2 text-to-spec model.
-
-    **everyvoice preprocess text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**
-
-    To run only specific steps:
-
-    **everyvoice preprocess text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml -s energy -s pitch**
-    """,
 )(preprocess_fs2)
 
 command(
     preprocess_group,
     name="spec-to-wav",
-    short_help="Preprocess data for spec-to-wav (HiFiGAN) training",
-    help=f"""Preprocess data for a HiFiGAN spec-to-wav model.
-
-    **everyvoice preprocess spec-to-wav config/{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
-    """,
 )(preprocess_hfg)
 
 command(
@@ -587,7 +574,7 @@ synthesize_group = typer.Typer(
     help="""
     # Synthesize Help
 
-        - **from-text** --- This is the most common input for performing normal speech synthesis. It will take text or a filelist with text and produce either waveform audio or spectrogram. This option uses FastSpeech2 & HiFiGAN. If you want to do end-to-end synthesis with StyleTTS2, run `everyvoice synthesize text-to-wav` instead.
+        - **from-text** --- This is the most common input for performing normal speech synthesis. It will take text or a filelist with text and produce either waveform audio or spectrogram. This option uses FastSpeech2 & HiFiGAN. If you want to do end-to-end synthesis with StyleTTS2, run **everyvoice synthesize text-to-wav** instead.
 
          - **text-to-wav** --- Synthesize audio directly from text using a trained end-to-end (StyleTTS2) model. Only supports the wav output format.
 
@@ -1080,11 +1067,11 @@ def demo(
     The model type is detected automatically from the checkpoint.
     Pass a single checkpoint for **StyleTTS2** (text-to-wav) models:
 
-        everyvoice demo path/to/styletts2.ckpt --ref-speaker 'Eric=eric.wav'
+    **everyvoice demo path/to/styletts2.ckpt --ref-speaker 'Eric=eric.wav'**
 
     Pass a FastSpeech2 (text-to-spec) checkpoint plus a vocoder (spec-to-wav) for **FastSpeech2 + HiFiGAN** models:
 
-        everyvoice demo path/to/fs2.ckpt --vocoder path/to/hifigan.ckpt
+    **everyvoice demo path/to/fs2.ckpt --vocoder path/to/hifigan.ckpt**
     """
     if allowlist and denylist:
         raise typer.BadParameter(
