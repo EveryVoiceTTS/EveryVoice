@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path
-from typing import Annotated, Any, Optional, Union
+from typing import Annotated, Any, Optional
 
 from pydantic import (
     BaseModel,
@@ -94,7 +94,7 @@ class ConfigModel(BaseModel):
         return self
 
     @staticmethod
-    def combine_configs(orig_dict: Union[dict, Sequence], new_dict: Mapping):
+    def combine_configs(orig_dict: dict | Sequence, new_dict: Mapping):
         """See https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth"""
         if isinstance(orig_dict, Sequence):
             orig_list = list(orig_dict)
@@ -189,15 +189,15 @@ class BaseTrainingConfig(PartialLoadConfig):
     # [ModelCheckpoint](https://lightning.ai/docs/pytorch/stable/api/lightning.pytorch.callbacks.ModelCheckpoint.html#lightning.pytorch.callbacks.ModelCheckpoint),
     # ckpt_epochs and ckpt_steps must be None or non-negative.
     # 0 is the same as None, and disables checkpointing
-    ckpt_steps: Union[Annotated[int, Field(ge=0)], None] = Field(
+    ckpt_steps: Annotated[int, Field(ge=0)] | None = Field(
         default=None,
         description="The interval (in steps) for saving a checkpoint. By default checkpoints are saved every epoch using the 'ckpt_epochs' hyperparameter",
     )
-    ckpt_epochs: Union[Annotated[int, Field(ge=0)], None] = Field(
+    ckpt_epochs: Annotated[int, Field(ge=0)] | None = Field(
         default=1,
         description="The interval (in epochs) for saving a checkpoint. You can also save checkpoints after n steps by using 'ckpt_steps'",
     )
-    val_check_interval: Union[int, float, None] = Field(
+    val_check_interval: int | float | None = Field(
         default=500,
         description="How often to check the validation set."
         " Pass a float in the range [0.0, 1.0] to check after a fraction of the training epoch."
@@ -213,7 +213,7 @@ class BaseTrainingConfig(PartialLoadConfig):
     max_steps: int = Field(
         default=100000, description="Stop training after this many steps"
     )
-    finetune_checkpoint: Union[PossiblyRelativePath, None] = Field(
+    finetune_checkpoint: PossiblyRelativePath | None = Field(
         default=None,
         description="Automatically resume training from a checkpoint loaded from this path.",
     )

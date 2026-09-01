@@ -1,7 +1,7 @@
 import os
 from collections.abc import Callable
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 import pytorch_lightning as pl
 import torch
@@ -16,11 +16,11 @@ from everyvoice.model.vocoder.config import VocoderConfig
 class BaseDataModule(pl.LightningDataModule):
     def __init__(
         self,
-        config: Union[VocoderConfig, FeaturePredictionConfig, E2EConfig],
+        config: VocoderConfig | FeaturePredictionConfig | E2EConfig,
         inference_output_dir: Optional[Path] = None,
     ):
         super().__init__()
-        self.collate_fn: Union[Callable, None] = None
+        self.collate_fn: Callable | None = None
         self.config = config
         self.use_weighted_sampler = False
         self.inference_output_dir = inference_output_dir

@@ -9,7 +9,7 @@ import os
 import textwrap
 from pathlib import Path
 from pprint import pformat
-from typing import Optional, Union
+from typing import Optional
 
 from deepdiff import DeepDiff
 from pydantic import ValidationError
@@ -71,11 +71,7 @@ def load_unknown_config(
 
 
 def load_config_base_command(
-    model_config: Union[
-        type[StyleTTS2Config],
-        type[FastSpeech2Config],
-        type[HiFiGANConfig],
-    ],
+    model_config: type[StyleTTS2Config] | type[FastSpeech2Config] | type[HiFiGANConfig],
     # Must include the above in model-specific command
     config_args: list[str],
     config_file: Path,
@@ -113,11 +109,7 @@ def load_config_base_command(
 
 
 def preprocess_base_command(
-    model_config: Union[
-        type[StyleTTS2Config],
-        type[FastSpeech2Config],
-        type[HiFiGANConfig],
-    ],
+    model_config: type[StyleTTS2Config] | type[FastSpeech2Config] | type[HiFiGANConfig],
     steps: list[str],
     # Must include the above in model-specific command
     config_args: list[str],
@@ -146,7 +138,7 @@ def preprocess_base_command(
 
 
 def save_configuration_to_log_dir(
-    config: Union[StyleTTS2Config, FastSpeech2Config, HiFiGANConfig]
+    config: StyleTTS2Config | FastSpeech2Config | HiFiGANConfig,
 ):
     """
     Adds a logging file to the module's logger.
@@ -171,17 +163,13 @@ def save_configuration_to_log_dir(
 
 
 def train_base_command(
-    model_config: Union[
-        type[StyleTTS2Config],
-        type[FastSpeech2Config],
-        type[HiFiGANConfig],
-    ],
-    data_module: Union[
-        type[StyleTTS2DataModule],
-        type[FastSpeech2DataModule],
-        type[HiFiGANDataModule],
-    ],
-    model: Union[type[StyleTTS2], type[FastSpeech2], type[HiFiGAN]],
+    model_config: type[StyleTTS2Config] | type[FastSpeech2Config] | type[HiFiGANConfig],
+    data_module: (
+        type[StyleTTS2DataModule]
+        | type[FastSpeech2DataModule]
+        | type[HiFiGANDataModule]
+    ),
+    model: type[StyleTTS2] | type[FastSpeech2] | type[HiFiGAN],
     monitor: str,
     # Must include the above in model-specific command
     config_args: list[str],
