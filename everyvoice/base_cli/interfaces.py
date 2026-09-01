@@ -4,6 +4,7 @@ cli command functions. Each of these should have a typer default (which can be o
 there should be no body as the union of these signatures and the model-specific signatures is what the helper function
 will be called with.
 """
+
 import multiprocessing as mp
 from functools import partial
 from pathlib import Path
@@ -37,75 +38,67 @@ def load_config_base_command_interface(
     pass
 
 
+# Shared options
+ConfigFileArgument = typer_file_argument(
+    help="The path to your model configuration file."
+)
+ConfigArgsOption = typer.Option(
+    "-c", "--config-args", help="Override the configuration."
+)
+
+
+# Preprocess options
+CPUsOption = typer.Option(
+    "-C", "--cpus", help="How many CPUs to use when preprocessing"
+)
+OverwriteFlag = typer.Option(
+    "-O",
+    "--overwrite",
+    help="Redo all preprocessing, even if files already exist and aren't expected to change.",
+)
+DebugFlag = typer.Option("-D", "--debug", help="Enable debugging.")
+
+
+# Copy these function arguments into your submodule preprocess command
 def preprocess_base_command_interface(
-    config_file: Annotated[
-        Path, typer_file_argument(help="The path to your model configuration file.")
-    ],
-    config_args: Annotated[
-        list[str],
-        typer.Option("-c", "--config-args", help="Override the configuration."),
-    ] = [],
-    cpus: Annotated[
-        int | None,
-        typer.Option(
-            "-C",
-            "--cpus",
-            help="How many CPUs to use when preprocessing",
-        ),
-    ] = min(4, mp.cpu_count()),
-    overwrite: Annotated[
-        bool,
-        typer.Option(
-            "-O",
-            "--overwrite",
-            help="Redo all preprocessing, even if files already exist and aren't expected to change.",
-        ),
-    ] = False,
-    debug: Annotated[
-        bool, typer.Option("-D", "--debug", help="Enable debugging.")
-    ] = False,
+    config_file: Annotated[Path, ConfigFileArgument],
+    config_args: Annotated[list[str], ConfigArgsOption] = [],
+    cpus: Annotated[int, CPUsOption] = min(4, mp.cpu_count()),
+    overwrite: Annotated[bool, OverwriteFlag] = False,
+    debug: Annotated[bool, DebugFlag] = False,
 ):
     pass
 
 
+# Train options
+AcceleratorOption = typer.Option(
+    "-a",
+    "--accelerator",
+    help="PyTorch Lightning Accelerator (e.g., 'auto', 'cpu', 'gpu'): https://pytorch-lightning.readthedocs.io/en/stable/extensions/accelerator.html",
+)
+DevicesOption = typer.Option("--devices", "-d", help="The number of GPUs on each node")
+NodesOption = typer.Option("--nodes", "-n", help="The number of nodes on your machine")
+StrategyOption = typer.Option(
+    "--strategy",
+    "-s",
+    help="The strategy for data parallelization: https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html",
+)
+
+
+# Copy these function arguments into your submodule train command
 def train_base_command_interface(
-    config_file: Annotated[
-        Path, typer_file_argument(help="The path to your model configuration file.")
-    ],
-    config_args: Annotated[
-        list[str],
-        typer.Option("-c", "--config-args", help="Overwrite the configuration"),
-    ] = [],
-    accelerator: Annotated[
-        str,
-        typer.Option(
-            "--accelerator",
-            "-a",
-            help="Uses PyTorch Lightning Accelerators: https://pytorch-lightning.readthedocs.io/en/stable/extensions/accelerator.html",
-        ),
-    ] = "auto",
-    devices: Annotated[
-        str, typer.Option("--devices", "-d", help="The number of GPUs on each node")
-    ] = "auto",
-    nodes: Annotated[
-        int, typer.Option("--nodes", "-n", help="The number of nodes on your machine")
-    ] = 1,
-    strategy: Annotated[
-        str,
-        typer.Option(
-            "--strategy",
-            "-s",
-            help="The strategy for data parallelization: https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html",
-        ),
-    ] = "ddp",
+    config_file: Annotated[Path, ConfigFileArgument],
+    config_args: Annotated[list[str], ConfigArgsOption] = [],
+    accelerator: Annotated[str, AcceleratorOption] = "auto",
+    devices: Annotated[str, DevicesOption] = "auto",
+    nodes: Annotated[int, NodesOption] = 1,
+    strategy: Annotated[str, StrategyOption] = "ddp",
 ):
     pass
 
 
+# Copy these function arguments into your submodule synthesize and other inference commands
 def inference_base_command_interface(
-    config_args: Annotated[
-        list[str],
-        typer.Option("-c", "--config-args", help="Override the configuration."),
-    ] = [],
+    config_args: Annotated[list[str], ConfigArgsOption] = [],
 ):
     pass
