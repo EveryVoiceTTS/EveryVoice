@@ -42,10 +42,14 @@ jobs:
           version: "0.11.21"
       - name: Build the environment with make-everyvoice-env (no lockfile)
         run: printf 'y\n' | ./make-everyvoice-env --uv --cpu --python 3.12
+      - name: Put the new environment on PATH
+        # The test suite shells out to the `everyvoice` console script, so its
+        # bin dir has to be on PATH the way `source .venv/bin/activate` would put it.
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
       - name: Show the resolved environment
         run: uv pip freeze --python ./.venv/bin/python
       - name: Run the test suite
-        run: ./.venv/bin/pytest
+        run: pytest
       - name: Check for logs_and_checkpoints/ and preprocessed/
         run: |
           find -type d -name logs_and_checkpoints -or -name preprocessed | grep -v 'tests/data' || true
