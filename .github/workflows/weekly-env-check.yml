@@ -58,6 +58,7 @@ jobs:
         if: failure() && github.event_name == 'schedule'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           title="Weekly make-everyvoice-env check failed"
           open_count=$(gh issue list --state open --search "in:title $title" --json number --jq 'length')
@@ -67,6 +68,7 @@ jobs:
           fi
           gh issue create \
             --title "$title" \
+            --assignee joanise \
             --body "The scheduled [make-everyvoice-env check](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) failed.
 
           \`make-everyvoice-env\` resolves dependencies without \`uv.lock\`, so a failure here usually means \`uv.lock\` and a fresh resolution have drifted apart, or a new transitive release broke something. Reconcile them (e.g. \`uv lock\`) and confirm the suite passes both ways."
