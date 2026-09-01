@@ -9,7 +9,6 @@ import os
 import textwrap
 from pathlib import Path
 from pprint import pformat
-from typing import Optional
 
 from deepdiff import DeepDiff
 from pydantic import ValidationError
@@ -114,7 +113,7 @@ def preprocess_base_command(
     # Must include the above in model-specific command
     config_args: list[str],
     config_file: Path,
-    cpus: Optional[int],
+    cpus: int,
     overwrite: bool,
     debug: bool,
 ):
