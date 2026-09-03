@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <title>Redirecting… — EveryVoice docs</title>
+  <script>
+    (function () {
+      var loc = window.location;
+      var segments = loc.pathname.replace(/^\/+/, "").split("/");
+      var first = segments[0] || "";
+
+      // Segments that legitimately live at the site root (mike aliases +
+      // version directories like 0.3 / 0.3.0). Everything else is treated
+      // as an un-versioned path that should point at the default version.
+      var isVersioned =
+        first === "stable" ||
+        first === "latest" ||
+        first === "dev" ||
+        /^\d+\.\d+(\.\d+)?$/.test(first);
+
+      if (!isVersioned && first !== "404.html") {
+        // Prepend the default version, preserving query string and hash.
+        var target = "/stable/" + segments.join("/") + loc.search + loc.hash;
+        loc.replace(target);
+      }
+      // If it *is* a versioned path, this is a genuine 404 within that
+      // version so we should fall through and show the message below.
+    })();
+  </script>
+</head>
+<body>
+  <h1>Page not found</h1>
+  <p>The page you requested doesn't exist. Head to the
+     <a href="/stable/">EveryVoice documentation</a>.</p>
+</body>
+</html>
