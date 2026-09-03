@@ -17,7 +17,7 @@
         first === "stable" ||
         first === "latest" ||
         first === "dev" ||
-        /^\d+\.\d+(\.\d+)?$/.test(first);
+        /^v\d+\.\d+(\.\d+)?/.test(first);
 
       if (!isVersioned && first !== "404.html") {
         // Prepend the default version, preserving query string and hash.
