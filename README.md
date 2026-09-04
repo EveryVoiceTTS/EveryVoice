@@ -10,7 +10,13 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
 
 ## Quickstart from PyPI
 
-- Install Python 3.10, 3.11, or 3.12 and create a venv or a conda env for EveryVoice.
+- Install a python environment manager:
+  - Recommended: use [uv](https://docs.astral.sh/uv/getting-started/installation/)
+  - Alternative: use conda from [Miniforge3](https://github.com/conda-forge/miniforge)
+
+- Create a venv with Python 3.10, 3.11 or 3.12 for EveryVoice:
+  - With uv: `uv venv --python 3.12 --managed-python` and then `source .venv/bin/activate`
+  - With conda: `conda create python=3.12 --name EveryVoice` and then `conda activate EveryVoice`
 
 - Install `sox`.
   - On Ubuntu, `sudo apt-get install sox` should work.
@@ -23,15 +29,20 @@ This is the Text-to-Speech (TTS) toolkit used by the Small Teams "Speech Generat
   - With Conda, `conda install ffmpeg` is reliable.
   - Or, use the applicable link under "Get packages & executables files" at https://www.ffmpeg.org/download.html
 
-- Install `torch` and `torchaudio` version 2.1.0 for your platform and CUDA version: follow the instructions at https://pytorch.org/get-started/locally/ but specify `torch==2.1.0 torchaudio==2.1.0` in the install command and remove `torchvision`.
+- Install EveryVoice:
+  - Using conda:
+    - Install `torch` and `torchaudio` version 2.7.1 for your platform and CUDA version: follow the instructions at https://pytorch.org/get-started/locally/ but specify `torch==2.7.1 torchaudio==2.7.1` in the install command and remove `torchvision`.
+    - Run `pip install everyvoice`
 
-- Run `pip install everyvoice`
+  - Usinv uv:
+    - Determine your torch backend, e.g., `cu128` for CUDA 12.8, or `cpu` for CPU-only, etc.
+    - Run `uv pip install everyvoice --torch-backend=cu128`
 
 ## Quickstart from source
 
 ### Install conda
 
-First, you'll need to install `conda`. [Miniforge3](https://github.com/conda-forge/miniforge) is a fully open-source option which is free for all users and works well. You can also use Anaconda3 or Miniconda3 if you have or can get a license.
+First, you'll need to install `conda`. [Miniforge3](https://github.com/conda-forge/miniforge) is a fully open-source option which is free for all users and works well. (Warning: Anaconda and Miniconda are not free, don't use them without a license.)
 
 ### Clone the repo
 
