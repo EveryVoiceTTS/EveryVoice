@@ -970,7 +970,7 @@ requires-dist = [
     { name = "jsonschema", marker = "extra == 'dev'", specifier = ">=4.17.3" },
     { name = "jsonschema", marker = "extra == 'test'", specifier = ">=4.17.3" },
     { name = "librosa", specifier = "==0.11.0" },
-    { name = "lightning", specifier = ">=2.1.0" },
+    { name = "lightning", specifier = ">=2.5.3" },
     { name = "loguru", specifier = ">=0.6.0" },
     { name = "matplotlib", specifier = ">=3.9.0" },
     { name = "merge-args" },

@@ -213,6 +213,7 @@ def train_base_command(
     pbar.update()
     pbar.refresh()
     from pytorch_lightning.loggers import TensorBoardLogger
+    from pytorch_lightning.plugins.environments import SLURMEnvironment
 
     pbar.update()
     pbar.refresh()
@@ -234,6 +235,7 @@ def train_base_command(
     last_ckpt_callback = ModelCheckpoint(
         save_top_k=1,
         save_last=True,
+        save_on_exception=True,
         every_n_train_steps=config.training.ckpt_steps,
         every_n_epochs=config.training.ckpt_epochs,
         enable_version_counter=True,
@@ -269,6 +271,17 @@ def train_base_command(
         gradient_clip_val=gradient_clip_val,
     )
     data = data_module(config)
+
+    # A checkpoint saved just before a SLURM requeue/preemption (via SIGUSR1)
+    # takes priority over finetune_checkpoint, so a requeued job resumes the
+    # progress made this run instead of restarting from the finetune source.
+    if SLURMEnvironment.detect():
+        try:
+            trainer.fit(model(config, **model_kwargs), data, ckpt_path="hpc")
+            return
+        except ValueError:
+            pass  # no HPC checkpoint yet; continue with normal startup below
+
     last_ckpt = (
         config.training.finetune_checkpoint
         if config.training.finetune_checkpoint is not None

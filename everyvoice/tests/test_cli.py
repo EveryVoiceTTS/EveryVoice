@@ -20,7 +20,10 @@ from yaml import CLoader as Loader
 
 from everyvoice import __file__ as EV_FILE
 from everyvoice._version import VERSION
-from everyvoice.base_cli.helpers import save_configuration_to_log_dir
+from everyvoice.base_cli.helpers import (
+    save_configuration_to_log_dir,
+    train_base_command,
+)
 from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
 from everyvoice.config.shared_types import ContactInformation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
@@ -731,6 +734,116 @@ class TestCLI:
         assert "has no pretrained text-encoder symbol table" in flatten_log(
             result.output
         )
+
+
+class TestTrainBaseCommandSlurmResume:
+    """everyvoice/base_cli/helpers.py train_base_command: saving/resuming
+    around a SLURM requeue or preemption (SIGUSR1/SIGTERM)."""
+
+    def _config(self, tmp_path, finetune_checkpoint=None):
+        return FastSpeech2Config(
+            contact=ContactInformation(
+                contact_name="Test Runner", contact_email="info@everyvoice.ca"
+            ),
+            training={
+                "logger": {"save_dir": tmp_path / "log", "name": "unittest"},
+                "finetune_checkpoint": finetune_checkpoint,
+            },
+        )
+
+    def _run_train_base_command(self, config):
+        train_base_command(
+            model_config=FastSpeech2Config,
+            data_module=mock.Mock(),
+            model=mock.Mock(),
+            monitor="validation/total_loss",
+            config_args=[],
+            config_file=Path("unused.yaml"),
+            accelerator="cpu",
+            devices="1",
+            nodes=1,
+            strategy="auto",
+            gradient_clip_val=None,
+        )
+
+    def test_last_ckpt_callback_saves_on_exception(self, tmp_path):
+        """A SIGTERM should force a checkpoint save regardless of
+        every_n_train_steps/every_n_epochs boundaries."""
+        config = self._config(tmp_path)
+        with (
+            mock.patch(
+                "everyvoice.base_cli.helpers.load_config_base_command",
+                return_value=config,
+            ),
+            mock.patch("everyvoice.base_cli.helpers.save_configuration_to_log_dir"),
+            mock.patch(
+                "pytorch_lightning.plugins.environments.SLURMEnvironment.detect",
+                return_value=False,
+            ),
+            mock.patch("pytorch_lightning.loggers.TensorBoardLogger"),
+            mock.patch("pytorch_lightning.Trainer"),
+            mock.patch(
+                "pytorch_lightning.callbacks.ModelCheckpoint"
+            ) as MockModelCheckpoint,
+        ):
+            self._run_train_base_command(config)
+
+        # last_ckpt_callback is the first ModelCheckpoint(...) constructed
+        last_ckpt_kwargs = MockModelCheckpoint.call_args_list[0].kwargs
+        assert last_ckpt_kwargs["save_on_exception"] is True
+
+    def test_resumes_from_slurm_hpc_checkpoint_when_present(self, tmp_path):
+        """When Slurm is detected and an HPC checkpoint (saved by Lightning
+        just before a requeue/preemption) exists, it must take priority over
+        finetune_checkpoint."""
+        config = self._config(
+            tmp_path, finetune_checkpoint=str(tmp_path / "finetune.ckpt")
+        )
+        with (
+            mock.patch(
+                "everyvoice.base_cli.helpers.load_config_base_command",
+                return_value=config,
+            ),
+            mock.patch("everyvoice.base_cli.helpers.save_configuration_to_log_dir"),
+            mock.patch(
+                "pytorch_lightning.plugins.environments.SLURMEnvironment.detect",
+                return_value=True,
+            ),
+            mock.patch("pytorch_lightning.loggers.TensorBoardLogger"),
+            mock.patch("pytorch_lightning.Trainer") as MockTrainer,
+            mock.patch("pytorch_lightning.callbacks.ModelCheckpoint"),
+        ):
+            self._run_train_base_command(config)
+            fit = MockTrainer.return_value.fit
+            fit.assert_called_once()
+            assert fit.call_args.kwargs["ckpt_path"] == "hpc"
+
+    def test_falls_back_when_no_slurm_hpc_checkpoint(self, tmp_path):
+        """When Slurm is detected but no HPC checkpoint exists yet, training
+        should fall through to the normal startup logic instead of failing."""
+        config = self._config(tmp_path)
+        with (
+            mock.patch(
+                "everyvoice.base_cli.helpers.load_config_base_command",
+                return_value=config,
+            ),
+            mock.patch("everyvoice.base_cli.helpers.save_configuration_to_log_dir"),
+            mock.patch(
+                "pytorch_lightning.plugins.environments.SLURMEnvironment.detect",
+                return_value=True,
+            ),
+            mock.patch("pytorch_lightning.loggers.TensorBoardLogger"),
+            mock.patch("pytorch_lightning.Trainer") as MockTrainer,
+            mock.patch("pytorch_lightning.callbacks.ModelCheckpoint"),
+        ):
+            MockTrainer.return_value.fit.side_effect = [
+                ValueError("no HPC checkpoint"),
+                None,
+            ]
+            self._run_train_base_command(config)
+            fit = MockTrainer.return_value.fit
+            assert fit.call_count == 2
+            assert fit.call_args_list[0].kwargs["ckpt_path"] == "hpc"
 
 
 class TestBaseCLIHelper:
