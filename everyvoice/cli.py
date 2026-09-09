@@ -488,15 +488,9 @@ preprocess_group = typer.Typer(
 command(
     preprocess_group,
     name="text-to-spec",
-    short_help="Preprocess data for text-to-spec (FastSpeech2) training",
-    help=f"""Preprocess data for a FastSpeech2 text-to-spec model.
-
-    **everyvoice preprocess text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**
-
-    To run only specific steps:
-
-    **everyvoice preprocess text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml -s energy -s pitch**
-    """,
+    help=preprocess_fs2.__doc__.replace(
+        "fs2l preprocess", "everyvoice preprocess text-to-spec"
+    ),
 )(preprocess_fs2)
 
 command(
