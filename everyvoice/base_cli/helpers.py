@@ -103,7 +103,7 @@ def load_config_base_command(
         logger.error(f"there was a problem with your config file:\n{error}")
         sys.exit(1)
 
-    config = update_config_from_cli_args(config_args, config)
+    update_config_from_cli_args(config_args, config)
     return config
 
 
