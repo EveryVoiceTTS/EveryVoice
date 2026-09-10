@@ -211,16 +211,13 @@ def expand_config_string_syntax(config_arg: str) -> dict:
     return config_dict
 
 
-def update_config_from_cli_args(arg_list: list[str], original_config):
+def update_config_from_cli_args(arg_list: list[str], config):
     if arg_list is None or not arg_list:
-        return original_config
+        return config
     for arg in arg_list:
         key, value = arg.split("=")
         logger.info(f"Updating config '{key}' to value '{value}'")
-        original_config = original_config.update_config(
-            expand_config_string_syntax(arg)
-        )
-    return original_config
+        config = config.update_config(expand_config_string_syntax(arg))
 
 
 def original_hifigan_leaky_relu(x):
