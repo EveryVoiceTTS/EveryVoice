@@ -12,7 +12,7 @@ repos:
       - id: isort
         args: [--profile=black]
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 26.5.1
     hooks:
       - id: black
   # We do flake8 after black since black fixes a lot of the stuff it complains about
