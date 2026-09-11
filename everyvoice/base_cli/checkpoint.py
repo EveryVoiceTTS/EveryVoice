@@ -199,13 +199,11 @@ def inspect(
             indent=2,
             cls=CheckpointEncoder,
         )
-        print(
-            """
+        print("""
                 ++++++++++++++
                     CONFIG
                 ++++++++++++++
-            """
-        )
+            """)
         print(config)
 
     if show_architecture:

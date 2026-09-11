@@ -1,8 +1,8 @@
 """This is the location of basic cli commands that can be copied to new model cli's
-    We use the merge-args to merge function signatures between the base functions described here
-    and the model-specific ones defined in everyvoice/model/*/*/*/cli
-    We want to do it this way to preserve the functionality from typer's command() decorator
-    inferring information from the function signature while still keeping code DRY.
+We use the merge-args to merge function signatures between the base functions described here
+and the model-specific ones defined in everyvoice/model/*/*/*/cli
+We want to do it this way to preserve the functionality from typer's command() decorator
+inferring information from the function signature while still keeping code DRY.
 """
 
 import os
@@ -146,7 +146,7 @@ def preprocess_base_command(
 
 
 def save_configuration_to_log_dir(
-    config: Union[StyleTTS2Config, FastSpeech2Config, HiFiGANConfig]
+    config: Union[StyleTTS2Config, FastSpeech2Config, HiFiGANConfig],
 ):
     """
     Adds a logging file to the module's logger.
@@ -314,17 +314,13 @@ def train_base_command(
         if "types_changed" in optimizer_diff:
             optimizer_config_diff += list(optimizer_diff["types_changed"].items())
         if model_config_diff:
-            raise InvalidConfiguration(
-                textwrap.dedent(
-                    f"""
-                    Sorry, you are a trying to fine-tune a model with a different architecture defined in your configuration than was used during pre-training.
+            raise InvalidConfiguration(textwrap.dedent(f"""
+                Sorry, you are a trying to fine-tune a model with a different architecture defined in your configuration than was used during pre-training.
 
-                    Please fix your configuration or use a different model.
+                Please fix your configuration or use a different model.
 
-                    Values Changed: {pformat(model_config_diff)}
-                    """
-                )
-            )
+                Values Changed: {pformat(model_config_diff)}
+                """))
         # If optimizer configuration is different, start training with updated optimizer hyperparameters
         # We need to override the model object's configuration with the current one.
         # This assumes that the model and optimizer configurations haven't changed since they
@@ -337,18 +333,14 @@ def train_base_command(
         tensorboard_logger.log_hyperparams(config.model_dump())
         if optimizer_config_diff:
             # Finetune from Checkpoint
-            logger.warning(
-                textwrap.dedent(
-                    f"""
-                    Some of your optimizer hyperparameters have changed from your checkpoint at '{last_ckpt}',
-                    so we will override your checkpoint hyperparameters and restart the optimizer.
+            logger.warning(textwrap.dedent(f"""
+                Some of your optimizer hyperparameters have changed from your checkpoint at '{last_ckpt}',
+                so we will override your checkpoint hyperparameters and restart the optimizer.
 
-                    Your training logs will start from epoch 0/step 0, but will still use the weights from your checkpoint.
+                Your training logs will start from epoch 0/step 0, but will still use the weights from your checkpoint.
 
-                    Values Changed: {pformat(optimizer_config_diff)}
-                    """
-                )
-            )
+                Values Changed: {pformat(optimizer_config_diff)}
+                """))
             # This will only use the weights in the model_obj, the optimizer and current epoch etc will be restarted using
             # the configuration in model_obj.config, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
             trainer.fit(model_obj, data)

@@ -28,14 +28,15 @@
 # * SOFTWARE.
 # */
 
-""" A Simple Arpabet to IPA conversion
-    adapted by Aidan Pine from https://github.com/wwesantos/arpabet-to-ipa/blob/master/src/App.php
+"""A Simple Arpabet to IPA conversion
+adapted by Aidan Pine from https://github.com/wwesantos/arpabet-to-ipa/blob/master/src/App.php
 
-    Except changed so that 1 adds a pre-vocalic primary stress symbol and 2 adds a secondary stress symbol.
-    These flout the IPA standard of placing stress symbols before syllables, but this is more computationally
-    tractable (in the absence of reliable syllabification algorithms for all datasets that include Arpabet).
+Except changed so that 1 adds a pre-vocalic primary stress symbol and 2 adds a secondary stress symbol.
+These flout the IPA standard of placing stress symbols before syllables, but this is more computationally
+tractable (in the absence of reliable syllabification algorithms for all datasets that include Arpabet).
 
 """
+
 from g2p.mappings import Mapping, Rule
 from g2p.transducer import Transducer
 

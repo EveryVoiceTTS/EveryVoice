@@ -9,7 +9,7 @@ LookupTable = dict[str, int]
 
 
 def lookuptables_from_config(
-    config: Union[E2EConfig, FeaturePredictionConfig]
+    config: Union[E2EConfig, FeaturePredictionConfig],
 ) -> tuple[LookupTable, LookupTable]:
     """ """
     train_dataset = config.training.filelist_loader(config.training.training_filelist)
@@ -19,7 +19,7 @@ def lookuptables_from_config(
 
 
 def lookuptables_from_data(
-    data: Iterable[Sequence[dict[str, str]]]
+    data: Iterable[Sequence[dict[str, str]]],
 ) -> tuple[LookupTable, LookupTable]:
     """ """
     languages = set(d["language"] for d in chain(*data) if "language" in d)

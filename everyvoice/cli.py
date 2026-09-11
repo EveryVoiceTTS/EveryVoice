@@ -456,19 +456,13 @@ def new_project(
 ):
     from everyvoice.wizard.main_tour import get_main_wizard_tour
 
-    rich_print(
-        Panel(
-            dedent(
-                """
-                    Welcome to the EveryVoice Wizard. We will guide you through the process of setting up the configuration for a new EveryVoice project.
+    rich_print(Panel(dedent("""
+        Welcome to the EveryVoice Wizard. We will guide you through the process of setting up the configuration for a new EveryVoice project.
 
-                    Navigation: as any point, you can hit Ctrl+C to: go back a step, view progress, save progress, or exit the wizard.
+        Navigation: as any point, you can hit Ctrl+C to: go back a step, view progress, save progress, or exit the wizard.
 
-                    From saved progress, you can resume at any time by running the same command with the --resume-from option.
-                """
-            ).strip()
-        )
-    )
+        From saved progress, you can resume at any time by running the same command with the --resume-from option.
+        """).strip()))
 
     get_main_wizard_tour(trace=trace, debug_state=debug_state).run(
         resume_from=resume_from
@@ -657,12 +651,10 @@ def inspect_checkpoint(model_path: Path):
     """
     rich_print(
         Panel(
-            dedent(
-                f"""
+            dedent(f"""
                 This command has been renamed to `everyvoice checkpoint inspect`.
                 Please use `everyvoice checkpoint inspect {model_path}` instead.
-                """
-            ).strip(),
+                """).strip(),
             title="Inspect Checkpoint",
         )
     )
@@ -1210,16 +1202,12 @@ def update_schemas(
                 print(f"Schema '{filename}' created.")
 
     if not all_good:
-        sys.exit(
-            dedent(
-                """
-                ERROR: out-of-date schemas exist.
-                If the current schemas were already published to the schema store, please
-                bump the EveryVoice minor version number and run update-schemas again.
-                If the current minor version is still in development, delete the out-of-date
-                schemas and try again."""
-            )
-        )
+        sys.exit(dedent("""
+            ERROR: out-of-date schemas exist.
+            If the current schemas were already published to the schema store, please
+            bump the EveryVoice minor version number and run update-schemas again.
+            If the current minor version is still in development, delete the out-of-date
+            schemas and try again."""))
 
 
 @command(app)

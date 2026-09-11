@@ -4,6 +4,7 @@ cli command functions. Each of these should have a typer default (which can be o
 there should be no body as the union of these signatures and the model-specific signatures is what the helper function
 will be called with.
 """
+
 import multiprocessing as mp
 from functools import partial
 from pathlib import Path
