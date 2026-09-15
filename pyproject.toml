@@ -96,7 +96,7 @@ torch = [
   'torchaudio==2.7.1; sys_platform == "darwin"',
 ]
 dev = [
-  "black~=24.3",
+  "black~=26.5",
   "diff-cover",
   "flake8>=4.0.1",
   "gitlint-core>=0.19.0",

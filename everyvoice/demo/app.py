@@ -147,7 +147,7 @@ def normalize_text(text: str) -> str:
     'fobar'
 
     >>> normalize_text('fo\u0301obar')
-    'f\u00F3obar'
+    'f\u00f3obar'
 
     >>> normalize_text('foobar.')
     'fobar'
@@ -354,12 +354,10 @@ def make_gradio_display(
         helper_text += f"<h5 style='color:#777;margin-bottom:0;padding-bottom:0;'>How to use this app</h5><p style='color:#999;margin-top:0.1em;padding-top:0;'>{app_instructions}</p>"
         print(f"\n\tUsing app instructions from app config JSON: {app_instructions}")
     with gr.Blocks() as demo:
-        gr.Markdown(
-            f"""
+        gr.Markdown(f"""
             <h1 align="center">{app_title}</h1>
             {helper_text}
-            """
-        )
+            """)
         with gr.Row():
             with gr.Column():
                 inp_text = gr.Text(

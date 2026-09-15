@@ -92,7 +92,9 @@ class TestG2p(TestCase):
         )
         # another language
         str_g2p = get_g2p_engine("str")
-        self.assertEqual(str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"])
+        self.assertEqual(
+            str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"]
+        )
         # test lang_id missing
         with self.assertRaises(NotImplementedError):
             get_g2p_engine("boop")
@@ -555,14 +557,12 @@ class CustomG2pTest(WizardTestBase):
                 dataset0 = f.read()
             self.assertEqual(
                 dataset0,
-                dedent(
-                    """\
+                dedent("""\
                     basename|language|speaker|characters|phones
                     f1|git|speaker_0|foo bar|FOOBAR
                     f2|git|speaker_0|bar baz|BARBAZ
                     f3|git|speaker_0|baz foo|BAZFOO
-                    """
-                ),
+                    """),
                 "With g2p_engines.valid as custom g2p, phones has spaces stripped",
             )
             with open(filelist_base / "dataset1-filelist.psv", encoding="utf8") as f:
@@ -581,14 +581,12 @@ class CustomG2pTest(WizardTestBase):
                 dataset2 = f.read()
             self.assertEqual(
                 dataset2,
-                dedent(
-                    """\
+                dedent("""\
                     basename|language|speaker|characters
                     f1|my-lang|my_speaker|foo bar
                     f2|my-lang|my_speaker|bar baz
                     f3|my-lang|my_speaker|baz foo
-                    """
-                ),
+                    """),
                 "With no g2p engine, the phones column is simply absent",
             )
 

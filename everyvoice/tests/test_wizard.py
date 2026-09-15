@@ -2145,8 +2145,7 @@ class WizardTest(WizardTestBase):
             assert "Contact Name: Jane Doe" in flatten_log(output.getvalue())
         assert tour.state == self.trivial_tour_results
 
-    progress_template = dedent(
-        """\
+    progress_template = dedent("""\
         - - EveryVoice Wizard
           - {version}
         - - Root
@@ -2155,8 +2154,7 @@ class WizardTest(WizardTestBase):
           - project_name
         - - Contact Name Step
           - Jane Doe
-        """
-    )
+        """)
 
     def test_control_c_save_progress(self):
         # Ctrl-C plus option 3 saves progress to file
