@@ -58,10 +58,6 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.train imp
     train as train_fs2,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
-    HFG_EXPORT_LONG_HELP,
-    HFG_EXPORT_SHORT_HELP,
-)
-from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     export as export_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
@@ -226,22 +222,7 @@ def main(
         sys.exit(0)
 
 
-@command(
-    app,
-    short_help="Evaluate your synthesized audio",
-    name="evaluate",
-    help="""
-    # Evalution help
-
-    This command will evaluate an audio file, or a folder containing multiple audio files. Currently this is done by calculating the metrics from Kumar et. al. 2023.
-    We will report the predicted Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) by default.
-    We will also report the estimation of subjective Mean Opinion Score (MOS) if a Non-Matching Reference is provided. Please refer to Kumar et. al. for more information.
-
-
-
-    Kumar, Anurag, et al. “TorchAudio-Squim: Reference-less Speech Quality and Intelligibility measures in TorchAudio.” ICASSP 2023-2023 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2023.
-    """,
-)
+@command(app, short_help="Evaluate your synthesized audio")
 def evaluate(
     audio_file: Annotated[
         Optional[Path],
@@ -268,6 +249,16 @@ def evaluate(
         ),
     ] = None,
 ):
+    """# Evaluation help
+
+    This command will evaluate an audio file, or a folder containing multiple audio files. Currently this is done by calculating the metrics from Kumar et. al. 2023.
+    We will report the predicted Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) by default.
+    We will also report the estimation of subjective Mean Opinion Score (MOS) if a Non-Matching Reference is provided. Please refer to Kumar et. al. for more information.
+
+
+
+    Kumar, Anurag, et al. “TorchAudio-Squim: Reference-less Speech Quality and Intelligibility measures in TorchAudio.” ICASSP 2023-2023 IEEE International Conference on Acoustics, Speech and Signal Processing (ICASSP). IEEE, 2023.
+    """
     import json
 
     from tabulate import tabulate
@@ -378,16 +369,15 @@ export_group = typer.Typer(
 
 command(
     export_group,
-    short_help=HFG_EXPORT_SHORT_HELP,
     name="spec-to-wav",
-    help=HFG_EXPORT_LONG_HELP,
+    help=export_hfg.__doc__.replace("hfgl export", "everyvoice export spec-to-wav"),
 )(export_hfg)
 
 app.add_typer(
     export_group, name="export", short_help="Commands to export your EveryVoice models"
 )
 
-# Add the segment commands
+# Add the segment commands, all from wav2vec2aligner
 segment_group = typer.Typer(
     **default_typer_args,
     help=CLI_LONG_HELP,
@@ -496,21 +486,17 @@ command(
 command(
     preprocess_group,
     name="spec-to-wav",
-    short_help="Preprocess data for spec-to-wav (HiFiGAN) training",
-    help=f"""Preprocess data for a HiFiGAN spec-to-wav model.
-
-    **everyvoice preprocess spec-to-wav config/{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
-    """,
+    help=preprocess_hfg.__doc__.replace(
+        "hfgl preprocess", "everyvoice preprocess spec-to-wav"
+    ),
 )(preprocess_hfg)
 
 command(
     preprocess_group,
     name="text-to-wav",
-    short_help="Preprocess data for text-to-wav (StyleTTS2) training",
-    help=f"""Preprocess data for a StyleTTS2 text-to-wav model.
-
-    **everyvoice preprocess text-to-wav config/{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
-    """,
+    help=preprocess_styletts2.__doc__.replace(
+        "styletts2 preprocess", "everyvoice preprocess text-to-wav"
+    ),
 )(preprocess_styletts2)
 
 app.add_typer(
@@ -538,31 +524,21 @@ train_group = typer.Typer(
 command(
     train_group,
     name="text-to-spec",
-    short_help="Train your Text-to-Spec (FastSpeech2) model",
-    help=f"""Train your text-to-spec model.  For example:
-
-    **everyvoice train text-to-spec config/{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml**
-    """,
+    help=train_fs2.__doc__.replace("fs2l train", "everyvoice train text-to-spec"),
 )(train_fs2)
 
 command(
     train_group,
     name="spec-to-wav",
-    short_help="Train your Spec-to-Wav (HiFiGAN) model",
-    help=f"""Train your spec-to-wav model.  For example:
-
-    **everyvoice train spec-to-wav config/{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml**
-    """,
+    help=train_hfg.__doc__.replace("hfgl train", "everyvoice train spec-to-wav"),
 )(train_hfg)
 
 command(
     train_group,
     name="text-to-wav",
-    short_help="Train an end-to-end (StyleTTS2) model",
-    help=f"""Train an end-to-end text-to-speech model. For example:
-
-    **everyvoice train text-to-wav config/{TEXT_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml --mode first**
-    """,
+    help=train_styletts2.__doc__.replace(
+        "styletts2 train", "everyvoice train text-to-wav"
+    ),
 )(train_styletts2)
 
 app.add_typer(
@@ -591,7 +567,9 @@ command(synthesize_group, name="from-spec")(synthesize_hfg)
 command(
     synthesize_group,
     name="text-to-wav",
-    short_help="Synthesize audio from text using a trained StyleTTS2 model",
+    help=synthesize_styletts2.__doc__.replace(
+        "styletts2 synthesize", "everyvoice synthesize text-to-wav"
+    ),
 )(synthesize_styletts2)
 
 app.add_typer(
@@ -616,7 +594,9 @@ fetch_pretrained_group = typer.Typer(
 command(
     fetch_pretrained_group,
     name="text-to-wav",
-    short_help="Download pretrained weights for StyleTTS2 training",
+    help=fetch_pretrained_styletts2.__doc__.replace(
+        "styletts2 fetch-pretrained", "everyvoice fetch-pretrained text-to-wav"
+    ),
 )(fetch_pretrained_styletts2)
 
 app.add_typer(
@@ -933,11 +913,7 @@ def _run_fs2_demo(
     )
 
 
-@command(
-    app,
-    name="demo",
-    short_help="Launch an interactive Gradio demo for any EveryVoice model",
-)
+@command(app)
 @merge_args(inference_base_command_interface)
 def demo(
     checkpoint: Annotated[
@@ -1067,7 +1043,7 @@ def demo(
     ),
     **kwargs,
 ):
-    """Launch an interactive Gradio demo for any EveryVoice model.
+    """Launch an interactive Gradio demo for any EveryVoice model
 
     The model type is detected automatically from the checkpoint.
     Pass a single checkpoint for **StyleTTS2** (text-to-wav) models:
