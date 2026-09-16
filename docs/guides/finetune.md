@@ -20,13 +20,13 @@ Then you:
     Training filelist:
 
     ```bash
-    everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-training-filelist.psv> --teacher-forcing-directory <path-to-your-preprocessed-directory> --output-dir <path-to-your-preprocessed-directory>
+    everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-training-filelist.psv> --teacher-forcing-directory <path-to-your-preprocessed-directory> --output-dir <path-to-your-preprocessed-directory> -c text.split_text=false
     ```
 
     Validation filelist:
 
     ```bash
-    everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-validation-filelist.psv> --teacher-forcing-directory <path-to-your-preprocessed-directory> --output-dir <path-to-your-preprocessed-directory>
+    everyvoice synthesize from-text <path-to-your-text-to-spec.ckpt> -O spec --filelist <path-to-your-validation-filelist.psv> --teacher-forcing-directory <path-to-your-preprocessed-directory> --output-dir <path-to-your-preprocessed-directory> -c text.split_text=false
     ```
 
     !!! note
