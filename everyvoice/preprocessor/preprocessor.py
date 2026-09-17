@@ -36,6 +36,7 @@ from everyvoice.config.type_definitions import (
     TargetTrainingTextRepresentationLevel,
 )
 from everyvoice.exceptions import ConfigError
+from everyvoice.model.e2e.config import StyleTTS2Config
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.text.arpabet import ARPABET_TO_IPA_TRANSDUCER
@@ -66,8 +67,7 @@ from .helpers import (
 
 class Preprocessor:
     def __init__(
-        self,
-        config: FeaturePredictionConfig | VocoderConfig,
+        self, config: FeaturePredictionConfig | VocoderConfig | StyleTTS2Config
     ):
         self.config = config
         self.counters = Counters(Manager())
@@ -1083,11 +1083,11 @@ class Preprocessor:
 
     def preprocess(  # noqa: C901
         self,
-        output_path="filelist.psv",
-        cpus=min(5, mp.cpu_count()),
+        output_path: Path | str = "filelist.psv",
+        cpus: int = min(4, mp.cpu_count()),
         to_process: Sequence[str] = [],
-        overwrite=False,
-        debug=False,
+        overwrite: bool = False,
+        debug: bool = False,
     ):
         self.overwrite = overwrite
         self.output_path = output_path

@@ -1,6 +1,6 @@
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Optional, Union
+from typing import Annotated, Optional
 
 from annotated_types import Ge, Le
 from pydantic import Field, FilePath, ValidationInfo, field_validator, model_validator
@@ -81,7 +81,7 @@ class AudioConfig(ConfigModel):
         title="Number of Mel bins",
         description="Advanced. This is the number of filters in the Mel-scale spaced filterbank.",
     )
-    spec_type: Union[AudioSpecTypeEnum, str] = Field(
+    spec_type: AudioSpecTypeEnum | str = Field(
         default=AudioSpecTypeEnum.mel_librosa.value,
         description="Advanced. Defines how to calculate the spectrogram. 'mel' uses the TorchAudio implementation for a Mel spectrogram. 'mel-librosa' uses Librosa's implementation. 'linear' calculates a non-Mel linear spectrogram and 'raw' calculates a complex-valued spectrogram. 'linear' and 'raw' are not currently supported by EveryVoice. We recommend using 'mel-librosa'.",
     )
