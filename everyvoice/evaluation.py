@@ -1,5 +1,5 @@
 from os import PathLike
-from typing import Any, BinaryIO
+from typing import Any
 
 
 def load_squim_objective_model() -> tuple[Any, int]:
@@ -28,7 +28,7 @@ def load_squim_subjective_model() -> tuple[Any, int]:
     return (model, model_sampling_rate)
 
 
-def process_audio(path: BinaryIO | str | PathLike, sampling_rate: int):
+def process_audio(path: str | PathLike, sampling_rate: int):
     import torchaudio
 
     audio, sr = torchaudio.load(str(path))
