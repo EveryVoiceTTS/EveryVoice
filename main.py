@@ -1,5 +1,5 @@
-""" This is a file for writing macros for mkdocs
-    https://mkdocs-macros-plugin.readthedocs.io/en/latest/
+"""This is a file for writing macros for mkdocs
+https://mkdocs-macros-plugin.readthedocs.io/en/latest/
 """
 
 from everyvoice.wizard import (
