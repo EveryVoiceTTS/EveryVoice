@@ -567,7 +567,7 @@ command(synthesize_group, name="from-spec")(synthesize_hfg)
 command(
     synthesize_group,
     name="text-to-wav",
-    help=synthesize_styletts2.__doc__.replace(
+    help=synthesize_styletts2.__doc__.replace(  # type: ignore[union-attr]
         "styletts2 synthesize", "everyvoice synthesize text-to-wav"
     ),
 )(synthesize_styletts2)
@@ -594,7 +594,7 @@ fetch_pretrained_group = typer.Typer(
 command(
     fetch_pretrained_group,
     name="text-to-wav",
-    help=fetch_pretrained_styletts2.__doc__.replace(
+    help=fetch_pretrained_styletts2.__doc__.replace(  # type: ignore[union-attr]
         "styletts2 fetch-pretrained", "everyvoice fetch-pretrained text-to-wav"
     ),
 )(fetch_pretrained_styletts2)
