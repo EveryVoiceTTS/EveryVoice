@@ -9,6 +9,7 @@ import os
 import textwrap
 from pathlib import Path
 from pprint import pformat
+from typing import TYPE_CHECKING
 
 from deepdiff import DeepDiff
 from pydantic import ValidationError
@@ -36,6 +37,9 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
 from everyvoice.utils import update_config_from_cli_args
 
 MODEL_CONFIGS = [FastSpeech2Config, HiFiGANConfig]
+
+if TYPE_CHECKING:
+    from everyvoice.preprocessor import Preprocessor
 
 
 def load_unknown_config(
@@ -74,7 +78,7 @@ def load_config_base_command(
     # Must include the above in model-specific command
     config_args: list[str],
     config_file: Path,
-):
+) -> StyleTTS2Config | FastSpeech2Config | HiFiGANConfig:
 
     try:
         config = model_config.load_config_from_path(config_file)
@@ -108,32 +112,35 @@ def load_config_base_command(
 
 
 def preprocess_base_command(
-    model_config: type[StyleTTS2Config] | type[FastSpeech2Config] | type[HiFiGANConfig],
+    config: StyleTTS2Config | FastSpeech2Config | HiFiGANConfig,
     steps: list[str],
     # Must include the above in model-specific command
-    config_args: list[str],
-    config_file: Path,
     cpus: int,
     overwrite: bool,
     debug: bool,
-):
+) -> tuple["Preprocessor", list[str]]:
+    """Base command for preprocess commands in submodules
+
+    Returns:
+        processor (Preprocessor): the Preprocessor created and used
+        processed (list[str]): the steps actually processed
+    """
     from everyvoice.preprocessor import Preprocessor
 
-    config = load_config_base_command(model_config, config_args, config_file)
     preprocessor = Preprocessor(config)
     if (
         (isinstance(config, (FastSpeech2Config, StyleTTS2Config)))
         and config.model.target_text_representation_level
         == TargetTrainingTextRepresentationLevel.phonological_features
     ):
-        steps.append("pfs")
+        steps = [*steps, "pfs"]
     preprocessor.preprocess(
         cpus=cpus,
         overwrite=overwrite,
         to_process=steps,
         debug=debug,
     )
-    return preprocessor, config, steps
+    return preprocessor, steps
 
 
 def save_configuration_to_log_dir(
@@ -255,7 +262,7 @@ def train_base_command(
         detect_anomaly=False,  # used for debugging, but triples training time
         gradient_clip_val=gradient_clip_val,
     )
-    data = data_module(config)
+    data = data_module(config)  # type: ignore[arg-type]
     last_ckpt = (
         config.training.finetune_checkpoint
         if config.training.finetune_checkpoint is not None
@@ -264,7 +271,7 @@ def train_base_command(
     )
     # Train from Scratch
     if last_ckpt is None:
-        model_obj = model(config, **model_kwargs)
+        model_obj = model(config, **model_kwargs)  # type: ignore[arg-type]
         logger.info(f"Model's architecture\n{model_obj}")
         tensorboard_logger.log_hyperparams(config.model_dump())
         trainer.fit(model_obj, data)
