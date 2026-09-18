@@ -1,13 +1,13 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
         exclude: \.svg$
   - repo: https://github.com/PyCQA/isort
-    rev: 6.0.1
+    rev: 9.0.1
     hooks:
       - id: isort
         args: [--profile=black]
@@ -17,12 +17,12 @@ repos:
       - id: black
   # We do flake8 after black since black fixes a lot of the stuff it complains about
   - repo: https://github.com/pycqa/flake8
-    rev: 7.1.0
+    rev: 7.3.0
     hooks:
       - id: flake8
   # We do mypy last because it's the slowest of them all
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.16.1
+    rev: v2.3.1
     hooks:
       - id: mypy
-        additional_dependencies: [pydantic, numpy<2, types-requests, types-pyyaml, types-setuptools, types-tabulate, types-tqdm]
+        additional_dependencies: [pydantic, numpy, types-requests, types-pyyaml, types-setuptools, types-tabulate, types-tqdm]
