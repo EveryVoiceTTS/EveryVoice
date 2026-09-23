@@ -3,11 +3,13 @@
 import json
 import os
 import platform
+import re
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from textwrap import dedent
 from unittest import mock
 
 import jsonschema
@@ -103,9 +105,9 @@ class TestCLI:
     @pytest.mark.skipif(
         platform.system() == "Darwin", reason="TODO: fix this test on MacOS"
     )
+    @pytest.mark.skip("Too slow on every platform, with minimal assertions")
     def test_synthesize(self, dummy_fp_path, dummy_vocoder_path):
         # TODO: Here's a stub for getting synthesis unit tests working
-        #       I believe we'll need to also pass a stats object to the created spec_model
         # TODO: add a test for making sure that `preprocessing` and `logs_and_checkpoints` folders don't get created.
         # 20260428 update: this test works on Linux and Windows, but not on MacOS. TODO: fix it on MacOS
         os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = (
@@ -183,6 +185,9 @@ class TestCLI:
             result = self.runner.invoke(app, [command, "-h"])
             assert result.exit_code == 0
 
+    def command_name(self, cmd) -> str:
+        return cmd.name or cmd.callback.__name__.replace("_", "-")
+
     def test_command_list_uptodate(self):
         # Make sure we've listed all commands in COMMANDS. We could construct the list
         # from app.registered_{groups,commands} instead, but then we would not catch any
@@ -192,8 +197,56 @@ class TestCLI:
                 assert group.name in COMMANDS, f"please add {group.name} to COMMANDS"
         for cmd in app.registered_commands:
             if not cmd.hidden:
-                name = cmd.name or cmd.callback.__name__.replace("_", "-")
+                name = self.command_name(cmd)
                 assert name in COMMANDS, f"please add {name} to COMMANDS"
+
+    def sanitize_help(self, help_message: str) -> str:
+        # In some contexts, the help boxes might have square corners intead of the usual round ones
+        help_message = help_message.translate(str.maketrans("┌┐└┘", "╭╮╰╯"))
+        # Remove ANSI hyperlink escape sequences  https://en.wikipedia.org/wiki/ANSI_escape_code
+        help_message = re.sub(r"\x1b\].*?\x1b\\", "", help_message)
+        # Remove ANSI colour escape sequences
+        help_message = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", help_message)
+        # Remove trailing whitespace and cariage returns
+        help_message = re.sub(r" *\r?\n", "\n", help_message)
+        # CPUs default to mp.cpu_count() and that's not stable across machines
+        help_message = re.sub(
+            r"(preprocessing.*\n.*\[default: )\d+\]", r"\1N]", help_message
+        )
+        return help_message
+
+    def display_all_help_recursive(self, group, stack: list[str]):
+        equals = "=" * len(stack)
+        print(equals, "Call to group:", " ".join(stack))
+        equals += "="
+        result = self.runner.invoke(app, [*stack[1:], "--help"])
+        assert result.exit_code == 0
+        print(self.sanitize_help(result.output))
+        for cmd in group.registered_commands:
+            name = self.command_name(cmd)
+            print(equals, "Call to command:", " ".join(stack), name)
+            result = self.runner.invoke(app, [*stack[1:], name, "--help"])
+            assert result.exit_code == 0
+            print(self.sanitize_help(result.output))
+        for subgroup in group.registered_groups:
+            next_stack = [*stack, subgroup.name]
+            self.display_all_help_recursive(subgroup.typer_instance, next_stack)
+
+    def test_display_all_help(self, capsys):
+        self.display_all_help_recursive(app, ["everyvoice"])
+        all_help = capsys.readouterr().out.replace("\r\n", "\n").strip()
+        with open(TEST_DATA_DIR / "all_help.txt", encoding="utf-8") as f:
+            all_help_reference = f.read().replace("\r\n", "\n").strip()
+        if all_help != all_help_reference:
+            # use binary write with encode to bypass newline logic
+            with open("all_help_current.txt", "wb") as f:
+                f.write(all_help.encode("utf-8"))
+                f.write(b"\n")
+        assert all_help == all_help_reference, dedent("""\
+            diff -w everyvoice/tests/data/all_help.txt all_help_current.txt to see changes to help
+            messages. Make sure they look like you want them to, and then update all_help.txt.
+            Besides making sure we're intentional with CLI help changes, this test also makes
+            them explicitly reviewable in PRs.""")
 
     def test_update_schemas(self, subtests):
         dummy_contact = ContactInformation(

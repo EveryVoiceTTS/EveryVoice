@@ -1,0 +1,1186 @@
+= Call to group: everyvoice
+
+ Usage: root [OPTIONS] COMMAND [ARGS]...
+
+                         Welcome to the EveryVoice Command Line Interface
+
+ Please visit the documentation to get started: https://docs.everyvoice.ca
+
+ Use your own language/dataset
+
+ To run the wizard for a new project please use the following command: everyvoice new-project
+
+ Segment long files in your dataset
+
+ If you have long audio files that contain more than one utterance, you can use the segmentation
+ tool by running everyvoice segment [OPTIONS]
+
+ Preprocess
+
+ Once you have a configuration, preprocess your data by running everyvoice preprocess [OPTIONS]
+
+ Check Data
+
+ You can optionally check your data by running everyvoice check-data [OPTIONS]
+
+ Train
+
+ Once you have a configuration and have preprocessed your data, train a model by running
+ everyvoice train [text-to-spec|spec-to-wav|text-to-wav] [OPTIONS]. EveryVoice has different types
+ of models you can train:
+
+  1 text-to-spec --- this is the most common model you will need to train. It is a model from text
+    inputs to spectral feature (aka spectrogram) outputs.
+  2 spec-to-wav --- this is the model that turns your spectral features into audio. It is also
+    known as a 'vocoder'. You will typically not need to train your own version. Please refer to
+    https://pathtocheckpoints for more information.
+  3 text-to-wav --- this is a model that directly trains text input to waveform/audio output. It
+    is much more heavy duty than training a text-to-spec model. A text-to-spec model will take
+    less than 1 day to train for most datasets, while a text-to-wav model will take over a week
+    for most datasets. For that reason, we strongly recommend training a text-to-wav model first.
+    If you are satisfied with the results, and have extra GPU resources, you can try training a
+    text-to-wav model for improved sentence-level audio quality.
+
+ Synthesize
+
+ Once you have a trained model, generate some audio by running: everyvoice synthesize
+ [text-to-spec|spec-to-wav] [OPTIONS]
+
+ Evaluate
+
+ You can also try to evaluate your model by running: everyvoice evaluate
+ [synthesized_audio.wav|folder_containing_wavs] [OPTIONS]
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --version             -v        Print the version of EveryVoice and exit.                       │
+│ --diagnostic          -d        Print diagnostic information and exit.                          │
+│ --install-completion            Install completion for the current shell.                       │
+│ --show-completion               Show completion for the current shell, to copy it or customize  │
+│                                 the installation.                                               │
+│ --help                -h        Show this message and exit.                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
+│ new-project       Create configuration files for a new project                                  │
+│ preprocess        Commands to preprocess your data                                              │
+│ train             Commands to train your EveryVoice models                                      │
+│ synthesize        Commands to synthesize using your pre-trained EveryVoice models               │
+│ demo              Launch an interactive Gradio demo for any EveryVoice model                    │
+│ check             Commands to check your data and/or config                                     │
+│ checkpoint        Commands to inspect and rename speakers in your EveryVoice checkpoints        │
+│ evaluate          Evaluate your synthesized audio                                               │
+│ export            Commands to export your EveryVoice models                                     │
+│ fetch-pretrained  Commands to download pretrained model weights from HuggingFace                │
+│ g2p               Apply G2P to stdin. Great for testing your EveryVoice g2p plugin.             │
+│ segment           Commands to align and segment audio                                           │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to command: everyvoice evaluate
+
+ Usage: root evaluate [OPTIONS]
+
+                                          Evalution help
+
+ This command will evaluate an audio file, or a folder containing multiple audio files. Currently
+ this is done by calculating the metrics from Kumar et. al. 2023. We will report the predicted
+ Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility
+ (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) by default. We will also report
+ the estimation of subjective Mean Opinion Score (MOS) if a Non-Matching Reference is provided.
+ Please refer to Kumar et. al. for more information.
+
+ Kumar, Anurag, et al. “TorchAudio-Squim: Reference-less Speech Quality and Intelligibility
+ measures in TorchAudio.” ICASSP 2023-2023 IEEE International Conference on Acoustics, Speech and
+ Signal Processing (ICASSP). IEEE, 2023.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --audio-file              -f      <file>       The path to a single audio file for evaluation.  │
+│ --audio-directory         -d      <directory>  The directory where multiple audio files are     │
+│                                                located for evaluation                           │
+│ --non-matching-reference  -r      <file>       The path to a Non Mathing Reference audio file,  │
+│                                                required for MOS prediction.                     │
+│ --help                    -h                   Show this message and exit.                      │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to command: everyvoice new-project
+
+ Usage: root new-project [OPTIONS]
+
+    This command will help you create all the configuration necessary for using a new project.
+
+ Getting Started
+
+ In order to get started, please:
+
+  1 Make sure your audio data is available on your computer and in .wav format.
+  2 Have a 'metadata' file that minimally has two columns, one for the text of the audio and one
+    for the basename of the file.
+
+ Extra details and examples
+
+ Inside /path/to/wavs/ you should have wav audio files like test0001.wav, test0002.wav etc - they
+ can be called anything you want but the part of the file (minus the .wav portion) must be in your
+ metadata file.
+
+ Example wavs directory: "/path/to/wavs/"
+
+ Example metadata:
+ https://github.com/EveryVoiceTTS/EveryVoice/blob/main/everyvoice/filelists/lj_full.psv
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --resume-from  -r      <file>  Resume from previously saved progress.                           │
+│ --help         -h              Show this message and exit.                                      │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to command: everyvoice inspect-checkpoint
+
+ Usage: root inspect-checkpoint [OPTIONS] {model_path}
+
+ Inspect a model checkpoint.
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    model_path      <path>  [required]                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to command: everyvoice demo
+
+ Usage: root demo [OPTIONS] {checkpoint}
+
+ Launch an interactive Gradio demo for any EveryVoice model.
+
+ The model type is detected automatically from the checkpoint. Pass a single checkpoint for
+ StyleTTS2 (text-to-wav) models:
+
+
+  everyvoice demo path/to/styletts2.ckpt --ref-speaker 'Eric=eric.wav'
+
+
+ Pass a FastSpeech2 (text-to-spec) checkpoint plus a vocoder (spec-to-wav) for FastSpeech2 +
+ HiFiGAN models:
+
+
+  everyvoice demo path/to/fs2.ckpt --vocoder path/to/hifigan.ckpt
+
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    checkpoint      <file>  Path to a trained EveryVoice checkpoint (.ckpt). The model type is │
+│                              detected automatically from the checkpoint. For FastSpeech2 models │
+│                              also pass --vocoder.                                               │
+│                              [required]                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --language     -l      <str>        Languages to expose in the demo UI. Repeat the flag to      │
+│                                     include multiple languages. Defaults to all languages in    │
+│                                     the model. Only applicable to multilingual checkpoints; No  │
+│                                     language dropdown shown for monolingual ones.               │
+│                                     [default: all]                                              │
+│ --allowlist            <file>       Plain text file with allowed words or utterances (one per   │
+│                                     line). All other input is rejected. Cannot be combined with │
+│                                     --denylist.                                                 │
+│ --denylist             <file>       Plain text file with disallowed words or utterances (one    │
+│                                     per line). All other input is allowed. Cannot be combined   │
+│                                     with --allowlist. IMPORTANT: there are many ways to bypass  │
+│                                     a denylist. Use --allowlist for maximum security.           │
+│ --output-dir   -o      <directory>  Directory where synthesized audio files are written.        │
+│                                     [default: synthesis_output]                                 │
+│ --accelerator  -a      <str>        PyTorch Lightning accelerator (e.g. 'auto', 'cpu', 'gpu').  │
+│                                     [default: auto]                                             │
+│ --port         -p      <int>        Port to serve the demo on.                                  │
+│                                     [default: 7860]                                             │
+│ --share                             Publish the demo via Gradio's share tunnel (accessible from │
+│                                     the internet).                                              │
+│ --server-name  -n      <str>        Host/IP address to bind the demo server to.                 │
+│                                     [default: 0.0.0.0]                                          │
+│ --config-args  -c      <str>        Override the configuration.                                 │
+│ --help         -h                   Show this message and exit.                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ FastSpeech2 (text-to-spec) Options ────────────────────────────────────────────────────────────╮
+│ --vocoder         -V      <file>                             [FastSpeech2] Path to a trained    │
+│                                                              HiFiGAN vocoder checkpoint.        │
+│                                                              Required when the primary          │
+│                                                              checkpoint is a FastSpeech2 model. │
+│                                                              Not used with StyleTTS2            │
+│                                                              checkpoints.                       │
+│ --speaker         -s      <str>                              [FastSpeech2] Speaker names to     │
+│                                                              expose in the demo UI. Repeat the  │
+│                                                              flag to include multiple speakers. │
+│                                                              Defaults to all speakers in the    │
+│                                                              model. Not applicable to StyleTTS2 │
+│                                                              — use --ref-speaker instead.       │
+│                                                              [default: all]                     │
+│ --output-format   -O      <all|wav|spec|textgrid|readalong-  [FastSpeech2] Output formats to    │
+│                           xml|readalong-html>                expose in the demo UI.             │
+│                                                              [default: all]                     │
+│ --ui-config-file  -C      <file>                             [FastSpeech2] JSON file to         │
+│                                                              override UI labels (app_title,     │
+│                                                              app_description, app_instructions, │
+│                                                              speakers, languages,               │
+│                                                              input_text_label,                  │
+│                                                              duration_multiplier_label,         │
+│                                                              language_label, speaker_label,     │
+│                                                              output_format_label,               │
+│                                                              synthesize_label,                  │
+│                                                              file_output_label).                │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ StyleTTS2 (text-to-wav) Options ───────────────────────────────────────────────────────────────╮
+│ --ref-speaker  -R      <str>   [StyleTTS2] Named speaker with reference audio, in the format    │
+│                                'Display Name=path/to/audio.wav'. Repeat the flag to add         │
+│                                multiple speakers. Their style encodings are pre-computed at     │
+│                                startup and shown in a dropdown. Example: --ref-speaker          │
+│                                'Eric=eric.wav' --ref-speaker 'Darlene=darlene.wav'              │
+│ --reference    -r      <path>  [StyleTTS2] Default reference audio file that sets the initial   │
+│                                speaker style. Use this for reference-upload mode (no speaker    │
+│                                dropdown). Use --ref-speaker instead to pre-define named         │
+│                                speakers.                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to command: everyvoice update-schemas
+
+ Usage: root update-schemas [OPTIONS]
+
+ Update the JSON Schemas. This is hidden because you shouldn't be calling this unless you are a
+ developer for EveryVoice. Note: Pydantic will raise some Warnings related to the Callable fields
+ having string Schemas. These can be ignored.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --out-dir  -o      <directory>                                                                  │
+│ --help     -h                   Show this message and exit.                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to command: everyvoice g2p
+
+ Usage: root g2p [OPTIONS] {lang_id} [input_file]
+
+ Apply G2P to stdin. Great for testing your EveryVoice g2p plugin.
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    lang_id         <str>       language id                                                    │
+│                                  [required]                                                     │
+│      input_file      <filename>  [default: <_io.TextIOWrapper name=None encoding='utf-8'>]      │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --config          <path>  path to everyvoice-shared-text.yaml                                   │
+│ --help    -h              Show this message and exit.                                           │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to group: everyvoice export
+
+ Usage: root export [OPTIONS] COMMAND [ARGS]...
+
+                                            Export Help
+
+
+  • spec-to-wav --- You can export your spec-to-wav model to a much smaller format for synthesis.
+    Advanced: this will export only the generator, leaving the weights of the discriminators
+    behind.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
+│ spec-to-wav  Export and optimize a spec-to-wav model checkpoint for inference                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice export spec-to-wav
+
+ Usage: root export spec-to-wav [OPTIONS] {model_path}
+
+ Export your spec-to-wav model.
+
+                                            Important!
+
+ This will reduce the size of your checkpoint but it means that the exported checkpoint cannot be
+ resumed for training, it can only be used for inference/synthesis.
+
+ For example:
+
+ everyvoice export spec-to-wav <path_to_ckpt> <output_path>
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    model_path      <file>  The path to a trained EveryVoice spec-to-wav model                 │
+│                              [required]                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --output  -o      <file>  The path to a trained EveryVoice spec-to-wav model                    │
+│                           [default: exported.ckpt]                                              │
+│ --help    -h              Show this message and exit.                                           │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to group: everyvoice segment
+
+ Usage: root segment [OPTIONS] COMMAND [ARGS]...
+
+                                           Segment Help
+
+
+  • align --- This command will align a long audio file with some text into words and sentences.
+  • extract --- This command will take the alignment from the align command and extract it into
+    multiple utterances in the format required for training a TTS system
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
+│ align    Align a long audio file with some text                                                 │
+│ extract  Extract the intervals from a TextGrid                                                  │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice segment align
+
+ Usage: root segment align [OPTIONS] {text_path} {audio_path}
+
+                                         Segmentation help
+
+ This command will align a long audio file with some text. Your text should be separated so that
+ each sentence/utterance is on a new line in the text file. This command should work on most
+ languages and you should run it before running the new project or preprocessing steps. This
+ command will create a Praat TextGrid file. You must install Praat
+ (https://www.fon.hum.uva.nl/praat/) if you want to inspect the alignments.
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    text_path       <file>  [required]                                                         │
+│ *    audio_path      <file>  [required]                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --sample-rate                         <int>  The target sample rate for the model.              │
+│                                              [default: 16000]                                   │
+│ --word-padding                        <int>  How many frames to pad around words.               │
+│                                              [default: 0]                                       │
+│ --sentence-padding                    <int>  How many frames to pad around sentences (additive  │
+│                                              with word-padding).                                │
+│                                              [default: 0]                                       │
+│ --debug                 --no-debug           Print debug statements                             │
+│                                              [default: no-debug]                                │
+│ --help              -h                       Show this message and exit.                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice segment extract
+
+ Usage: root segment extract [OPTIONS] {text_grid_path} {audio_path} {outdir}
+
+                                         Segmentation help
+
+ This command will take the alignment from the align command and extract it into multiple
+ utterances in the format required for training a TTS system.
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    text_grid_path      <file>       [required]                                                │
+│ *    audio_path          <file>       [required]                                                │
+│ *    outdir              <directory>  [required]                                                │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --tier-number          <int>  The index of the tier to extract intervals from.                  │
+│                               [default: 4]                                                      │
+│ --prefix               <str>  The basename prefix used to label files.                          │
+│                               [default: segment]                                                │
+│ --help         -h             Show this message and exit.                                       │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to group: everyvoice preprocess
+
+ Usage: root preprocess [OPTIONS] COMMAND [ARGS]...
+
+                                          Preprocess Help
+
+ Preprocess your data before training.
+
+  • text-to-spec --- preprocess data for a FastSpeech2 (text-to-spec) model.
+  • text-to-wav --- preprocess data for a StyleTTS2 (text-to-wav) model. Only audio and text steps
+    are run; pitch, energy, and spectrogram features are computed on-the-fly during training.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
+│ text-to-spec  Preprocess data for text-to-spec (FastSpeech2) training                           │
+│ spec-to-wav   Preprocess data for spec-to-wav (HiFiGAN) training                                │
+│ text-to-wav   Preprocess data for text-to-wav (StyleTTS2) training                              │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice preprocess text-to-spec
+
+ Usage: root preprocess text-to-spec [OPTIONS] {config_file}
+
+ Preprocess data for a FastSpeech2 text-to-spec model.
+
+ everyvoice preprocess text-to-spec config/everyvoice-text-to-spec.yaml
+
+ To run only specific steps:
+
+ everyvoice preprocess text-to-spec config/everyvoice-text-to-spec.yaml -s energy -s pitch
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    config_file      <file>  The path to your model configuration file.                        │
+│                               [required]                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --stats        -S  --no-stats                                   Calculate stats for energy and  │
+│                                                                 pitch                           │
+│                                                                 [default: stats]                │
+│ --steps        -s                <audio|spec|attn|text|pitch|e  Which steps of the preprocessor │
+│                                  nergy>                         to use. If none are provided,   │
+│                                                                 all steps will be performed.    │
+│                                                                 [default: audio, spec, attn,    │
+│                                                                 text, pitch, energy]            │
+│ --config-args  -c                <str>                          Override the configuration.     │
+│ --cpus         -C                <int>                          How many CPUs to use when       │
+│                                                                 preprocessing                   │
+│                                                                 [default: N]                    │
+│ --overwrite    -O                                               Redo all preprocessing, even if │
+│                                                                 files already exist and aren't  │
+│                                                                 expected to change.             │
+│ --debug        -D                                               Enable debugging.               │
+│ --help         -h                                               Show this message and exit.     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice preprocess spec-to-wav
+
+ Usage: root preprocess spec-to-wav [OPTIONS] {config_file}
+
+ Preprocess data for a HiFiGAN spec-to-wav model.
+
+ everyvoice preprocess spec-to-wav config/everyvoice-spec-to-wav.yaml
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    config_file      <file>  The path to your model configuration file.                        │
+│                               [required]                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --steps        -s      <audio|spec>  Which steps of the preprocessor to use. If none are        │
+│                                      provided, all steps will be performed.                     │
+│                                      [default: audio, spec]                                     │
+│ --config-args  -c      <str>         Override the configuration.                                │
+│ --cpus         -C      <int>         How many CPUs to use when preprocessing                    │
+│                                      [default: N]                                               │
+│ --overwrite    -O                    Redo all preprocessing, even if files already exist and    │
+│                                      aren't expected to change.                                 │
+│ --debug        -D                    Enable debugging.                                          │
+│ --help         -h                    Show this message and exit.                                │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice preprocess text-to-wav
+
+ Usage: root preprocess text-to-wav [OPTIONS] {config_file}
+
+ Preprocess data for a StyleTTS2 text-to-wav model.
+
+ everyvoice preprocess text-to-wav config/everyvoice-text-to-wav.yaml
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    config_file      <file>  The path to your model configuration file.                        │
+│                               [required]                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --steps        -s      <audio|text>  Which preprocessing steps to run. If none are provided,    │
+│                                      text and audio processing steps are performed.             │
+│                                      [default: audio, text]                                     │
+│ --config-args  -c      <str>         Override the configuration.                                │
+│ --cpus         -C      <int>         How many CPUs to use when preprocessing                    │
+│                                      [default: N]                                               │
+│ --overwrite    -O                    Redo all preprocessing, even if files already exist and    │
+│                                      aren't expected to change.                                 │
+│ --debug        -D                    Enable debugging.                                          │
+│ --help         -h                    Show this message and exit.                                │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to group: everyvoice train
+
+ Usage: root train [OPTIONS] COMMAND [ARGS]...
+
+                                            Train Help
+
+ TODO: Please visit http://pathtomodelinfodocs for more information
+
+  • text-to-spec --- this is the most common model you will need to train. It is a model from text
+    inputs to spectral feature (aka spectrogram) outputs.
+  • spec-to-wav --- this is the model that turns your spectral features into audio. It is also
+    known as a 'vocoder'. You will typically not need to train your own version. Please refer to
+    https://pathtocheckpoints for more information.
+  • text-to-wav --- this is a model that directly trains text input to waveform/audio output. It
+    is much more heavy duty than training a text-to-spec model. A text-to-spec model will take
+    less than 1 day to train for most datasets, while a text-to-wav model will take over a week
+    for most datasets. For that reason, we strongly recommend training a text-to-wav model first.
+    If you are satisfied with the results, and have extra GPU resources, you can try training a
+    text-to-wav model for improved sentence-level audio quality.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
+│ text-to-spec  Train your Text-to-Spec (FastSpeech2) model                                       │
+│ spec-to-wav   Train your Spec-to-Wav (HiFiGAN) model                                            │
+│ text-to-wav   Train an end-to-end (StyleTTS2) model                                             │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice train text-to-spec
+
+ Usage: root train text-to-spec [OPTIONS] {config_file}
+
+ Train your text-to-spec model.  For example:
+
+ everyvoice train text-to-spec config/everyvoice-text-to-spec.yaml
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    config_file      <file>  The path to your model configuration file.                        │
+│                               [required]                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --config-args  -c      <str>  Overwrite the configuration                                       │
+│ --accelerator  -a      <str>  Uses PyTorch Lightning Accelerators:                              │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/ac… │
+│                               [default: auto]                                                   │
+│ --devices      -d      <str>  The number of GPUs on each node                                   │
+│                               [default: auto]                                                   │
+│ --nodes        -n      <int>  The number of nodes on your machine                               │
+│                               [default: 1]                                                      │
+│ --strategy     -s      <str>  The strategy for data parallelization:                            │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/… │
+│                               [default: ddp]                                                    │
+│ --help         -h             Show this message and exit.                                       │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice train spec-to-wav
+
+ Usage: root train spec-to-wav [OPTIONS] {config_file}
+
+ Train your spec-to-wav model.  For example:
+
+ everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    config_file      <file>  The path to your model configuration file.                        │
+│                               [required]                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --config-args  -c      <str>  Overwrite the configuration                                       │
+│ --accelerator  -a      <str>  Uses PyTorch Lightning Accelerators:                              │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/ac… │
+│                               [default: auto]                                                   │
+│ --devices      -d      <str>  The number of GPUs on each node                                   │
+│                               [default: auto]                                                   │
+│ --nodes        -n      <int>  The number of nodes on your machine                               │
+│                               [default: 1]                                                      │
+│ --strategy     -s      <str>  The strategy for data parallelization:                            │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/… │
+│                               [default: ddp]                                                    │
+│ --help         -h             Show this message and exit.                                       │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice train text-to-wav
+
+ Usage: root train text-to-wav [OPTIONS] {config_file}
+
+ Train an end-to-end text-to-speech model. For example:
+
+ everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml --mode first
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    config_file      <file>  The path to your model configuration file.                        │
+│                               [required]                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --mode         -m      <first|second|finetune>  Training mode: 'first' (acoustic pre-training   │
+│                                                 with TMA), 'second' (joint                      │
+│                                                 diffusion+adversarial), or 'finetune'.          │
+│                                                 [default: first]                                │
+│ --precision            <str>                    Floating-point precision passed to Lightning    │
+│                                                 Trainer (e.g. '32', '16-mixed', 'bf16-mixed').  │
+│                                                 [default: 32]                                   │
+│ --config-args  -c      <str>                    Overwrite the configuration                     │
+│ --accelerator  -a      <str>                    Uses PyTorch Lightning Accelerators:            │
+│                                                 https://pytorch-lightning.readthedocs.io/en/st… │
+│                                                 [default: auto]                                 │
+│ --devices      -d      <str>                    The number of GPUs on each node                 │
+│                                                 [default: auto]                                 │
+│ --nodes        -n      <int>                    The number of nodes on your machine             │
+│                                                 [default: 1]                                    │
+│ --strategy     -s      <str>                    The strategy for data parallelization:          │
+│                                                 https://pytorch-lightning.readthedocs.io/en/st… │
+│                                                 [default: ddp]                                  │
+│ --help         -h                               Show this message and exit.                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to group: everyvoice synthesize
+
+ Usage: root synthesize [OPTIONS] COMMAND [ARGS]...
+
+                                          Synthesize Help
+
+
+  • from-text --- This is the most common input for performing normal speech synthesis. It will
+    take text or a filelist with text and produce either waveform audio or spectrogram. This
+    option uses FastSpeech2 & HiFiGAN. If you want to do end-to-end synthesis with StyleTTS2, run
+    everyvoice synthesize text-to-wav instead.
+  • text-to-wav --- Synthesize audio directly from text using a trained end-to-end (StyleTTS2)
+    model. Only supports the wav output format.
+  • from-spec --- This is the model that turns your spectral features into audio. This type of
+    synthesis is also known as copy synthesis and unless you know what you are doing, you probably
+    don't want to do this.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
+│ from-text    Given some text and a trained model, generate some audio. i.e. perform typical     │
+│              speech synthesis                                                                   │
+│ from-spec    Given some Mel spectrograms and a trained model, generate some audio. i.e. perform │
+│              copy synthesis.                                                                    │
+│ text-to-wav  Synthesize audio from text using a trained StyleTTS2 model                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice synthesize from-text
+
+ Usage: root synthesize from-text [OPTIONS] {model_path}
+
+ Given some text and a trained model, generate some audio. i.e. perform typical speech synthesis
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    model_path      <file>  The path to a trained text-to-spec (i.e., feature prediction) or   │
+│                              e2e EveryVoice model.                                              │
+│                              [required]                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --output-dir                 -o      <directory>                   The directory where your     │
+│                                                                    synthesized audio should be  │
+│                                                                    written. By default,         │
+│                                                                    filenames include the        │
+│                                                                    basename, speaker, language, │
+│                                                                    and other metadata, e.g.     │
+│                                                                    'LJ050-0269--LJ--eng--ckpt=… │
+│                                                                    Use --simple-filenames to    │
+│                                                                    write just 'LJ050-0269.wav'  │
+│                                                                    instead.                     │
+│                                                                    [default: synthesis_output]  │
+│ --text                       -t      <str>                         Some text to synthesize.     │
+│                                                                    This option can be repeated  │
+│                                                                    to synthesize multiple       │
+│                                                                    sentences. It is recommended │
+│                                                                    to use --filelist if you     │
+│                                                                    want to synthesize a lot of  │
+│                                                                    sentences or have different  │
+│                                                                    speaker/language per         │
+│                                                                    sentence.                    │
+│ --language                   -l      <str>                         Specify which language to    │
+│                                                                    use in a multilingual        │
+│                                                                    system. [requires --text]    │
+│ --duration-control           -D      <float>                       Control the speaking rate of │
+│                                                                    the synthesis. Set a value   │
+│                                                                    to multily the durations by, │
+│                                                                    lower numbers produce        │
+│                                                                    quicker speaking rates,      │
+│                                                                    larger numbers produce       │
+│                                                                    slower speaking rates.       │
+│                                                                    Default is 1.0               │
+│                                                                    [default: 1.0]               │
+│ --style-reference            -S      <file>                        The path to an audio file    │
+│                                                                    containing a style           │
+│                                                                    reference. Your text-to-spec │
+│                                                                    must have been trained with  │
+│                                                                    the global style token       │
+│                                                                    module to use this feature.  │
+│ --speaker                    -s      <str>                         Specify which speaker to use │
+│                                                                    in a multispeaker system.    │
+│                                                                    [requires --text]            │
+│ --accelerator                -a      <str>                         [default: auto]              │
+│ --devices                    -d      <str>                         The number of GPUs to use    │
+│                                                                    [default: auto]              │
+│ --filelist                   -f      <file>                        The path to a file           │
+│                                                                    containing a list of         │
+│                                                                    utterances (a.k.a filelist). │
+│                                                                    Use --text if you want to    │
+│                                                                    just synthesize one sample.  │
+│ --text-representation                <characters|phones|arpabet>   The representation of the    │
+│                                                                    text you are synthesizing.   │
+│                                                                    Can be either 'characters',  │
+│                                                                    'phones', or 'arpabet'. The  │
+│                                                                    input type must be           │
+│                                                                    compatible with your model.  │
+│                                                                    [default: characters]        │
+│ --output-type                -O      <wav|spec|textgrid|readalong  Which format(s) to           │
+│                                      -xml|readalong-html>          synthesize to. Multiple      │
+│                                                                    formats can be provided by   │
+│                                                                    repeating --output-type.     │
+│                                                                                                 │
+│                                                                    'wav' is the default and     │
+│                                                                    will synthesize to a         │
+│                                                                    playable audio file.         │
+│                                                                    Requires --vocoder-path.     │
+│                                                                                                 │
+│                                                                    'spec' will generate         │
+│                                                                    predicted Mel spectrograms.  │
+│                                                                    Tensors are Mel              │
+│                                                                    band-oriented (K, T) where K │
+│                                                                    is equal to the number of    │
+│                                                                    Mel bands and T is equal to  │
+│                                                                    the number of frames.        │
+│                                                                                                 │
+│                                                                    'textgrid' will generate a   │
+│                                                                    Praat TextGrid with          │
+│                                                                    alignment labels. This can   │
+│                                                                    be helpful for evaluation.   │
+│                                                                                                 │
+│                                                                    'readalong-xml' will         │
+│                                                                    generate a ReadAlong from    │
+│                                                                    the given text and           │
+│                                                                    synthesized audio in XML     │
+│                                                                    .readalong format (see       │
+│                                                                    https://github.com/ReadAlon… │
+│                                                                                                 │
+│                                                                    'readalong-html' will        │
+│                                                                    generate a single file       │
+│                                                                    Offline HTML ReadAlong that  │
+│                                                                    can be further edited in the │
+│                                                                    ReadAlong Studio Editor, and │
+│                                                                    opened by itself. Also       │
+│                                                                    implies '--output-type wav'. │
+│                                                                    Requires --vocoder-path.     │
+│                                                                    [default: wav]               │
+│ --teacher-forcing-directory  -T      <directory>                   ADVANCED. The path to        │
+│                                                                    preprocessed folder          │
+│                                                                    containing spec and duration │
+│                                                                    folders to use for           │
+│                                                                    teacher-forcing the          │
+│                                                                    synthesized outputs.         │
+│ --vocoder-path               -v      <file>                        The path to a trained        │
+│                                                                    vocoder (aka spec-to-wav     │
+│                                                                    model).                      │
+│ --batch-size                 -b      <int>                         Batch size.                  │
+│                                                                    [default: 4]                 │
+│ --num-workers                -n      <int>                         Number of workers to process │
+│                                                                    the data.                    │
+│                                                                    [default: 4]                 │
+│ --simple-filenames                                                 Write output filenames as    │
+│                                                                    just the basename and        │
+│                                                                    extension (e.g.              │
+│                                                                    'LJ050-0269.wav') instead of │
+│                                                                    the default. Only use this   │
+│                                                                    if your basenames are unique │
+│                                                                    across speakers and          │
+│                                                                    languages in your filelist,  │
+│                                                                    otherwise outputs can        │
+│                                                                    overwrite each other.        │
+│ --config-args                -c      <str>                         Override the configuration.  │
+│ --help                       -h                                    Show this message and exit.  │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice synthesize from-spec
+
+ Usage: root synthesize from-spec [OPTIONS]
+
+ Given some Mel spectrograms and a trained model, generate some audio. i.e. perform copy
+ synthesis.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ *  --input          -i                        <file>  The path to a torch file containing Mel   │
+│                                                       band-oriented spectral features [K (Mel   │
+│                                                       bands), T (frames)]                       │
+│                                                       [required]                                │
+│ *  --model          -m                        <file>  The path to a trained EveryVoice          │
+│                                                       spec-to-wav model (i.e., a vocoder)       │
+│                                                       [required]                                │
+│    --time-oriented      --no-time-oriented            By default, EveryVoice assumes your       │
+│                                                       spectrograms are of the shape [K (Mel     │
+│                                                       bands), T (frames)]. If instead your      │
+│                                                       spectrograms are of shape [T (frames), K  │
+│                                                       (Mel bands)] then please add this flag to │
+│                                                       transpose the dimensions.                 │
+│                                                       [default: no-time-oriented]               │
+│    --help           -h                                Show this message and exit.               │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice synthesize text-to-wav
+
+ Usage: root synthesize text-to-wav [OPTIONS] {model_path}
+
+ Synthesize audio from text using a trained StyleTTS2 model.
+
+ Examples:
+
+ everyvoice synthesize text-to-wav logs_and_checkpoints/.../stage-2-last.ckpt
+ --reference path/to/reference.wav
+ --text "Hello world" --text "How are you?"
+
+ Or, for batch synthesis from a filelist:
+
+ everyvoice synthesize text-to-wav logs_and_checkpoints/.../stage-2-last.ckpt
+ --reference path/to/reference.wav --filelist my_filelist.psv --simple-filenames
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    model_path      <file>  Path to a trained StyleTTS2 checkpoint (.ckpt).                    │
+│                              [required]                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --reference            -r      <file>                          Reference audio file used to     │
+│                                                                extract speaker style. Required  │
+│                                                                unless every row of --filelist   │
+│                                                                provides its own 'reference' or  │
+│                                                                'reference_path' column.         │
+│ --text                 -t      <str>                           Text string(s) to synthesize.    │
+│                                                                Repeat the flag for multiple     │
+│                                                                utterances. Use --filelist       │
+│                                                                instead if you want to           │
+│                                                                synthesize a lot of sentences or │
+│                                                                have different                   │
+│                                                                speaker/language/reference per   │
+│                                                                sentence.                        │
+│ --text-representation          <characters|phones|arpabet>     The representation of the text   │
+│                                                                passed via --text: 'characters'  │
+│                                                                or 'phones' (already-phonemized  │
+│                                                                IPA). The input type must be     │
+│                                                                compatible with your model. Only │
+│                                                                applies to --text; --filelist    │
+│                                                                rows determine this              │
+│                                                                automatically from their         │
+│                                                                'characters'/'phones' column.    │
+│                                                                [default: characters]            │
+│ --filelist             -f      <file>                          The path to a file containing a  │
+│                                                                list of utterances (a.k.a        │
+│                                                                filelist). Expected columns:     │
+│                                                                'basename', 'characters' (or     │
+│                                                                'phones'), 'speaker',            │
+│                                                                'language', and optionally       │
+│                                                                'reference' (or                  │
+│                                                                'reference_path'). Any column    │
+│                                                                that is absent falls back to the │
+│                                                                corresponding                    │
+│                                                                --speaker/--language/--reference │
+│                                                                CLI option. Use --text if you    │
+│                                                                want to just synthesize one      │
+│                                                                sample.                          │
+│ --output-dir           -o      <path>                          Directory where synthesized      │
+│                                                                files will be written. By        │
+│                                                                default, filenames include the   │
+│                                                                basename, speaker, language, and │
+│                                                                other metadata, e.g.             │
+│                                                                'LJ050-0269--LJ--eng--ckpt=1000… │
+│                                                                Use --simple-filenames to write  │
+│                                                                just 'LJ050-0269.wav' instead.   │
+│                                                                [default: synthesis_output]      │
+│ --output-type                  <wav|spec|textgrid|readalong-x  Output format(s) to produce.     │
+│                                ml|readalong-html>              [default: wav]                   │
+│ --simple-filenames                                             Write output filenames as just   │
+│                                                                the basename and extension (e.g. │
+│                                                                'LJ050-0269.wav') instead of the │
+│                                                                default. Only use this if your   │
+│                                                                basenames are unique across      │
+│                                                                speakers and languages,          │
+│                                                                otherwise outputs can overwrite  │
+│                                                                each other.                      │
+│ --accelerator                  <str>                           Lightning accelerator: 'cpu',    │
+│                                                                'gpu', or 'auto'.                │
+│                                                                [default: auto]                  │
+│ --speaker              -s      <str>                           Speaker label written into       │
+│                                                                output filenames.                │
+│                                                                [default: default]               │
+│ --language             -l      <str>                           Language tag written into output │
+│                                                                filenames, and used to select a  │
+│                                                                g2p engine/normalization rules   │
+│                                                                for text processing. For         │
+│                                                                multilingual checkpoints (must   │
+│                                                                match a language seen during     │
+│                                                                training), this also selects the │
+│                                                                language embedding. Defaults to  │
+│                                                                the checkpoint's own (single)    │
+│                                                                training language for            │
+│                                                                monolingual checkpoints.         │
+│ --diffusion-steps              <int>                           Number of diffusion sampling     │
+│                                                                steps (higher = slower but       │
+│                                                                smoother).                       │
+│                                                                [default: 5]                     │
+│ --embedding-scale              <float>                         Classifier-free guidance scale   │
+│                                                                for the diffusion sampler.       │
+│                                                                [default: 1.0]                   │
+│ --acoustic-blend               <float>                         Blend weight for acoustic style  │
+│                                                                (0 = pure reference, 1 = pure    │
+│                                                                diffusion).                      │
+│                                                                [default: 0.3]                   │
+│ --prosody-blend                <float>                         Blend weight for prosody style   │
+│                                                                (0 = pure reference, 1 = pure    │
+│                                                                diffusion).                      │
+│                                                                [default: 0.7]                   │
+│ --help                 -h                                      Show this message and exit.      │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to group: everyvoice fetch-pretrained
+
+ Usage: root fetch-pretrained [OPTIONS] COMMAND [ARGS]...
+
+                                      Fetch Pretrained Models
+
+ Download pretrained model weights from HuggingFace before running a training job on a cluster
+ node that has no internet access.  Run this command on the head node first; the files are cached
+ by the HuggingFace hub and reused automatically during training.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
+│ text-to-wav  Download pretrained weights for StyleTTS2 training                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice fetch-pretrained text-to-wav
+
+ Usage: root fetch-pretrained text-to-wav [OPTIONS] {config_file}
+
+ Download StyleTTS2 pretrained model weights from HuggingFace.
+
+ Run this command on a node with internet access before submitting a GPU training job.  The files
+ are stored in the HuggingFace hub cache and are reused automatically by everyvoice train
+ text-to-wav.
+
+ Example:
+
+ everyvoice fetch-pretrained text-to-wav config/everyvoice-text-to-wav-config.yaml
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    config_file      <file>  Path to your EveryVoice StyleTTS2 configuration file.             │
+│                               [required]                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to group: everyvoice check
+
+ Usage: root check [OPTIONS] COMMAND [ARGS]...
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
+│ data                Check your data for outliers or any anomalies                               │
+│ text-config         Inspect a text configuration for compatiblity with an input file            │
+│ pretrained-symbols  Check a text config's declared symbols against a pretrained text-encoder's  │
+│                     symbol table                                                                │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice check data
+
+ Usage: root check data [OPTIONS] {config_file} {model_path}
+
+                                          Check Data Help
+
+ This command will check all of your data to help you find anomalies and outliers.
+
+ To check your data, make sure you've run preprocessing first (everyvoice preprocess --help). Then
+ you need to briefly and partially train a text-to-spec model. We recommend 100-1000 steps to
+ start.
+
+ Then, with your partially trained model you can run the data checker:
+
+ everyvoice check-data config/everyvoice-text-to-spec.yaml
+ logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt
+
+ This will output two files - one containing some basic statistics for your data and the other
+ containing losses for each datapoint as calculated by your model.
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    config_file      <file>  The path to your text-to-spec model configuration file.           │
+│                               [required]                                                        │
+│ *    model_path       <file>  The path to a trained text-to-spec (i.e., feature prediction)     │
+│                               model.                                                            │
+│                               [required]                                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --output-dir           -o                          <directory>            The directory where   │
+│                                                                           your synthesized      │
+│                                                                           audio should be       │
+│                                                                           written               │
+│                                                                           [default:             │
+│                                                                           checked_data]         │
+│ --style-reference      -S                          <file>                 The path to an audio  │
+│                                                                           file containing a     │
+│                                                                           style reference. Your │
+│                                                                           text-to-spec must     │
+│                                                                           have been trained     │
+│                                                                           with the global style │
+│                                                                           token module to use   │
+│                                                                           this feature.         │
+│ --accelerator          -a                          <str>                  [default: auto]       │
+│ --devices              -d                          <str>                  The number of GPUs to │
+│                                                                           use                   │
+│                                                                           [default: auto]       │
+│ --filelist             -f                          <file>                 The path to a file    │
+│                                                                           containing a list of  │
+│                                                                           utterances (a.k.a     │
+│                                                                           filelist). Use --text │
+│                                                                           if you want to just   │
+│                                                                           synthesize one        │
+│                                                                           sample.               │
+│ --text-representation                              <characters|phones|ar  The representation of │
+│                                                    pabet>                 the text you are      │
+│                                                                           synthesizing. Can be  │
+│                                                                           either 'characters',  │
+│                                                                           'phones', or          │
+│                                                                           'arpabet'. The input  │
+│                                                                           type must be          │
+│                                                                           compatible with your  │
+│                                                                           model.                │
+│                                                                           [default: characters] │
+│ --preprocessed-direc…  -p                          <directory>            The path to the       │
+│                                                                           folder containing all │
+│                                                                           of your preprocessed  │
+│                                                                           data.                 │
+│                                                                           [default:             │
+│                                                                           preprocessed]         │
+│ --num-workers          -n                          <int>                  Number of workers to  │
+│                                                                           process the data.     │
+│                                                                           [default: 4]          │
+│ --calculate-stats          --no-calculate-stats                           Whether to calculate  │
+│                                                                           basic statistics on   │
+│                                                                           your dataset.         │
+│                                                                           [default:             │
+│                                                                           calculate-stats]      │
+│ --objective-evaluati…      --no-objective-eval…                           Whether to perform    │
+│                                                                           objective evaluation  │
+│                                                                           on your dataset using │
+│                                                                           TorchSquim. This is   │
+│                                                                           time-consuming.       │
+│                                                                           [default:             │
+│                                                                           objective-evaluation] │
+│ --clip-detection           --no-clip-detection                            Whether to detect     │
+│                                                                           clipping in your      │
+│                                                                           audio. This is        │
+│                                                                           expensive so we do    │
+│                                                                           not do this by        │
+│                                                                           default.              │
+│                                                                           [default:             │
+│                                                                           no-clip-detection]    │
+│ --help                 -h                                                 Show this message and │
+│                                                                           exit.                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice check text-config
+
+ Usage: root check text-config [OPTIONS]
+
+                                      Check Text Config Help
+
+ Inspect a text configuration for compatibility with an input file: test processing the file's
+ text against the text configuration provided (or the text configuration found in a model), and
+ report any characters or phones the file uses that aren't declared in the config.
+
+ To instead check a config's declared symbols against a pretrained text-encoder's fixed symbol
+ table (currently only StyleTTS2 has one), use everyvoice check pretrained-symbols.
+
+ Required options: one of --config and --model, as well as one of --text-file and --psv-file.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --config     -c      <file>  path to text config, i.e., everyvoice-shared-text.yaml             │
+│ --model      -m      <file>  path to a model whose text config will be used                     │
+│ --text-file          <file>  path to a plain text file to check                                 │
+│ --psv-file           <file>  path to a psv file to check                                        │
+│ --language   -l      <str>   language id, required with --text-file, or for a psv file without  │
+│                              a language column. Declaring the language is always required,      │
+│                              because text normalization can be language specific, and g2p is    │
+│                              always language specific.                                          │
+│ --help       -h              Show this message and exit.                                        │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice check pretrained-symbols
+
+ Usage: root check pretrained-symbols [OPTIONS]
+
+                                   Check Pretrained Symbols Help
+
+ Some models (currently only StyleTTS2) use a pretrained text encoder with a fixed, frozen symbol
+ table: every symbol your text config declares must be a member of that table, or the model can't
+ produce a meaningful embedding for it. This command checks that, and for any symbol that isn't in
+ the pretrained table, suggests the closest pretrained symbol to substitute it with — printed as a
+ copy-pastable to_replace block.
+
+ To instead check a text config against a sample of your text (are all the characters/phones your
+ data uses declared in the config?), use everyvoice check text-config.
+
+ Required options: one of --config and --model.
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --config  -c      <file>  path to a model config with a pretrained text-encoder, e.g.           │
+│                           everyvoice-text-to-wav.yaml for StyleTTS2                             │
+│ --model   -m      <file>  path to a model whose config will be used                             │
+│ --help    -h              Show this message and exit.                                           │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+== Call to group: everyvoice checkpoint
+
+ Usage: root checkpoint [OPTIONS] COMMAND [ARGS]...
+
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
+│ inspect         Extract structural information from a checkpoint                                │
+│ rename-speaker  Rename a speaker in the checkpoint's parameters                                 │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice checkpoint inspect
+
+ Usage: root checkpoint inspect [OPTIONS] {model_path}
+
+ Given an EveryVoice checkpoint, show information about the configuration used during training,
+ the model's architecture and the number of weights per layer and total weight count.
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    model_path      <file>  The path to your model checkpoint file.                            │
+│                              [required]                                                         │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --show-config        -c  --no-show-config        -C    Show the configuration used during       │
+│                                                        training                                 │
+│                                                        [default: show-config]                   │
+│ --show-architecture  -a  --no-show-architecture  -A    Show the model's architecture            │
+│                                                        [default: show-architecture]             │
+│ --help               -h                                Show this message and exit.              │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+
+=== Call to command: everyvoice checkpoint rename-speaker
+
+ Usage: root checkpoint rename-speaker [OPTIONS] {model_path} {old_speaker_name}
+                                       {new_speaker_name}
+
+ Rename a speaker in the checkpoint's parameters.
+
+╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
+│ *    model_path            <file>  The path to your model checkpoint file.                      │
+│                                    [required]                                                   │
+│ *    old_speaker_name      <str>   The name of the speaker to rename.                           │
+│                                    [required]                                                   │
+│ *    new_speaker_name      <str>   The new name for the speaker.                                │
+│                                    [required]                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
+│ --help  -h        Show this message and exit.                                                   │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
