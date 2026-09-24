@@ -14,6 +14,7 @@ from unittest import mock
 
 import jsonschema
 import pytest
+import typer
 import yaml
 from packaging.version import Version
 from pydantic import ValidationError
@@ -61,6 +62,34 @@ COMMANDS = [
     "export",
     "segment",
 ]
+
+
+def command_name(cmd: typer.models.CommandInfo) -> str:
+    """Given a typer command, figure out and return its name as seen on the CLI."""
+    return cmd.name or cmd.callback.__name__.replace("_", "-")
+
+
+def sanitize_help(help_message: str) -> str:
+    """Sanitize a help message so it looks the same regarless of terminal capabilities
+
+    This is related to but different from stubs.flatten_log() in that we want to preserve
+    the general line formatting of the help messages while normalizing them across platforms.
+
+    Designed in combination with os.environ["COLUMNS"] set in conftest.py to normalize
+    for terminal size in all pytest runs."""
+    # In some contexts, the help boxes might have square corners intead of the usual round ones
+    help_message = help_message.translate(str.maketrans("┌┐└┘", "╭╮╰╯"))
+    # Remove ANSI hyperlink escape sequences  https://en.wikipedia.org/wiki/ANSI_escape_code
+    help_message = re.sub(r"\x1b\].*?\x1b\\", "", help_message)
+    # Remove ANSI colour escape sequences
+    help_message = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", help_message)
+    # Remove trailing whitespace and carriage returns
+    help_message = re.sub(r" *\r?\n", "\n", help_message)
+    # CPUs default to mp.cpu_count() and that's not stable across machines
+    help_message = re.sub(
+        r"(preprocessing.*\n.*\[default: )\d+\]", r"\1N]", help_message
+    )
+    return help_message
 
 
 class TestCLI:
@@ -185,9 +214,6 @@ class TestCLI:
             result = self.runner.invoke(app, [command, "-h"])
             assert result.exit_code == 0
 
-    def command_name(self, cmd) -> str:
-        return cmd.name or cmd.callback.__name__.replace("_", "-")
-
     def test_command_list_uptodate(self):
         # Make sure we've listed all commands in COMMANDS. We could construct the list
         # from app.registered_{groups,commands} instead, but then we would not catch any
@@ -197,23 +223,8 @@ class TestCLI:
                 assert group.name in COMMANDS, f"please add {group.name} to COMMANDS"
         for cmd in app.registered_commands:
             if not cmd.hidden:
-                name = self.command_name(cmd)
+                name = command_name(cmd)
                 assert name in COMMANDS, f"please add {name} to COMMANDS"
-
-    def sanitize_help(self, help_message: str) -> str:
-        # In some contexts, the help boxes might have square corners intead of the usual round ones
-        help_message = help_message.translate(str.maketrans("┌┐└┘", "╭╮╰╯"))
-        # Remove ANSI hyperlink escape sequences  https://en.wikipedia.org/wiki/ANSI_escape_code
-        help_message = re.sub(r"\x1b\].*?\x1b\\", "", help_message)
-        # Remove ANSI colour escape sequences
-        help_message = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", help_message)
-        # Remove trailing whitespace and carriage returns
-        help_message = re.sub(r" *\r?\n", "\n", help_message)
-        # CPUs default to mp.cpu_count() and that's not stable across machines
-        help_message = re.sub(
-            r"(preprocessing.*\n.*\[default: )\d+\]", r"\1N]", help_message
-        )
-        return help_message
 
     def display_all_help_recursive(self, group, stack: list[str]):
         equals = "=" * len(stack)
@@ -221,13 +232,13 @@ class TestCLI:
         equals += "="
         result = self.runner.invoke(app, [*stack[1:], "--help"])
         assert result.exit_code == 0
-        print(self.sanitize_help(result.output))
+        print(sanitize_help(result.output))
         for cmd in group.registered_commands:
-            name = self.command_name(cmd)
+            name = command_name(cmd)
             print(equals, "Call to command:", " ".join(stack), name)
             result = self.runner.invoke(app, [*stack[1:], name, "--help"])
             assert result.exit_code == 0
-            print(self.sanitize_help(result.output))
+            print(sanitize_help(result.output))
         for subgroup in group.registered_groups:
             next_stack = [*stack, subgroup.name]
             self.display_all_help_recursive(subgroup.typer_instance, next_stack)
