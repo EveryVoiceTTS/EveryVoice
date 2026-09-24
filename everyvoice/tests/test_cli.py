@@ -207,7 +207,7 @@ class TestCLI:
         help_message = re.sub(r"\x1b\].*?\x1b\\", "", help_message)
         # Remove ANSI colour escape sequences
         help_message = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", help_message)
-        # Remove trailing whitespace and cariage returns
+        # Remove trailing whitespace and carriage returns
         help_message = re.sub(r" *\r?\n", "\n", help_message)
         # CPUs default to mp.cpu_count() and that's not stable across machines
         help_message = re.sub(
