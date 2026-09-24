@@ -1,8 +1,13 @@
 """
 Fixtures shared by all unit tests.
-Places in everyvoice instead of everyvoice/tests so that submodules also see it.
+Placed in everyvoice instead of everyvoice/tests so that submodules also see it.
+
+This gets read by pytest every time tests start, so other test configuration
+settings/overrides can be inserted here.
 """
 
+import os
+import sys
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -13,6 +18,20 @@ if TYPE_CHECKING:
         FastSpeech2,
     )
     from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import HiFiGAN
+
+
+# On Windows, redirecting pytest output to file happens in the system encoding, which
+# is not utf-8 by default. We don't like that, so fix it.
+if os.name == "nt":
+    sys.stdout.reconfigure(encoding="utf-8")  # type: ignore
+    sys.stderr.reconfigure(encoding="utf-8")  # type: ignore
+
+# Stabilize typer help output to a consistent width for unit testing purposes
+if os.name == "nt":
+    os.environ["COLUMNS"] = "100"
+else:
+    os.environ["COLUMNS"] = "99"
+os.environ["NO_COLOR"] = "1"  # disable Typer help colouring for unit tests
 
 
 @fixture(scope="session")
