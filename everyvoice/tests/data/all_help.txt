@@ -658,8 +658,8 @@
 │ from-text    Given some text and a trained model, generate some audio. i.e. perform typical     │
 │              speech synthesis                                                                   │
 │ from-spec    Given some Mel spectrograms and a trained model, generate some audio. i.e. perform │
-│              copy synthesis.                                                                    │
-│ text-to-wav  Synthesize audio from text using a trained StyleTTS2 model.                        │
+│              copy synthesis                                                                     │
+│ text-to-wav  Synthesize audio from text using a trained StyleTTS2 model                         │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -803,8 +803,7 @@
 
  Usage: root synthesize from-spec [OPTIONS]
 
- Given some Mel spectrograms and a trained model, generate some audio. i.e. perform copy
- synthesis.
+ Given some Mel spectrograms and a trained model, generate some audio. i.e. perform copy synthesis
 
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
 │ *  --input          -i                        <file>  The path to a torch file containing Mel   │
@@ -829,7 +828,7 @@
 
  Usage: root synthesize text-to-wav [OPTIONS] {model_path}
 
- Synthesize audio from text using a trained StyleTTS2 model.
+ Synthesize audio from text using a trained StyleTTS2 model
 
  Examples:
 
@@ -953,7 +952,7 @@
 │ --help  -h        Show this message and exit.                                                   │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
-│ text-to-wav  Download StyleTTS2 pretrained model weights from HuggingFace.                      │
+│ text-to-wav  Download StyleTTS2 pretrained model weights from HuggingFace                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -961,7 +960,7 @@
 
  Usage: root fetch-pretrained text-to-wav [OPTIONS] {config_file}
 
- Download StyleTTS2 pretrained model weights from HuggingFace.
+ Download StyleTTS2 pretrained model weights from HuggingFace
 
  Run this command on a node with internet access before submitting a GPU training job.  The files
  are stored in the HuggingFace hub cache and are reused automatically by everyvoice train
