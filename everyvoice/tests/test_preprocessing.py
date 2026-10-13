@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 
+import logging
 import os
+import re
 import shutil
 import sys
 import tempfile
 from math import sqrt
 from pathlib import Path
 from typing import Any
-from unittest import TestCase
 
+import pytest
 import torch
 import torchaudio
 import yaml
 from pydantic_core._pydantic_core import ValidationError
-from pytest import main
 from torch import float32
 from typer.testing import CliRunner
 
@@ -41,7 +42,7 @@ from everyvoice.tests.stubs import (
 from everyvoice.utils import generic_psv_filelist_reader
 
 
-class PreprocessingTest(PreprocessedAudioFixture, TestCase):
+class TestPreprocessing(PreprocessedAudioFixture):
     """Unit tests for preprocessing steps"""
 
     filelist = generic_psv_filelist_reader(TEST_DATA_DIR / "metadata.psv")
@@ -56,7 +57,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         ] = False
         with tempfile.TemporaryDirectory() as tmpdir:
             with init_context({"writing_config": Path(tmpdir)}):
-                with self.assertRaises(ValueError):
+                with pytest.raises(ValueError):
                     FeaturePredictionConfig(**no_permissions_args)
 
     def test_remove_silence(self):
@@ -77,21 +78,15 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             hop_size=config.preprocessing.audio.fft_hop_size,
         )
 
-        self.assertEqual(
-            raw_sr, processed_sr, "Sampling Rate should not be changed by default"
-        )
-        self.assertEqual(
-            raw_audio.size()[1] / raw_sr,
-            3.5,
-            "Should be exactly 3.5 seconds of audio at 44100 Hz sampling rate",
-        )
+        assert raw_sr == processed_sr, "Sampling Rate should not be changed by default"
+        assert (
+            raw_audio.size()[1] / raw_sr == 3.5
+        ), "Should be exactly 3.5 seconds of audio at 44100 Hz sampling rate"
         skip_sox = os.environ.get("EVERYVOICE_SKIP_SOX_EFFECTS_ON_WINDOWS", False)
         if not skip_sox:
-            self.assertEqual(
-                round(processed_audio.size()[0] / processed_sr, 2),
-                2.5,
-                msg="Should be about half a second of silence removed from the beginning and end",
-            )
+            assert (
+                round(processed_audio.size()[0] / processed_sr, 2) == 2.5
+            ), "Should be about half a second of silence removed from the beginning and end"
         # should work with resampling too
         rs_processed_audio, rs_processed_sr = self.preprocessor.process_audio(
             audio_path_with_silence,
@@ -100,11 +95,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             hop_size=config.preprocessing.audio.fft_hop_size,
         )
         if not skip_sox:
-            self.assertEqual(
-                round(rs_processed_audio.size()[0] / rs_processed_sr, 2),
-                2.5,
-                msg="Should be about half a second of silence removed from the beginning and end when resampled too",
-            )
+            assert (
+                round(rs_processed_audio.size()[0] / rs_processed_sr, 2) == 2.5
+            ), "Should be about half a second of silence removed from the beginning and end when resampled too"
 
     def test_process_empty_audio(self) -> None:
         for audiofile in ["empty.wav", "zeros.wav"]:
@@ -134,9 +127,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                         ["reverse"],
                     ],
                 )
-        self.assertEqual(
-            self.preprocessor.counters.value("sox_error"), sox_errors_before + 2
-        )
+        assert self.preprocessor.counters.value("sox_error") == sox_errors_before + 2
 
     def test_multichannel_audio_skipped(self):
         """Test that audio files with more than 2 channels are skipped gracefully"""
@@ -152,9 +143,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         assert sr is None
 
         # Should be added to the multichannel files list
-        self.assertIn(
-            str(multichannel_audio_path), self.preprocessor.multichannel_files_list
-        )
+        assert str(multichannel_audio_path) in self.preprocessor.multichannel_files_list
 
         # Should increment the counter
         assert self.preprocessor.counters.value("multichannel_files") == 1
@@ -189,7 +178,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
         # Should show 0 multichannel files and no multichannel files section
         assert "multichannel_files          0" in report
-        self.assertNotIn("Multichannel Audio Files", report)
+        assert "Multichannel Audio Files" not in report
 
     def test_multichannel_files_file_creation(self):
         """Test that multichannel_files.txt is created correctly"""
@@ -342,9 +331,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
             # Verify that multichannel_files.txt was created
             multichannel_file = save_dir / "multichannel_files.txt"
-            self.assertTrue(
-                multichannel_file.exists(), "multichannel_files.txt should be created"
-            )
+            assert (
+                multichannel_file.exists()
+            ), "multichannel_files.txt should be created"
 
             # Verify the content
             with open(multichannel_file, "r") as f:
@@ -368,16 +357,16 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         )
         # remove channel info
         raw_audio = raw_audio.squeeze()
-        self.assertNotEqual(raw_audio.size(0), audio.size(0))
-        self.assertLess(raw_audio.size(0) - audio.size(0), 256)
+        assert raw_audio.size(0) != audio.size(0)
+        assert raw_audio.size(0) - audio.size(0) < 256
         # changing the hop size changes how much is removed
         diff_hop_audio, _ = self.preprocessor.process_audio(
             self.wavs_dir / (entry["basename"] + ".wav"), hop_size=35
         )
-        self.assertNotEqual(audio.size(0), diff_hop_audio.size(0))
+        assert audio.size(0) != diff_hop_audio.size(0)
         # we should never truncate more than a portion of a single frame
-        self.assertLess(raw_audio.size(0) - diff_hop_audio.size(0), 35)
-        with self.assertRaises(ValueError):  # missing hop_size
+        assert raw_audio.size(0) - diff_hop_audio.size(0) < 35
+        with pytest.raises(ValueError):  # missing hop_size
             self.preprocessor.process_audio(
                 self.wavs_dir / (entry["basename"] + ".wav")
             )
@@ -420,14 +409,11 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 audio, complex_preprocessor.input_spectral_transform, normalize=False
             )
             # check data is same number of mels
-            self.assertEqual(
-                feats.size(0),
-                self.preprocessor.config.preprocessing.audio.n_mels,
-            )
+            assert feats.size(0) == self.preprocessor.config.preprocessing.audio.n_mels
             # Check linear spec has right number of fft bins
-            self.assertEqual(
-                linear_feats.size(0),
-                linear_preprocessor.config.preprocessing.audio.n_fft // 2 + 1,
+            assert (
+                linear_feats.size(0)
+                == linear_preprocessor.config.preprocessing.audio.n_fft // 2 + 1
             )
             # check all same length
             assert feats.size(1) == linear_feats.size(1)
@@ -643,9 +629,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                             cpus=1,
                             to_process=["text", "pfs"],
                         )
-                    self.assertIn(
-                        "You've finished preprocessing: text", output.getvalue()
-                    )
+                    assert "You've finished preprocessing: text" in output.getvalue()
                     processed_filelist = preprocessor.load_filelist(output_filelist)
                     characters = [
                         x["character_tokens"]
@@ -663,41 +647,33 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     ]
                     for i, utt_phones in enumerate(phones):
                         # Phonlogical features are derived from phones so they should be of equal length
-                        self.assertEqual(
-                            len(utt_phones.split("/")),
-                            phonological_features[i].size(0),
-                            utt_phones.split("/"),
-                        )
+                        assert len(utt_phones.split("/")) == phonological_features[
+                            i
+                        ].size(0), utt_phones.split("/")
 
                     if filelist_test_info["contains_characters"]:
-                        self.assertEqual(
-                            len(characters),
-                            5,
-                            f'failed finding characters in {filelist_test_info["path"]}',
-                        )
-                        self.assertEqual(
-                            characters[0],
-                            "t/h/e/ /e/s/s/e/n/t/i/a/l/ /t/e/r/m/s/ /o/f/ /s/u/c/h/ /m/e/m/o/r/a/n/d/a/ /m/i/g/h/t/ /w/e/l/l/ /b/e/ /e/m/b/o/d/i/e/d/ /i/n/ /a/n/ /e/x/e/c/u/t/i/v/e/ /o/r/d/e/r/.",
-                            f'failed in {filelist_test_info["path"]}',
-                        )
+                        assert (
+                            len(characters) == 5
+                        ), f'failed finding characters in {filelist_test_info["path"]}'
+                        assert (
+                            characters[0]
+                            == "t/h/e/ /e/s/s/e/n/t/i/a/l/ /t/e/r/m/s/ /o/f/ /s/u/c/h/ /m/e/m/o/r/a/n/d/a/ /m/i/g/h/t/ /w/e/l/l/ /b/e/ /e/m/b/o/d/i/e/d/ /i/n/ /a/n/ /e/x/e/c/u/t/i/v/e/ /o/r/d/e/r/."
+                        ), f'failed in {filelist_test_info["path"]}'
                     if filelist_test_info["contains_phones"]:
-                        self.assertEqual(
-                            len(phones),
-                            5,
-                            f'failed finding phones in {filelist_test_info["path"]}',
-                        )
+                        assert (
+                            len(phones) == 5
+                        ), f'failed finding phones in {filelist_test_info["path"]}'
                         if "arpabet" in filelist_test_info["path"].stem:
                             # arpabet uses space for phone boundaries
-                            self.assertEqual(
-                                phones[0],
-                                "ð/ /ʌ/ /e/ /s/ /e/ /n/ /ʃ/ /ʌ/ /l/ /t/ /r/ /m/ /z/ /ʌ/ /v/ /s/ /ʌ/ /c/h/ /m/ /e/ /m/ /r/ /æ/ /n/ /d/ /ʌ/ /m/ /a/ɪ/ /t/ /w/ /e/ /l/ /b/ /i/ /ɪ/ /m/ /b/ /ɑ/ /d/ /i/ /d/ /ɪ/ /n/ /æ/ /n/ /ɪ/ /g/ /z/ /e/ /k/ /j/ /ʌ/ /t/ /ɪ/ /v/ /ɔ/ /r/ /d/ /r/ /.",
+                            assert (
+                                phones[0]
+                                == "ð/ /ʌ/ /e/ /s/ /e/ /n/ /ʃ/ /ʌ/ /l/ /t/ /r/ /m/ /z/ /ʌ/ /v/ /s/ /ʌ/ /c/h/ /m/ /e/ /m/ /r/ /æ/ /n/ /d/ /ʌ/ /m/ /a/ɪ/ /t/ /w/ /e/ /l/ /b/ /i/ /ɪ/ /m/ /b/ /ɑ/ /d/ /i/ /d/ /ɪ/ /n/ /æ/ /n/ /ɪ/ /g/ /z/ /e/ /k/ /j/ /ʌ/ /t/ /ɪ/ /v/ /ɔ/ /r/ /d/ /r/ /."
                             )
                         else:
-                            self.assertEqual(
-                                phones[0],
-                                "ð/ʌ/ /ɛ/s/ɛ/n/ʃ/ʌ/l/ /t/ɜ˞/m/z/ /ʌ/v/ /s/ʌ/t/ʃ/ /m/ɛ/m/ɜ˞/æ/n/d/ʌ/ /m/a/ɪ/t/ /w/ɛ/l/ /b/i/ /ɪ/m/b/ɑ/d/i/d/ /ɪ/n/ /æ/n/ /ɪ/ɡ/z/ɛ/k/j/ʌ/t/ɪ/v/ /ɔ/ɹ/d/ɜ˞/.",
-                                f'failed in {filelist_test_info["path"]}',
-                            )
+                            assert (
+                                phones[0]
+                                == "ð/ʌ/ /ɛ/s/ɛ/n/ʃ/ʌ/l/ /t/ɜ˞/m/z/ /ʌ/v/ /s/ʌ/t/ʃ/ /m/ɛ/m/ɜ˞/æ/n/d/ʌ/ /m/a/ɪ/t/ /w/ɛ/l/ /b/i/ /ɪ/m/b/ɑ/d/i/d/ /ɪ/n/ /æ/n/ /ɪ/ɡ/z/ɛ/k/j/ʌ/t/ɪ/v/ /ɔ/ɹ/d/ɜ˞/."
+                            ), f'failed in {filelist_test_info["path"]}'
 
     def get_simple_config(self, tmpdir_in: str | Path, /):
         """Create a simple config for testing"""
@@ -767,14 +743,14 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 filelist = generic_psv_filelist_reader("preprocessed/filelist.psv")
                 assert filelist[4]["label"] == "lowercase-only"
                 assert "/é/" in filelist[4]["character_tokens"]  # lower NFD only
-                self.assertNotIn("/é/", filelist[4]["character_tokens"])  # not NFC
-                self.assertNotIn("/É/", filelist[4]["character_tokens"])  # not upper
+                assert "/é/" not in filelist[4]["character_tokens"]  # not NFC
+                assert "/É/" not in filelist[4]["character_tokens"]  # not upper
                 assert filelist[8]["label"] == "nfc-only"
                 assert "/é/" in filelist[8]["character_tokens"]  # lower NFC
-                self.assertNotIn("/é/", filelist[8]["character_tokens"])  # not NFD
+                assert "/é/" not in filelist[8]["character_tokens"]  # not NFD
                 assert filelist[9]["label"] == "nfc-only"
                 assert "/É/" in filelist[9]["character_tokens"]  # upper NFC
-                self.assertNotIn("/É/", filelist[9]["character_tokens"])  # not NFD
+                assert "/É/" not in filelist[9]["character_tokens"]  # not NFD
 
     def test_incremental_preprocess(self):
         with tempfile.TemporaryDirectory(
@@ -797,8 +773,8 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
-            self.assertRegex(output.getvalue(), r"processed files *3")
-            self.assertRegex(output.getvalue(), r"previously processed files *0")
+            assert re.search(r"processed files *3", output.getvalue())
+            assert re.search(r"previously processed files *0", output.getvalue())
 
             fp_config.preprocessing.source_data[0].filelist = full_filelist
             with (
@@ -809,8 +785,8 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
-            self.assertRegex(output.getvalue(), r"processed files *2")
-            self.assertRegex(output.getvalue(), r"previously processed files *3")
+            assert re.search(r"processed files *2", output.getvalue())
+            assert re.search(r"previously processed files *3", output.getvalue())
             with (
                 capture_stdout() as output,
                 capture_stderr(),
@@ -823,8 +799,8 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     to_process=to_process,
                     debug=True,
                 )
-            self.assertRegex(output.getvalue(), r"processed files *5")
-            self.assertRegex(output.getvalue(), r"previously processed files *0")
+            assert re.search(r"processed files *5", output.getvalue())
+            assert re.search(r"previously processed files *0", output.getvalue())
 
     def test_gotta_do_audio_first(self):
         with tempfile.TemporaryDirectory(
@@ -834,7 +810,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
 
             to_process_no_audio = ("energy", "pitch", "attn", "text", "spec")
             with (
-                self.assertRaises(SystemExit),
+                pytest.raises(SystemExit),
                 capture_stdout(),
                 mute_logger("everyvoice.preprocessor.preprocessor"),
             ):
@@ -861,7 +837,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             fp_config.preprocessing.source_data[0].filelist = input_filelist
 
             with (
-                self.assertRaises(SystemExit),
+                pytest.raises(SystemExit),
                 capture_stdout(),
                 capture_stderr(),
                 mute_logger("everyvoice.preprocessor.preprocessor"),
@@ -870,7 +846,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
 
-    def test_config_lock(self) -> None:
+    def test_config_lock(self, caplog) -> None:
         with tempfile.TemporaryDirectory(
             prefix="test_config_lock", dir="."
         ) as tmpdir_s:
@@ -889,16 +865,19 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             def fail_config_lock(
                 config_object: object, element: str, value: Any, message: str
             ):
+                caplog.clear()
                 with stubs.monkeypatch(config_object, element, value):
-                    with self.assertRaises(SystemExit):
-                        with stubs.patch_logger(preprocessor) as logger:
-                            with self.assertLogs(logger) as logs:
-                                Preprocessor(fp_config).preprocess(
-                                    output_path=lj_filelist,
-                                    cpus=1,
-                                    to_process=to_process,
-                                )
-                log_output = "\n".join(logs.output)
+                    with pytest.raises(SystemExit):
+                        with (
+                            stubs.patch_logger(preprocessor),
+                            caplog.at_level(logging.INFO, logger="UnitTesting"),
+                        ):
+                            Preprocessor(fp_config).preprocess(
+                                output_path=lj_filelist,
+                                cpus=1,
+                                to_process=to_process,
+                            )
+                log_output = caplog.text
                 assert "Config lock mismatch:" in log_output
                 assert message in log_output
 
@@ -954,10 +933,10 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         config = PreprocessingConfig(train_split=1.0)
         assert config.train_split == 1.0
 
-        with self.assertRaises(ValidationError), capture_stdout() as cout:
+        with pytest.raises(ValidationError), capture_stdout() as cout:
             config = PreprocessingConfig(train_split=-0.1)
             assert "Input should be greater than or equal to 0" in cout.getvalue()
-        with self.assertRaises(ValidationError), capture_stdout() as cout:
+        with pytest.raises(ValidationError), capture_stdout() as cout:
             config = PreprocessingConfig(train_split=1.1)
             assert "Input should be less than or equal to 1" in cout.getvalue()
 
@@ -967,28 +946,20 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         # default, or the user's selected default speaker name, and the wizard inserts
         # the language selected, but since we still support missing those columns, we
         # want to test that here.
-        self.assertEqual(
-            self.preprocessor.get_speaker_and_language({"item": "foo"}),
-            {"item": "foo", "speaker": "default", "language": "default"},
-        )
-        self.assertEqual(
-            self.preprocessor.get_speaker_and_language(
-                {"item": "foo", "language": "bar"}
-            ),
-            {"item": "foo", "speaker": "default", "language": "bar"},
-        )
-        self.assertEqual(
-            self.preprocessor.get_speaker_and_language(
-                {"item": "foo", "speaker": "baz"}
-            ),
-            {"item": "foo", "speaker": "baz", "language": "default"},
-        )
-        self.assertEqual(
-            self.preprocessor.get_speaker_and_language(
-                {"item": "foo", "language": "bar", "speaker": "baz"}
-            ),
-            {"item": "foo", "speaker": "baz", "language": "bar"},
-        )
+        assert self.preprocessor.get_speaker_and_language({"item": "foo"}) == {
+            "item": "foo",
+            "speaker": "default",
+            "language": "default",
+        }
+        assert self.preprocessor.get_speaker_and_language(
+            {"item": "foo", "language": "bar"}
+        ) == {"item": "foo", "speaker": "default", "language": "bar"}
+        assert self.preprocessor.get_speaker_and_language(
+            {"item": "foo", "speaker": "baz"}
+        ) == {"item": "foo", "speaker": "baz", "language": "default"}
+        assert self.preprocessor.get_speaker_and_language(
+            {"item": "foo", "language": "bar", "speaker": "baz"}
+        ) == {"item": "foo", "speaker": "baz", "language": "bar"}
 
     def test_stats(self) -> None:
         """
@@ -1022,15 +993,15 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 char_length_stats = char_length_data.calculate_stats()
                 assert char_length_stats["min"] == 83
                 assert char_length_stats["max"] == 118
-                self.assertAlmostEqual(char_length_stats["std"], sqrt(200.5), places=4)
+                assert char_length_stats["std"] == pytest.approx(sqrt(200.5), abs=5e-5)
                 assert char_length_stats["mean"] == 105
 
                 assert phone_length_data is not None
                 phone_length_stats = phone_length_data.calculate_stats()
                 assert phone_length_stats["min"] == 76
                 assert phone_length_stats["max"] == 111
-                self.assertAlmostEqual(phone_length_stats["std"], sqrt(216.3), places=4)
-                self.assertAlmostEqual(phone_length_stats["mean"], 98.4, places=4)
+                assert phone_length_stats["std"] == pytest.approx(sqrt(216.3), abs=5e-5)
+                assert phone_length_stats["mean"] == pytest.approx(98.4, abs=5e-5)
 
     def test_missing_audio_files_detection(self):
         """Test that missing audio files are properly detected and reported"""
@@ -1068,9 +1039,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             missing_files_list = list(
                 (tmpdir / "preprocessed").glob("missing_files_*.txt")
             )
-            self.assertEqual(
-                len(missing_files_list), 1, "Should have exactly one missing_files file"
-            )
+            assert (
+                len(missing_files_list) == 1
+            ), "Should have exactly one missing_files file"
             missing_files_path = missing_files_list[0]
 
             # Check contents of missing_files_*.txt
@@ -1114,9 +1085,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             missing_files_list = list(
                 (tmpdir / "preprocessed").glob("missing_files_*.txt")
             )
-            self.assertEqual(
-                len(missing_files_list), 0, "Should have no missing_files files"
-            )
+            assert len(missing_files_list) == 0, "Should have no missing_files files"
 
             # Check that summary doesn't mention missing files
             summary_path = tmpdir / "preprocessed" / "summary.txt"
@@ -1125,7 +1094,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             with open(summary_path, "r", encoding="utf8") as f:
                 summary_content = f.read()
 
-            self.assertNotIn("Missing Audio Files", summary_content)
+            assert "Missing Audio Files" not in summary_content
 
     def test_missing_files_spec_processing(self):
         """Test missing files detected in process_spec method"""
@@ -1136,8 +1105,8 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         input_spec, output_spec = preprocessor.process_spec(fake_item)
 
         # Should return None for both specs and track missing file
-        self.assertIsNone(input_spec)
-        self.assertIsNone(output_spec)
+        assert input_spec is None
+        assert output_spec is None
         assert len(preprocessor.missing_files_list) == 1
         assert "nonexistent" in preprocessor.missing_files_list[0]
 
@@ -1189,9 +1158,9 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             missing_files_list = list(
                 (tmpdir / "preprocessed").glob("missing_files_*.txt")
             )
-            self.assertEqual(
-                len(missing_files_list), 1, "Should have exactly one missing_files file"
-            )
+            assert (
+                len(missing_files_list) == 1
+            ), "Should have exactly one missing_files file"
             missing_files_path = missing_files_list[0]
 
             with open(missing_files_path, "r", encoding="utf8") as f:
@@ -1208,7 +1177,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
         report = preprocessor.report()
 
         # Should not contain missing files section
-        self.assertNotIn("Missing Audio Files", report)
+        assert "Missing Audio Files" not in report
 
     def test_no_audio_files_warning(self):
         """Test that warning is shown when no audio files are processed"""
@@ -1234,7 +1203,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
             # When all files are filtered out, preprocessor exits with an error
             # This is the expected behavior when no valid audio files can be processed
             with (
-                self.assertRaises(SystemExit),
+                pytest.raises(SystemExit),
                 capture_stdout(),
                 capture_stderr(),
                 mute_logger("everyvoice.preprocessor"),
@@ -1244,7 +1213,7 @@ class PreprocessingTest(PreprocessedAudioFixture, TestCase):
                 )
 
 
-class TestSoxEffects(TestCase):
+class TestSoxEffects:
     many_effects = [
         ["norm", "-3.0"],
         ["silence", "1", "0.1", "0.1%"],
@@ -1256,9 +1225,9 @@ class TestSoxEffects(TestCase):
     audiofile = TEST_DATA_DIR / "lj/wavs/LJ050-0269.wav"
 
     def test_file_errors(self) -> None:
-        with self.assertRaises(SoxError):
+        with pytest.raises(SoxError):
             apply_sox_effects_to_file("does not exist", "delme-foo", self.many_effects)
-        with self.assertRaises(SoxError):
+        with pytest.raises(SoxError):
             apply_sox_effects_to_file(
                 self.audiofile, "cant/write/here.wav", self.many_effects
             )
@@ -1268,11 +1237,10 @@ class TestSoxEffects(TestCase):
         saved_path = os.environ["PATH"]
         try:
             os.environ["PATH"] = ""
-            with self.assertRaises(Exception) as cm:
+            with pytest.raises(Exception) as excinfo:
                 apply_sox_effects_to_file(self.audiofile, "nodir/nosox.wav", [])
-            self.assertIn(
-                "Please make sure the sox executable is on your PATH",
-                str(cm.exception),
+            assert "Please make sure the sox executable is on your PATH" in str(
+                excinfo.value
             )
         finally:
             os.environ["PATH"] = saved_path
@@ -1281,13 +1249,13 @@ class TestSoxEffects(TestCase):
         with tempfile.TemporaryDirectory(prefix="sox_effects_", dir=".") as tmpdir_s:
             tmpdir = Path(tmpdir_s)
 
-            with self.assertRaises(SoxError):
+            with pytest.raises(SoxError):
                 apply_sox_effects_to_file(
                     self.audiofile,
                     tmpdir / "error1.wav",
                     [["norm", "-3.0"], ["reverse"], ["notasoxcommand"]],
                 )
-            with self.assertRaises(SoxError):
+            with pytest.raises(SoxError):
                 apply_sox_effects_to_file(
                     self.audiofile,
                     tmpdir / "error2.wav",
@@ -1319,7 +1287,7 @@ class TestSoxEffects(TestCase):
             assert (tmpdir / "output3.wav").exists()
 
 
-class PreprocessingHierarchyTest(TestCase):
+class TestPreprocessingHierarchy:
     def test_hierarchy(self):
         """Unit tests for preprocessing steps"""
 
@@ -1354,9 +1322,7 @@ class PreprocessingHierarchyTest(TestCase):
             for t in ("audio", "spec", "attn", "energy", "pitch"):
                 # There are two speakers
                 sources = [d.name for d in tmpdir.glob(f"**/{t}/*")]
-                self.assertSetEqual(
-                    set(sources), set(("LJ010", "LJ050")), f"failed for {t}"
-                )
+                assert set(sources) == set(("LJ010", "LJ050")), f"failed for {t}"
                 # First speaker has one recording
                 files = (
                     list(tmpdir.glob(f"**/{t}/LJ010/*.wav"))
@@ -1373,7 +1339,7 @@ class PreprocessingHierarchyTest(TestCase):
                 assert len(files) == 5
 
 
-class OODPreprocessingTest(PreprocessedAudioFixture, TestCase):
+class TestOODPreprocessing(PreprocessedAudioFixture):
     """Unit tests for Preprocessor.preprocess_ood()"""
 
     def _run_preprocess_ood(self, preprocessor, ood_raw_data):
@@ -1490,4 +1456,4 @@ class OODPreprocessingTest(PreprocessedAudioFixture, TestCase):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)
