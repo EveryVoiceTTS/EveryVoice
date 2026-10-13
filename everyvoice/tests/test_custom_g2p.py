@@ -7,7 +7,6 @@ import sys
 import tempfile
 from pathlib import Path
 from textwrap import dedent
-from unittest import TestCase
 
 import pytest
 from pydantic import ValidationError
@@ -33,22 +32,20 @@ from everyvoice.text.phonemizer import (
 from everyvoice.wizard import basic, dataset
 
 
-class TestG2p(TestCase):
+class TestG2p:
     """Test G2P"""
 
-    def setUp(self) -> None:
-        super().setUp()
+    @pytest.fixture(autouse=True)
+    def fresh_g2p_engines(self):
         # Each test in this suite needs to start with a fresh, empty
         # AVAILABLE_G2P_ENGINES cache, otherwise caching due to previous calls
         # get get_g2p_engine() in other suites could invalidate some tests here.
-        self.SAVED_AVAILABLE_G2P_ENGINES = dict(AVAILABLE_G2P_ENGINES)
+        saved_available_g2p_engines = dict(AVAILABLE_G2P_ENGINES)
         AVAILABLE_G2P_ENGINES.clear()
         AVAILABLE_G2P_ENGINES.update(make_default_g2p_engines())
-
-    def tearDown(self) -> None:
-        super().setUp()
+        yield
         AVAILABLE_G2P_ENGINES.clear()
-        AVAILABLE_G2P_ENGINES.update(self.SAVED_AVAILABLE_G2P_ENGINES)
+        AVAILABLE_G2P_ENGINES.update(saved_available_g2p_engines)
 
     def test_many_available_langs(self):
         assert len(AVAILABLE_G2P_ENGINES) >= 20
@@ -300,7 +297,7 @@ class TestTextConfigWithG2p:
         ), "The new G2P Engine shouldn't be the same as the old engine."
 
 
-class CustomG2pTest(WizardTestBase):
+class TestCustomG2p(WizardTestBase):
     def test_custom_g2p_in_wizard(self):
         """Test using a custom g2p on a custom language code"""
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -3,6 +3,7 @@
 """Unit tests for the wizard module"""
 
 import os
+import re
 import string
 import sys
 import tempfile
@@ -14,8 +15,8 @@ from pathlib import Path
 from textwrap import dedent
 from types import MethodType
 from typing import NamedTuple, Optional
-from unittest import TestCase
 
+import pytest
 import yaml
 from anytree import PreOrderIter, RenderTree
 from packaging.version import Version
@@ -24,7 +25,6 @@ from packaging.version import Version
 from prompt_toolkit.application import create_app_session
 from prompt_toolkit.input import create_pipe_input
 from prompt_toolkit.output import DummyOutput
-from pytest import main
 
 from everyvoice._version import VERSION
 from everyvoice.tests.stubs import (
@@ -130,7 +130,7 @@ def make_trivial_tour(trace: bool = False, debug_state: bool = False) -> Tour:
     )
 
 
-class WizardTestBase(TestCase):
+class WizardTestBase:
     """Base class for tests that involve the wizard and need to run tours."""
 
     def monkey_run_tour(
@@ -173,17 +173,15 @@ class WizardTestBase(TestCase):
                 if step.is_reversible():
                     state = deepcopy(step.state)
                     step.undo()
-                    self.assertNotEqual(state, step.state)
+                    assert state != step.state
                     # with saved_monkey:
                     if debug:
                         print(repr(step_and_answer.monkey), file=sys.stderr)
                     with step_and_answer.monkey:
                         step.run()
-                    self.assertEqual(
-                        state,
-                        step.state,
-                        f"Undo did not undo correctly for {step.name}",
-                    )
+                    assert (
+                        state == step.state
+                    ), f"Undo did not undo correctly for {step.name}"
 
                 if step.children and step_and_answer.children_answers:
                     # Here we assemble steps_and_answers for the recursive call from
@@ -210,7 +208,7 @@ class WizardTestBase(TestCase):
         return tour, out.getvalue()
 
 
-class WizardTest(WizardTestBase):
+class TestWizard(WizardTestBase):
     """Basic test for the configuration wizard"""
 
     data_dir = Path(__file__).parent / "data"
@@ -220,10 +218,10 @@ class WizardTest(WizardTestBase):
         no_validate_step = StepStub(name="Dummy Step", prompt_method=lambda: "test")
         no_prompt_step = StepStub(name="Dummy Step", validate_method=lambda: True)
         for step in [nothing_step, no_validate_step, no_prompt_step]:
-            with self.assertRaises(NotImplementedError):
+            with pytest.raises(NotImplementedError):
                 step.run()
-            self.assertFalse(step.is_reversible())
-            self.assertFalse(step.is_automatic())
+            assert not step.is_reversible()
+            assert not step.is_automatic()
 
     def test_config_format_effect(self):
         """This is testing if a null key can be passed without throwing an
@@ -274,14 +272,14 @@ class WizardTest(WizardTestBase):
             with open(
                 Path(tmpdirname) / "Config Step" / "test-filelist.psv", encoding="utf8"
             ) as f:
-                self.assertEqual(
-                    f.read(),
-                    "basename|language|speaker|text\n0001|und|default|hello\n0002|und|default|hello\n0003|und|default|hello\n",
+                assert (
+                    f.read()
+                    == "basename|language|speaker|text\n0001|und|default|hello\n0002|und|default|hello\n0003|und|default|hello\n"
                 )
             assert "Congratulations" in stdout.getvalue()
-            self.assertTrue(
-                (Path(tmpdirname) / config_step.name / "logs_and_checkpoints").exists()
-            )
+            assert (
+                Path(tmpdirname) / config_step.name / "logs_and_checkpoints"
+            ).exists()
 
     def test_access_response(self):
         root_step = StepStub(
@@ -303,12 +301,12 @@ class WizardTest(WizardTestBase):
             if i != 0:
                 assert second_step.parent.response == "foo"
                 assert node.validate("bar")
-                self.assertFalse(node.validate("foo"))
+                assert not node.validate("foo")
             node.run()
 
     def test_main_tour(self):
         tour = get_main_wizard_tour()
-        self.assertGreater(len(tour.steps), 6)
+        assert len(tour.steps) > 6
         # TODO try to figure out how to actually run the tour in unit testing or
         # at least add more interesting assertions that just the fact that it's
         # got several steps.
@@ -339,8 +337,8 @@ class WizardTest(WizardTestBase):
         # that will fail validation, because that would cause infinite
         # recursion.
         with capture_stdout() as stdout:
-            self.assertFalse(step.validate("foo/bar"))
-            self.assertFalse(step.validate(""))
+            assert not step.validate("foo/bar")
+            assert not step.validate("")
         output = stdout.getvalue()
         assert "'foo/bar'" in output
         assert "is not valid" in output
@@ -359,8 +357,8 @@ class WizardTest(WizardTestBase):
         """Exercise providing an invalid contact name."""
         step = basic.ContactNameStep("")
         with capture_stdout() as stdout:
-            self.assertFalse(step.validate("a"))
-            self.assertFalse(step.validate(""))
+            assert not step.validate("a")
+            assert not step.validate("")
         output = stdout.getvalue()
         assert "Sorry" in output
         assert "EveryVoice requires a name" in output
@@ -369,14 +367,14 @@ class WizardTest(WizardTestBase):
         """Exercise providing an invalid contact email."""
         step = basic.ContactEmailStep("")
         with capture_stdout() as stdout:
-            self.assertFalse(step.validate("test"))
-            self.assertFalse(step.validate("test@"))
-            self.assertFalse(step.validate("test@test."))
+            assert not step.validate("test")
+            assert not step.validate("test@")
+            assert not step.validate("test@test.")
             assert step.validate("test@test.ca")
-            self.assertFalse(step.validate(""))
+            assert not step.validate("")
         output = stdout.getvalue().replace(" \n", " ")
         # Supporting email-validator prior and post 2.2.0 where the error string changed.
-        self.assertTrue(
+        assert (
             "It must have exactly one @-sign" in output
             or "An email address must have an @-sign" in output
         )
@@ -387,21 +385,21 @@ class WizardTest(WizardTestBase):
         """Exercise lacking permissions, then trying again"""
         tour = get_main_wizard_tour()
         permission_step = find_step(SN.dataset_permission_step, tour.steps)
-        self.assertGreater(len(permission_step.children), 8)
-        self.assertGreater(len(tour.root.descendants), 14)
+        assert len(permission_step.children) > 8
+        assert len(tour.root.descendants) > 14
         assert "dataset_0" in tour.state
         with patch_menu_prompt(0):  # 0 is no, I don't have permission
             permission_step.run()
         assert permission_step.children == ()
-        self.assertLess(len(tour.root.descendants), 10)
-        self.assertNotIn("dataset_0", tour.state)
+        assert len(tour.root.descendants) < 10
+        assert "dataset_0" not in tour.state
 
         more_dataset_step = find_step(SN.more_datasets_step, tour.steps)
         with patch_menu_prompt(1):  # 1 is Yes, I have more data
             more_dataset_step.run()
         assert "dataset_0" in tour.state
-        self.assertGreater(len(more_dataset_step.descendants), 8)
-        self.assertGreater(len(tour.root.descendants), 14)
+        assert len(more_dataset_step.descendants) > 8
+        assert len(tour.root.descendants) > 14
 
     def test_output_path_step(self):
         """Exercise the OutputPathStep"""
@@ -426,14 +424,14 @@ class WizardTest(WizardTestBase):
             with open(file_path, "w", encoding="utf8") as f:
                 f.write("blah")
             with capture_stdout():
-                self.assertFalse(step.validate(file_path))
+                assert not step.validate(file_path)
 
             # Bad case 2: file called the same as the dataset exists in the output dir
             dataset_file = os.path.join(tmpdirname, "myname")
             with open(dataset_file, "w", encoding="utf8") as f:
                 f.write("blah")
             with capture_stdout():
-                self.assertFalse(step.validate(tmpdirname))
+                assert not step.validate(tmpdirname)
             os.unlink(dataset_file)
 
             tmpdir = Path(tmpdirname)
@@ -442,12 +440,12 @@ class WizardTest(WizardTestBase):
                 ro_dir = tmpdir / "read-only"
                 ro_dir.mkdir(mode=0x555)
                 with capture_stdout() as out:
-                    self.assertFalse(step.validate(str(ro_dir)))
+                    assert not step.validate(str(ro_dir))
                 assert "could not create" in out.getvalue()
 
             # Case with a deep path, make sure we don't leave part of it around
             assert step.validate(tmpdir / "deep" / "path")
-            self.assertFalse((tmpdir / "deep").exists())
+            assert not (tmpdir / "deep").exists()
 
             # Good case
             with capture_stdout() as stdout:
@@ -463,18 +461,18 @@ class WizardTest(WizardTestBase):
         )
 
         step = tour.steps[1]
-        self.assertFalse(step.validate("foo"))
+        assert not step.validate("foo")
         assert step.validate("yes")
         assert len(step.children) == 0
 
         with patch_menu_prompt(0):  # answer 0 is "no"
             step.run()
         assert len(step.children) == 1
-        self.assertIsInstance(step.children[0], basic.ConfigFormatStep)
+        assert isinstance(step.children[0], basic.ConfigFormatStep)
 
         with patch_menu_prompt(1):  # answer 1 is "yes"
             step.run()
-        self.assertGreater(len(step.descendants), 10)
+        assert len(step.descendants) > 10
 
     def test_no_data_to_save(self):
         """When the tour created no datasets at all, saving the config is skipped."""
@@ -780,9 +778,7 @@ class WizardTest(WizardTestBase):
         permission_step = find_step(SN.dataset_permission_step, tour.steps)
         with patch_menu_prompt(1):  # 1 is "yes, I have permission"
             permission_step.run()
-        self.assertTrue(
-            permission_step.state[SN.dataset_permission_step].startswith("Yes")
-        )
+        assert permission_step.state[SN.dataset_permission_step].startswith("Yes")
 
         format_step = find_step(SN.filelist_format_step, tour.steps)
         with patch_menu_prompt(0):  # 0 is "psv"
@@ -838,9 +834,9 @@ class WizardTest(WizardTestBase):
         with monkeypatch(dataset, "tqdm", lambda seq, desc: seq):
             with patch_menu_prompt(()):
                 text_processing_step.run()
-        self.assertEqual(
-            text_processing_step.state["filelist_data_list"][3][2],
-            "let us see if it collapses whitespace",
+        assert (
+            text_processing_step.state["filelist_data_list"][3][2]
+            == "let us see if it collapses whitespace"
         )
 
     def test_dataset_subtour(self):
@@ -855,9 +851,7 @@ class WizardTest(WizardTestBase):
         permission_step = find_step(SN.dataset_permission_step, tour.steps)
         with patch_menu_prompt(1):  # 1 is "yes, I have permission"
             permission_step.run()
-        self.assertTrue(
-            permission_step.state[SN.dataset_permission_step].startswith("Yes")
-        )
+        assert permission_step.state[SN.dataset_permission_step].startswith("Yes")
 
         format_step = find_step(SN.filelist_format_step, tour.steps)
         with patch_menu_prompt(0):  # 0 is "psv"
@@ -865,7 +859,7 @@ class WizardTest(WizardTestBase):
         assert len(format_step.children) == 3
 
         step = format_step.children[0]
-        self.assertIsInstance(step, dataset.HasHeaderLineStep)
+        assert isinstance(step, dataset.HasHeaderLineStep)
         assert step.name == SN.data_has_header_line_step.value
         with patch_menu_prompt(1):  # 1 is "yes"
             step.run()
@@ -873,7 +867,7 @@ class WizardTest(WizardTestBase):
         assert len(step.state["filelist_data_list"]) == 5
 
         step = format_step.children[1]
-        self.assertIsInstance(step, dataset.HeaderStep)
+        assert isinstance(step, dataset.HeaderStep)
         assert step.name == SN.basename_header_step.value
         with patch_menu_prompt(1):  # 1 is second column
             step.run()
@@ -881,7 +875,7 @@ class WizardTest(WizardTestBase):
         assert step.state["filelist_headers"][1] == "basename"
 
         step = format_step.children[2]
-        self.assertIsInstance(step, dataset.HeaderStep)
+        assert isinstance(step, dataset.HeaderStep)
         assert step.name == SN.text_header_step.value
         with patch_menu_prompt(1):  # 1 is second remaining column, i.e., third column
             step.run()
@@ -900,14 +894,14 @@ class WizardTest(WizardTestBase):
             with patch_menu_prompt([0, 1]):
                 text_processing_step.run()
         # print(text_processing_step.state)
-        self.assertEqual(
-            text_processing_step.state["filelist_data_list"][2][2],
-            "cased nfd: éàê nfc: éàê",  # the "nfd: éàê" bit here is now NFC
+        assert (
+            text_processing_step.state["filelist_data_list"][2][2]
+            == "cased nfd: éàê nfc: éàê"  # the "nfd: éàê" bit here is now NFC
         )
 
-        self.assertEqual(
-            text_processing_step.state["filelist_data_list"][3][2],
-            "let us see if it collapses whitespace",
+        assert (
+            text_processing_step.state["filelist_data_list"][3][2]
+            == "let us see if it collapses whitespace"
         )
 
         speaker_step = find_step(SN.data_has_speaker_value_step, tour.steps)
@@ -915,14 +909,14 @@ class WizardTest(WizardTestBase):
         with patch_menu_prompt(0):  # 0 is "no"
             speaker_step.run()
         assert len(speaker_step.children) == children_before + 1
-        self.assertIsInstance(speaker_step.children[0], dataset.KnowSpeakerStep)
+        assert isinstance(speaker_step.children[0], dataset.KnowSpeakerStep)
 
         know_speaker_step = speaker_step.children[0]
         children_before = len(know_speaker_step.children)
         with patch_menu_prompt(1):  # 1 is "yes"
             know_speaker_step.run()
         assert len(know_speaker_step.children) == children_before + 1
-        self.assertIsInstance(know_speaker_step.children[0], dataset.AddSpeakerStep)
+        assert isinstance(know_speaker_step.children[0], dataset.AddSpeakerStep)
 
         add_speaker_step = know_speaker_step.children[0]
         children_before = len(add_speaker_step.children)
@@ -935,7 +929,7 @@ class WizardTest(WizardTestBase):
         with patch_menu_prompt(0):  # 0 is "no"
             language_step.run()
         assert len(language_step.children) == children_before + 1
-        self.assertIsInstance(language_step.children[0], dataset.SelectLanguageStep)
+        assert isinstance(language_step.children[0], dataset.SelectLanguageStep)
 
         select_lang_step = language_step.children[0]
         with capture_stdout(), capture_stderr():
@@ -946,10 +940,12 @@ class WizardTest(WizardTestBase):
             with patch_menu_prompt(fin_index):
                 select_lang_step.run()
         # print(select_lang_step.state)
-        self.assertEqual(
-            select_lang_step.state["filelist_headers"],
-            ["unknown_0", "basename", "characters", "unknown_3"],
-        )
+        assert select_lang_step.state["filelist_headers"] == [
+            "unknown_0",
+            "basename",
+            "characters",
+            "unknown_3",
+        ]
 
         # Make sure realoading the data as dict stripped the header line
         assert len(step.state["filelist_data"]) == 4
@@ -967,7 +963,7 @@ class WizardTest(WizardTestBase):
         with patch_menu_prompt(1), capture_stdout() as out:
             validate_wavs_step.run()
         assert step.state[SN.validate_wavs_step][:2] == "No"
-        self.assertRegex(out.getvalue(), "Warning: .*4.* wav files were not found")
+        assert re.search("Warning: .*4.* wav files were not found", out.getvalue())
 
         symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
         assert len(symbol_set_step.state["filelist_data"]) == 4
@@ -975,46 +971,39 @@ class WizardTest(WizardTestBase):
             symbol_set_step.run()
         assert len(symbol_set_step.state[SN.symbol_set_step.value]) == 2
         assert "t͡s" in symbol_set_step.state[SN.symbol_set_step.value]["phones"]
-        self.assertNotIn(
-            ":", symbol_set_step.state[SN.symbol_set_step.value]["characters"]
-        )
-        self.assertNotIn(":", symbol_set_step.state[SN.symbol_set_step.value]["phones"])
+        assert ":" not in symbol_set_step.state[SN.symbol_set_step.value]["characters"]
+        assert ":" not in symbol_set_step.state[SN.symbol_set_step.value]["phones"]
         # assert that symbols contain no duplicates
-        self.assertEqual(
-            len(set(symbol_set_step.state[SN.symbol_set_step.value]["characters"])),
-            len(symbol_set_step.state[SN.symbol_set_step.value]["characters"]),
-        )
-        self.assertEqual(
-            len(set(symbol_set_step.state[SN.symbol_set_step.value]["phones"])),
-            len(symbol_set_step.state[SN.symbol_set_step.value]["phones"]),
-        )
+        assert len(
+            set(symbol_set_step.state[SN.symbol_set_step.value]["characters"])
+        ) == len(symbol_set_step.state[SN.symbol_set_step.value]["characters"])
+        assert len(
+            set(symbol_set_step.state[SN.symbol_set_step.value]["phones"])
+        ) == len(symbol_set_step.state[SN.symbol_set_step.value]["phones"])
 
         sox_effects_step = find_step(SN.sox_effects_step, tour.steps)
         # 0 is resample to 22050 kHz, 2 is remove silence at start and end
         with patch_menu_prompt([0, 1]):
             sox_effects_step.run()
         # print(sox_effects_step.state["sox_effects"])
-        self.assertEqual(
-            sox_effects_step.state["sox_effects"],
+        assert sox_effects_step.state["sox_effects"] == [
+            ["channels", "1"],
+            ["norm", "-3.0"],
             [
-                ["channels", "1"],
-                ["norm", "-3.0"],
-                [
-                    "silence",
-                    "1",
-                    "0.1",
-                    "0.1%",
-                ],
-                ["reverse"],
-                [
-                    "silence",
-                    "1",
-                    "0.1",
-                    "0.1%",
-                ],
-                ["reverse"],
+                "silence",
+                "1",
+                "0.1",
+                "0.1%",
             ],
-        )
+            ["reverse"],
+            [
+                "silence",
+                "1",
+                "0.1",
+                "0.1%",
+            ],
+            ["reverse"],
+        ]
 
     def test_empty_filelist(self):
         tour = Tour(
@@ -1031,12 +1020,12 @@ class WizardTest(WizardTestBase):
             filelist_step.run()
 
         format_step = tour.steps[1]
-        with self.assertRaises(SystemExit) as cm:
+        with pytest.raises(SystemExit) as excinfo:
             with patch_menu_prompt(1) as stdout:
                 format_step.run()
             output = stdout.getvalue()
             assert "is empty" in output
-        assert cm.exception.code == 1
+        assert excinfo.value.code == 1
 
     def test_wrong_fileformat_psv(self):
         tour = Tour(
@@ -1056,8 +1045,8 @@ class WizardTest(WizardTestBase):
         with patch_menu_prompt((1, 2, 3, 0), multi=True) as stdout:
             format_step.run()
         output = flatten_log(stdout.getvalue())
-        self.assertRegex(output, r"does not look like a .*'tsv'")
-        self.assertRegex(output, r"does not look like a .*'csv'")
+        assert re.search(r"does not look like a .*'tsv'", output)
+        assert re.search(r"does not look like a .*'csv'", output)
         assert "is not in the festival format" in output
         assert format_step.completed
         # print(format_step.state)
@@ -1080,9 +1069,9 @@ class WizardTest(WizardTestBase):
         with patch_menu_prompt((0, 1, 2, 3), multi=True) as stdout:
             format_step.run()
         output = flatten_log(stdout.getvalue())
-        self.assertRegex(output, r"does not look like a .*'psv'")
-        self.assertRegex(output, r"does not look like a .*'tsv'")
-        self.assertRegex(output, r"does not look like a .*'csv'")
+        assert re.search(r"does not look like a .*'psv'", output)
+        assert re.search(r"does not look like a .*'tsv'", output)
+        assert re.search(r"does not look like a .*'csv'", output)
         assert format_step.completed
         # print(format_step.state)
 
@@ -1090,41 +1079,35 @@ class WizardTest(WizardTestBase):
         """Unit testing for validate_path() in isolation."""
         from everyvoice.wizard.validators import validate_path
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             validate_path("", is_dir=False, is_file=False)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             validate_path("", is_dir=True, is_file=True)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             validate_path("")
         with tempfile.TemporaryDirectory() as tmpdirname, capture_stdout():
-            self.assertTrue(
-                validate_path(tmpdirname, is_dir=True, is_file=False, exists=True)
+            assert validate_path(tmpdirname, is_dir=True, is_file=False, exists=True)
+            assert not validate_path(
+                tmpdirname, is_dir=False, is_file=True, exists=True
             )
-            self.assertFalse(
-                validate_path(tmpdirname, is_dir=False, is_file=True, exists=True)
-            )
-            self.assertFalse(
-                validate_path(tmpdirname, is_dir=True, is_file=False, exists=False)
+            assert not validate_path(
+                tmpdirname, is_dir=True, is_file=False, exists=False
             )
             file_name = os.path.join(tmpdirname, "some-file-name")
             with open(file_name, "w", encoding="utf8") as f:
                 f.write("foo")
-            self.assertTrue(
-                validate_path(file_name, is_dir=False, is_file=True, exists=True)
+            assert validate_path(file_name, is_dir=False, is_file=True, exists=True)
+            assert not validate_path(
+                file_name, is_dir=False, is_file=True, exists=False
             )
-            self.assertFalse(
-                validate_path(file_name, is_dir=False, is_file=True, exists=False)
-            )
-            self.assertFalse(
-                validate_path(file_name, is_dir=True, is_file=False, exists=True)
-            )
+            assert not validate_path(file_name, is_dir=True, is_file=False, exists=True)
 
             not_file_name = os.path.join(tmpdirname, "file-does-not-exist")
-            self.assertFalse(
-                validate_path(not_file_name, is_dir=False, is_file=True, exists=True)
+            assert not validate_path(
+                not_file_name, is_dir=False, is_file=True, exists=True
             )
-            self.assertTrue(
-                validate_path(not_file_name, is_dir=False, is_file=True, exists=False)
+            assert validate_path(
+                not_file_name, is_dir=False, is_file=True, exists=False
             )
 
     def test_prompt(self):
@@ -1143,7 +1126,7 @@ class WizardTest(WizardTestBase):
             answer = prompts.get_response_from_menu_prompt(
                 choices=("a", "b", "c", "d", "e"), multi=True
             )
-            self.assertEqual(answer, ["c", "e"])
+            assert answer == ["c", "e"]
         with patch_menu_prompt(1):
             answer = prompts.get_response_from_menu_prompt(
                 choices=("a", "b", "c", "d", "e"), return_indices=True
@@ -1225,7 +1208,7 @@ class WizardTest(WizardTestBase):
         assert utils.get_iso_code("[eng]") == "eng"
         assert utils.get_iso_code("es") == "es"
         assert utils.get_iso_code("[es]") == "es"
-        self.assertIs(utils.get_iso_code(None), None)
+        assert utils.get_iso_code(None) is None
 
     def test_with_language_column(self):
         data_dir = Path(__file__).parent / "data"
@@ -1495,14 +1478,13 @@ class WizardTest(WizardTestBase):
                     ),
                 ],
             )
-            self.assertEqual(
-                tour.state["dataset_0"]["filelist_headers"], ["basename", "characters"]
-            )
-            self.assertEqual(
-                tour.state["dataset_0"][SN.data_has_speaker_value_step.value], "no"
-            )
-            self.assertEqual(
-                tour.state["dataset_0"][SN.data_has_language_value_step.value], "no"
+            assert tour.state["dataset_0"]["filelist_headers"] == [
+                "basename",
+                "characters",
+            ]
+            assert tour.state["dataset_0"][SN.data_has_speaker_value_step.value] == "no"
+            assert (
+                tour.state["dataset_0"][SN.data_has_language_value_step.value] == "no"
             )
             assert len(tour.state["dataset_0"]["filelist_data"]) == 3
             with open(
@@ -1515,28 +1497,28 @@ class WizardTest(WizardTestBase):
                 "f2|und|speaker_0|bar baz|bar baz",
                 "f3|und|speaker_0|baz foo|baz foo",
             ]
-            self.assertListEqual(output_filelist, expected_filelist)
+            assert output_filelist == expected_filelist
 
     def test_keyboard_interrupt(self):
         step = basic.NameStep()
-        with self.assertRaises(KeyboardInterrupt), capture_stdout():
+        with pytest.raises(KeyboardInterrupt), capture_stdout():
             with patch_questionary([KeyboardInterrupt()]):
                 step.run()
 
         step = dataset.WavsDirStep()
-        with self.assertRaises(KeyboardInterrupt):
+        with pytest.raises(KeyboardInterrupt):
             with patch_questionary([KeyboardInterrupt()]):
                 step.run()
 
         step = basic.MoreDatasetsStep()
-        with self.assertRaises(KeyboardInterrupt):
+        with pytest.raises(KeyboardInterrupt):
             with patch_menu_prompt(KeyboardInterrupt()):
                 step.run()
 
     def test_give_up_after_twenty_failures(self):
         step = dataset.WavsDirStep()
         with monkeypatch(step, "prompt", Say("no/such/directory")):
-            with capture_stdout(), self.assertRaises(SystemExit):
+            with capture_stdout(), pytest.raises(SystemExit):
                 step.run()
 
     def test_leading_white_space_in_outpath(self):
@@ -1557,7 +1539,7 @@ class WizardTest(WizardTestBase):
                         state={SN.name_step.value: "output_dir_with_leading_spaces"},
                     )
                     tour.run()
-        self.assertFalse(tour.state[SN.output_step.value].startswith(" "))
+        assert not tour.state[SN.output_step.value].startswith(" ")
         assert tour.state[SN.output_step.value] == tmpdirname
 
     def test_leading_white_space_in_wav_dir(self):
@@ -1571,7 +1553,7 @@ class WizardTest(WizardTestBase):
             pipe_input.send_text(f" {path}\n")
             with create_app_session(input=pipe_input, output=DummyOutput()):
                 step.run()
-        self.assertFalse(step.response.startswith(" "))
+        assert not step.response.startswith(" ")
         assert step.response == str(path)
 
     def test_leading_white_space_in_filelist(self):
@@ -1585,7 +1567,7 @@ class WizardTest(WizardTestBase):
             pipe_input.send_text(f" {path}\n")
             with create_app_session(input=pipe_input, output=DummyOutput()):
                 step.run()
-        self.assertFalse(step.response.startswith(" "))
+        assert not step.response.startswith(" ")
         assert step.response == str(path)
 
     def test_festival(self):
@@ -1695,7 +1677,7 @@ class WizardTest(WizardTestBase):
                 "f2|und|default_speaker|bar baz|bar baz",
                 "f3|und|default_speaker|baz foo|baz foo",
             ]
-            self.assertListEqual(output_filelist, expected_filelist)
+            assert output_filelist == expected_filelist
 
     def test_multilingual_multispeaker_true_config(self) -> None:
         """
@@ -1850,7 +1832,7 @@ class WizardTest(WizardTestBase):
                 "f2|eng|speaker_1|bar bar|bɑɹ bɑɹ",
                 "f3|eng|speaker_1|baz baz|bæz bæz",
             ]
-            self.assertListEqual(output_filelist, expected_filelist1)
+            assert output_filelist == expected_filelist1
 
             with open(
                 tmpdir / "out/project/dataset1-filelist.psv", encoding="utf8"
@@ -1862,7 +1844,7 @@ class WizardTest(WizardTestBase):
                 "f5|und|default_speaker|bar baz|bar baz",
                 "f6|und|default_speaker|baz foo|baz foo",
             ]
-            self.assertListEqual(output_filelist, expected_filelist2)
+            assert output_filelist == expected_filelist2
 
             with open(
                 tmpdir / "out/project/config/everyvoice-text-to-spec.yaml",
@@ -1878,40 +1860,34 @@ class WizardTest(WizardTestBase):
                 encoding="utf8",
             ) as f:
                 text_config = yaml.load(f, Loader=yaml.FullLoader)
-            self.assertEqual(
-                text_config["cleaners"],
-                ["everyvoice.utils.collapse_whitespace", "everyvoice.utils.strip_text"],
-            )
-            self.assertEqual(
-                text_config["dataset_cleaners"],
-                {
-                    "dataset0": [
-                        "everyvoice.utils.collapse_whitespace",
-                        "everyvoice.utils.strip_text",
-                        "everyvoice.utils.lower",
-                    ],
-                    "dataset1": [
-                        "everyvoice.utils.collapse_whitespace",
-                        "everyvoice.utils.strip_text",
-                        "everyvoice.utils.nfc_normalize",
-                    ],
-                },
-            )
-            self.assertEqual(
-                text_config["language_cleaners"],
-                {
-                    "eng": [
-                        "everyvoice.utils.collapse_whitespace",
-                        "everyvoice.utils.strip_text",
-                        "everyvoice.utils.lower",
-                    ],
-                    "und": [
-                        "everyvoice.utils.collapse_whitespace",
-                        "everyvoice.utils.strip_text",
-                        "everyvoice.utils.nfc_normalize",
-                    ],
-                },
-            )
+            assert text_config["cleaners"] == [
+                "everyvoice.utils.collapse_whitespace",
+                "everyvoice.utils.strip_text",
+            ]
+            assert text_config["dataset_cleaners"] == {
+                "dataset0": [
+                    "everyvoice.utils.collapse_whitespace",
+                    "everyvoice.utils.strip_text",
+                    "everyvoice.utils.lower",
+                ],
+                "dataset1": [
+                    "everyvoice.utils.collapse_whitespace",
+                    "everyvoice.utils.strip_text",
+                    "everyvoice.utils.nfc_normalize",
+                ],
+            }
+            assert text_config["language_cleaners"] == {
+                "eng": [
+                    "everyvoice.utils.collapse_whitespace",
+                    "everyvoice.utils.strip_text",
+                    "everyvoice.utils.lower",
+                ],
+                "und": [
+                    "everyvoice.utils.collapse_whitespace",
+                    "everyvoice.utils.strip_text",
+                    "everyvoice.utils.nfc_normalize",
+                ],
+            }
 
     def test_multilingual_multispeaker_false_config(self) -> None:
         """
@@ -2074,7 +2050,7 @@ class WizardTest(WizardTestBase):
                 "f2|und|speaker_0|bar bar|bar bar",
                 "f3|und|speaker_0|baz baz|baz baz",
             ]
-            self.assertListEqual(output_filelist, expected_filelist1)
+            assert output_filelist == expected_filelist1
 
             with open(
                 tmpdir / "out/project/dataset1-filelist.psv", encoding="utf8"
@@ -2086,7 +2062,7 @@ class WizardTest(WizardTestBase):
                 "f5|und|speaker_0|bar baz|bar baz",
                 "f6|und|speaker_0|baz foo|baz foo",
             ]
-            self.assertListEqual(output_filelist, expected_filelist2)
+            assert output_filelist == expected_filelist2
 
             with open(
                 tmpdir / "out/project/config/everyvoice-text-to-spec.yaml",
@@ -2178,8 +2154,8 @@ class WizardTest(WizardTestBase):
             with open(progress_file, encoding="utf8") as f:
                 progress_contents = f.read()
                 # print(progress_contents)
-                self.assertEqual(
-                    progress_contents, self.progress_template.format(version=VERSION)
+                assert progress_contents == self.progress_template.format(
+                    version=VERSION
                 )
 
     def test_resume_from(self):
@@ -2271,13 +2247,13 @@ class WizardTest(WizardTestBase):
             bad_progress_file = tmpdir / "bad-progress"
             with open(bad_progress_file, "w", encoding="utf8") as f:
                 f.write("not a list of questions and answers")
-            with self.assertRaises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit), capture_stdout():
                 tour.run(resume_from=bad_progress_file)
 
             bad_progress_file2 = tmpdir / "bad-progress2"
             with open(bad_progress_file2, "w", encoding="utf8") as f:
                 f.write("- - question 1\n  - answer 1\n  - extra garbage\n")
-            with self.assertRaises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit), capture_stdout():
                 tour.run(resume_from=bad_progress_file2)
 
             progress_lines = self.progress_template.format(version=VERSION).splitlines(
@@ -2287,16 +2263,16 @@ class WizardTest(WizardTestBase):
             truncated_progress_file = tmpdir / "truncated-progress"
             with open(truncated_progress_file, "w", encoding="utf8") as f:
                 f.write("".join(progress_lines[:-1]))
-            with self.assertRaises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit), capture_stdout():
                 tour.run(resume_from=truncated_progress_file)
 
             missing_first_line = tmpdir / "missing-first-line"
             with open(missing_first_line, "w", encoding="utf8") as f:
                 f.write("".join(progress_lines[1:]))
-            with self.assertRaises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit), capture_stdout():
                 tour.run(resume_from=missing_first_line)
 
-            with self.assertRaises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit), capture_stdout():
                 tour.run(resume_from=Path(os.devnull))
 
             questions_out_of_order = tmpdir / "questions-out-of-order"
@@ -2305,7 +2281,7 @@ class WizardTest(WizardTestBase):
                 f.write("".join(progress_lines[-2:]))
                 f.write("".join(progress_lines[-4:-2]))
             with (
-                self.assertRaises(SystemExit),
+                pytest.raises(SystemExit),
                 patch_menu_prompt(1),  # Abort when out of sync
                 capture_stdout() as out,
             ):
@@ -2324,7 +2300,7 @@ class WizardTest(WizardTestBase):
                 f.write("- - Contact Email Step\n  - email@mail.com\n")
                 f.write("- - Not a real Step\n  - bogus answer\n")
             tour = make_trivial_tour()
-            with self.assertRaises(SystemExit), capture_stdout() as out:
+            with pytest.raises(SystemExit), capture_stdout() as out:
                 tour.run(resume_from=extra_question_not_in_tour)
             assert "saved responses left" in out.getvalue()
 
@@ -2332,7 +2308,7 @@ class WizardTest(WizardTestBase):
             with open(wrong_software_name, "w", encoding="utf8") as f:
                 f.write("- - Wrong Software\n")
                 f.write("".join(progress_lines[1:]))
-            with self.assertRaises(SystemExit), capture_stdout() as out:
+            with pytest.raises(SystemExit), capture_stdout() as out:
                 tour.run(resume_from=wrong_software_name)
             assert "it is for software" in flatten_log(out.getvalue())
 
@@ -2341,7 +2317,7 @@ class WizardTest(WizardTestBase):
         tour = make_trivial_tour()
         with patch_questionary([KeyboardInterrupt()]):
             with patch_menu_prompt(4):  # 4 is "Exit" in keyboard interrupt handling
-                with self.assertRaises(SystemExit):
+                with pytest.raises(SystemExit):
                     tour.run()
 
         # Three Ctrl-C also exits
@@ -2350,7 +2326,7 @@ class WizardTest(WizardTestBase):
             patch_questionary([KeyboardInterrupt()]),
             patch_menu_prompt(KeyboardInterrupt()),
         ):
-            with self.assertRaises(SystemExit):
+            with pytest.raises(SystemExit):
                 tour.run()
 
     def test_trace(self):
@@ -2362,7 +2338,7 @@ class WizardTest(WizardTestBase):
             # When not the current step:
             assert step.name.replace(" Step", "") + "  " in out.getvalue()
             # When it is the current step:
-            self.assertRegex(out.getvalue(), step.name.replace(" Step", "") + " *←")
+            assert re.search(step.name.replace(" Step", "") + " *←", out.getvalue())
             # When previously filled:
             if step != tour.steps[-1]:
                 assert step.name.replace(" Step", "") + ": " in out.getvalue()
@@ -2375,8 +2351,8 @@ class WizardTest(WizardTestBase):
                 tour.run()
         for step, response in zip(tour.steps, responses[:-1]):
             # When not the current step:
-            self.assertRegex(out.getvalue(), f"'{step.name}'.*: .*'{response}'")
+            assert re.search(f"'{step.name}'.*: .*'{response}'", out.getvalue())
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)
