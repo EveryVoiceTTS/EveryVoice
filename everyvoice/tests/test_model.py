@@ -380,7 +380,7 @@ class TestLoadingModel:
             else:
                 with mute_logger("everyvoice.config.text_config"):
                     model = ModelType.load_from_checkpoint(ckpt_fn)
-                assert model._VERSION, ["1.0" in "1.1"]
+                assert model._VERSION in ["1.0", "1.1"]
 
     @pytest.mark.parametrize(
         "ModelType", [FastSpeech2, HiFiGAN], ids=lambda t: t.__name__
