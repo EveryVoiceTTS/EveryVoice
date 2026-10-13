@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
+import logging
 import re
 import sys
 import tempfile
 from pathlib import Path
 from typing import Annotated, Any
-from unittest import TestCase
 
+import pytest
 import torch
 from pep440 import is_canonical
 from pydantic import BaseModel
 from pydantic.functional_validators import BeforeValidator
-from pytest import main
 
 import everyvoice.utils
 from everyvoice._version import VERSION
@@ -32,12 +32,12 @@ from everyvoice.utils import (
 from everyvoice.utils.heavy import get_device_from_accelerator
 
 
-class VersionTest(TestCase):
+class TestVersion:
     def test_version_is_pep440_compliant(self):
         assert is_canonical(VERSION)
 
 
-class UtilsTest(TestCase):
+class TestUtils:
     def test_write_filelist(self):
         """Filelist should write files with headers in order"""
         basic_files = [
@@ -63,7 +63,7 @@ class UtilsTest(TestCase):
             assert headers[4] == "extra"
 
 
-class TruncateBasenameTest(TestCase):
+class TestTruncateBasename:
     """Testing truncate_basename() (moved here from the FastSpeech2 submodule)."""
 
     def test_short_name(self):
@@ -98,7 +98,7 @@ class TruncateBasenameTest(TestCase):
         assert pattern.search(output2), f"{output2} does not match {pattern}"
 
 
-class ResolveChunkedBasenameTest(TestCase):
+class TestResolveChunkedBasename:
     def test_all_chunks_agree_returns_shared_basename(self):
         """A filelist basename is duplicated across chunks: use it verbatim,
         however long, so synthesized files line up with dataloader filenames."""
@@ -135,12 +135,12 @@ class ContextableBaseModel(BaseModel):
 
 
 class PathIsADirectory(ContextableBaseModel):
-    """Dummy Class for PathIsADirectoryTest"""
+    """Dummy Class for TestPathIsADirectory"""
 
     path: Annotated[Path, BeforeValidator(path_is_a_directory)]
 
 
-class PathIsADirectoryTest(TestCase):
+class TestPathIsADirectory:
     """Testing when we Annotated with path_is_a_directory"""
 
     def test_using_a_directory_with_context(self):
@@ -156,7 +156,7 @@ class PathIsADirectoryTest(TestCase):
             with init_context({"writing_config": root_dir}):
                 PathIsADirectory(path=directory)
         except ValueError:
-            self.fail("Failed to detect that the argument is a directory")
+            pytest.fail("Failed to detect that the argument is a directory")
 
     def test_using_a_file_with_context(self):
         """
@@ -164,18 +164,18 @@ class PathIsADirectoryTest(TestCase):
         using a context.
         """
         file = Path(__file__)
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValueError,
-            re.escape(f"{file.name} is not a directory"),
+            match=re.escape(f"{file.name} is not a directory"),
         ):
             with init_context({"writing_config": file.parent.resolve()}):
                 PathIsADirectory(path=file.name)
 
     def test_invalid_type(self):
         """The argument to PathIsADirectory must be of type Path"""
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValueError,
-            r".*Value error,  \[type=value_error, input_value=4, input_type=int\].*",
+            match=r".*Value error,  \[type=value_error, input_value=4, input_type=int\].*",
         ):
             PathIsADirectory(path=4)
 
@@ -190,41 +190,41 @@ class PathIsADirectoryTest(TestCase):
             assert (root_dir / directory).exists()
             PathIsADirectory(path=root_dir / directory)
         except ValueError:
-            self.fail("Failed to detect that the argument is a directory")
+            pytest.fail("Failed to detect that the argument is a directory")
 
     def test_using_a_file(self):
         """
         Verifies that PathIsADirectory detects that the argument is a file.
         """
         path = Path(__file__)
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValueError,
-            re.escape(f"{path} is not a directory"),
+            match=re.escape(f"{path} is not a directory"),
         ):
             PathIsADirectory(path=path)
 
 
 class RelativePathToAbsolute(ContextableBaseModel):
-    """Dummy Class for RelativePathToAbsoluteTest"""
+    """Dummy Class for TestRelativePathToAbsolute"""
 
     path: Annotated[Path | None, BeforeValidator(relative_to_absolute_path)]
 
 
-class RelativePathToAbsoluteTest(TestCase):
+class TestRelativePathToAbsolute:
     """Testing when we Annotated with relative_to_absolute_path"""
 
     def test_None(self):
         """A special case, if path is None, it should stay None"""
         dir = RelativePathToAbsolute(path=None)
-        self.assertIsNone(dir.path)
+        assert dir.path is None
 
     def test_invalid_type(self):
         """
         If the provided type cannot be a path, it should fail.
         """
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValueError,
-            r".*Value error,  \[type=value_error, input_value=4, input_type=int\].*",
+            match=r".*Value error,  \[type=value_error, input_value=4, input_type=int\].*",
         ):
             RelativePathToAbsolute(path=4)
 
@@ -255,12 +255,12 @@ class RelativePathToAbsoluteTest(TestCase):
 
 
 class DirectoryPathMustExist(ContextableBaseModel):
-    """Dummy Class for DirectoryPathMustExistTest"""
+    """Dummy Class for TestDirectoryPathMustExist"""
 
     path: Annotated[Path, BeforeValidator(directory_path_must_exist)]
 
 
-class DirectoryPathMustExistTest(TestCase):
+class TestDirectoryPathMustExist:
     """
     Testing when we Annotated with directory_path_must_exist.
     It should create a directory if it doesn't exist.
@@ -268,9 +268,9 @@ class DirectoryPathMustExistTest(TestCase):
 
     def test_argument_is_Path(self):
         """directory_path_must_exist() expects a Path"""
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValueError,
-            r".*Assertion failed,  \[type=assertion_error, input_value='invalid_not_a_Path', input_type=str\].*",
+            match=r".*Assertion failed,  \[type=assertion_error, input_value='invalid_not_a_Path', input_type=str\].*",
         ):
             DirectoryPathMustExist(path="invalid_not_a_Path")
 
@@ -282,7 +282,7 @@ class DirectoryPathMustExistTest(TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root_dir = Path(tmpdir)
             directory = Path("test_using_a_directory_with_context")
-            self.assertFalse((root_dir / directory).exists())
+            assert not (root_dir / directory).exists()
             with init_context({"writing_config": root_dir.resolve()}):
                 dir = DirectoryPathMustExist(path=directory)
             # Note: dir.path shouldn't not change to an absolute value.
@@ -291,10 +291,9 @@ class DirectoryPathMustExistTest(TestCase):
             # Note: since dir.path is NOT replaced with an absolute it
             # shouldn't exist because it was created relative to the context's
             # path.
-            self.assertFalse(
-                dir.path.exists(),
+            assert not dir.path.exists(), (
                 f"Directory {dir.path} should not have been created in the current directory. "
-                + "If it still exists, please delete it before re-running the tests.",
+                + "If it still exists, please delete it before re-running the tests."
             )
 
     def test_path_already_exists(self):
@@ -302,33 +301,31 @@ class DirectoryPathMustExistTest(TestCase):
         with capture_logs() as output:
             dir = DirectoryPathMustExist(path=path)
             # There should be no info logged.
-            self.assertListEqual(output, [])
+            assert output == []
         assert dir.path.exists()
 
-    def test_using_a_directory(self):
+    def test_using_a_directory(self, caplog):
         """
         Automatically create a directory.
         """
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "test_using_a_directory"
-            self.assertFalse(path.exists())
-            with patch_logger(everyvoice.config.validation_helpers) as logger:
-                with self.assertLogs(logger) as cm:
-                    dir = DirectoryPathMustExist(path=path)
+            assert not path.exists()
+            with (
+                patch_logger(everyvoice.config.validation_helpers),
+                caplog.at_level(logging.INFO, logger="UnitTesting"),
+            ):
+                dir = DirectoryPathMustExist(path=path)
             assert dir.path == path
-            self.assertIn(
-                f"Directory at {path} does not exist. Creating...",
-                "".join(cm.output),
-            )
+            assert f"Directory at {path} does not exist. Creating..." in caplog.text
             assert path.exists()
             assert dir.path.exists()
 
 
-class GetDeviceFromAcceleratorTest(TestCase):
+class TestGetDeviceFromAccelerator:
     def test_auto(self):
-        self.assertEqual(
-            get_device_from_accelerator("auto"),
-            torch.device("cuda:0" if torch.cuda.is_available() else "cpu"),
+        assert get_device_from_accelerator("auto") == torch.device(
+            "cuda:0" if torch.cuda.is_available() else "cpu"
         )
 
     def test_cpu(self):
@@ -345,4 +342,4 @@ class GetDeviceFromAcceleratorTest(TestCase):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)

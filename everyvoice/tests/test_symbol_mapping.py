@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 import sys
-from unittest import TestCase
 
-from pytest import main
+import pytest
 
 from everyvoice.text.utils_heavy import (
     find_optimal_mapping,
@@ -12,7 +11,7 @@ from everyvoice.text.utils_heavy import (
 )
 
 
-class SymbolMappingTest(TestCase):
+class TestSymbolMapping:
     """Tests for the symbol-mapping utilities in everyvoice.text.utils_heavy"""
 
     def test_find_optimal_mapping_minimizes_total_distance(self):
@@ -95,4 +94,4 @@ class SymbolMappingTest(TestCase):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)

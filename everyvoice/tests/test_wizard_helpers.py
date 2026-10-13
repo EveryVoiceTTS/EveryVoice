@@ -3,11 +3,10 @@
 import sys
 import tempfile
 from pathlib import Path
-from unittest import TestCase
 
+import pytest
 import yaml
 from anytree import PreOrderIter
-from pytest import main
 
 from everyvoice.tests.stubs import capture_stdout, temp_chdir
 from everyvoice.tests.test_wizard import CONTACT_INFO_STATE
@@ -17,7 +16,7 @@ from everyvoice.wizard.tour import State
 from everyvoice.wizard.utils import EnumDict, NodeMixinWithNavigation
 
 
-class WavFileDirectoryRelativePathTest(TestCase):
+class TestWavFileDirectoryRelativePath:
     """
     Make sure the wav files directory path is correctly handle when transformed
     to a relative path.
@@ -25,7 +24,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
 
     data_dir = Path(__file__).parent / "data"
 
-    def setUp(self):
+    def setup_method(self):
         """
         Create a mock state instead of doing all prior steps to ConfigFormatStep.
         """
@@ -110,9 +109,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
                         config = yaml.load(fin, Loader=yaml.FullLoader)
         # Unittest/config/everyvoice-shared-data.yaml
         # Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]), Path("../../Common-Voice")
-        )
+        assert Path(config["source_data"][0]["data_dir"]) == Path("../../Common-Voice")
 
     def test_wav_file_directory_under_wavs_directory(self):
         """
@@ -137,9 +134,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
                         config = yaml.load(fin, Loader=yaml.FullLoader)
         # Unittest/config/everyvoice-shared-data.yaml
         # wavs/Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]), Path("../..") / wavs_dir
-        )
+        assert Path(config["source_data"][0]["data_dir"]) == Path("../..") / wavs_dir
 
     def test_output_not_local_and_wav_file_directory_local(self):
         """
@@ -163,8 +158,8 @@ class WavFileDirectoryRelativePathTest(TestCase):
                         config = yaml.load(fin, Loader=yaml.FullLoader)
         # John/Smith/Unittest/config/everyvoice-shared-data.yaml
         # Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]), Path("../../../../Common-Voice")
+        assert Path(config["source_data"][0]["data_dir"]) == Path(
+            "../../../../Common-Voice"
         )
 
     def test_output_not_local_and_wav_file_directory_under_hierarchy(self):
@@ -191,9 +186,8 @@ class WavFileDirectoryRelativePathTest(TestCase):
                         config = yaml.load(fin, Loader=yaml.FullLoader)
         # John/Smith/Unittest/config/everyvoice-shared-data.yaml
         # wavs/Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]),
-            Path("../../../..") / wavs_dir,
+        assert (
+            Path(config["source_data"][0]["data_dir"]) == Path("../../../..") / wavs_dir
         )
 
     def test_absolute_wav_file_directory_and_local_experiment(self):
@@ -220,10 +214,7 @@ class WavFileDirectoryRelativePathTest(TestCase):
                         config = yaml.load(fin, Loader=yaml.FullLoader)
         # Unittest/config/everyvoice-shared-data.yaml
         # /tmpdir/wavs/Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]),
-            wavs_dir,
-        )
+        assert Path(config["source_data"][0]["data_dir"]) == wavs_dir
 
     def test_absolute_wav_file_directory_and_nested_experiment(self):
         """
@@ -250,13 +241,10 @@ class WavFileDirectoryRelativePathTest(TestCase):
                         config = yaml.load(fin, Loader=yaml.FullLoader)
         # John/Smith/Unittest/config/everyvoice-shared-data.yaml
         # /tmpdir/wavs/Common-Voice/
-        self.assertEqual(
-            Path(config["source_data"][0]["data_dir"]),
-            wavs_dir,
-        )
+        assert Path(config["source_data"][0]["data_dir"]) == wavs_dir
 
 
-class TestEnumDict(TestCase):
+class TestEnumDict:
     """Test the EnumDict class"""
 
     def test_enum_dict(self):
@@ -270,20 +258,17 @@ class TestEnumDict(TestCase):
         assert d[SN.wavs_dir_step] == "bar"
         assert d.get(SN.wavs_dir_step) == "bar"
 
-        self.assertEqual(d.get(SN.filelist_format_step, None), None)
-        self.assertEqual(d.get(SN.filelist_format_step.value, None), None)
+        assert d.get(SN.filelist_format_step, None) is None
+        assert d.get(SN.filelist_format_step.value, None) is None
 
         d.update({SN.contact_email_step: "a@b.com"})
         assert d[SN.contact_email_step.value] == "a@b.com"
 
-        self.assertEqual(
-            d,
-            {
-                SN.audio_config_step.value: "foo",
-                SN.wavs_dir_step.value: "bar",
-                SN.contact_email_step.value: "a@b.com",
-            },
-        )
+        assert d == {
+            SN.audio_config_step.value: "foo",
+            SN.wavs_dir_step.value: "bar",
+            SN.contact_email_step.value: "a@b.com",
+        }
 
 
 class Node(NodeMixinWithNavigation):
@@ -293,7 +278,7 @@ class Node(NodeMixinWithNavigation):
         self.parent = parent
 
 
-class TestNodeMixin(TestCase):
+class TestNodeMixin:
     def test_node_mixin(self):
         """Test the NodeMixinWithNavigation class"""
         root = Node("root")
@@ -315,4 +300,4 @@ class TestNodeMixin(TestCase):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)

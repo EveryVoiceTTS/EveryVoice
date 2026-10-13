@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
+import re
 import sys
 from pathlib import Path
-from unittest import TestCase
 
-from pytest import main
+import pytest
 from typer.testing import CliRunner
 
 from everyvoice.tests.regression.subsample import app
 
 
-class SubsampleTest(TestCase):
-    def setUp(self) -> None:
+class TestSubsample:
+    def setup_method(self) -> None:
         self.runner = CliRunner()
 
     # In this test case we use .psv, but we assume this implies .tsv and .csv will work as well.
@@ -36,7 +36,7 @@ class SubsampleTest(TestCase):
         assert "LJ050-0270|" in result.stdout
         assert "LJ050-0271|" in result.stdout
         assert "LJ050-0272.wav|" in result.stdout
-        self.assertNotIn("LJ050-0273|", result.stdout)
+        assert "LJ050-0273|" not in result.stdout
 
     def test_festival(self):
         self.metadata_path = Path(__file__).parent / "data" / "metadata.festival"
@@ -49,7 +49,7 @@ class SubsampleTest(TestCase):
         assert result.exit_code == 0
         assert "LJ050-0269" in result.stdout
         assert "LJ050-0270" in result.stdout
-        self.assertNotIn("LJ050-0271", result.stdout)
+        assert "LJ050-0271" not in result.stdout
 
     def test_help(self):
         result = self.runner.invoke(app, ["--help"])
@@ -80,7 +80,7 @@ class SubsampleTest(TestCase):
         assert "basename|" in result.stdout
         assert "LJ050-0269|" in result.stdout
         assert "LJ050-0272.wav|" in result.stdout
-        self.assertNotIn("LJ050-0270|", result.stdout)
+        assert "LJ050-0270|" not in result.stdout
 
     def test_error_validation(self):
         # Test for incorrect file formats
@@ -91,9 +91,9 @@ class SubsampleTest(TestCase):
         )
         assert result.exit_code != 0
         assert "Invalid value for" in result.output
-        self.assertRegex(
-            result.output,
+        assert re.search(
             r"(?s)txt is not one of psv tsv csv festival".replace(" ", r".*"),
+            result.output,
         )
 
         # Festival format with speaker id is incompatible
@@ -116,11 +116,11 @@ class SubsampleTest(TestCase):
         )
 
         assert result.exit_code != 0
-        self.assertRegex(
-            result.output,
+        assert re.search(
             r"Invalid value: Festival formatted files cannot have a speaker id.".replace(
                 " ", r"[\s\S]*"
             ),
+            result.output,
         )
 
         # A Wav File cannot be found
@@ -138,11 +138,11 @@ class SubsampleTest(TestCase):
             ],
         )
         assert result.exit_code != 0
-        self.assertRegex(
-            result.output,
+        assert re.search(
             r"A \.wav file could not be found".replace(" ", r"[\s\S]*"),
+            result.output,
         )
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)
