@@ -7,13 +7,7 @@ from everyvoice.config.preprocessing_config import Dataset, PreprocessingConfig
 from everyvoice.config.text_config import Symbols, TextConfig
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.preprocessor import Preprocessor
-from everyvoice.tests.stubs import (
-    TEST_CONTACT,
-    TEST_DATA_DIR,
-    capture_stderr,
-    capture_stdout,
-    mute_logger,
-)
+from everyvoice.tests.stubs import TEST_CONTACT, TEST_DATA_DIR
 from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 
 
@@ -72,17 +66,12 @@ class PreprocessedAudioFixture:
         """Generate a preprocessed test set that can be used in various test cases."""
         # We only need to actually run this once
         if not PreprocessedAudioFixture._preprocess_ran:
-            with (
-                mute_logger("everyvoice.preprocessor"),
-                capture_stderr(),
-                capture_stdout(),
-            ):
-                PreprocessedAudioFixture.preprocessor.preprocess(
-                    output_path=str(PreprocessedAudioFixture.lj_filelist),
-                    cpus=1,
-                    overwrite=True,
-                    to_process=("audio", "energy", "pitch", "text", "spec"),
-                )
+            PreprocessedAudioFixture.preprocessor.preprocess(
+                output_path=str(PreprocessedAudioFixture.lj_filelist),
+                cpus=1,
+                overwrite=True,
+                to_process=("audio", "energy", "pitch", "text", "spec"),
+            )
             PreprocessedAudioFixture.lj_preprocessed.mkdir(parents=True, exist_ok=True)
             try:
                 (PreprocessedAudioFixture.lj_preprocessed / "duration").symlink_to(

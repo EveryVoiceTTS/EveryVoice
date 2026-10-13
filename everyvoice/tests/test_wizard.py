@@ -29,7 +29,6 @@ from prompt_toolkit.output import DummyOutput
 from everyvoice._version import VERSION
 from everyvoice.tests.stubs import (
     Say,
-    capture_stderr,
     capture_stdout,
     flatten_log,
     monkeypatch,
@@ -413,9 +412,8 @@ class TestWizard(WizardTestBase):
 
         # We need to answer the name step before we can validate the output path step
         step = tour.steps[0]
-        with capture_stdout():
-            with patch_questionary("myname"):
-                step.run()
+        with patch_questionary("myname"):
+            step.run()
 
         step = tour.steps[1]
         with tempfile.TemporaryDirectory() as tmpdirname:
@@ -423,15 +421,13 @@ class TestWizard(WizardTestBase):
             # Bad case 1: output dir exists and is a file
             with open(file_path, "w", encoding="utf8") as f:
                 f.write("blah")
-            with capture_stdout():
-                assert not step.validate(file_path)
+            assert not step.validate(file_path)
 
             # Bad case 2: file called the same as the dataset exists in the output dir
             dataset_file = os.path.join(tmpdirname, "myname")
             with open(dataset_file, "w", encoding="utf8") as f:
                 f.write("blah")
-            with capture_stdout():
-                assert not step.validate(tmpdirname)
+            assert not step.validate(tmpdirname)
             os.unlink(dataset_file)
 
             tmpdir = Path(tmpdirname)
@@ -702,8 +698,7 @@ class TestWizard(WizardTestBase):
 
             step = dataset.WavsDirStep("")
             with patch_questionary(("not-a-path", no_wavs_dir, has_wavs_dir)):
-                with capture_stdout():
-                    step.run()
+                step.run()
             assert step.completed
             assert step.response == has_wavs_dir
 
@@ -719,8 +714,7 @@ class TestWizard(WizardTestBase):
             )
             step = dataset.WavsDirStep("")
             with patch_questionary(wavs_are_symlinks):
-                with capture_stdout():
-                    step.run()
+                step.run()
             assert step.completed
             assert step.response == wavs_are_symlinks
 
@@ -728,8 +722,7 @@ class TestWizard(WizardTestBase):
             os.symlink(wavs_are_symlinks, wavs_dir_is_symlink)
             step = dataset.WavsDirStep("")
             with patch_questionary(wavs_dir_is_symlink):
-                with capture_stdout():
-                    step.run()
+                step.run()
             assert step.completed
             assert step.response == wavs_dir_is_symlink
 
@@ -742,8 +735,7 @@ class TestWizard(WizardTestBase):
             os.symlink(wavs_dir_is_symlink, os.path.join(deeper_links, "nested-link"))
             step = dataset.WavsDirStep("")
             with patch_questionary(deeper_links):
-                with capture_stdout():
-                    step.run()
+                step.run()
             assert step.completed
             assert step.response == deeper_links
 
@@ -809,7 +801,7 @@ class TestWizard(WizardTestBase):
             know_speaker_step.run()
 
         add_speaker_step = know_speaker_step.children[0]
-        with patch_questionary("default"), capture_stdout():
+        with patch_questionary("default"):
             add_speaker_step.run()
 
         language_step = find_step(SN.data_has_language_value_step, tour.steps)
@@ -817,16 +809,15 @@ class TestWizard(WizardTestBase):
             language_step.run()
 
         select_lang_step = language_step.children[0]
-        with capture_stdout(), capture_stderr():
-            with patch_menu_prompt(15):  # some arbitrary language from the list
-                select_lang_step.run()
+        with patch_menu_prompt(15):  # some arbitrary language from the list
+            select_lang_step.run()
 
         wavs_dir_step = find_step(SN.wavs_dir_step, tour.steps)
         with monkeypatch(wavs_dir_step, "prompt", Say(str(self.data_dir))):
             wavs_dir_step.run()
 
         validate_wavs_step = find_step(SN.validate_wavs_step, tour.steps)
-        with patch_menu_prompt(1), capture_stdout():
+        with patch_menu_prompt(1):
             validate_wavs_step.run()
 
         text_processing_step = find_step(SN.text_processing_step, tour.steps)
@@ -920,7 +911,7 @@ class TestWizard(WizardTestBase):
 
         add_speaker_step = know_speaker_step.children[0]
         children_before = len(add_speaker_step.children)
-        with patch_questionary("default"), capture_stdout():
+        with patch_questionary("default"):
             add_speaker_step.run()
         assert len(add_speaker_step.children) == children_before
 
@@ -932,13 +923,12 @@ class TestWizard(WizardTestBase):
         assert isinstance(language_step.children[0], dataset.SelectLanguageStep)
 
         select_lang_step = language_step.children[0]
-        with capture_stdout(), capture_stderr():
-            # We rely on Finnish g2p in assertions below, so find it in the list.
-            # 2 + index(fin) because in select_lang_step, [0] is "und", [1] is "custom",
-            # and then follow the contents of AVAILABLE_G2P_ENGINES in order.
-            fin_index = 2 + list(AVAILABLE_G2P_ENGINES).index("fin")
-            with patch_menu_prompt(fin_index):
-                select_lang_step.run()
+        # We rely on Finnish g2p in assertions below, so find it in the list.
+        # 2 + index(fin) because in select_lang_step, [0] is "und", [1] is "custom",
+        # and then follow the contents of AVAILABLE_G2P_ENGINES in order.
+        fin_index = 2 + list(AVAILABLE_G2P_ENGINES).index("fin")
+        with patch_menu_prompt(fin_index):
+            select_lang_step.run()
         # print(select_lang_step.state)
         assert select_lang_step.state["filelist_headers"] == [
             "unknown_0",
@@ -967,8 +957,7 @@ class TestWizard(WizardTestBase):
 
         symbol_set_step = find_step(SN.symbol_set_step, tour.steps)
         assert len(symbol_set_step.state["filelist_data"]) == 4
-        with capture_stdout(), capture_stderr():
-            symbol_set_step.run()
+        symbol_set_step.run()
         assert len(symbol_set_step.state[SN.symbol_set_step.value]) == 2
         assert "t͡s" in symbol_set_step.state[SN.symbol_set_step.value]["phones"]
         assert ":" not in symbol_set_step.state[SN.symbol_set_step.value]["characters"]
@@ -1085,7 +1074,7 @@ class TestWizard(WizardTestBase):
             validate_path("", is_dir=True, is_file=True)
         with pytest.raises(ValueError):
             validate_path("")
-        with tempfile.TemporaryDirectory() as tmpdirname, capture_stdout():
+        with tempfile.TemporaryDirectory() as tmpdirname:
             assert validate_path(tmpdirname, is_dir=True, is_file=False, exists=True)
             assert not validate_path(
                 tmpdirname, is_dir=False, is_file=True, exists=True
@@ -1134,7 +1123,7 @@ class TestWizard(WizardTestBase):
             assert answer == 1
 
     def test_monkey_tour_1(self):
-        with tempfile.TemporaryDirectory() as tmpdirname, capture_stdout():
+        with tempfile.TemporaryDirectory() as tmpdirname:
             tour, _ = self.monkey_run_tour(
                 "monkey tour 1",
                 [
@@ -1501,7 +1490,7 @@ class TestWizard(WizardTestBase):
 
     def test_keyboard_interrupt(self):
         step = basic.NameStep()
-        with pytest.raises(KeyboardInterrupt), capture_stdout():
+        with pytest.raises(KeyboardInterrupt):
             with patch_questionary([KeyboardInterrupt()]):
                 step.run()
 
@@ -1518,7 +1507,7 @@ class TestWizard(WizardTestBase):
     def test_give_up_after_twenty_failures(self):
         step = dataset.WavsDirStep()
         with monkeypatch(step, "prompt", Say("no/such/directory")):
-            with capture_stdout(), pytest.raises(SystemExit):
+            with pytest.raises(SystemExit):
                 step.run()
 
     def test_leading_white_space_in_outpath(self):
@@ -1526,7 +1515,7 @@ class TestWizard(WizardTestBase):
         Make sure we strip leading spaces when the user accidentally adds a
         leading space when specifying an output path.
         """
-        with capture_stdout(), tempfile.TemporaryDirectory() as tmpdirname:
+        with tempfile.TemporaryDirectory() as tmpdirname:
             with create_pipe_input() as pipe_input:
                 # NOTE: we use `` to replace the `.` with our path with leading spaces.
                 pipe_input.send_text(f"  {tmpdirname}\n")
@@ -2247,13 +2236,13 @@ class TestWizard(WizardTestBase):
             bad_progress_file = tmpdir / "bad-progress"
             with open(bad_progress_file, "w", encoding="utf8") as f:
                 f.write("not a list of questions and answers")
-            with pytest.raises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit):
                 tour.run(resume_from=bad_progress_file)
 
             bad_progress_file2 = tmpdir / "bad-progress2"
             with open(bad_progress_file2, "w", encoding="utf8") as f:
                 f.write("- - question 1\n  - answer 1\n  - extra garbage\n")
-            with pytest.raises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit):
                 tour.run(resume_from=bad_progress_file2)
 
             progress_lines = self.progress_template.format(version=VERSION).splitlines(
@@ -2263,16 +2252,16 @@ class TestWizard(WizardTestBase):
             truncated_progress_file = tmpdir / "truncated-progress"
             with open(truncated_progress_file, "w", encoding="utf8") as f:
                 f.write("".join(progress_lines[:-1]))
-            with pytest.raises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit):
                 tour.run(resume_from=truncated_progress_file)
 
             missing_first_line = tmpdir / "missing-first-line"
             with open(missing_first_line, "w", encoding="utf8") as f:
                 f.write("".join(progress_lines[1:]))
-            with pytest.raises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit):
                 tour.run(resume_from=missing_first_line)
 
-            with pytest.raises(SystemExit), capture_stdout():
+            with pytest.raises(SystemExit):
                 tour.run(resume_from=Path(os.devnull))
 
             questions_out_of_order = tmpdir / "questions-out-of-order"

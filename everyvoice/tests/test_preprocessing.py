@@ -35,9 +35,7 @@ from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
 from everyvoice.tests.stubs import (
     TEST_CONTACT,
     TEST_DATA_DIR,
-    capture_stderr,
     capture_stdout,
-    mute_logger,
 )
 from everyvoice.utils import generic_psv_filelist_reader
 
@@ -101,15 +99,13 @@ class TestPreprocessing(PreprocessedAudioFixture):
 
     def test_process_empty_audio(self) -> None:
         for audiofile in ["empty.wav", "zeros.wav"]:
-            with mute_logger("everyvoice.preprocessor.preprocessor"):
-                audio, sr = self.preprocessor.process_audio(TEST_DATA_DIR / audiofile)
+            audio, sr = self.preprocessor.process_audio(TEST_DATA_DIR / audiofile)
             assert audio is None
             assert sr is None
 
     def test_too_short(self) -> None:
         # too-short.wav is only .28s long, shorter than our minimum .4s
-        with mute_logger("everyvoice.preprocessor.preprocessor"):
-            audio, sr = self.preprocessor.process_audio(TEST_DATA_DIR / "too-short.wav")
+        audio, sr = self.preprocessor.process_audio(TEST_DATA_DIR / "too-short.wav")
         assert audio is None
         assert sr is None
         assert self.preprocessor.counters.value("audio_too_short") == 1
@@ -117,26 +113,24 @@ class TestPreprocessing(PreprocessedAudioFixture):
     def test_process_bad_sox_effects(self) -> None:
         sox_errors_before = self.preprocessor.counters.value("sox_error")
         for audiofile in "LJ050-0269.wav", "LJ050-0270.wav":
-            with mute_logger("everyvoice.preprocessor.preprocessor"):
-                _ = self.preprocessor.process_audio(
-                    TEST_DATA_DIR / "lj/wavs" / audiofile,
-                    sox_effects=[
-                        ["reverse"],
-                        ["silence", "1", "0.1", "0.1%"],
-                        ["not_a_sox_command"],
-                        ["reverse"],
-                    ],
-                )
+            _ = self.preprocessor.process_audio(
+                TEST_DATA_DIR / "lj/wavs" / audiofile,
+                sox_effects=[
+                    ["reverse"],
+                    ["silence", "1", "0.1", "0.1%"],
+                    ["not_a_sox_command"],
+                    ["reverse"],
+                ],
+            )
         assert self.preprocessor.counters.value("sox_error") == sox_errors_before + 2
 
     def test_multichannel_audio_skipped(self):
         """Test that audio files with more than 2 channels are skipped gracefully"""
         multichannel_audio_path = TEST_DATA_DIR / "multichannel_test.wav"
 
-        with mute_logger("everyvoice.preprocessor.preprocessor"):
-            audio, sr = self.preprocessor.process_audio(
-                multichannel_audio_path, hop_size=256
-            )
+        audio, sr = self.preprocessor.process_audio(
+            multichannel_audio_path, hop_size=256
+        )
 
         # Should return None, None indicating the file was skipped
         assert audio is None
@@ -155,8 +149,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
         multichannel_audio_path = TEST_DATA_DIR / "multichannel_test.wav"
 
         # Process the multichannel file to add it to the list
-        with mute_logger("everyvoice.preprocessor.preprocessor"):
-            self.preprocessor.process_audio(multichannel_audio_path, hop_size=256)
+        self.preprocessor.process_audio(multichannel_audio_path, hop_size=256)
 
         # Generate report
         report = self.preprocessor.report()
@@ -189,8 +182,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
         multichannel_path = TEST_DATA_DIR / "multichannel_test.wav"
 
         # Process the multichannel file to populate the list
-        with mute_logger("everyvoice.preprocessor.preprocessor"):
-            self.preprocessor.process_audio(multichannel_path, hop_size=256)
+        self.preprocessor.process_audio(multichannel_path, hop_size=256)
 
         # Test the file creation logic directly
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -226,8 +218,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
 
         # Add a multichannel file to trigger the file output code
         multichannel_path = TEST_DATA_DIR / "multichannel_test.wav"
-        with mute_logger("everyvoice.preprocessor.preprocessor"):
-            preprocessor.process_audio(multichannel_path, hop_size=256)
+        preprocessor.process_audio(multichannel_path, hop_size=256)
 
         # Now test the exact code path that writes multichannel_files.txt
         import tempfile
@@ -619,11 +610,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
                     )
                     fp_config.preprocessing.save_dir = preprocessed_dir
                     preprocessor = Preprocessor(fp_config)
-                    with (
-                        capture_stdout() as output,
-                        capture_stderr(),
-                        mute_logger("everyvoice.preprocessor"),
-                    ):
+                    with capture_stdout() as output:
                         preprocessor.preprocess(
                             output_path=str(output_filelist),
                             cpus=1,
@@ -765,11 +752,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
             ) = self.get_simple_config(tmpdir)
 
             fp_config.preprocessing.source_data[0].filelist = partial_filelist
-            with (
-                capture_stdout() as output,
-                capture_stderr(),
-                mute_logger("everyvoice.preprocessor"),
-            ):
+            with capture_stdout() as output:
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
@@ -777,21 +760,13 @@ class TestPreprocessing(PreprocessedAudioFixture):
             assert re.search(r"previously processed files *0", output.getvalue())
 
             fp_config.preprocessing.source_data[0].filelist = full_filelist
-            with (
-                capture_stdout() as output,
-                capture_stderr(),
-                mute_logger("everyvoice.preprocessor"),
-            ):
+            with capture_stdout() as output:
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
             assert re.search(r"processed files *2", output.getvalue())
             assert re.search(r"previously processed files *3", output.getvalue())
-            with (
-                capture_stdout() as output,
-                capture_stderr(),
-                mute_logger("everyvoice.preprocessor"),
-            ):
+            with capture_stdout() as output:
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist,
                     cpus=1,
@@ -809,11 +784,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
             fp_config, lj_filelist, _, _, _ = self.get_simple_config(tmpdir)
 
             to_process_no_audio = ("energy", "pitch", "attn", "text", "spec")
-            with (
-                pytest.raises(SystemExit),
-                capture_stdout(),
-                mute_logger("everyvoice.preprocessor.preprocessor"),
-            ):
+            with pytest.raises(SystemExit):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process_no_audio
                 )
@@ -836,12 +807,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
                 print("empty|foo bar baz|foo bar baz|noone|und", file=f)
             fp_config.preprocessing.source_data[0].filelist = input_filelist
 
-            with (
-                pytest.raises(SystemExit),
-                capture_stdout(),
-                capture_stderr(),
-                mute_logger("everyvoice.preprocessor.preprocessor"),
-            ):
+            with pytest.raises(SystemExit):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
@@ -853,14 +819,9 @@ class TestPreprocessing(PreprocessedAudioFixture):
             tmpdir = Path(tmpdir_s)
             fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
 
-            with (
-                mute_logger("everyvoice.preprocessor"),
-                capture_stderr(),
-                capture_stdout(),
-            ):
-                Preprocessor(fp_config).preprocess(
-                    output_path=lj_filelist, cpus=1, to_process=to_process
-                )
+            Preprocessor(fp_config).preprocess(
+                output_path=lj_filelist, cpus=1, to_process=to_process
+            )
 
             def fail_config_lock(
                 config_object: object, element: str, value: Any, message: str
@@ -967,41 +928,36 @@ class TestPreprocessing(PreprocessedAudioFixture):
         TODO: Expand this function to test for energy and pitch
         """
         with tempfile.TemporaryDirectory() as tmpdir_s:
-            with (
-                mute_logger("everyvoice.preprocessor"),
-                capture_stdout(),
-                capture_stderr(),
-            ):
-                tmpdir = Path(tmpdir_s)
-                (
-                    fp_config,
-                    lj_filelist,
-                    _,
-                    _,
-                    _,
-                ) = self.get_simple_config(tmpdir)
+            tmpdir = Path(tmpdir_s)
+            (
+                fp_config,
+                lj_filelist,
+                _,
+                _,
+                _,
+            ) = self.get_simple_config(tmpdir)
 
-                # Create a preprocessor with one cpu
-                preprocessor = Preprocessor(fp_config)
-                preprocessor.preprocess(
-                    output_path=lj_filelist, to_process=("audio", "text")
-                )
-                _, _, char_length_data, phone_length_data = preprocessor.compute_stats(
-                    energy=False, pitch=False, char_length=True, phone_length=True
-                )
-                assert char_length_data is not None
-                char_length_stats = char_length_data.calculate_stats()
-                assert char_length_stats["min"] == 83
-                assert char_length_stats["max"] == 118
-                assert char_length_stats["std"] == pytest.approx(sqrt(200.5), abs=5e-5)
-                assert char_length_stats["mean"] == 105
+            # Create a preprocessor with one cpu
+            preprocessor = Preprocessor(fp_config)
+            preprocessor.preprocess(
+                output_path=lj_filelist, to_process=("audio", "text")
+            )
+            _, _, char_length_data, phone_length_data = preprocessor.compute_stats(
+                energy=False, pitch=False, char_length=True, phone_length=True
+            )
+            assert char_length_data is not None
+            char_length_stats = char_length_data.calculate_stats()
+            assert char_length_stats["min"] == 83
+            assert char_length_stats["max"] == 118
+            assert char_length_stats["std"] == pytest.approx(sqrt(200.5), abs=5e-5)
+            assert char_length_stats["mean"] == 105
 
-                assert phone_length_data is not None
-                phone_length_stats = phone_length_data.calculate_stats()
-                assert phone_length_stats["min"] == 76
-                assert phone_length_stats["max"] == 111
-                assert phone_length_stats["std"] == pytest.approx(sqrt(216.3), abs=5e-5)
-                assert phone_length_stats["mean"] == pytest.approx(98.4, abs=5e-5)
+            assert phone_length_data is not None
+            phone_length_stats = phone_length_data.calculate_stats()
+            assert phone_length_stats["min"] == 76
+            assert phone_length_stats["max"] == 111
+            assert phone_length_stats["std"] == pytest.approx(sqrt(216.3), abs=5e-5)
+            assert phone_length_stats["mean"] == pytest.approx(98.4, abs=5e-5)
 
     def test_missing_audio_files_detection(self):
         """Test that missing audio files are properly detected and reported"""
@@ -1026,14 +982,9 @@ class TestPreprocessing(PreprocessedAudioFixture):
                 self.data_dir / "lj" / "wavs"
             )
 
-            with (
-                capture_stdout(),
-                capture_stderr(),
-                mute_logger("everyvoice.preprocessor"),
-            ):
-                Preprocessor(fp_config).preprocess(
-                    output_path=lj_filelist, cpus=1, to_process=("audio",)
-                )
+            Preprocessor(fp_config).preprocess(
+                output_path=lj_filelist, cpus=1, to_process=("audio",)
+            )
 
             # Check that missing_files_*.txt was created (with timestamp)
             missing_files_list = list(
@@ -1072,14 +1023,9 @@ class TestPreprocessing(PreprocessedAudioFixture):
             fp_config, lj_filelist, _, _, to_process = self.get_simple_config(tmpdir)
 
             # Use default filelist with existing files
-            with (
-                capture_stdout(),
-                capture_stderr(),
-                mute_logger("everyvoice.preprocessor"),
-            ):
-                Preprocessor(fp_config).preprocess(
-                    output_path=lj_filelist, cpus=1, to_process=("audio",)
-                )
+            Preprocessor(fp_config).preprocess(
+                output_path=lj_filelist, cpus=1, to_process=("audio",)
+            )
 
             # Check that missing_files_*.txt was NOT created
             missing_files_list = list(
@@ -1145,14 +1091,9 @@ class TestPreprocessing(PreprocessedAudioFixture):
                 self.data_dir / "lj" / "wavs"
             )
 
-            with (
-                capture_stdout(),
-                capture_stderr(),
-                mute_logger("everyvoice.preprocessor"),
-            ):
-                Preprocessor(fp_config).preprocess(
-                    output_path=lj_filelist, cpus=1, to_process=("audio",)
-                )
+            Preprocessor(fp_config).preprocess(
+                output_path=lj_filelist, cpus=1, to_process=("audio",)
+            )
 
             # Check missing_files_*.txt created correctly (with timestamp)
             missing_files_list = list(
@@ -1202,12 +1143,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
 
             # When all files are filtered out, preprocessor exits with an error
             # This is the expected behavior when no valid audio files can be processed
-            with (
-                pytest.raises(SystemExit),
-                capture_stdout(),
-                capture_stderr(),
-                mute_logger("everyvoice.preprocessor"),
-            ):
+            with pytest.raises(SystemExit):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=("audio",)
                 )
@@ -1306,19 +1242,14 @@ class TestPreprocessingHierarchy:
             fp_config.preprocessing.save_dir = preprocessed_dir
             preprocessor = Preprocessor(fp_config)
 
-            with (
-                mute_logger("everyvoice.preprocessor"),
-                capture_stdout(),
-                capture_stderr(),
-            ):
-                preprocessor.preprocess(
-                    output_path=filelist,
-                    cpus=2,
-                    overwrite=True,
-                    # to_process=("audio", "energy", "pitch", "text", "spec"),
-                    # to_process=("audio", "text", "pfs", "spec", "attn", "energy", "pitch"),
-                    to_process=("audio", "text", "spec", "attn", "energy", "pitch"),
-                )
+            preprocessor.preprocess(
+                output_path=filelist,
+                cpus=2,
+                overwrite=True,
+                # to_process=("audio", "energy", "pitch", "text", "spec"),
+                # to_process=("audio", "text", "pfs", "spec", "attn", "energy", "pitch"),
+                to_process=("audio", "text", "spec", "attn", "energy", "pitch"),
+            )
             for t in ("audio", "spec", "attn", "energy", "pitch"):
                 # There are two speakers
                 sources = [d.name for d in tmpdir.glob(f"**/{t}/*")]
@@ -1343,12 +1274,7 @@ class TestOODPreprocessing(PreprocessedAudioFixture):
     """Unit tests for Preprocessor.preprocess_ood()"""
 
     def _run_preprocess_ood(self, preprocessor, ood_raw_data):
-        with (
-            mute_logger("everyvoice.preprocessor"),
-            capture_stdout(),
-            capture_stderr(),
-        ):
-            preprocessor.preprocess_ood(ood_raw_data)
+        preprocessor.preprocess_ood(ood_raw_data)
 
     def test_ood_characters_writes_per_language_psv(self):
         """Characters-mode OOD writes {save_dir}/ood/{lang}.psv with character_tokens."""
