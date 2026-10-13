@@ -523,7 +523,7 @@ class TestTextSplit:
         # With custom weak boundaries
         assert a not in chunk_text(text, 15, 30, weak_boundaries=":;")
         # Without custom weak boundaries
-        assert a, chunk_text(text, 15 in 30)
+        assert a in chunk_text(text, 15, 30)
 
     def test_custom_strong_boundaries(self):
         """
