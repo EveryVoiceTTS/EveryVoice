@@ -19,7 +19,7 @@ from everyvoice.utils import collapse_whitespace, lower, nfc_normalize
 
 class PreprocessedAudioFixture:
     """
-    A unittest fixture (implemented as a base class) to preprocess the audio files.
+    A test fixture (implemented as a base class) to preprocess the audio files.
     """
 
     _tempdir = tempfile.TemporaryDirectory(prefix="tmpdir_PreprocessedInputFixture_")
