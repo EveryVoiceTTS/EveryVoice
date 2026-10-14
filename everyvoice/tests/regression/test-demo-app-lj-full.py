@@ -4,7 +4,8 @@ To run this test:
  - Run the regression test suite to get the regress-lj-full model.
  - cd regression/regress-<date>-<suffix>/regress-lj-full/regress
  - everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt --denylist <(echo test) --output-format wav
- - python test_demo_app_mix.py
+ - python ../test-demo-app.py
+   (prep-datasets.sh copies this script to regress-lj-full/test-demo-app.py)
 """
 
 import sys

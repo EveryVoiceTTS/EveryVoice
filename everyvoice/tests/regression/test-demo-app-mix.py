@@ -4,7 +4,8 @@ To run this test:
  - Run the regression test suite to get the regress-mix model.
  - cd regression/regress-<date>-<suffix>/regress-mix/regress
  - everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt
- - python test_demo_app_mix.py
+ - python ../test-demo-app.py
+   (prep-datasets.sh copies this script to regress-mix/test-demo-app.py)
 """
 
 import sys
