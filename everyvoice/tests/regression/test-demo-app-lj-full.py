@@ -8,13 +8,12 @@ To run this test:
 """
 
 import sys
-from unittest import TestCase
 
+import pytest
 from playwright.sync_api import expect, sync_playwright
-from pytest import main
 
 
-class TestDemoAppErros(TestCase):
+class TestDemoAppErrors:
     def test_rundemo(self) -> None:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
@@ -52,4 +51,4 @@ class TestDemoAppErros(TestCase):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)
