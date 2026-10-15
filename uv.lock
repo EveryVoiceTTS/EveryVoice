@@ -822,11 +822,11 @@ wheels = [
 
 [[package]]
 name = "einops"
-version = "0.5.0"
+version = "0.8.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/0b/4f/ffbe0aef2378ab8e0aa06c909d667358d84b442f54dec81b6efac4efcf6a/einops-0.5.0.tar.gz", hash = "sha256:8b7a83cffc1ea88e306df099b7cbb9c3ba5003bd84d05ae44be5655864abb8d3", size = 49088, upload-time = "2022-10-03T06:39:14.079Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/77/850bef8d72ffb9219f0b1aac23fbc1bf7d038ee6ea666f331fa273031aa2/einops-0.8.2.tar.gz", hash = "sha256:609da665570e5e265e27283aab09e7f279ade90c4f01bcfca111f3d3e13f2827", size = 56261, upload-time = "2026-01-26T04:13:17.638Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/18/d7/ed1ce1d5e00b0cd0e1ca46a710eb00822add013048c733d5b82db490e643/einops-0.5.0-py3-none-any.whl", hash = "sha256:055de7eeb3cb9e9710ef3085a811090c6b52e809b7044e8785824ed185f486d1", size = 36536, upload-time = "2022-10-03T06:39:15.989Z" },
+    { url = "https://files.pythonhosted.org/packages/2a/09/f8d8f8f31e4483c10a906437b4ce31bdf3d6d417b73fe33f1a8b59e34228/einops-0.8.2-py3-none-any.whl", hash = "sha256:54058201ac7087911181bfec4af6091bb59380360f069276601256a76af08193", size = 65638, upload-time = "2026-01-26T04:13:18.546Z" },
 ]
 
 [[package]]
@@ -960,7 +960,7 @@ requires-dist = [
     { name = "coverage", marker = "extra == 'test'" },
     { name = "deepdiff", specifier = ">=6.5.0" },
     { name = "diff-cover", marker = "extra == 'dev'" },
-    { name = "einops", specifier = "==0.5.0" },
+    { name = "einops", specifier = "~=0.8.0" },
     { name = "einops-exts" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "g2p", specifier = ">=2.3.1,<3" },
