@@ -42,6 +42,10 @@ jobs:
         run: uv sync --locked
       - run: uv pip freeze
       - run: uv pip list
+      - name: Make sure fs2 uv.lock is in sync
+        run: cd everyvoice/model/feature_prediction/FastSpeech2_lightning && uv sync --locked
+      - name: Make sure styletts2 uv.lock is in sync
+        run: cd everyvoice/model/e2e/StyleTTS2_lightning && uv sync --locked
       - name: Make sure the CLI stays fast
         run: |
           uv run ./profile-help-ci.sh "${{ github.event.pull_request.head.sha }}"
