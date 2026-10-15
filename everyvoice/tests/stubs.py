@@ -52,7 +52,15 @@ class patch_logger:
     of the given level.
 
     Yields:
-        logger (logging.Logger): patched logger, e.g., for use in self.assertLogs(logger)
+        logger (logging.Logger): patched logger, named "UnitTesting"
+
+    Usage, capturing the logs with pytest's caplog fixture:
+        with (
+            patch_logger(module),
+            caplog.at_level(logging.INFO, logger="UnitTesting"),
+        ):
+            ...
+        assert "expected message" in caplog.text
     """
 
     def __init__(self, module: ModuleType, level: int = logging.INFO):

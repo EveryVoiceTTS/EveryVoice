@@ -6,11 +6,10 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import TestCase
 
+import pytest
 import yaml
 from pydantic import ValidationError
-from pytest import main
 from readalongs.portable_tempfile import (
     PortableNamedTemporaryFile as NamedTemporaryFile,
 )
@@ -58,20 +57,15 @@ def _writer_helper(model, filename):
         f.write(model.model_dump_json())
 
 
-class ConfigTest(TestCase):
+class TestConfig:
     """Basic test for hyperparameter configuration"""
 
-    def setUp(self) -> None:
-        super().setUp()
-        self.config = E2EConfig(
-            contact=TEST_CONTACT,
-        )
+    def setup_method(self) -> None:
+        self.config = E2EConfig(contact=TEST_CONTACT)
 
     def test_from_object(self):
         """Test from object"""
-        config_default = E2EConfig(
-            contact=TEST_CONTACT,
-        )
+        config_default = E2EConfig(contact=TEST_CONTACT)
         config_32 = E2EConfig(
             contact=TEST_CONTACT,
             training=StyleTTS2TrainingConfig(batch_size=32),
@@ -83,7 +77,7 @@ class ConfigTest(TestCase):
         with TemporaryDirectory(prefix="test_config_save_dirs") as tempdir:
             # Preprocessing Config
             tempdir = Path(tempdir)
-            with self.assertRaises(ValidationError):
+            with pytest.raises(ValidationError):
                 preprocessing_config = PreprocessingConfig(save_dir=1)
             with init_context({"writing_config": tempdir}):
                 preprocessing_config = PreprocessingConfig(save_dir="./bloop")
@@ -102,7 +96,7 @@ class ConfigTest(TestCase):
             )
             assert isinstance(config.audio, AudioConfig)
             # bad partial
-            with self.assertRaises(exceptions.InvalidConfiguration):
+            with pytest.raises(exceptions.InvalidConfiguration):
                 with NamedTemporaryFile(prefix="test", mode="w", suffix=".yaml") as tf:
                     tf.write(" ")
                     tf.flush()
@@ -169,7 +163,7 @@ class ConfigTest(TestCase):
             assert config.audio.max_audio_length == 1.0
             # pass something invalid
             with mute_logger("everyvoice.config.utils"):
-                with self.assertRaises(ValidationError):
+                with pytest.raises(ValidationError):
                     PreprocessingConfig(path_to_audio_config_file=tf.name, audio=1.0)
 
     def test_update_from_file(self):
@@ -190,13 +184,13 @@ class ConfigTest(TestCase):
         )
         assert config.text.cleaners == [lower]
         # Test missing function
-        with self.assertRaises(AttributeError):
+        with pytest.raises(AttributeError):
             config.update_config({"text": {"cleaners": ["everyvoice.utils.foobarfoo"]}})
         # Test missing module
-        with self.assertRaises(ImportError):
+        with pytest.raises(ImportError):
             config.update_config({"text": {"cleaners": ["foobarfoo.utils.lower"]}})
         # Test not string
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             config.update_config({"text": {"cleaners": [1]}})
         # Test plain string
         config = LoggerConfig(sub_dir_callable="foobar")
@@ -208,7 +202,7 @@ class ConfigTest(TestCase):
         assert isinstance(int(config.sub_dir), int)
         # Just in case we're super speedy
         time.sleep(1)
-        self.assertGreater(int(config.sub_dir_callable()), int(config.sub_dir))
+        assert int(config.sub_dir_callable()) > int(config.sub_dir)
         serialized_config = config.model_dump()
         # Exclude sub_dir by default when serializing as it should get overriden on each run
         assert "sub_dir" not in serialized_config
@@ -231,7 +225,7 @@ class ConfigTest(TestCase):
         test_dict = expand_config_string_syntax(test_string)
         assert test_dict == {"training": {"max_len": "800"}}
         for bs in test_bad_strings:
-            with self.assertRaises(ValueError):
+            with pytest.raises(ValueError):
                 expand_config_string_syntax(bs)
 
         assert base_config.training.max_len == 800
@@ -249,7 +243,7 @@ class ConfigTest(TestCase):
         ) as tf:
             tf.write(" ")
             tf.flush()
-            with self.assertRaises(exceptions.InvalidConfiguration):
+            with pytest.raises(exceptions.InvalidConfiguration):
                 load_config_from_json_or_yaml_path(Path(tf.name))
 
     def test_change_with_indices(self):
@@ -266,9 +260,8 @@ class ConfigTest(TestCase):
                     }
                 }
             )
-            self.assertEqual(
-                config.preprocessing.source_data[0].filelist,
-                Path("/foo/bar/filelist.psv"),
+            assert config.preprocessing.source_data[0].filelist == Path(
+                "/foo/bar/filelist.psv"
             )
 
     def test_shared_sox(self) -> None:
@@ -297,12 +290,12 @@ class ConfigTest(TestCase):
             training=StyleTTS2TrainingConfig(batch_size=batch_size),
             contact=TEST_CONTACT,
         )
-        self.assertIsInstance(batch_size, float)
+        assert isinstance(batch_size, float)
         assert config.training.batch_size == 64
-        self.assertIsInstance(config.training.batch_size, int)
+        assert isinstance(config.training.batch_size, int)
 
 
-class LoadConfigTest(TestCase):
+class TestLoadConfig:
     """Load configs that contains relative paths."""
 
     REL_DATA_DIR = TEST_DATA_DIR / "relative" / "config"
@@ -320,11 +313,11 @@ class LoadConfigTest(TestCase):
         config_path = self.REL_DATA_DIR / f"{PREPROCESSING_CONFIG_FILENAME_PREFIX}.yaml"
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
-            self.assertFalse(Path(pre_test["save_dir"]).is_absolute())
+            assert not Path(pre_test["save_dir"]).is_absolute()
             assert len(pre_test["source_data"]) == 1
             for data in pre_test["source_data"]:
-                self.assertFalse(Path(data["data_dir"]).is_absolute())
-                self.assertFalse(Path(data["filelist"]).is_absolute())
+                assert not Path(data["data_dir"]).is_absolute()
+                assert not Path(data["filelist"]).is_absolute()
         config = PreprocessingConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
         assert isinstance(config, PreprocessingConfig)
@@ -340,14 +333,12 @@ class LoadConfigTest(TestCase):
         config_path = self.REL_DATA_DIR / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
-            self.assertFalse(
-                Path(pre_test["path_to_preprocessing_config_file"]).is_absolute()
-            )
-            self.assertFalse(Path(pre_test["path_to_text_config_file"]).is_absolute())
+            assert not Path(pre_test["path_to_preprocessing_config_file"]).is_absolute()
+            assert not Path(pre_test["path_to_text_config_file"]).is_absolute()
             training = pre_test["training"]
-            self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
-            self.assertFalse(Path(training["training_filelist"]).is_absolute())
-            self.assertFalse(Path(training["validation_filelist"]).is_absolute())
+            assert not Path(training["logger"]["save_dir"]).is_absolute()
+            assert not Path(training["training_filelist"]).is_absolute()
+            assert not Path(training["validation_filelist"]).is_absolute()
         with mute_logger("everyvoice.configs.text_config"):
             config = FeaturePredictionConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
@@ -363,13 +354,11 @@ class LoadConfigTest(TestCase):
         config_path = self.REL_DATA_DIR / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
-            self.assertFalse(
-                Path(pre_test["path_to_preprocessing_config_file"]).is_absolute()
-            )
+            assert not Path(pre_test["path_to_preprocessing_config_file"]).is_absolute()
             training = pre_test["training"]
-            self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
-            self.assertFalse(Path(training["training_filelist"]).is_absolute())
-            self.assertFalse(Path(training["validation_filelist"]).is_absolute())
+            assert not Path(training["logger"]["save_dir"]).is_absolute()
+            assert not Path(training["training_filelist"]).is_absolute()
+            assert not Path(training["validation_filelist"]).is_absolute()
         config = VocoderConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
         assert isinstance(config, VocoderConfig)
@@ -385,9 +374,9 @@ class LoadConfigTest(TestCase):
         with config_path.open("r", encoding="utf8") as f:
             pre_test = yaml.safe_load(f)
             training = pre_test["training"]
-            self.assertFalse(Path(training["logger"]["save_dir"]).is_absolute())
-            self.assertFalse(Path(training["training_filelist"]).is_absolute())
-            self.assertFalse(Path(training["validation_filelist"]).is_absolute())
+            assert not Path(training["logger"]["save_dir"]).is_absolute()
+            assert not Path(training["training_filelist"]).is_absolute()
+            assert not Path(training["validation_filelist"]).is_absolute()
         with mute_logger("everyvoice.config.text_config"):
             config = E2EConfig.load_config_from_path(config_path)
         # print(config.model_dump_json(indent=2))
@@ -499,13 +488,13 @@ class LoadConfigTest(TestCase):
     #        # NOTE, we need the file to exists if we want to write its parent config to disk.
     #        (tempdir / "preprocessing.json").unlink()
     #        with mute_logger("everyvoice.config.utils"):
-    #            with self.assertRaises(ValidationError):
+    #            with pytest.raises(ValidationError):
     #                config = AlignerConfig.load_config_from_path(
     #                    tempdir / "aligner.json"
     #                )
 
 
-class BaseTrainingConfigTest(TestCase):
+class TestBaseTrainingConfig:
     """
     Validate BaseTrainingConfig
     """
@@ -523,7 +512,7 @@ class BaseTrainingConfigTest(TestCase):
         config = BaseTrainingConfig(ckpt_epochs=10, ckpt_steps=None)
         assert config.ckpt_epochs == 10
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = BaseTrainingConfig(ckpt_epochs=-1, ckpt_steps=None)
 
     def test_ckpt_steps_cannot_be_negative(self):
@@ -539,7 +528,7 @@ class BaseTrainingConfigTest(TestCase):
         config = BaseTrainingConfig(ckpt_epochs=None, ckpt_steps=10)
         assert config.ckpt_steps == 10
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = BaseTrainingConfig(ckpt_epochs=None, ckpt_steps=-1)
 
     def test_mutually_exclusive_ckpt_options(self):
@@ -562,14 +551,14 @@ class BaseTrainingConfigTest(TestCase):
         assert config.ckpt_epochs is None
         assert config.ckpt_steps == 11
 
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             _ = BaseTrainingConfig(
                 ckpt_epochs=1,
                 ckpt_steps=1,
             )
 
 
-class HiFiGANModelConfigTest(TestCase):
+class TestHiFiGANModelConfig:
     """
     This class should really be under HiFiGan.
     """
@@ -581,14 +570,14 @@ class HiFiGANModelConfigTest(TestCase):
         """
         from pydantic_core._pydantic_core import ValidationError
 
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValidationError,
-            r"Input should be '1' or '2' \[type=enum, input_value='BAD', input_type=str\]",
+            match=r"Input should be '1' or '2' \[type=enum, input_value='BAD', input_type=str\]",
         ):
             HiFiGANModelConfig(resblock="BAD")
 
 
-class HiFiGANTrainingConfigTest(TestCase):
+class TestHiFiGANTrainingConfig:
     """
     This class should really be under HiFiGan.
     """
@@ -600,12 +589,12 @@ class HiFiGANTrainingConfigTest(TestCase):
         """
         from pydantic_core._pydantic_core import ValidationError
 
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValidationError,
-            r"Input should be 'original' or 'wgan' \[type=enum, input_value='BAD', input_type=str\]",
+            match=r"Input should be 'original' or 'wgan' \[type=enum, input_value='BAD', input_type=str\]",
         ):
             HiFiGANTrainingConfig(gan_type="BAD")
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)

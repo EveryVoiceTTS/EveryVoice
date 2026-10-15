@@ -2,14 +2,14 @@
 
 """Unit tests for using custom g2p functions"""
 
+import logging
 import sys
 import tempfile
 from pathlib import Path
 from textwrap import dedent
-from unittest import TestCase
 
+import pytest
 from pydantic import ValidationError
-from pytest import main
 
 import everyvoice
 from everyvoice.config.text_config import TextConfig
@@ -32,71 +32,86 @@ from everyvoice.text.phonemizer import (
 from everyvoice.wizard import basic, dataset
 
 
-class TestG2p(TestCase):
+class TestG2p:
     """Test G2P"""
 
-    def setUp(self) -> None:
-        super().setUp()
+    @pytest.fixture(autouse=True)
+    def fresh_g2p_engines(self):
         # Each test in this suite needs to start with a fresh, empty
         # AVAILABLE_G2P_ENGINES cache, otherwise caching due to previous calls
         # get get_g2p_engine() in other suites could invalidate some tests here.
-        self.SAVED_AVAILABLE_G2P_ENGINES = dict(AVAILABLE_G2P_ENGINES)
+        saved_available_g2p_engines = dict(AVAILABLE_G2P_ENGINES)
         AVAILABLE_G2P_ENGINES.clear()
         AVAILABLE_G2P_ENGINES.update(make_default_g2p_engines())
-
-    def tearDown(self) -> None:
-        super().setUp()
+        yield
         AVAILABLE_G2P_ENGINES.clear()
-        AVAILABLE_G2P_ENGINES.update(self.SAVED_AVAILABLE_G2P_ENGINES)
+        AVAILABLE_G2P_ENGINES.update(saved_available_g2p_engines)
 
     def test_many_available_langs(self):
-        self.assertGreaterEqual(len(AVAILABLE_G2P_ENGINES), 20)
+        assert len(AVAILABLE_G2P_ENGINES) >= 20
 
     def test_pua_chars(self):
         eng_g2p = get_g2p_engine("eng")
         und_g2p = get_g2p_engine("und")
         tokens = eng_g2p("h_e_l_l_o")
-        self.assertEqual(
-            tokens,
-            ["e", "ɪ", "t", "ʃ", "_", "i", "_", "ɛ", "l", "_", "ɛ", "l", "_", "o", "ʊ"],
-        )
+        assert tokens == [
+            "e",
+            "ɪ",
+            "t",
+            "ʃ",
+            "_",
+            "i",
+            "_",
+            "ɛ",
+            "l",
+            "_",
+            "ɛ",
+            "l",
+            "_",
+            "o",
+            "ʊ",
+        ]
         tokens = und_g2p("___")
-        self.assertEqual(tokens, ["_", "_", "_"])
+        assert tokens == ["_", "_", "_"]
 
     def test_basic_g2p(self):
         eng_g2p = get_g2p_engine("eng")
-        self.assertEqual(
-            eng_g2p("hello world"), ["h", "ʌ", "l", "o", "ʊ", " ", "w", "ɜ˞", "l", "d"]
-        )
+        assert eng_g2p("hello world") == [
+            "h",
+            "ʌ",
+            "l",
+            "o",
+            "ʊ",
+            " ",
+            "w",
+            "ɜ˞",
+            "l",
+            "d",
+        ]
         # keep's punctuation
-        self.assertEqual(
-            eng_g2p('hello "world"!!?.'),
-            [
-                "h",
-                "ʌ",
-                "l",
-                "o",
-                "ʊ",
-                " ",
-                '"',
-                "w",
-                "ɜ˞",
-                "l",
-                "d",
-                '"',
-                "!",
-                "!",
-                "?",
-                ".",
-            ],
-        )
+        assert eng_g2p('hello "world"!!?.') == [
+            "h",
+            "ʌ",
+            "l",
+            "o",
+            "ʊ",
+            " ",
+            '"',
+            "w",
+            "ɜ˞",
+            "l",
+            "d",
+            '"',
+            "!",
+            "!",
+            "?",
+            ".",
+        ]
         # another language
         str_g2p = get_g2p_engine("str")
-        self.assertEqual(
-            str_g2p("SENĆOŦEN"), ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"]
-        )
+        assert str_g2p("SENĆOŦEN") == ["s", "ʌ", "n", "t͡ʃ", "ɑ", "θ", "ʌ", "n"]
         # test lang_id missing
-        with self.assertRaises(NotImplementedError):
+        with pytest.raises(NotImplementedError):
             get_g2p_engine("boop")
 
     def test_unusual_ipa_code(self):
@@ -117,11 +132,11 @@ class TestG2p(TestCase):
         User asked for a language that is not supported by AVAILABLE_G2P_ENGINES.
         """
         lang_id = "unittest"
-        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
-        with self.assertRaisesRegex(
+        assert lang_id not in AVAILABLE_G2P_ENGINES
+        # The user provided G2P engine shouldn't be available before loading a TextConfig.
+        with pytest.raises(
             NotImplementedError,
-            rf"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}.*",
-            msg="The user provided G2P engine shouldn't be available before loading a TextConfig.",
+            match=rf"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}.*",
         ):
             get_g2p_engine(lang_id)
 
@@ -130,19 +145,16 @@ class TestG2p(TestCase):
         Use a user provided G2P engine.
         """
         lang_id = "unittest"
-        with self.assertRaisesRegex(
+        # The user provided G2P engine shouldn't be available before loading a TextConfig.
+        with pytest.raises(
             NotImplementedError,
-            rf"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}.*",
-            msg="The user provided G2P engine shouldn't be available before loading a TextConfig.",
+            match=rf"Sorry, we don't have a grapheme-to-phoneme engine available for {lang_id}.*",
         ):
             get_g2p_engine(lang_id)
         with mute_logger("everyvoice.config.text_config"):
             TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.valid"})
         assert lang_id in AVAILABLE_G2P_ENGINES
-        self.assertIs(
-            AVAILABLE_G2P_ENGINES[lang_id],
-            everyvoice.tests.g2p_engines.valid,
-        )
+        assert AVAILABLE_G2P_ENGINES[lang_id] is everyvoice.tests.g2p_engines.valid
 
     def test_invalid_g2p_engine(self):
         """
@@ -151,9 +163,9 @@ class TestG2p(TestCase):
 
         lang_id = "unittest"
         AVAILABLE_G2P_ENGINES[lang_id] = "WRONG"
-        with self.assertRaisesRegex(
+        with pytest.raises(
             AssertionError,
-            f"Internal error: the only str value allowed in AVAILABLE_G2P_ENGINES is '{DEFAULT_G2P}'.",
+            match=f"Internal error: the only str value allowed in AVAILABLE_G2P_ENGINES is '{DEFAULT_G2P}'.",
         ):
             get_g2p_engine(lang_id)
 
@@ -166,21 +178,19 @@ class TestG2p(TestCase):
         assert AVAILABLE_G2P_ENGINES[lang_id] == DEFAULT_G2P
 
         g2p_engine = get_g2p_engine(lang_id)
-        self.assertFalse(isinstance(g2p_engine, str))
+        assert not isinstance(g2p_engine, str)
         assert isinstance(g2p_engine, CachingG2PEngine)
 
 
-class TextConfigWithG2pTest(TestCase):
+class TestTextConfigWithG2p:
     """
     TextConfig
     """
 
-    def setUp(self) -> None:
-        super().setUp()
+    def setup_method(self) -> None:
         self.AVAILABLE_G2P_ENGINES = dict(AVAILABLE_G2P_ENGINES)
 
-    def tearDown(self) -> None:
-        super().setUp()
+    def teardown_method(self) -> None:
         AVAILABLE_G2P_ENGINES.clear()
         AVAILABLE_G2P_ENGINES.update(self.AVAILABLE_G2P_ENGINES)
 
@@ -207,32 +217,26 @@ class TextConfigWithG2pTest(TestCase):
             )
         assert lang_id_1 in AVAILABLE_G2P_ENGINES
         assert lang_id_2 in AVAILABLE_G2P_ENGINES
-        self.assertIs(
-            AVAILABLE_G2P_ENGINES[lang_id_1],
-            everyvoice.tests.g2p_engines.valid,
-        )
-        self.assertIs(
-            AVAILABLE_G2P_ENGINES[lang_id_2],
-            everyvoice.tests.g2p_engines.valid,
-        )
+        assert AVAILABLE_G2P_ENGINES[lang_id_1] is everyvoice.tests.g2p_engines.valid
+        assert AVAILABLE_G2P_ENGINES[lang_id_2] is everyvoice.tests.g2p_engines.valid
 
-    def test_loading_g2p_engines_with_invalid_module(self):
+    def test_loading_g2p_engines_with_invalid_module(self, caplog):
         """
         Simulate user provided G2P engines module that doesn't exist.
         """
 
         lang_id = "unittest"
         with (
-            self.assertRaisesRegex(
+            pytest.raises(
                 ValueError,
-                rf".*Invalid G2P engine module `unknown_module` for `{lang_id}`.*",
+                match=rf".*Invalid G2P engine module `unknown_module` for `{lang_id}`.*",
             ),
-            patch_logger(everyvoice.config.text_config) as logger,
-            self.assertLogs(logger) as logs,
+            patch_logger(everyvoice.config.text_config),
+            caplog.at_level(logging.WARNING, logger="UnitTesting"),
         ):
             TextConfig(g2p_engines={lang_id: "unknown_module.g2p"})
-        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
-        assert "Invalid G2P engine" in "\n".join(logs.output)
+        assert lang_id not in AVAILABLE_G2P_ENGINES
+        assert "Invalid G2P engine" in caplog.text
 
     def test_g2p_engine_signature_multiple_arguments(self):
         """
@@ -240,40 +244,40 @@ class TextConfigWithG2pTest(TestCase):
         """
 
         lang_id = "unittest"
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValidationError,
-            r".*G2P engine's signature should take a single argument.*",
+            match=r".*G2P engine's signature should take a single argument.*",
         ):
             TextConfig(
                 g2p_engines={lang_id: "everyvoice.tests.g2p_engines.multiple_arguments"}
             )
-        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+        assert lang_id not in AVAILABLE_G2P_ENGINES
 
     def test_g2p_engine_signature_not_a_string(self):
         """
         User provided a G2P engine that doesn't take a string as input.
         """
         lang_id = "unittest"
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValidationError,
-            r".*G2P Engine's signature should take a string.*",
+            match=r".*G2P Engine's signature should take a string.*",
         ):
             TextConfig(
                 g2p_engines={lang_id: "everyvoice.tests.g2p_engines.not_a_string"}
             )
-        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+        assert lang_id not in AVAILABLE_G2P_ENGINES
 
     def test_g2p_engine_signature_not_a_list(self):
         """
         User provided a G2P engine that doesn't return a list of strings.
         """
         lang_id = "unittest"
-        with self.assertRaisesRegex(
+        with pytest.raises(
             ValidationError,
-            r".*G2P Engine's signature should return a list of strings.*",
+            match=r".*G2P Engine's signature should return a list of strings.*",
         ):
             TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.not_a_list"})
-        self.assertNotIn(lang_id, AVAILABLE_G2P_ENGINES)
+        assert lang_id not in AVAILABLE_G2P_ENGINES
 
     def test_overriding_default_g2p_engine(self):
         """
@@ -283,25 +287,17 @@ class TextConfigWithG2pTest(TestCase):
         lang_id = "fra"
         assert lang_id in AVAILABLE_G2P_ENGINES
         old_g2p_engine = AVAILABLE_G2P_ENGINES[lang_id]
-        with mute_logger("everyvoice.config.text_config"):
-            TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.valid"})
-        self.assertEqual(
-            num_g2p_engines,
-            len(AVAILABLE_G2P_ENGINES.keys()),
-            "This shouldn't add a new G2P Engine.",
-        )
-        self.assertIs(
-            AVAILABLE_G2P_ENGINES[lang_id],
-            everyvoice.tests.g2p_engines.valid,
-        )
-        self.assertIsNot(
-            old_g2p_engine,
-            AVAILABLE_G2P_ENGINES[lang_id],
-            "The new G2P Engine shouldn't be the same as the old engine.",
-        )
+        TextConfig(g2p_engines={lang_id: "everyvoice.tests.g2p_engines.valid"})
+        assert num_g2p_engines == len(
+            AVAILABLE_G2P_ENGINES.keys()
+        ), "This shouldn't add a new G2P Engine."
+        assert AVAILABLE_G2P_ENGINES[lang_id] is everyvoice.tests.g2p_engines.valid
+        assert (
+            old_g2p_engine is not AVAILABLE_G2P_ENGINES[lang_id]
+        ), "The new G2P Engine shouldn't be the same as the old engine."
 
 
-class CustomG2pTest(WizardTestBase):
+class TestCustomG2p(WizardTestBase):
     def test_custom_g2p_in_wizard(self):
         """Test using a custom g2p on a custom language code"""
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -542,9 +538,9 @@ class CustomG2pTest(WizardTestBase):
                 encoding="utf8",
             ) as f:
                 text_config = "".join(f)
-            self.assertIn(
-                "g2p_engines: {git: everyvoice.tests.g2p_engines.g2p_test_upper, lang1: everyvoice.tests.g2p_engines.valid}",
-                text_config,
+            assert (
+                "g2p_engines: {git: everyvoice.tests.g2p_engines.g2p_test_upper, lang1: everyvoice.tests.g2p_engines.valid}"
+                in text_config
             )
 
             # import pprint
@@ -555,41 +551,29 @@ class CustomG2pTest(WizardTestBase):
             filelist_base = tmpdir / "out/project"
             with open(filelist_base / "dataset0-filelist.psv", encoding="utf8") as f:
                 dataset0 = f.read()
-            self.assertEqual(
-                dataset0,
-                dedent("""\
-                    basename|language|speaker|characters|phones
-                    f1|git|speaker_0|foo bar|FOOBAR
-                    f2|git|speaker_0|bar baz|BARBAZ
-                    f3|git|speaker_0|baz foo|BAZFOO
-                    """),
-                "With g2p_engines.valid as custom g2p, phones has spaces stripped",
-            )
+            assert dataset0 == dedent("""\
+                basename|language|speaker|characters|phones
+                f1|git|speaker_0|foo bar|FOOBAR
+                f2|git|speaker_0|bar baz|BARBAZ
+                f3|git|speaker_0|baz foo|BAZFOO
+                """), "With g2p_engines.valid as custom g2p, phones has spaces stripped"
             with open(filelist_base / "dataset1-filelist.psv", encoding="utf8") as f:
                 dataset1 = f.read()
-            self.assertIn(
-                "\nf7|unknown-lang|my_speaker|zang|\n",
-                dataset1,
-                "unknown-lang has no g2p engine so phones value is missing",
-            )
-            self.assertIn(
-                "\nf7|lang1|my_speaker|a b c|abc\n",
-                dataset1,
-                "lang1 uses valid so it strip spaces",
-            )
+            assert (
+                "\nf7|unknown-lang|my_speaker|zang|\n" in dataset1
+            ), "unknown-lang has no g2p engine so phones value is missing"
+            assert (
+                "\nf7|lang1|my_speaker|a b c|abc\n" in dataset1
+            ), "lang1 uses valid so it strip spaces"
             with open(filelist_base / "dataset2-filelist.psv", encoding="utf8") as f:
                 dataset2 = f.read()
-            self.assertEqual(
-                dataset2,
-                dedent("""\
-                    basename|language|speaker|characters
-                    f1|my-lang|my_speaker|foo bar
-                    f2|my-lang|my_speaker|bar baz
-                    f3|my-lang|my_speaker|baz foo
-                    """),
-                "With no g2p engine, the phones column is simply absent",
-            )
+            assert dataset2 == dedent("""\
+                basename|language|speaker|characters
+                f1|my-lang|my_speaker|foo bar
+                f2|my-lang|my_speaker|bar baz
+                f3|my-lang|my_speaker|baz foo
+                """), "With no g2p engine, the phones column is simply absent"
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)

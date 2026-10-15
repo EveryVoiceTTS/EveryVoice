@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 
 import sys
-from unittest import TestCase
 
-from pytest import main
+import pytest
 
 from everyvoice.evaluation import (
     calculate_objective_metrics_from_single_path,
@@ -14,7 +13,7 @@ from everyvoice.evaluation import (
 from everyvoice.tests.stubs import TEST_DATA_DIR
 
 
-class EvaluationTest(TestCase):
+class TestEvaluation:
     def test_squim_evaluation(self):
         model, sr = load_squim_objective_model()
         subj_model, subj_sr = load_squim_subjective_model()
@@ -28,10 +27,10 @@ class EvaluationTest(TestCase):
             subj_sr,
         )
         assert round(mos, 2) == 4.47
-        self.assertLess(stoi, 1)
+        assert stoi < 1
         assert round(pesq, 2) == 3.88
         assert round(si_sdr, 2) == 28.64
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)

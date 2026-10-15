@@ -4,10 +4,9 @@ import string
 import sys
 from pathlib import Path
 from unicodedata import normalize
-from unittest import TestCase
 
+import pytest
 from pydantic import ValidationError
-from pytest import main
 
 from everyvoice import exceptions
 from everyvoice.config.text_config import Punctuation, Symbols, TextConfig
@@ -27,11 +26,10 @@ from everyvoice.utils import (
 )
 
 
-class TextTest(TestCase):
+class TestText:
     """Basic test for text input configuration"""
 
-    def setUp(self) -> None:
-        super().setUp()
+    def setup_method(self) -> None:
         self.base_text_processor = TextProcessor(
             TextConfig(symbols=Symbols(letters=list(string.ascii_letters))),
         )
@@ -39,18 +37,18 @@ class TextTest(TestCase):
     def test_text_to_sequence(self):
         text = "hello world"
         sequence = self.base_text_processor.encode_text(text)
-        self.assertEqual(self.base_text_processor.decode_tokens(sequence, "", ""), text)
+        assert self.base_text_processor.decode_tokens(sequence, "", "") == text
 
     def test_token_sequence_to_text(self):
         sequence = [60, 57, 64, 64, 67, 1, 75, 67, 70, 64, 56]
         assert self.base_text_processor.encode_text("hello world") == sequence
 
     def test_hardcoded_symbols(self):
-        self.assertEqual(
-            self.base_text_processor.encode_text("\x80 \x80"),
-            [0, 1, 0],
-            "pad should be Unicode PAD symbol and index 0, whitespace should be index 1",
-        )
+        assert self.base_text_processor.encode_text("\x80 \x80") == [
+            0,
+            1,
+            0,
+        ], "pad should be Unicode PAD symbol and index 0, whitespace should be index 1"
 
     def test_cleaners_with_upper(self):
         text = "hello world"
@@ -62,10 +60,10 @@ class TextTest(TestCase):
             ),
         )
         sequence = upper_text_processor.encode_text(text_upper)
-        self.assertEqual(upper_text_processor.decode_tokens(sequence, "", ""), text)
+        assert upper_text_processor.decode_tokens(sequence, "", "") == text
 
     def test_no_duplicate_punctuation(self):
-        with self.assertRaises(ValidationError):
+        with pytest.raises(ValidationError):
             TextConfig(symbols=Symbols(letters=[":"] + list(string.ascii_letters)))
 
     def test_punctuation(self):
@@ -79,47 +77,44 @@ class TextTest(TestCase):
         tokens = upper_text_processor.apply_tokenization(
             upper_text_processor.normalize_text(text)
         )
-        self.assertEqual(
-            upper_text_processor.apply_punctuation_rules(tokens),
-            [
-                "h",
-                "e",
-                "l",
-                "l",
-                "o",
-                "<EXCL>",
-                " ",
-                "h",
-                "o",
-                "w",
-                " ",
-                "a",
-                "r",
-                "e",
-                " ",
-                "y",
-                "o",
-                "u",
-                "<QINT>",
-                " ",
-                "m",
-                "y",
-                " ",
-                "n",
-                "a",
-                "m",
-                "e",
-                "<QUOTE>",
-                "s",
-                "<COLON>",
-                " ",
-                "f",
-                "o",
-                "o",
-                "<SEMICOL>",
-                "<PERIOD>",
-            ],
-        )
+        assert upper_text_processor.apply_punctuation_rules(tokens) == [
+            "h",
+            "e",
+            "l",
+            "l",
+            "o",
+            "<EXCL>",
+            " ",
+            "h",
+            "o",
+            "w",
+            " ",
+            "a",
+            "r",
+            "e",
+            " ",
+            "y",
+            "o",
+            "u",
+            "<QINT>",
+            " ",
+            "m",
+            "y",
+            " ",
+            "n",
+            "a",
+            "m",
+            "e",
+            "<QUOTE>",
+            "s",
+            "<COLON>",
+            " ",
+            "f",
+            "o",
+            "o",
+            "<SEMICOL>",
+            "<PERIOD>",
+        ]
 
     def test_phonological_features(self):
         moh_config = FeaturePredictionConfig(
@@ -191,9 +186,9 @@ class TextTest(TestCase):
             apply_g2p=True,
             encode_as_phonological_features=True,
         )
-        self.assertEqual(moh_text_processor.decode_tokens(g2p_tokens, "", ""), "séːɡũ")
+        assert moh_text_processor.decode_tokens(g2p_tokens, "", "") == "séːɡũ"
         assert len(g2p_tokens) == len(feats)
-        self.assertNotEqual(len(g2p_tokens), len(one_hot_tokens))
+        assert len(g2p_tokens) != len(one_hot_tokens)
         assert len(feats[0]) == N_PHONOLOGICAL_FEATURES
 
     def test_duplicates_removed(self):
@@ -202,8 +197,8 @@ class TextTest(TestCase):
                 symbols=Symbols(letters=list(string.ascii_letters), duplicate=["e"])
             )
         )
-        self.assertEqual(
-            len([x for x in duplicate_symbols_text_processor.symbols if x == "e"]), 1
+        assert (
+            len([x for x in duplicate_symbols_text_processor.symbols if x == "e"]) == 1
         )
 
     def test_empty_symbol_dropped_after_normalization(self):
@@ -213,23 +208,23 @@ class TextTest(TestCase):
             symbols=Symbols(letters=list(string.ascii_letters)),
             to_replace={"x": ""},
         )
-        self.assertNotIn("", config.symbols.letters)
+        assert "" not in config.symbols.letters
 
     def test_to_replace_sorted_longest_key_first(self):
         # rules are applied in dict order via re.sub, so a shorter key must
         # never come before a longer key it's a substring of, or the longer
         # rule would never get a chance to match
         config = TextConfig(to_replace={"a": "1", "abc": "2", "ab": "3"})
-        self.assertEqual(list(config.to_replace.keys()), ["abc", "ab", "a"])
+        assert list(config.to_replace.keys()) == ["abc", "ab", "a"]
 
     def test_to_replace_helper_applies_longest_key_first(self):
         # if 'a' were applied before 'abc', 'abc' would become '1bc' before
         # the 'abc' rule ever got a chance to match
         config = TextConfig(to_replace={"a": "1", "abc": "2"})
-        self.assertEqual(apply_to_replace_helper("abc", config.to_replace), "2")
+        assert apply_to_replace_helper("abc", config.to_replace) == "2"
 
     def test_bad_symbol_configuration(self):
-        with self.assertRaises(ValidationError):
+        with pytest.raises(ValidationError):
             TextProcessor(
                 TextConfig(symbols=Symbols(letters=list(string.ascii_letters), bad=[1]))
             )
@@ -254,21 +249,16 @@ class TextTest(TestCase):
         )
         text = "he\u0301llo world"
         sequence = accented_text_processor.encode_text(text)
-        self.assertNotEqual(
-            accented_text_processor.decode_tokens(sequence, "", ""), text
+        assert accented_text_processor.decode_tokens(sequence, "", "") != text
+        assert accented_text_processor.decode_tokens(sequence, "", "") == normalize(
+            "NFC", text
         )
-        self.assertEqual(
-            accented_text_processor.decode_tokens(sequence, "", ""),
-            normalize("NFC", text),
-        )
-        self.assertNotEqual(
-            self.base_text_processor.normalize_text(text), normalize("NFC", text)
-        )
+        assert self.base_text_processor.normalize_text(text) != normalize("NFC", text)
 
     def test_missing_symbol(self):
         text = "h3llo world"
         sequence = self.base_text_processor.encode_text(text)
-        self.assertNotEqual(self.base_text_processor.decode_tokens(sequence), text)
+        assert self.base_text_processor.decode_tokens(sequence) != text
         assert "3" in self.base_text_processor.missing_symbols
         assert self.base_text_processor.missing_symbols["3"] == 1
 
@@ -283,18 +273,17 @@ class TextTest(TestCase):
         encoded = text_processor.encode_escaped_string_sequence(decoded)
         assert encoded == sequence
 
-        with self.assertRaises(exceptions.OutOfVocabularySymbolError):
+        with pytest.raises(exceptions.OutOfVocabularySymbolError):
             # / is OOV, so JOINER_SUBSTITUTION will also be OOV
             self.base_text_processor.encode_escaped_string_sequence(decoded)
 
     def test_encode_string_tokens(self):
-        self.assertEqual(
-            self.base_text_processor.encode_string_tokens(["a", "b", ",", " ", "c"]),
-            self.base_text_processor.encode_escaped_string_sequence("a/b/,/ /c"),
-        )
-        with self.assertRaises(exceptions.OutOfVocabularySymbolError):
+        assert self.base_text_processor.encode_string_tokens(
+            ["a", "b", ",", " ", "c"]
+        ) == self.base_text_processor.encode_escaped_string_sequence("a/b/,/ /c")
+        with pytest.raises(exceptions.OutOfVocabularySymbolError):
             self.base_text_processor.encode_string_tokens(["oov"])
-        with self.assertRaises(exceptions.OutOfVocabularySymbolError):
+        with pytest.raises(exceptions.OutOfVocabularySymbolError):
             self.base_text_processor.encode_string_tokens([JOINER_SUBSTITUTION])
 
     def test_is_sentence_final(self):
@@ -302,11 +291,11 @@ class TextTest(TestCase):
         assert is_sentence_final("?")
         assert is_sentence_final(".")
         assert is_sentence_final("᙮")
-        self.assertFalse(is_sentence_final("¡"))
-        self.assertFalse(is_sentence_final("¿"))
+        assert not is_sentence_final("¡")
+        assert not is_sentence_final("¿")
 
 
-class LookupTableTest(TestCase):
+class TestLookupTable:
     def test_build_lookup(self):
         """Make sure the original order of the keys is preserved"""
         key = "speaker"
@@ -320,18 +309,15 @@ class LookupTableTest(TestCase):
             {key: "Samuel"},
         ]
         speaker2id = build_lookup(data, key)
-        self.assertDictEqual(
-            speaker2id,
-            {
-                "Samuel": 0,
-                "Eric": 1,
-                "Marc": 2,
-                "Aidan": 3,
-            },
-        )
+        assert speaker2id == {
+            "Samuel": 0,
+            "Eric": 1,
+            "Marc": 2,
+            "Aidan": 3,
+        }
 
 
-class LookupTablesTest(TestCase):
+class TestLookupTables:
     def test_lookuptables_from_data(self):
         """
         Text looluptables for a multilangual and multispeaker.
@@ -343,14 +329,17 @@ class LookupTablesTest(TestCase):
                 generic_psv_filelist_reader(base_path / "validation_filelist.psv"),
             )
         )
-        self.assertDictEqual(
-            lang2id, {"crk": 0, "git": 1, "str": 2}, "Language lookup tables differ"
-        )
-        self.assertDictEqual(
-            speaker2id,
-            {"0": 0, "1": 1, "2": 2, "3": 3},
-            "Speaker lookup tables differ.",
-        )
+        assert lang2id == {
+            "crk": 0,
+            "git": 1,
+            "str": 2,
+        }, "Language lookup tables differ"
+        assert speaker2id == {
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "3": 3,
+        }, "Speaker lookup tables differ."
 
     def test_no_language(self):
         """
@@ -373,12 +362,13 @@ class LookupTablesTest(TestCase):
                 ),
             )
         )
-        self.assertDictEqual(lang2id, {}, "Language lookup tables differ")
-        self.assertDictEqual(
-            speaker2id,
-            {"0": 0, "1": 1, "2": 2, "3": 3},
-            "Speaker lookup tables differ.",
-        )
+        assert lang2id == {}, "Language lookup tables differ"
+        assert speaker2id == {
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "3": 3,
+        }, "Speaker lookup tables differ."
 
     def test_no_speaker(self):
         """
@@ -401,52 +391,47 @@ class LookupTablesTest(TestCase):
                 ),
             )
         )
-        self.assertDictEqual(
-            lang2id, {"crk": 0, "git": 1, "str": 2}, "Language lookup tables differ"
-        )
-        self.assertDictEqual(
-            speaker2id,
-            {},
-            "Speaker lookup tables differ.",
-        )
+        assert lang2id == {
+            "crk": 0,
+            "git": 1,
+            "str": 2,
+        }, "Language lookup tables differ"
+        assert speaker2id == {}, "Speaker lookup tables differ."
 
 
-class PunctuationTest(TestCase):
+class TestPunctuation:
     def test_all(self):
         """Make sure we get the union of all punctuation characters when calling `all`."""
         punctuation = Punctuation()
-        self.assertSetEqual(
-            punctuation.all,
-            {
-                "?",
-                "¿",
-                "!",
-                "¡",
-                ",",
-                ";",
-                '"',
-                "'",
-                "«",
-                "”",
-                ":",
-                "»",
-                "-",
-                "—",
-                ".",
-                "“",
-                "…",
-                "]",
-                "}",
-                "[",
-                ")",
-                "*",
-                "{",
-                "(",
-            },
-        )
+        assert punctuation.all == {
+            "?",
+            "¿",
+            "!",
+            "¡",
+            ",",
+            ";",
+            '"',
+            "'",
+            "«",
+            "”",
+            ":",
+            "»",
+            "-",
+            "—",
+            ".",
+            "“",
+            "…",
+            "]",
+            "}",
+            "[",
+            ")",
+            "*",
+            "{",
+            "(",
+        }
 
 
-class SymbolsTest(TestCase):
+class TestSymbols:
     def test_all_except_punctuation(self):
         """Not withstanding the random new member variables defined by the
         user, we should get the union of them excluding what is in
@@ -456,9 +441,7 @@ class SymbolsTest(TestCase):
             dataset1=["a", "b"],
             dataset2=["X", "Y", "Z"],
         )
-        self.assertSetEqual(
-            symbols.all_except_punctuation, {"a", "b", "X", "Y", "Z", "<SIL>"}
-        )
+        assert symbols.all_except_punctuation == {"a", "b", "X", "Y", "Z", "<SIL>"}
 
     def test_for_representation_level(self):
         """Suffixed {label}_characters/{label}_phones fields should only be
@@ -470,43 +453,32 @@ class SymbolsTest(TestCase):
             ds1_characters=["X", "Y"],
             ds1_phones=["p", "q"],
         )
-        self.assertSetEqual(
-            symbols.for_representation_level(None), symbols.all_except_punctuation
-        )
-        self.assertSetEqual(
-            symbols.for_representation_level(
-                TargetTrainingTextRepresentationLevel.characters
-            ),
-            {"a", "b", "X", "Y", "<SIL>"},
-        )
-        self.assertSetEqual(
-            symbols.for_representation_level(
-                TargetTrainingTextRepresentationLevel.ipa_phones
-            ),
-            {"a", "b", "p", "q", "<SIL>"},
-        )
+        assert symbols.for_representation_level(None) == symbols.all_except_punctuation
+        assert symbols.for_representation_level(
+            TargetTrainingTextRepresentationLevel.characters
+        ) == {"a", "b", "X", "Y", "<SIL>"}
+        assert symbols.for_representation_level(
+            TargetTrainingTextRepresentationLevel.ipa_phones
+        ) == {"a", "b", "p", "q", "<SIL>"}
         # phonological_features are computed from phone symbols, so they map
         # to the same _phones suffix as ipa_phones
-        self.assertSetEqual(
-            symbols.for_representation_level(
-                TargetTrainingTextRepresentationLevel.phonological_features
-            ),
-            {"a", "b", "p", "q", "<SIL>"},
-        )
+        assert symbols.for_representation_level(
+            TargetTrainingTextRepresentationLevel.phonological_features
+        ) == {"a", "b", "p", "q", "<SIL>"}
 
 
-class TestTextSplit(TestCase):
+class TestTextSplit:
     def test_strong_boundary(self):
         a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families."
         b = "As a consequence of the residential school system and other policies of cultural suppression, the majority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
         text = a + " " + b
-        self.assertEqual([a, b], chunk_text(text))
+        assert [a, b] == chunk_text(text)
 
     def test_weak_boundary(self):
         a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families; as a consequence of the residential school system and other policies of cultural suppression,"
         b = "the majority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
         text = a + " " + b
-        self.assertEqual([a, b], chunk_text(text))
+        assert [a, b] == chunk_text(text)
 
     def test_custom_desired_length(self):
         a = "There are approximately 70 Indigenous languages spoken in Canada!"
@@ -515,7 +487,7 @@ class TestTextSplit(TestCase):
         d = "the majority of these languages now have fewer than 500 fluent speakers remaining."
         e = "Most fluent speakers are elderly."
         text = a + " " + b + " " + c + " " + d + " " + e
-        self.assertEqual([a + " " + b, c + " " + d, e], chunk_text(text, 75, 1000))
+        assert [a + " " + b, c + " " + d, e] == chunk_text(text, 75, 1000)
 
     def test_normalization(self):
         a = "Welcome to the EveryVoice Documentation! Please read the background section below."
@@ -524,11 +496,11 @@ class TestTextSplit(TestCase):
 
     def test_quote_toggling(self):
         text = 'There are approximately "70 Indigenous languages spoken in Canada. The majority of these languages" now have fewer than 500 fluent speakers remaining.'
-        self.assertEqual([text], chunk_text(text, 75, 1000))
+        assert [text] == chunk_text(text, 75, 1000)
 
     def test_invalid_lengths(self):
         text = "Hello, world!"
-        with self.assertRaises(AssertionError):
+        with pytest.raises(AssertionError):
             chunk_text(text, 200, 100)
 
     def test_no_boundaries(self):
@@ -538,9 +510,7 @@ class TestTextSplit(TestCase):
         a = "There are approximately 70 Indigenous languages spoken in Canada from 10 distinct language families. As a consequence of the residential school system and other policies of cultural suppression, the m"
         b = "ajority of these languages now have fewer than 500 fluent speakers remaining, most of them elderly."
         text = a + b
-        self.assertEqual(
-            [a, b], chunk_text(text, weak_boundaries="", strong_boundaries="")
-        )
+        assert [a, b] == chunk_text(text, weak_boundaries="", strong_boundaries="")
 
     def test_custom_weak_boundaries(self):
         """
@@ -551,9 +521,9 @@ class TestTextSplit(TestCase):
         b = "TŦE Ś,X̱ENAṈs ĆSE LÁ,E TŦE ÁLEṈENEȻ TŦE W̱SÁNEĆ."
         text = a + " " + b
         # With custom weak boundaries
-        self.assertNotIn(a, chunk_text(text, 15, 30, weak_boundaries=":;"))
+        assert a not in chunk_text(text, 15, 30, weak_boundaries=":;")
         # Without custom weak boundaries
-        assert a, chunk_text(text, 15 in 30)
+        assert a in chunk_text(text, 15, 30)
 
     def test_custom_strong_boundaries(self):
         """
@@ -564,12 +534,12 @@ class TestTextSplit(TestCase):
         b = "ᐄᔥᒋᒫᐅᒡ ᒌᐦ ᓂᐱᐦᐋᐅᒡ ᐄᔨᔨᐤᐦ ᒥᒄ ᒌᐦ ᑖᐤ ᐹᔨᒄ ᐄᔥᒌᒫᐤ ᐋᑳ ᐧᐃᒡ ᒦᐧᔮᔨᑎ ᐋᐦ ᓂᐱᐦᐄᐧᐋᑦ ᑳᐦ ᐧᐄᑎᒥᐧᐋᑦ ᐋᓂᔮᐦ ᐄᔨᔨᐤᐦ ᐋᐃᑖᔨᑎᒦᒡ ᐄᔥᒋᒫᐤ ᒑᓂᐱᐦᐋᔨᒡ ᑳᓂᑎᐧᐋᔨᑎᒧᐧᐋᑦ ᒋᔥᑖᒫᐤ᙮"
         text = a + " " + b
         # Behaviour with custom strong boundary
-        self.assertEqual([a, b], chunk_text(text, 50, 200, strong_boundaries="᙮"))
+        assert [a, b] == chunk_text(text, 50, 200, strong_boundaries="᙮")
         # Without custom strong boundary
-        self.assertEqual([text], chunk_text(text, 50, 200))
+        assert [text] == chunk_text(text, 50, 200)
 
 
-class TestResolveSplitParams(TestCase):
+class TestResolveSplitParams:
     """The shared boundary/param resolver used by both the FastSpeech2 and
     StyleTTS2 synthesis paths."""
 
@@ -607,4 +577,4 @@ class TestResolveSplitParams(TestCase):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)

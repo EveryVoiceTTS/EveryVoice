@@ -6,10 +6,9 @@ import sys
 import tempfile
 from enum import Enum
 from pathlib import Path
-from unittest import TestCase
 
+import pytest
 import torch
-from pytest import main
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
@@ -67,11 +66,38 @@ def find_non_basic_substructures(structure):
     return [structure]
 
 
-class ModelTest(TestCase):
+def make_model(ModelType, config_dir: Path):
+    """Instantiate a FastSpeech2 or HiFiGAN model from the test configs in config_dir"""
+    with mute_logger("everyvoice.config.text_config"):
+        if ModelType is FastSpeech2:
+            # we should probably also test that the error about the variance adaptor is raised
+            return FastSpeech2(
+                FastSpeech2Config.load_config_from_path(
+                    config_dir / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
+                ),
+                stats=Stats(
+                    pitch=StatsInfo(
+                        min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
+                    ),
+                    energy=StatsInfo(
+                        min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
+                    ),
+                ),
+                lang2id={"foo": 0, "bar": 1},
+                speaker2id={"baz": 0, "qux": 1},
+            )
+        assert ModelType is HiFiGAN
+        return HiFiGAN(
+            HiFiGANConfig.load_config_from_path(
+                config_dir / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
+            )
+        )
+
+
+class TestModel:
     """Basic test for models"""
 
-    def setUp(self) -> None:
-        super().setUp()
+    def setup_method(self) -> None:
         self.config = HiFiGANConfig(
             contact=TEST_CONTACT,
         )
@@ -135,25 +161,24 @@ class ModelTest(TestCase):
                         trainer.save_checkpoint(tmpdir / "model.ckpt")
 
                 result = find_non_basic_substructures(monkey_saved_config)
-                self.assertEqual(
-                    result,
-                    [],
-                    f"The following parts of the checkpoint were not properly serialized by on_model_checkpoint(): {result}",
-                )
+                assert (
+                    result == []
+                ), f"The following parts of the checkpoint were not properly serialized by on_model_checkpoint(): {result}"
 
                 # We don't want just serializable, but actually serialized!
                 ckpt = torch.load(tmpdir / "model.ckpt", weights_only=True)
                 try:
                     json.dumps(ckpt["hyper_parameters"])
                 except (TypeError, OverflowError):
-                    self.fail(
+                    pytest.fail(
                         f"model {type(model).__name__} has some fields that are not JSON serializable"
                     )
 
     def test_find_non_basic_substructures(self):
         """Let's make sure the testing facility itself works..."""
-        self.assertEqual(
-            find_non_basic_substructures([{1: 2, "a": [3, 2]}, (1 / 3, 2.0), None]), []
+        assert (
+            find_non_basic_substructures([{1: 2, "a": [3, 2]}, (1 / 3, 2.0), None])
+            == []
         )
         si = StatsInfo(min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5)
         result = find_non_basic_substructures(
@@ -165,14 +190,13 @@ class ModelTest(TestCase):
                 {DatasetTextRepresentation.characters: "b"},
             ]
         )
-        self.assertEqual(result, [Stats, si, DatasetTextRepresentation.characters])
+        assert result == [Stats, si, DatasetTextRepresentation.characters]
 
 
-class TestLoadingModel(TestCase):
+class TestLoadingModel:
     """Test loading models"""
 
-    def setUp(self) -> None:
-        super().setUp()
+    def setup_method(self) -> None:
         self.config_dir = TEST_DATA_DIR / "relative" / "config"
 
     def test_model_is_not_a_feature_prediction(self):
@@ -202,9 +226,9 @@ class TestLoadingModel(TestCase):
             trainer.save_checkpoint(ckpt_fn)
             import re
 
-            with self.assertRaisesRegex(
+            with pytest.raises(
                 TypeError,
-                re.escape(
+                match=re.escape(
                     "Unable to load config.  Possible causes: is it really a FastSpeech2Config? or the correct version?"
                 ),
             ):
@@ -250,9 +274,9 @@ class TestLoadingModel(TestCase):
             trainer.save_checkpoint(ckpt_fn)
             import re
 
-            with self.assertRaisesRegex(
+            with pytest.raises(
                 TypeError,
-                re.escape(
+                match=re.escape(
                     "Unable to load config.  Possible causes: is it really a VocoderConfig? or the correct version?"
                 ),
             ):
@@ -307,215 +331,156 @@ class TestLoadingModel(TestCase):
                 assert "model_info" in m.keys()
                 assert m["model_info"]["name"] == "BAD_TYPE"
                 # assert m["model_info"]["version"] == "1.0"
-                with self.assertRaisesRegex(
+                with pytest.raises(
                     TypeError,
-                    r"Wrong model type \(BAD_TYPE\), we are expecting a 'FastSpeech2' model",
+                    match=r"Wrong model type \(BAD_TYPE\), we are expecting a 'FastSpeech2' model",
                 ):
                     with mute_logger("everyvoice.config.text_config"):
                         FastSpeech2.load_from_checkpoint(ckpt_fn)
 
-    def test_missing_model_version(self):
+    @pytest.mark.parametrize(
+        "ModelType", [FastSpeech2, HiFiGAN], ids=lambda t: t.__name__
+    )
+    def test_missing_model_version(self, ModelType):
         """
         Loading an old model that doesn't have a version.
         """
         from pytorch_lightning import Trainer
         from pytorch_lightning.callbacks import ModelCheckpoint
 
-        with mute_logger("everyvoice.config.text_config"):
-            tests = (
-                (
-                    FastSpeech2,
-                    FastSpeech2(
-                        FastSpeech2Config.load_config_from_path(
-                            self.config_dir
-                            / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
-                        ),
-                        stats=Stats(
-                            pitch=StatsInfo(
-                                min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
-                            ),
-                            energy=StatsInfo(
-                                min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
-                            ),
-                        ),
-                        lang2id={"foo": 0, "bar": 1},
-                        speaker2id={"baz": 0, "qux": 1},
-                    ),
-                ),  # we should probably also test that the error about the variance adaptor is raised
-                (
-                    HiFiGAN,
-                    HiFiGAN(
-                        HiFiGANConfig.load_config_from_path(
-                            self.config_dir
-                            / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-                        )
-                    ),
-                ),
-            )
+        model = make_model(ModelType, self.config_dir)
 
         CANARY_VERSION = "CANARY_VERSION"
         with tempfile.TemporaryDirectory() as tmpdir_str:
-            for ModelType, model in tests:
-                with self.subTest(ModelType=ModelType):
-                    model._VERSION = CANARY_VERSION
-                    trainer = Trainer(
-                        default_root_dir=tmpdir_str,
-                        enable_progress_bar=False,
-                        logger=False,
-                        max_epochs=1,
-                        limit_train_batches=1,
-                        limit_val_batches=1,
-                        callbacks=[
-                            ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
-                        ],
-                    )
-                    trainer.strategy.connect(model)
-                    ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
-                    trainer.save_checkpoint(ckpt_fn)
-                    m = torch.load(ckpt_fn, weights_only=True)
-                    assert "model_info" in m.keys()
-                    assert m["model_info"]["name"] == ModelType.__name__
-                    assert m["model_info"]["version"] == CANARY_VERSION
-                    del m["model_info"]["version"]
-                    torch.save(m, ckpt_fn)
-                    if isinstance(model, FastSpeech2):
-                        # As of everyvoice==0.3.0 FastSpeech2 models are loaded by translating the embedding tables
-                        # but our mock here doesn't create a valid pre Version 1.2 FastSpeech2 checkpoint
-                        with mute_logger("everyvoice.config.text_config"):
-                            with self.assertRaises(AssertionError):
-                                model = ModelType.load_from_checkpoint(ckpt_fn)
-                    else:
-                        with mute_logger("everyvoice.config.text_config"):
-                            model = ModelType.load_from_checkpoint(ckpt_fn)
-                        assert model._VERSION, ["1.0" in "1.1"]
+            model._VERSION = CANARY_VERSION
+            trainer = Trainer(
+                default_root_dir=tmpdir_str,
+                enable_progress_bar=False,
+                logger=False,
+                max_epochs=1,
+                limit_train_batches=1,
+                limit_val_batches=1,
+                callbacks=[ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)],
+            )
+            trainer.strategy.connect(model)
+            ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
+            trainer.save_checkpoint(ckpt_fn)
+            m = torch.load(ckpt_fn, weights_only=True)
+            assert "model_info" in m.keys()
+            assert m["model_info"]["name"] == ModelType.__name__
+            assert m["model_info"]["version"] == CANARY_VERSION
+            del m["model_info"]["version"]
+            torch.save(m, ckpt_fn)
+            if isinstance(model, FastSpeech2):
+                # As of everyvoice==0.3.0 FastSpeech2 models are loaded by translating the embedding tables
+                # but our mock here doesn't create a valid pre Version 1.2 FastSpeech2 checkpoint
+                with mute_logger("everyvoice.config.text_config"):
+                    with pytest.raises(AssertionError):
+                        model = ModelType.load_from_checkpoint(ckpt_fn)
+            else:
+                with mute_logger("everyvoice.config.text_config"):
+                    model = ModelType.load_from_checkpoint(ckpt_fn)
+                assert model._VERSION in ["1.0", "1.1"]
 
-    def test_newer_model_version(self):
+    @pytest.mark.parametrize(
+        "ModelType", [FastSpeech2, HiFiGAN], ids=lambda t: t.__name__
+    )
+    def test_newer_model_version(self, ModelType):
         """
         Detecting an incompatible version number in the checkpoint.
         """
         from pytorch_lightning import Trainer
         from pytorch_lightning.callbacks import ModelCheckpoint
 
-        with mute_logger("everyvoice.config.text_config"):
-            tests = (
-                (
-                    FastSpeech2,
-                    FastSpeech2(
-                        FastSpeech2Config.load_config_from_path(
-                            self.config_dir
-                            / f"{TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX}.yaml"
-                        ),
-                        stats=Stats(
-                            pitch=StatsInfo(
-                                min=0, max=1, std=2, mean=3, norm_min=4, norm_max=5
-                            ),
-                            energy=StatsInfo(
-                                min=7, max=8, std=9, mean=10, norm_min=11, norm_max=12
-                            ),
-                        ),
-                        lang2id={"foo": 0, "bar": 1},
-                        speaker2id={"baz": 0, "qux": 1},
-                    ),
-                ),  # we should probably also test that the error about the variance adaptor is raised
-                (
-                    HiFiGAN,
-                    HiFiGAN(
-                        HiFiGANConfig.load_config_from_path(
-                            self.config_dir
-                            / f"{SPEC_TO_WAV_CONFIG_FILENAME_PREFIX}.yaml"
-                        )
-                    ),
-                ),
-            )
+        model = make_model(ModelType, self.config_dir)
 
         NEWER_VERSION = "100.0"
         with tempfile.TemporaryDirectory() as tmpdir_str:
-            for ModelType, model in tests:
-                with self.subTest(ModelType=ModelType):
-                    model._VERSION = NEWER_VERSION
-                    trainer = Trainer(
-                        default_root_dir=tmpdir_str,
-                        enable_progress_bar=False,
-                        logger=False,
-                        max_epochs=1,
-                        limit_train_batches=1,
-                        limit_val_batches=1,
-                        callbacks=[
-                            ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)
-                        ],
-                    )
-                    trainer.strategy.connect(model)
-                    ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
-                    trainer.save_checkpoint(ckpt_fn)
-                    m = torch.load(ckpt_fn, weights_only=True)
-                    assert "model_info" in m.keys()
-                    assert m["model_info"]["name"] == ModelType.__name__
-                    assert m["model_info"]["version"] == NEWER_VERSION
-                    with self.assertRaisesRegex(
-                        ValueError,
-                        r"Your model was created with a newer version of EveryVoice, please update your software.",
-                    ):
-                        with mute_logger("everyvoice.config.text_config"):
-                            ModelType.load_from_checkpoint(ckpt_fn)
+            model._VERSION = NEWER_VERSION
+            trainer = Trainer(
+                default_root_dir=tmpdir_str,
+                enable_progress_bar=False,
+                logger=False,
+                max_epochs=1,
+                limit_train_batches=1,
+                limit_val_batches=1,
+                callbacks=[ModelCheckpoint(dirpath=tmpdir_str, every_n_train_steps=1)],
+            )
+            trainer.strategy.connect(model)
+            ckpt_fn = tmpdir_str + "/checkpoint.ckpt"
+            trainer.save_checkpoint(ckpt_fn)
+            m = torch.load(ckpt_fn, weights_only=True)
+            assert "model_info" in m.keys()
+            assert m["model_info"]["name"] == ModelType.__name__
+            assert m["model_info"]["version"] == NEWER_VERSION
+            with pytest.raises(
+                ValueError,
+                match=r"Your model was created with a newer version of EveryVoice, please update your software.",
+            ):
+                with mute_logger("everyvoice.config.text_config"):
+                    ModelType.load_from_checkpoint(ckpt_fn)
 
 
-class TestLoadingConfig(TestCase):
+CONFIGS_TO_TEST = pytest.mark.parametrize(
+    "ConfigType, filename",
+    [
+        (FastSpeech2Config, TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX),
+        (HiFiGANConfig, SPEC_TO_WAV_CONFIG_FILENAME_PREFIX),
+    ],
+    ids=["FastSpeech2Config", "HiFiGANConfig"],
+)
+
+
+class TestLoadingConfig:
     """Test loading configurations"""
 
-    def setUp(self) -> None:
-        super().setUp()
+    def setup_method(self) -> None:
         self.config_dir = TEST_DATA_DIR / "relative" / "config"
-        self.configs = (
-            (FastSpeech2Config, TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX),
-            (HiFiGANConfig, SPEC_TO_WAV_CONFIG_FILENAME_PREFIX),
-        )
 
-    def test_config_versionless(self):
+    @CONFIGS_TO_TEST
+    def test_config_versionless(self, ConfigType, filename):
         """
         Validate that we can load a config that doesn't have a `VERSION` as a version 1.0 config.
         """
 
-        for ConfigType, filename in self.configs:
-            with self.subTest(ConfigType=ConfigType):
-                arguments = ConfigType.load_config_from_path(
-                    self.config_dir / f"{filename}.yaml"
-                ).model_dump()
-                del arguments["VERSION"]
+        arguments = ConfigType.load_config_from_path(
+            self.config_dir / f"{filename}.yaml"
+        ).model_dump()
+        del arguments["VERSION"]
 
-                self.assertNotIn("VERSION", arguments)
-                c = ConfigType(**arguments)
-                assert c.VERSION == "1.0"
+        assert "VERSION" not in arguments
+        c = ConfigType(**arguments)
+        assert c.VERSION == "1.0"
 
-    def test_config_newer_version(self):
+    @CONFIGS_TO_TEST
+    def test_config_newer_version(self, ConfigType, filename):
         """
         Validate that we are detecting that a config is newer.
         """
 
-        for ConfigType, filename in self.configs:
-            with self.subTest(ConfigType=ConfigType):
-                reference = ConfigType.load_config_from_path(
-                    self.config_dir / f"{filename}.yaml"
-                )
-                NEWER_VERSION = "100.0"
-                reference.VERSION = NEWER_VERSION
+        reference = ConfigType.load_config_from_path(
+            self.config_dir / f"{filename}.yaml"
+        )
+        NEWER_VERSION = "100.0"
+        reference.VERSION = NEWER_VERSION
 
-                with self.assertRaisesRegex(
-                    ValueError,
-                    r"Your config was created with a newer version of EveryVoice, please update your software.",
-                ):
-                    ConfigType(**reference.model_dump())
+        with pytest.raises(
+            ValueError,
+            match=r"Your config was created with a newer version of EveryVoice, please update your software.",
+        ):
+            ConfigType(**reference.model_dump())
 
 
-class TestVersion(TestCase):
+class TestVersion:
     def test_newer_version(self):
         """
         Canary test.  We use packaging.version.Version to compare model's versions and config's versions.
         """
         from packaging.version import Version
 
-        self.assertFalse("10.0" > "9.0")
+        assert not "10.0" > "9.0"
         assert Version("10.0") > Version("9.0")
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)

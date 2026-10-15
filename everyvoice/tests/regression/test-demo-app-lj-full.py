@@ -4,17 +4,17 @@ To run this test:
  - Run the regression test suite to get the regress-lj-full model.
  - cd regression/regress-<date>-<suffix>/regress-lj-full/regress
  - everyvoice demo logs_and_checkpoints/FeaturePredictionExperiment/base/checkpoints/last.ckpt logs_and_checkpoints/VocoderExperiment/base/checkpoints/last.ckpt --denylist <(echo test) --output-format wav
- - python test_demo_app_mix.py
+ - python ../test-demo-app.py
+   (prep-datasets.sh copies this script to regress-lj-full/test-demo-app.py)
 """
 
 import sys
-from unittest import TestCase
 
+import pytest
 from playwright.sync_api import expect, sync_playwright
-from pytest import main
 
 
-class TestDemoAppErros(TestCase):
+class TestDemoAppErrors:
     def test_rundemo(self) -> None:
         with sync_playwright() as playwright:
             browser = playwright.chromium.launch(headless=True)
@@ -52,4 +52,4 @@ class TestDemoAppErros(TestCase):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    pytest.main(sys.argv)
