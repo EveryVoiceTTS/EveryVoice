@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c  # v6.0.0
     hooks:
       - id: check-yaml
       - id: end-of-file-fixer
@@ -14,22 +14,27 @@ repos:
         entry: \bTestCase\b
         files: (^|/)test[^/]*\.py$
   - repo: https://github.com/PyCQA/isort
-    rev: 9.0.1
+    rev: 9f905615631c545f5aea2516508109350d1d2f7d  # 9.0.2
     hooks:
       - id: isort
         args: [--profile=black]
   - repo: https://github.com/psf/black
-    rev: 26.5.1
+    rev: 26.10.1  # Immutable
     hooks:
       - id: black
   # We do flake8 after black since black fixes a lot of the stuff it complains about
   - repo: https://github.com/pycqa/flake8
-    rev: 7.3.0
+    rev: 7eccf20b526fe4f2230bf9afeeef2fc9f97faf8d  # 7.3.0
     hooks:
       - id: flake8
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.13.1  # Immutable
+    hooks:
+      - id: uv-lock
+        args: ["--check"]
   # We do mypy last because it's the slowest of them all
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.3.1
+    rev: 2834ec6639549dd6796205c8f011dedcd587288b  # v2.4.0
     hooks:
       - id: mypy
         additional_dependencies: [pydantic, numpy, types-requests, types-pyyaml, types-setuptools, types-tabulate, types-tqdm]

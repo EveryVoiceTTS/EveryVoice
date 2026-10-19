@@ -35,13 +35,17 @@ jobs:
         with:
           python-version: "3.10"
       - name: Install uv
-        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        uses: astral-sh/setup-uv@v10.3.0 # Immutable, no need to pin to hash
         with:
-          version: "0.11.21"
+          version: "0.13.1"
       - name: Install the project
         run: uv sync --locked
       - run: uv pip freeze
       - run: uv pip list
+      - name: Make sure fs2 uv.lock is in sync
+        run: cd everyvoice/model/feature_prediction/FastSpeech2_lightning && uv lock --check
+      - name: Make sure styletts2 uv.lock is in sync
+        run: cd everyvoice/model/e2e/StyleTTS2_lightning && uv lock --check
       - name: Make sure the CLI stays fast
         run: |
           uv run ./profile-help-ci.sh "${{ github.event.pull_request.head.sha }}"
