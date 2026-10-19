@@ -27,6 +27,11 @@ repos:
     rev: 7.3.0
     hooks:
       - id: flake8
+  - repo: https://github.com/astral-sh/uv-pre-commit
+    rev: 0.13.1
+    hooks:
+      - id: uv-lock
+        args: ["--check"]
   # We do mypy last because it's the slowest of them all
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v2.3.1
