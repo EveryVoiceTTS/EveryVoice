@@ -228,7 +228,7 @@ if [[ $USE_UV ]]; then
 
     r uv pip install -e .[dev]
 else
-    r conda create -y "${ENV_OPTION[@]}" python="$PYTHON_VERSION" ffmpeg
+    r conda create -y "${ENV_OPTION[@]}" python="$PYTHON_VERSION"
     eval "$(conda shell.bash hook)"
     r conda activate "$ENV2ACTIVATE"
 
@@ -236,7 +236,7 @@ else
         r CUDA_TAG="$CUDA_TAG" pip install -r requirements.torch.txt --find-links https://download.pytorch.org/whl/torch_stable.html
     fi
 
-    r conda install -y sox -c conda-forge
+    r conda install -y sox ffmpeg -c conda-forge
     r pip install -e .[dev]
 fi
 
