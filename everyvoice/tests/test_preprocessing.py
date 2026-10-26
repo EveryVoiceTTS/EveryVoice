@@ -27,6 +27,7 @@ from everyvoice.config.preprocessing_config import (
 )
 from everyvoice.config.shared_types import init_context
 from everyvoice.config.text_config import TextConfig
+from everyvoice.exceptions import EveryVoiceError
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.preprocessor import Preprocessor, preprocessor
@@ -784,7 +785,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
             fp_config, lj_filelist, _, _, _ = self.get_simple_config(tmpdir)
 
             to_process_no_audio = ("energy", "pitch", "attn", "text", "spec")
-            with pytest.raises(SystemExit):
+            with pytest.raises(EveryVoiceError):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process_no_audio
                 )
@@ -807,7 +808,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
                 print("empty|foo bar baz|foo bar baz|noone|und", file=f)
             fp_config.preprocessing.source_data[0].filelist = input_filelist
 
-            with pytest.raises(SystemExit):
+            with pytest.raises(EveryVoiceError):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=to_process
                 )
@@ -828,7 +829,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
             ):
                 caplog.clear()
                 with stubs.monkeypatch(config_object, element, value):
-                    with pytest.raises(SystemExit):
+                    with pytest.raises(EveryVoiceError, match="Config lock mismatch"):
                         with (
                             stubs.patch_logger(preprocessor),
                             caplog.at_level(logging.INFO, logger="UnitTesting"),
@@ -839,7 +840,6 @@ class TestPreprocessing(PreprocessedAudioFixture):
                                 to_process=to_process,
                             )
                 log_output = caplog.text
-                assert "Config lock mismatch:" in log_output
                 assert message in log_output
 
             fail_config_lock(
@@ -1143,7 +1143,7 @@ class TestPreprocessing(PreprocessedAudioFixture):
 
             # When all files are filtered out, preprocessor exits with an error
             # This is the expected behavior when no valid audio files can be processed
-            with pytest.raises(SystemExit):
+            with pytest.raises(EveryVoiceError):
                 Preprocessor(fp_config).preprocess(
                     output_path=lj_filelist, cpus=1, to_process=("audio",)
                 )
