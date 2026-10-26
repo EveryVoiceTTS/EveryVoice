@@ -86,7 +86,6 @@ def load_config_base_command(
         # NOTE: To trigger this error handling code from the command line,
         # provide a mismatched config file, e.g.:
         #   `everyvoice preprocess  config/everyvoice-spec-to-wav.yaml`
-        import sys
 
         for config_type in (
             StyleTTS2Config,
@@ -97,15 +96,15 @@ def load_config_base_command(
                 config = config_type.load_config_from_path(  # type: ignore[attr-defined]
                     config_file
                 )
-                logger.error(
-                    f"We are expecting a {model_config.__name__} but it looks like you provided a {config_type.__name__}"
+                raise InvalidConfiguration(
+                    f"We are expecting a {model_config.__name__} but it looks like '{config_file}' is a {config_type.__name__}"
                 )
-                sys.exit(1)
             except ValidationError:
                 pass
 
-        logger.error(f"there was a problem with your config file:\n{error}")
-        sys.exit(1)
+        raise InvalidConfiguration(
+            f"there was a problem with your config file '{config_file}':\n{error}"
+        ) from error
 
     update_config_from_cli_args(config_args, config)
     return config
