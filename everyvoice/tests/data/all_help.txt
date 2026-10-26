@@ -79,7 +79,7 @@
 
  Usage: root evaluate [OPTIONS]
 
-                                          Evalution help
+                                          Evaluation help
 
  This command will evaluate an audio file, or a folder containing multiple audio files. Currently
  this is done by calculating the metrics from Kumar et. al. 2023. We will report the predicted
@@ -151,7 +151,7 @@
 
  Usage: root demo [OPTIONS] {checkpoint}
 
- Launch an interactive Gradio demo for any EveryVoice model.
+ Launch an interactive Gradio demo for any EveryVoice model
 
  The model type is detected automatically from the checkpoint. Pass a single checkpoint for
  StyleTTS2 (text-to-wav) models:
@@ -294,7 +294,7 @@
 
  Usage: root export spec-to-wav [OPTIONS] {model_path}
 
- Export your spec-to-wav model.
+ Export and optimize a spec-to-wav model checkpoint for inference
 
                                             Important!
 
@@ -415,11 +415,18 @@
 
  Usage: root preprocess text-to-spec [OPTIONS] {config_file}
 
- Preprocess data for a FastSpeech2 text-to-spec model.
+ Preprocess data for text-to-spec (FastSpeech2) training
+
+                                          Preprocess Help
+
+ This command will preprocess all of the data you need for use with EveryVoice.
+
+ By default every step of the preprocessor will be done by running:
 
  everyvoice preprocess text-to-spec config/everyvoice-text-to-spec.yaml
 
- To run only specific steps:
+ If you only want to process specific things, you can run specific commands by adding them as
+ options for example:
 
  everyvoice preprocess text-to-spec config/everyvoice-text-to-spec.yaml -s energy -s pitch
 
@@ -452,7 +459,7 @@
 
  Usage: root preprocess spec-to-wav [OPTIONS] {config_file}
 
- Preprocess data for a HiFiGAN spec-to-wav model.
+ Preprocess data for spec-to-wav (HiFiGAN) training
 
  everyvoice preprocess spec-to-wav config/everyvoice-spec-to-wav.yaml
 
@@ -478,7 +485,7 @@
 
  Usage: root preprocess text-to-wav [OPTIONS] {config_file}
 
- Preprocess data for a StyleTTS2 text-to-wav model.
+ Preprocess data for text-to-wav (StyleTTS2) training
 
  everyvoice preprocess text-to-wav config/everyvoice-text-to-wav.yaml
 
@@ -525,7 +532,7 @@
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
 │ text-to-spec  Train your Text-to-Spec (FastSpeech2) model                                       │
-│ spec-to-wav   Train your Spec-to-Wav (HiFiGAN) model                                            │
+│ spec-to-wav   Train your spec-to-wav (HiFiGAN) model                                            │
 │ text-to-wav   Train an end-to-end (StyleTTS2) model                                             │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -534,7 +541,9 @@
 
  Usage: root train text-to-spec [OPTIONS] {config_file}
 
- Train your text-to-spec model.  For example:
+ Train your Text-to-Spec (FastSpeech2) model
+
+ For example:
 
  everyvoice train text-to-spec config/everyvoice-text-to-spec.yaml
 
@@ -562,7 +571,9 @@
 
  Usage: root train spec-to-wav [OPTIONS] {config_file}
 
- Train your spec-to-wav model.  For example:
+ Train your spec-to-wav (HiFiGAN) model
+
+ For example:
 
  everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml
 
@@ -590,7 +601,9 @@
 
  Usage: root train text-to-wav [OPTIONS] {config_file}
 
- Train an end-to-end text-to-speech model. For example:
+ Train an end-to-end (StyleTTS2) model
+
+ For example:
 
  everyvoice train text-to-wav config/everyvoice-text-to-wav.yaml --mode first
 
@@ -646,7 +659,7 @@
 │              speech synthesis                                                                   │
 │ from-spec    Given some Mel spectrograms and a trained model, generate some audio. i.e. perform │
 │              copy synthesis.                                                                    │
-│ text-to-wav  Synthesize audio from text using a trained StyleTTS2 model                         │
+│ text-to-wav  Synthesize audio from text using a trained StyleTTS2 model.                        │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -940,7 +953,7 @@
 │ --help  -h        Show this message and exit.                                                   │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────╮
-│ text-to-wav  Download pretrained weights for StyleTTS2 training                                 │
+│ text-to-wav  Download StyleTTS2 pretrained model weights from HuggingFace.                      │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 

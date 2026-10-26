@@ -9,7 +9,6 @@ import functools
 import json
 import multiprocessing as mp
 import random
-import sys
 from collections import Counter
 from collections.abc import Callable, Sequence
 from datetime import datetime
@@ -35,7 +34,7 @@ from everyvoice.config.type_definitions import (
     DatasetTextRepresentation,
     TargetTrainingTextRepresentationLevel,
 )
-from everyvoice.exceptions import ConfigError
+from everyvoice.exceptions import BadDataError, ConfigError
 from everyvoice.model.e2e.config import StyleTTS2Config
 from everyvoice.model.feature_prediction.config import FeaturePredictionConfig
 from everyvoice.model.vocoder.config import VocoderConfig
@@ -494,10 +493,9 @@ class Preprocessor:
         for dataset in self.datasets:
             data_dir = Path(dataset.data_dir)
             if not data_dir.exists():
-                logger.error(
+                raise ConfigError(
                     f"Data directory '{data_dir}' does not exist. Please check your config file."
                 )
-                sys.exit(1)
 
     def create_path(self, item: dict, folder: str, fn: str) -> Path:
         path = (
@@ -964,11 +962,10 @@ class Preprocessor:
                 )
                 filelist = filelist[:10]
         except FileNotFoundError:
-            logger.error(
+            raise BadDataError(
                 f"A filelist was not found at {path}. "
                 "Please try processing your audio again."
             )
-            sys.exit(1)
         return filelist
 
     def get_config_lock(self, in_progress: bool = True) -> dict[str, dict | str]:
@@ -1094,10 +1091,9 @@ class Preprocessor:
 
         if not overwrite:
             if self.config_lock_has_conflicts():
-                logger.error(
+                raise ConfigError(
                     "Config lock mismatch: you have previously preprocessed some of the files here, but with a different and potentially incompatible configuration. Please use --overwrite to reprocess all files."
                 )
-                sys.exit(1)
         self.save_config_lock(in_progress=True)
 
         self.cpus = cpus
@@ -1105,6 +1101,9 @@ class Preprocessor:
         if not isinstance(output_path, Path):
             output_path = Path(output_path)
         processing_order = ("audio", "text", "pfs", "spec", "attn", "energy", "pitch")
+        for step in to_process:
+            if step not in processing_order:
+                raise ValueError(f"Unknown step '{step}'")
         random.seed(self.config.preprocessing.dataset_split_seed)
         processed_filelist = self.save_dir / output_path.name
         for process in processing_order:
@@ -1153,10 +1152,9 @@ class Preprocessor:
                     rich_print("Partial report showing only audio statistics:")
                     rich_print(report)
                 else:
-                    logger.error(
+                    raise BadDataError(
                         "Your filtered audio filelist is empty. Nothing to process."
                     )
-                    sys.exit(1)
                 # logger.info(f"Audio Filelist len={len(filelist or [])}")
             elif process in ["text", "pfs"]:
                 # We split out the "text" step to issue the missing symbol warnings

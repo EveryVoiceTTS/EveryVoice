@@ -440,9 +440,9 @@ class TestCLI:
                 ],
             )
             assert result.exit_code == 1
-            assert (
-                "We are expecting a FastSpeech2Config but it looks like you provided a HiFiGANConfig"
-                in "\n".join(output)
+            assert re.search(
+                r"We are expecting a FastSpeech2Config but it looks like .* is a HiFiGANConfig",
+                " ".join(output),
             )
 
     def test_preprocess_without_subcommand_shows_subcommands(self):

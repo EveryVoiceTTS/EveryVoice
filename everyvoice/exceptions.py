@@ -1,19 +1,18 @@
-class InvalidConfiguration(Exception):
-    def __init__(self, msg):
-        super().__init__(self)
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg
-
-
-class ConfigError(Exception):
+class EveryVoiceError(Exception):
     pass
 
 
-class OutOfVocabularySymbolError(Exception):
+class InvalidConfiguration(EveryVoiceError):
     pass
 
 
-class BadDataError(Exception):
+class ConfigError(EveryVoiceError):
+    pass
+
+
+class OutOfVocabularySymbolError(EveryVoiceError):
+    pass
+
+
+class BadDataError(EveryVoiceError):
     pass
