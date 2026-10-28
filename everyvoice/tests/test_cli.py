@@ -842,18 +842,6 @@ class TestTrainBaseCommandSlurmResume:
             mock.patch("pytorch_lightning.callbacks.ModelCheckpoint"),
         )
 
-    def test_last_ckpt_callback_saves_on_exception(self, tmp_path):
-        """A SIGTERM should force a checkpoint save regardless of
-        every_n_train_steps/every_n_epochs boundaries."""
-        config = self._config(tmp_path)
-        p_load, p_save, p_tb, p_trainer, p_ckpt = self._patches(config)
-        with p_load, p_save, p_tb, p_trainer, p_ckpt as MockModelCheckpoint:
-            self._run_train_base_command(config)
-
-        # last_ckpt_callback is the first ModelCheckpoint(...) constructed
-        last_ckpt_kwargs = MockModelCheckpoint.call_args_list[0].kwargs
-        assert last_ckpt_kwargs["save_on_exception"] is True
-
     def test_resumes_from_latest_slurm_hpc_checkpoint(self, tmp_path, monkeypatch):
         """When running under Slurm, the newest hpc checkpoint saved in this job's
         folder (by Lightning just before a requeue/preemption) must take priority

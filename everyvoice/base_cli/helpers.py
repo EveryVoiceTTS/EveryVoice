@@ -233,7 +233,6 @@ def train_base_command(
     last_ckpt_callback = ModelCheckpoint(
         save_top_k=1,
         save_last=True,
-        save_on_exception=True,
         every_n_train_steps=config.training.ckpt_steps,
         every_n_epochs=config.training.ckpt_epochs,
         enable_version_counter=True,
