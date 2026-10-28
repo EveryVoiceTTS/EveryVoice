@@ -23,7 +23,10 @@ from yaml import CLoader as Loader
 
 from everyvoice import __file__ as EV_FILE
 from everyvoice._version import VERSION
-from everyvoice.base_cli.helpers import save_configuration_to_log_dir
+from everyvoice.base_cli.helpers import (
+    save_configuration_to_log_dir,
+    train_base_command,
+)
 from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
 from everyvoice.config.shared_types import ContactInformation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
@@ -794,6 +797,95 @@ class TestCLI:
         assert result.exit_code != 0
         assert "has no pretrained text-encoder symbol table" in flatten_log(
             result.output
+        )
+
+
+class TestTrainBaseCommandSlurmResume:
+    """everyvoice/base_cli/helpers.py train_base_command: saving/resuming
+    around a SLURM requeue or preemption (SIGUSR1/SIGTERM)."""
+
+    def _config(self, tmp_path, finetune_checkpoint=None):
+        return FastSpeech2Config(
+            contact=ContactInformation(
+                contact_name="Test Runner", contact_email="info@everyvoice.ca"
+            ),
+            training={
+                "logger": {"save_dir": tmp_path / "log", "name": "unittest"},
+                "finetune_checkpoint": finetune_checkpoint,
+            },
+        )
+
+    def _run_train_base_command(self, config):
+        train_base_command(
+            model_config=FastSpeech2Config,
+            data_module=mock.Mock(),
+            model=mock.Mock(),
+            monitor="validation/total_loss",
+            config_args=[],
+            config_file=Path("unused.yaml"),
+            accelerator="cpu",
+            devices="1",
+            nodes=1,
+            strategy="auto",
+            gradient_clip_val=None,
+        )
+
+    def _patches(self, config):
+        return (
+            mock.patch(
+                "everyvoice.base_cli.helpers.load_config_base_command",
+                return_value=config,
+            ),
+            mock.patch("everyvoice.base_cli.helpers.save_configuration_to_log_dir"),
+            mock.patch("pytorch_lightning.loggers.TensorBoardLogger"),
+            mock.patch("pytorch_lightning.Trainer"),
+            mock.patch("pytorch_lightning.callbacks.ModelCheckpoint"),
+        )
+
+    def test_resumes_from_latest_slurm_hpc_checkpoint(self, tmp_path, monkeypatch):
+        """When running under Slurm, the newest hpc checkpoint saved in this job's
+        folder (by Lightning just before a requeue/preemption) must take priority
+        over finetune_checkpoint."""
+        monkeypatch.setenv("SLURM_JOB_ID", "123")
+        config = self._config(
+            tmp_path, finetune_checkpoint=str(tmp_path / "finetune.ckpt")
+        )
+        job_dir = tmp_path / "log" / "unittest" / "base" / "checkpoints" / "123"
+        job_dir.mkdir(parents=True)
+        (job_dir / "hpc_ckpt_2-step=20.ckpt").touch()
+        (job_dir / "hpc_ckpt_10-step=100.ckpt").touch()
+        (job_dir / "hpc_ckpt_1.ckpt").touch()
+        p_load, p_save, p_tb, p_trainer, p_ckpt = self._patches(config)
+        with p_load, p_save, p_tb, p_trainer as MockTrainer, p_ckpt:
+            self._run_train_base_command(config)
+            assert MockTrainer.call_args.kwargs["default_root_dir"] == job_dir
+            fit = MockTrainer.return_value.fit
+            fit.assert_called_once()
+            assert fit.call_args.kwargs["ckpt_path"] == (
+                job_dir / "hpc_ckpt_10-step=100.ckpt"
+            )
+
+    def test_falls_back_when_no_slurm_hpc_checkpoint(self, tmp_path, monkeypatch):
+        """When Slurm is detected but no HPC checkpoint exists yet, training
+        should fall through to the normal startup logic instead of failing."""
+        monkeypatch.setenv("SLURM_JOB_ID", "123")
+        config = self._config(tmp_path)
+        p_load, p_save, p_tb, p_trainer, p_ckpt = self._patches(config)
+        with p_load, p_save, p_tb, p_trainer as MockTrainer, p_ckpt:
+            self._run_train_base_command(config)
+            fit = MockTrainer.return_value.fit
+            fit.assert_called_once()
+            assert "ckpt_path" not in fit.call_args.kwargs
+
+    def test_hpc_ckpts_named_by_step(self, tmp_path):
+        """Lightning's requeue checkpoints get the global step in their name."""
+        from everyvoice.base_cli.slurm import name_hpc_ckpts_by_step
+
+        (tmp_path / "hpc_ckpt_1-step=10.ckpt").touch()
+        trainer = mock.Mock(global_step=42, is_global_zero=True)
+        name_hpc_ckpts_by_step(trainer)
+        assert trainer._checkpoint_connector.hpc_save_path(tmp_path) == str(
+            tmp_path / "hpc_ckpt_2-step=42.ckpt"
         )
 
 
