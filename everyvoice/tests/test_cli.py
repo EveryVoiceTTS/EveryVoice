@@ -830,84 +830,75 @@ class TestTrainBaseCommandSlurmResume:
             gradient_clip_val=None,
         )
 
-    def test_last_ckpt_callback_saves_on_exception(self, tmp_path):
-        """A SIGTERM should force a checkpoint save regardless of
-        every_n_train_steps/every_n_epochs boundaries."""
-        config = self._config(tmp_path)
-        with (
+    def _patches(self, config):
+        return (
             mock.patch(
                 "everyvoice.base_cli.helpers.load_config_base_command",
                 return_value=config,
             ),
             mock.patch("everyvoice.base_cli.helpers.save_configuration_to_log_dir"),
-            mock.patch(
-                "pytorch_lightning.plugins.environments.SLURMEnvironment.detect",
-                return_value=False,
-            ),
             mock.patch("pytorch_lightning.loggers.TensorBoardLogger"),
             mock.patch("pytorch_lightning.Trainer"),
-            mock.patch(
-                "pytorch_lightning.callbacks.ModelCheckpoint"
-            ) as MockModelCheckpoint,
-        ):
+            mock.patch("pytorch_lightning.callbacks.ModelCheckpoint"),
+        )
+
+    def test_last_ckpt_callback_saves_on_exception(self, tmp_path):
+        """A SIGTERM should force a checkpoint save regardless of
+        every_n_train_steps/every_n_epochs boundaries."""
+        config = self._config(tmp_path)
+        p_load, p_save, p_tb, p_trainer, p_ckpt = self._patches(config)
+        with p_load, p_save, p_tb, p_trainer, p_ckpt as MockModelCheckpoint:
             self._run_train_base_command(config)
 
         # last_ckpt_callback is the first ModelCheckpoint(...) constructed
         last_ckpt_kwargs = MockModelCheckpoint.call_args_list[0].kwargs
         assert last_ckpt_kwargs["save_on_exception"] is True
 
-    def test_resumes_from_slurm_hpc_checkpoint_when_present(self, tmp_path):
-        """When Slurm is detected and an HPC checkpoint (saved by Lightning
-        just before a requeue/preemption) exists, it must take priority over
-        finetune_checkpoint."""
+    def test_resumes_from_latest_slurm_hpc_checkpoint(self, tmp_path, monkeypatch):
+        """When running under Slurm, the newest hpc checkpoint saved in this job's
+        folder (by Lightning just before a requeue/preemption) must take priority
+        over finetune_checkpoint."""
+        monkeypatch.setenv("SLURM_JOB_ID", "123")
         config = self._config(
             tmp_path, finetune_checkpoint=str(tmp_path / "finetune.ckpt")
         )
-        with (
-            mock.patch(
-                "everyvoice.base_cli.helpers.load_config_base_command",
-                return_value=config,
-            ),
-            mock.patch("everyvoice.base_cli.helpers.save_configuration_to_log_dir"),
-            mock.patch(
-                "pytorch_lightning.plugins.environments.SLURMEnvironment.detect",
-                return_value=True,
-            ),
-            mock.patch("pytorch_lightning.loggers.TensorBoardLogger"),
-            mock.patch("pytorch_lightning.Trainer") as MockTrainer,
-            mock.patch("pytorch_lightning.callbacks.ModelCheckpoint"),
-        ):
+        job_dir = tmp_path / "log" / "unittest" / "base" / "checkpoints" / "123"
+        job_dir.mkdir(parents=True)
+        (job_dir / "hpc_ckpt_2-step=20.ckpt").touch()
+        (job_dir / "hpc_ckpt_10-step=100.ckpt").touch()
+        (job_dir / "hpc_ckpt_1.ckpt").touch()
+        p_load, p_save, p_tb, p_trainer, p_ckpt = self._patches(config)
+        with p_load, p_save, p_tb, p_trainer as MockTrainer, p_ckpt:
+            self._run_train_base_command(config)
+            assert MockTrainer.call_args.kwargs["default_root_dir"] == job_dir
+            fit = MockTrainer.return_value.fit
+            fit.assert_called_once()
+            assert fit.call_args.kwargs["ckpt_path"] == (
+                job_dir / "hpc_ckpt_10-step=100.ckpt"
+            )
+
+    def test_falls_back_when_no_slurm_hpc_checkpoint(self, tmp_path, monkeypatch):
+        """When Slurm is detected but no HPC checkpoint exists yet, training
+        should fall through to the normal startup logic instead of failing."""
+        monkeypatch.setenv("SLURM_JOB_ID", "123")
+        config = self._config(tmp_path)
+        p_load, p_save, p_tb, p_trainer, p_ckpt = self._patches(config)
+        with p_load, p_save, p_tb, p_trainer as MockTrainer, p_ckpt:
             self._run_train_base_command(config)
             fit = MockTrainer.return_value.fit
             fit.assert_called_once()
-            assert fit.call_args.kwargs["ckpt_path"] == "hpc"
+            assert "ckpt_path" not in fit.call_args.kwargs
 
-    def test_falls_back_when_no_slurm_hpc_checkpoint(self, tmp_path):
-        """When Slurm is detected but no HPC checkpoint exists yet, training
-        should fall through to the normal startup logic instead of failing."""
-        config = self._config(tmp_path)
-        with (
-            mock.patch(
-                "everyvoice.base_cli.helpers.load_config_base_command",
-                return_value=config,
-            ),
-            mock.patch("everyvoice.base_cli.helpers.save_configuration_to_log_dir"),
-            mock.patch(
-                "pytorch_lightning.plugins.environments.SLURMEnvironment.detect",
-                return_value=True,
-            ),
-            mock.patch("pytorch_lightning.loggers.TensorBoardLogger"),
-            mock.patch("pytorch_lightning.Trainer") as MockTrainer,
-            mock.patch("pytorch_lightning.callbacks.ModelCheckpoint"),
-        ):
-            MockTrainer.return_value.fit.side_effect = [
-                ValueError("no HPC checkpoint"),
-                None,
-            ]
-            self._run_train_base_command(config)
-            fit = MockTrainer.return_value.fit
-            assert fit.call_count == 2
-            assert fit.call_args_list[0].kwargs["ckpt_path"] == "hpc"
+    def test_hpc_ckpts_named_by_step(self, tmp_path):
+        """Lightning's requeue checkpoints get the global step in their name."""
+        from everyvoice.base_cli.slurm import name_hpc_ckpts_by_step
+
+        (tmp_path / "hpc_ckpt_1-step=10.ckpt").touch()
+        trainer = mock.Mock(global_step=42, is_global_zero=True)
+        name_hpc_ckpts_by_step(trainer)
+        assert trainer._checkpoint_connector.hpc_save_path(tmp_path) == str(
+            tmp_path / "hpc_ckpt_2-step=42.ckpt"
+        )
 
 
 class TestBaseCLIHelper:

@@ -69,3 +69,10 @@ write on your cluster's filesystem — start conservative and tune down once
 you've observed the actual write time for your model. Resubmitting from the
 same working directory (which `scontrol requeue` does automatically) picks the
 checkpoint back up with no extra flags needed.
+
+These checkpoints are saved in a folder named after the Slurm job id under the
+run's `checkpoints` directory, as `hpc_ckpt_<N>-step=<global step>.ckpt`, so you
+can check that each requeue keeps making progress. Since the job id is unchanged
+by `scontrol requeue`, the requeued job resumes from the newest one. A newly
+submitted job gets a new id and will not pick them up; set
+`training.finetune_checkpoint` to one of them instead.
