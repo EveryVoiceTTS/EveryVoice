@@ -168,7 +168,7 @@ def save_configuration_to_log_dir(
 
 
 def train_base_command(
-    model_config: type[StyleTTS2Config] | type[FastSpeech2Config] | type[HiFiGANConfig],
+    config: StyleTTS2Config | FastSpeech2Config | HiFiGANConfig,
     data_module: (
         type[StyleTTS2DataModule]
         | type[FastSpeech2DataModule]
@@ -177,8 +177,6 @@ def train_base_command(
     model: type[StyleTTS2] | type[FastSpeech2] | type[HiFiGAN],
     monitor: str,
     # Must include the above in model-specific command
-    config_args: list[str],
-    config_file: Path,
     accelerator: str,
     devices: str,
     nodes: int,
@@ -189,8 +187,6 @@ def train_base_command(
     from tqdm import tqdm
 
     from everyvoice.base_cli.callback import ResetValidationDataloaderCallback
-
-    config = load_config_base_command(model_config, config_args, config_file)
 
     save_configuration_to_log_dir(config)
 
