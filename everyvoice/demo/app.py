@@ -16,7 +16,7 @@ from everyvoice.config.type_definitions import (
     DatasetTextRepresentation,
     SynthesizeOutputFormats,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.core.synthesize import (
     synthesize_helper,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
@@ -557,7 +557,7 @@ def synthesize_audio_styletts2(
 
     # Determine ref_s — prefer user-uploaded audio, then pre-loaded speaker, then default
     if user_reference is not None:
-        from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
+        from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.core.synthesize import (
             load_reference_style,
         )
 
