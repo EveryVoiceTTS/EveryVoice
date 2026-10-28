@@ -183,6 +183,11 @@ def train_base_command(
     from tqdm import tqdm
 
     from everyvoice.base_cli.callback import ResetValidationDataloaderCallback
+    from everyvoice.base_cli.slurm import (
+        latest_hpc_ckpt,
+        name_hpc_ckpts_by_step,
+        slurm_job_ckpt_dir,
+    )
 
     config = load_config_base_command(model_config, config_args, config_file)
 
@@ -200,7 +205,6 @@ def train_base_command(
     pbar.update()
     pbar.refresh()
     from pytorch_lightning.loggers import TensorBoardLogger
-    from pytorch_lightning.plugins.environments import SLURMEnvironment
 
     pbar.update()
     pbar.refresh()
@@ -216,6 +220,13 @@ def train_base_command(
     )
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
+    # Same checkpoints dir Lightning's ModelCheckpoint resolves from the logger
+    job_ckpt_dir = slurm_job_ckpt_dir(
+        Path(config.training.logger.save_dir)
+        / config.training.logger.name
+        / config.training.logger.version
+        / "checkpoints"
+    )
     logger.info("Starting training.")
     # This callback will always save the last checkpoint
     # regardless of its performance.
@@ -256,18 +267,19 @@ def train_base_command(
         num_nodes=nodes,
         detect_anomaly=False,  # used for debugging, but triples training time
         gradient_clip_val=gradient_clip_val,
+        # Lightning saves its Slurm requeue checkpoints in default_root_dir
+        default_root_dir=job_ckpt_dir,
     )
+    name_hpc_ckpts_by_step(trainer)
     data = data_module(config)
 
     # A checkpoint saved just before a SLURM requeue/preemption (via SIGUSR1)
     # takes priority over finetune_checkpoint, so a requeued job resumes the
     # progress made this run instead of restarting from the finetune source.
-    if SLURMEnvironment.detect():
-        try:
-            trainer.fit(model(config, **model_kwargs), data, ckpt_path="hpc")
-            return
-        except ValueError:
-            pass  # no HPC checkpoint yet; continue with normal startup below
+    if (hpc_ckpt := latest_hpc_ckpt(job_ckpt_dir)) is not None:
+        logger.info(f"Resuming requeued Slurm job from {hpc_ckpt}")
+        trainer.fit(model(config, **model_kwargs), data, ckpt_path=hpc_ckpt)
+        return
 
     last_ckpt = (
         config.training.finetune_checkpoint
