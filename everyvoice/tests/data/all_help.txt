@@ -200,32 +200,22 @@
 │ --help         -h                   Show this message and exit.                                 │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ FastSpeech2 (text-to-spec) Options ────────────────────────────────────────────────────────────╮
-│ --vocoder         -V      <file>                             [FastSpeech2] Path to a trained    │
-│                                                              HiFiGAN vocoder checkpoint.        │
-│                                                              Required when the primary          │
-│                                                              checkpoint is a FastSpeech2 model. │
-│                                                              Not used with StyleTTS2            │
-│                                                              checkpoints.                       │
-│ --speaker         -s      <str>                              [FastSpeech2] Speaker names to     │
-│                                                              expose in the demo UI. Repeat the  │
-│                                                              flag to include multiple speakers. │
-│                                                              Defaults to all speakers in the    │
-│                                                              model. Not applicable to StyleTTS2 │
-│                                                              — use --ref-speaker instead.       │
-│                                                              [default: all]                     │
-│ --output-format   -O      <all|wav|spec|textgrid|readalong-  [FastSpeech2] Output formats to    │
-│                           xml|readalong-html>                expose in the demo UI.             │
-│                                                              [default: all]                     │
-│ --ui-config-file  -C      <file>                             [FastSpeech2] JSON file to         │
-│                                                              override UI labels (app_title,     │
-│                                                              app_description, app_instructions, │
-│                                                              speakers, languages,               │
-│                                                              input_text_label,                  │
-│                                                              duration_multiplier_label,         │
-│                                                              language_label, speaker_label,     │
-│                                                              output_format_label,               │
-│                                                              synthesize_label,                  │
-│                                                              file_output_label).                │
+│ --vocoder         -V      <file>    [FastSpeech2] Path to a trained HiFiGAN vocoder checkpoint. │
+│                                     Required when the primary checkpoint is a FastSpeech2       │
+│                                     model. Not used with StyleTTS2 checkpoints.                 │
+│ --speaker         -s      <str>     [FastSpeech2] Speaker names to expose in the demo UI.       │
+│                                     Repeat the flag to include multiple speakers. Defaults to   │
+│                                     all speakers in the model. Not applicable to StyleTTS2 —    │
+│                                     use --ref-speaker instead.                                  │
+│                                     [default: all]                                              │
+│ --output-format   -O      <format>  [FastSpeech2] Output formats to expose in the demo UI. One  │
+│                                     of: all, wav, spec, textgrid, readalong-xml, readalong-html │
+│                                     [default: all]                                              │
+│ --ui-config-file  -C      <file>    [FastSpeech2] JSON file to override UI labels (app_title,   │
+│                                     app_description, app_instructions, speakers, languages,     │
+│                                     input_text_label, duration_multiplier_label,                │
+│                                     language_label, speaker_label, output_format_label,         │
+│                                     synthesize_label, file_output_label).                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ StyleTTS2 (text-to-wav) Options ───────────────────────────────────────────────────────────────╮
 │ --ref-speaker  -R      <str>   [StyleTTS2] Named speaker with reference audio, in the format    │
@@ -353,16 +343,15 @@
 │ *    audio_path      <file>  [required]                                                         │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
-│ --sample-rate                         <int>  The target sample rate for the model.              │
-│                                              [default: 16000]                                   │
-│ --word-padding                        <int>  How many frames to pad around words.               │
-│                                              [default: 0]                                       │
-│ --sentence-padding                    <int>  How many frames to pad around sentences (additive  │
-│                                              with word-padding).                                │
-│                                              [default: 0]                                       │
-│ --debug                 --no-debug           Print debug statements                             │
-│                                              [default: no-debug]                                │
-│ --help              -h                       Show this message and exit.                        │
+│ --sample-rate               <int>  The target sample rate for the model.                        │
+│                                    [default: 16000]                                             │
+│ --word-padding              <int>  How many frames to pad around words.                         │
+│                                    [default: 0]                                                 │
+│ --sentence-padding          <int>  How many frames to pad around sentences (additive with       │
+│                                    word-padding).                                               │
+│                                    [default: 0]                                                 │
+│ --debug             -D             Print debug statements                                       │
+│ --help              -h             Show this message and exit.                                  │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -428,23 +417,19 @@
 │                               [required]                                                        │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
-│ --stats        -S  --no-stats                                   Calculate stats for energy and  │
-│                                                                 pitch                           │
-│                                                                 [default: stats]                │
-│ --steps        -s                <audio|spec|attn|text|pitch|e  Which steps of the preprocessor │
-│                                  nergy>                         to use. If none are provided,   │
-│                                                                 all steps will be performed.    │
-│                                                                 [default: audio, spec, attn,    │
-│                                                                 text, pitch, energy]            │
-│ --config-args  -c                <str>                          Override the configuration.     │
-│ --cpus         -C                <int>                          How many CPUs to use when       │
-│                                                                 preprocessing                   │
-│                                                                 [default: N]                    │
-│ --overwrite    -O                                               Redo all preprocessing, even if │
-│                                                                 files already exist and aren't  │
-│                                                                 expected to change.             │
-│ --debug        -D                                               Enable debugging.               │
-│ --help         -h                                               Show this message and exit.     │
+│ --stats        -S  --no-stats            Calculate stats for energy and pitch                   │
+│                                          [default: stats]                                       │
+│ --steps        -s                <step>  Which steps of the preprocessor to use. If none are    │
+│                                          provided, all steps will be performed. One of: audio,  │
+│                                          spec, attn, text, pitch, energy                        │
+│                                          [default: audio, spec, attn, text, pitch, energy]      │
+│ --config-args  -c                <str>   Override the configuration.                            │
+│ --cpus         -C                <int>   How many CPUs to use when preprocessing                │
+│                                          [default: N]                                           │
+│ --overwrite    -O                        Redo all preprocessing, even if files already exist    │
+│                                          and aren't expected to change.                         │
+│ --debug        -D                        Enable debugging.                                      │
+│ --help         -h                        Show this message and exit.                            │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -545,14 +530,16 @@
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
 │ --config-args  -c      <str>  Overwrite the configuration                                       │
 │ --accelerator  -a      <str>  Uses PyTorch Lightning Accelerators:                              │
-│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/ac… │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/acc │
+│                               elerator.html                                                     │
 │                               [default: auto]                                                   │
 │ --devices      -d      <str>  The number of GPUs on each node                                   │
 │                               [default: auto]                                                   │
 │ --nodes        -n      <int>  The number of nodes on your machine                               │
 │                               [default: 1]                                                      │
 │ --strategy     -s      <str>  The strategy for data parallelization:                            │
-│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/… │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/g │
+│                               pu_intermediate.html                                              │
 │                               [default: ddp]                                                    │
 │ --help         -h             Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -573,14 +560,16 @@
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
 │ --config-args  -c      <str>  Overwrite the configuration                                       │
 │ --accelerator  -a      <str>  Uses PyTorch Lightning Accelerators:                              │
-│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/ac… │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/acc │
+│                               elerator.html                                                     │
 │                               [default: auto]                                                   │
 │ --devices      -d      <str>  The number of GPUs on each node                                   │
 │                               [default: auto]                                                   │
 │ --nodes        -n      <int>  The number of nodes on your machine                               │
 │                               [default: 1]                                                      │
 │ --strategy     -s      <str>  The strategy for data parallelization:                            │
-│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/… │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/g │
+│                               pu_intermediate.html                                              │
 │                               [default: ddp]                                                    │
 │ --help         -h             Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -608,14 +597,16 @@
 │                                                 [default: 32]                                   │
 │ --config-args  -c      <str>                    Overwrite the configuration                     │
 │ --accelerator  -a      <str>                    Uses PyTorch Lightning Accelerators:            │
-│                                                 https://pytorch-lightning.readthedocs.io/en/st… │
+│                                                 https://pytorch-lightning.readthedocs.io/en/sta │
+│                                                 ble/extensions/accelerator.html                 │
 │                                                 [default: auto]                                 │
 │ --devices      -d      <str>                    The number of GPUs on each node                 │
 │                                                 [default: auto]                                 │
 │ --nodes        -n      <int>                    The number of nodes on your machine             │
 │                                                 [default: 1]                                    │
 │ --strategy     -s      <str>                    The strategy for data parallelization:          │
-│                                                 https://pytorch-lightning.readthedocs.io/en/st… │
+│                                                 https://pytorch-lightning.readthedocs.io/en/sta │
+│                                                 ble/accelerators/gpu_intermediate.html          │
 │                                                 [default: ddp]                                  │
 │ --help         -h                               Show this message and exit.                     │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -662,127 +653,89 @@
 │                              [required]                                                         │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
-│ --output-dir                 -o      <directory>                   The directory where your     │
-│                                                                    synthesized audio should be  │
-│                                                                    written. By default,         │
-│                                                                    filenames include the        │
-│                                                                    basename, speaker, language, │
-│                                                                    and other metadata, e.g.     │
-│                                                                    'LJ050-0269--LJ--eng--ckpt=… │
-│                                                                    Use --simple-filenames to    │
-│                                                                    write just 'LJ050-0269.wav'  │
-│                                                                    instead.                     │
-│                                                                    [default: synthesis_output]  │
-│ --text                       -t      <str>                         Some text to synthesize.     │
-│                                                                    This option can be repeated  │
-│                                                                    to synthesize multiple       │
-│                                                                    sentences. It is recommended │
-│                                                                    to use --filelist if you     │
-│                                                                    want to synthesize a lot of  │
-│                                                                    sentences or have different  │
-│                                                                    speaker/language per         │
-│                                                                    sentence.                    │
-│ --language                   -l      <str>                         Specify which language to    │
-│                                                                    use in a multilingual        │
-│                                                                    system. [requires --text]    │
-│ --duration-control           -D      <float>                       Control the speaking rate of │
-│                                                                    the synthesis. Set a value   │
-│                                                                    to multily the durations by, │
-│                                                                    lower numbers produce        │
-│                                                                    quicker speaking rates,      │
-│                                                                    larger numbers produce       │
-│                                                                    slower speaking rates.       │
-│                                                                    Default is 1.0               │
-│                                                                    [default: 1.0]               │
-│ --style-reference            -S      <file>                        The path to an audio file    │
-│                                                                    containing a style           │
-│                                                                    reference. Your text-to-spec │
-│                                                                    must have been trained with  │
-│                                                                    the global style token       │
-│                                                                    module to use this feature.  │
-│ --speaker                    -s      <str>                         Specify which speaker to use │
-│                                                                    in a multispeaker system.    │
-│                                                                    [requires --text]            │
-│ --accelerator                -a      <str>                         [default: auto]              │
-│ --devices                    -d      <str>                         The number of GPUs to use    │
-│                                                                    [default: auto]              │
-│ --filelist                   -f      <file>                        The path to a file           │
-│                                                                    containing a list of         │
-│                                                                    utterances (a.k.a filelist). │
-│                                                                    Use --text if you want to    │
-│                                                                    just synthesize one sample.  │
-│ --text-representation                <characters|phones|arpabet>   The representation of the    │
-│                                                                    text you are synthesizing.   │
-│                                                                    Can be either 'characters',  │
-│                                                                    'phones', or 'arpabet'. The  │
-│                                                                    input type must be           │
-│                                                                    compatible with your model.  │
-│                                                                    [default: characters]        │
-│ --output-type                -O      <wav|spec|textgrid|readalong  Which format(s) to           │
-│                                      -xml|readalong-html>          synthesize to. Multiple      │
-│                                                                    formats can be provided by   │
-│                                                                    repeating --output-type.     │
+│ --output-dir                 -o      <directory>  The directory where your synthesized audio    │
+│                                                   should be written. By default, filenames      │
+│                                                   include the basename, speaker, language, and  │
+│                                                   other metadata, e.g.                          │
+│                                                   'LJ050-0269--LJ--eng--ckpt=100000--v_ckpt=100 │
+│                                                   000--pred.wav'. Use --simple-filenames to     │
+│                                                   write just 'LJ050-0269.wav' instead.          │
+│                                                   [default: synthesis_output]                   │
+│ --text                       -t      <str>        Some text to synthesize.  This option can be  │
+│                                                   repeated to synthesize multiple sentences. It │
+│                                                   is recommended to use --filelist if you want  │
+│                                                   to synthesize a lot of sentences or have      │
+│                                                   different speaker/language per sentence.      │
+│ --language                   -l      <str>        Specify which language to use in a            │
+│                                                   multilingual system. [requires --text]        │
+│ --duration-control           -D      <float>      Control the speaking rate of the synthesis.   │
+│                                                   Set a value to multily the durations by,      │
+│                                                   lower numbers produce quicker speaking rates, │
+│                                                   larger numbers produce slower speaking rates. │
+│                                                   Default is 1.0                                │
+│                                                   [default: 1.0]                                │
+│ --style-reference            -S      <file>       The path to an audio file containing a style  │
+│                                                   reference. Your text-to-spec must have been   │
+│                                                   trained with the global style token module to │
+│                                                   use this feature.                             │
+│ --speaker                    -s      <str>        Specify which speaker to use in a             │
+│                                                   multispeaker system. [requires --text]        │
+│ --accelerator                -a      <str>        [default: auto]                               │
+│ --devices                    -d      <str>        The number of GPUs to use                     │
+│                                                   [default: auto]                               │
+│ --filelist                   -f      <file>       The path to a file containing a list of       │
+│                                                   utterances (a.k.a filelist). Use --text if    │
+│                                                   you want to just synthesize one sample.       │
+│ --text-representation                <repr.>      The representation of the text you are        │
+│                                                   synthesizing. Can be either 'characters',     │
+│                                                   'phones', or 'arpabet'. The input type must   │
+│                                                   be compatible with your model. One of:        │
+│                                                   characters, phones, arpabet                   │
+│                                                   [default: characters]                         │
+│ --output-type                -O      <format>     Which format(s) to synthesize to. Multiple    │
+│                                                   formats can be provided by repeating          │
+│                                                   --output-type.                                │
 │                                                                                                 │
-│                                                                    'wav' is the default and     │
-│                                                                    will synthesize to a         │
-│                                                                    playable audio file.         │
-│                                                                    Requires --vocoder-path.     │
+│                                                   'wav' is the default and will synthesize to a │
+│                                                   playable audio file. Requires --vocoder-path. │
 │                                                                                                 │
-│                                                                    'spec' will generate         │
-│                                                                    predicted Mel spectrograms.  │
-│                                                                    Tensors are Mel              │
-│                                                                    band-oriented (K, T) where K │
-│                                                                    is equal to the number of    │
-│                                                                    Mel bands and T is equal to  │
-│                                                                    the number of frames.        │
+│                                                   'spec' will generate predicted Mel            │
+│                                                   spectrograms. Tensors are Mel band-oriented   │
+│                                                   (K, T) where K is equal to the number of Mel  │
+│                                                   bands and T is equal to the number of frames. │
 │                                                                                                 │
-│                                                                    'textgrid' will generate a   │
-│                                                                    Praat TextGrid with          │
-│                                                                    alignment labels. This can   │
-│                                                                    be helpful for evaluation.   │
+│                                                   'textgrid' will generate a Praat TextGrid     │
+│                                                   with alignment labels. This can be helpful    │
+│                                                   for evaluation.                               │
 │                                                                                                 │
-│                                                                    'readalong-xml' will         │
-│                                                                    generate a ReadAlong from    │
-│                                                                    the given text and           │
-│                                                                    synthesized audio in XML     │
-│                                                                    .readalong format (see       │
-│                                                                    https://github.com/ReadAlon… │
+│                                                   'readalong-xml' will generate a ReadAlong     │
+│                                                   from the given text and synthesized audio in  │
+│                                                   XML .readalong format (see                    │
+│                                                   https://github.com/ReadAlongs).               │
 │                                                                                                 │
-│                                                                    'readalong-html' will        │
-│                                                                    generate a single file       │
-│                                                                    Offline HTML ReadAlong that  │
-│                                                                    can be further edited in the │
-│                                                                    ReadAlong Studio Editor, and │
-│                                                                    opened by itself. Also       │
-│                                                                    implies '--output-type wav'. │
-│                                                                    Requires --vocoder-path.     │
-│                                                                    [default: wav]               │
-│ --teacher-forcing-directory  -T      <directory>                   ADVANCED. The path to        │
-│                                                                    preprocessed folder          │
-│                                                                    containing spec and duration │
-│                                                                    folders to use for           │
-│                                                                    teacher-forcing the          │
-│                                                                    synthesized outputs.         │
-│ --vocoder-path               -v      <file>                        The path to a trained        │
-│                                                                    vocoder (aka spec-to-wav     │
-│                                                                    model).                      │
-│ --batch-size                 -b      <int>                         Batch size.                  │
-│                                                                    [default: 4]                 │
-│ --num-workers                -n      <int>                         Number of workers to process │
-│                                                                    the data.                    │
-│                                                                    [default: 4]                 │
-│ --simple-filenames                                                 Write output filenames as    │
-│                                                                    just the basename and        │
-│                                                                    extension (e.g.              │
-│                                                                    'LJ050-0269.wav') instead of │
-│                                                                    the default. Only use this   │
-│                                                                    if your basenames are unique │
-│                                                                    across speakers and          │
-│                                                                    languages in your filelist,  │
-│                                                                    otherwise outputs can        │
-│                                                                    overwrite each other.        │
-│ --config-args                -c      <str>                         Override the configuration.  │
-│ --help                       -h                                    Show this message and exit.  │
+│                                                   'readalong-html' will generate a single file  │
+│                                                   Offline HTML ReadAlong that can be further    │
+│                                                   edited in the ReadAlong Studio Editor, and    │
+│                                                   opened by itself. Also implies '--output-type │
+│                                                   wav'. Requires --vocoder-path.                │
+│                                                   [default: wav]                                │
+│ --teacher-forcing-directory  -T      <directory>  ADVANCED. The path to preprocessed folder     │
+│                                                   containing spec and duration folders to use   │
+│                                                   for teacher-forcing the synthesized outputs.  │
+│ --vocoder-path               -v      <file>       The path to a trained vocoder (aka            │
+│                                                   spec-to-wav model).                           │
+│ --batch-size                 -b      <int>        Batch size.                                   │
+│                                                   [default: 4]                                  │
+│ --num-workers                -n      <int>        Number of workers to process the data.        │
+│                                                   [default: 4]                                  │
+│ --simple-filenames                                Write output filenames as just the basename   │
+│                                                   and extension (e.g. 'LJ050-0269.wav') instead │
+│                                                   of the default. Only use this if your         │
+│                                                   basenames are unique across speakers and      │
+│                                                   languages in your filelist, otherwise outputs │
+│                                                   can overwrite each other.                     │
+│ --config-args                -c      <str>        Override the configuration.                   │
+│ --help                       -h                   Show this message and exit.                   │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -834,95 +787,64 @@
 │                              [required]                                                         │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
-│ --reference            -r      <file>                          Reference audio file used to     │
-│                                                                extract speaker style. Required  │
-│                                                                unless every row of --filelist   │
-│                                                                provides its own 'reference' or  │
-│                                                                'reference_path' column.         │
-│ --text                 -t      <str>                           Text string(s) to synthesize.    │
-│                                                                Repeat the flag for multiple     │
-│                                                                utterances. Use --filelist       │
-│                                                                instead if you want to           │
-│                                                                synthesize a lot of sentences or │
-│                                                                have different                   │
-│                                                                speaker/language/reference per   │
-│                                                                sentence.                        │
-│ --text-representation          <characters|phones|arpabet>     The representation of the text   │
-│                                                                passed via --text: 'characters'  │
-│                                                                or 'phones' (already-phonemized  │
-│                                                                IPA). The input type must be     │
-│                                                                compatible with your model. Only │
-│                                                                applies to --text; --filelist    │
-│                                                                rows determine this              │
-│                                                                automatically from their         │
-│                                                                'characters'/'phones' column.    │
-│                                                                [default: characters]            │
-│ --filelist             -f      <file>                          The path to a file containing a  │
-│                                                                list of utterances (a.k.a        │
-│                                                                filelist). Expected columns:     │
-│                                                                'basename', 'characters' (or     │
-│                                                                'phones'), 'speaker',            │
-│                                                                'language', and optionally       │
-│                                                                'reference' (or                  │
-│                                                                'reference_path'). Any column    │
-│                                                                that is absent falls back to the │
-│                                                                corresponding                    │
-│                                                                --speaker/--language/--reference │
-│                                                                CLI option. Use --text if you    │
-│                                                                want to just synthesize one      │
-│                                                                sample.                          │
-│ --output-dir           -o      <path>                          Directory where synthesized      │
-│                                                                files will be written. By        │
-│                                                                default, filenames include the   │
-│                                                                basename, speaker, language, and │
-│                                                                other metadata, e.g.             │
-│                                                                'LJ050-0269--LJ--eng--ckpt=1000… │
-│                                                                Use --simple-filenames to write  │
-│                                                                just 'LJ050-0269.wav' instead.   │
-│                                                                [default: synthesis_output]      │
-│ --output-type                  <wav|spec|textgrid|readalong-x  Output format(s) to produce.     │
-│                                ml|readalong-html>              [default: wav]                   │
-│ --simple-filenames                                             Write output filenames as just   │
-│                                                                the basename and extension (e.g. │
-│                                                                'LJ050-0269.wav') instead of the │
-│                                                                default. Only use this if your   │
-│                                                                basenames are unique across      │
-│                                                                speakers and languages,          │
-│                                                                otherwise outputs can overwrite  │
-│                                                                each other.                      │
-│ --accelerator                  <str>                           Lightning accelerator: 'cpu',    │
-│                                                                'gpu', or 'auto'.                │
-│                                                                [default: auto]                  │
-│ --speaker              -s      <str>                           Speaker label written into       │
-│                                                                output filenames.                │
-│                                                                [default: default]               │
-│ --language             -l      <str>                           Language tag written into output │
-│                                                                filenames, and used to select a  │
-│                                                                g2p engine/normalization rules   │
-│                                                                for text processing. For         │
-│                                                                multilingual checkpoints (must   │
-│                                                                match a language seen during     │
-│                                                                training), this also selects the │
-│                                                                language embedding. Defaults to  │
-│                                                                the checkpoint's own (single)    │
-│                                                                training language for            │
-│                                                                monolingual checkpoints.         │
-│ --diffusion-steps              <int>                           Number of diffusion sampling     │
-│                                                                steps (higher = slower but       │
-│                                                                smoother).                       │
-│                                                                [default: 5]                     │
-│ --embedding-scale              <float>                         Classifier-free guidance scale   │
-│                                                                for the diffusion sampler.       │
-│                                                                [default: 1.0]                   │
-│ --acoustic-blend               <float>                         Blend weight for acoustic style  │
-│                                                                (0 = pure reference, 1 = pure    │
-│                                                                diffusion).                      │
-│                                                                [default: 0.3]                   │
-│ --prosody-blend                <float>                         Blend weight for prosody style   │
-│                                                                (0 = pure reference, 1 = pure    │
-│                                                                diffusion).                      │
-│                                                                [default: 0.7]                   │
-│ --help                 -h                                      Show this message and exit.      │
+│ --reference            -r      <file>    Reference audio file used to extract speaker style.    │
+│                                          Required unless every row of --filelist provides its   │
+│                                          own 'reference' or 'reference_path' column.            │
+│ --text                 -t      <str>     Text string(s) to synthesize. Repeat the flag for      │
+│                                          multiple utterances. Use --filelist instead if you     │
+│                                          want to synthesize a lot of sentences or have          │
+│                                          different speaker/language/reference per sentence.     │
+│ --text-representation          <repr.>   The representation of the text passed via --text:      │
+│                                          'characters' or 'phones' (already-phonemized IPA). The │
+│                                          input type must be compatible with your model. Only    │
+│                                          applies to --text; --filelist rows determine this      │
+│                                          automatically from their 'characters'/'phones' column. │
+│                                          [default: characters]                                  │
+│ --filelist             -f      <file>    The path to a file containing a list of utterances     │
+│                                          (a.k.a filelist). Expected columns: 'basename',        │
+│                                          'characters' (or 'phones'), 'speaker', 'language', and │
+│                                          optionally 'reference' (or 'reference_path'). Any      │
+│                                          column that is absent falls back to the corresponding  │
+│                                          --speaker/--language/--reference CLI option. Use       │
+│                                          --text if you want to just synthesize one sample.      │
+│ --output-dir           -o      <path>    Directory where synthesized files will be written. By  │
+│                                          default, filenames include the basename, speaker,      │
+│                                          language, and other metadata, e.g.                     │
+│                                          'LJ050-0269--LJ--eng--ckpt=100000--pred.wav'. Use      │
+│                                          --simple-filenames to write just 'LJ050-0269.wav'      │
+│                                          instead.                                               │
+│                                          [default: synthesis_output]                            │
+│ --output-type                  <format>  Output format(s) to produce. One of: wav               │
+│                                          [default: wav]                                         │
+│ --simple-filenames                       Write output filenames as just the basename and        │
+│                                          extension (e.g. 'LJ050-0269.wav') instead of the       │
+│                                          default. Only use this if your basenames are unique    │
+│                                          across speakers and languages, otherwise outputs can   │
+│                                          overwrite each other.                                  │
+│ --accelerator                  <str>     Lightning accelerator: 'cpu', 'gpu', or 'auto'.        │
+│                                          [default: auto]                                        │
+│ --speaker              -s      <str>     Speaker label written into output filenames.           │
+│                                          [default: default]                                     │
+│ --language             -l      <str>     Language tag written into output filenames, and used   │
+│                                          to select a g2p engine/normalization rules for text    │
+│                                          processing. For multilingual checkpoints (must match a │
+│                                          language seen during training), this also selects the  │
+│                                          language embedding. Defaults to the checkpoint's own   │
+│                                          (single) training language for monolingual             │
+│                                          checkpoints.                                           │
+│ --diffusion-steps              <int>     Number of diffusion sampling steps (higher = slower    │
+│                                          but smoother).                                         │
+│                                          [default: 5]                                           │
+│ --embedding-scale              <float>   Classifier-free guidance scale for the diffusion       │
+│                                          sampler.                                               │
+│                                          [default: 1.0]                                         │
+│ --acoustic-blend               <float>   Blend weight for acoustic style (0 = pure reference, 1 │
+│                                          = pure diffusion).                                     │
+│                                          [default: 0.3]                                         │
+│ --prosody-blend                <float>   Blend weight for prosody style (0 = pure reference, 1  │
+│                                          = pure diffusion).                                     │
+│                                          [default: 0.7]                                         │
+│ --help                 -h                Show this message and exit.                            │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
