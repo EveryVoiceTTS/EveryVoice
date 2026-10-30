@@ -545,14 +545,16 @@
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
 │ --config-args  -c      <str>  Overwrite the configuration                                       │
 │ --accelerator  -a      <str>  Uses PyTorch Lightning Accelerators:                              │
-│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/ac… │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/acc │
+│                               elerator.html                                                     │
 │                               [default: auto]                                                   │
 │ --devices      -d      <str>  The number of GPUs on each node                                   │
 │                               [default: auto]                                                   │
 │ --nodes        -n      <int>  The number of nodes on your machine                               │
 │                               [default: 1]                                                      │
 │ --strategy     -s      <str>  The strategy for data parallelization:                            │
-│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/… │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/g │
+│                               pu_intermediate.html                                              │
 │                               [default: ddp]                                                    │
 │ --help         -h             Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -573,14 +575,16 @@
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
 │ --config-args  -c      <str>  Overwrite the configuration                                       │
 │ --accelerator  -a      <str>  Uses PyTorch Lightning Accelerators:                              │
-│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/ac… │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/extensions/acc │
+│                               elerator.html                                                     │
 │                               [default: auto]                                                   │
 │ --devices      -d      <str>  The number of GPUs on each node                                   │
 │                               [default: auto]                                                   │
 │ --nodes        -n      <int>  The number of nodes on your machine                               │
 │                               [default: 1]                                                      │
 │ --strategy     -s      <str>  The strategy for data parallelization:                            │
-│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/… │
+│                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/g │
+│                               pu_intermediate.html                                              │
 │                               [default: ddp]                                                    │
 │ --help         -h             Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -608,14 +612,16 @@
 │                                                 [default: 32]                                   │
 │ --config-args  -c      <str>                    Overwrite the configuration                     │
 │ --accelerator  -a      <str>                    Uses PyTorch Lightning Accelerators:            │
-│                                                 https://pytorch-lightning.readthedocs.io/en/st… │
+│                                                 https://pytorch-lightning.readthedocs.io/en/sta │
+│                                                 ble/extensions/accelerator.html                 │
 │                                                 [default: auto]                                 │
 │ --devices      -d      <str>                    The number of GPUs on each node                 │
 │                                                 [default: auto]                                 │
 │ --nodes        -n      <int>                    The number of nodes on your machine             │
 │                                                 [default: 1]                                    │
 │ --strategy     -s      <str>                    The strategy for data parallelization:          │
-│                                                 https://pytorch-lightning.readthedocs.io/en/st… │
+│                                                 https://pytorch-lightning.readthedocs.io/en/sta │
+│                                                 ble/accelerators/gpu_intermediate.html          │
 │                                                 [default: ddp]                                  │
 │ --help         -h                               Show this message and exit.                     │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -668,10 +674,11 @@
 │                                                                    filenames include the        │
 │                                                                    basename, speaker, language, │
 │                                                                    and other metadata, e.g.     │
-│                                                                    'LJ050-0269--LJ--eng--ckpt=… │
-│                                                                    Use --simple-filenames to    │
-│                                                                    write just 'LJ050-0269.wav'  │
-│                                                                    instead.                     │
+│                                                                    'LJ050-0269--LJ--eng--ckpt=1 │
+│                                                                    00000--v_ckpt=100000--pred.w │
+│                                                                    av'. Use --simple-filenames  │
+│                                                                    to write just                │
+│                                                                    'LJ050-0269.wav' instead.    │
 │                                                                    [default: synthesis_output]  │
 │ --text                       -t      <str>                         Some text to synthesize.     │
 │                                                                    This option can be repeated  │
@@ -746,7 +753,8 @@
 │                                                                    the given text and           │
 │                                                                    synthesized audio in XML     │
 │                                                                    .readalong format (see       │
-│                                                                    https://github.com/ReadAlon… │
+│                                                                    https://github.com/ReadAlong │
+│                                                                    s).                          │
 │                                                                                                 │
 │                                                                    'readalong-html' will        │
 │                                                                    generate a single file       │
@@ -876,9 +884,10 @@
 │                                                                default, filenames include the   │
 │                                                                basename, speaker, language, and │
 │                                                                other metadata, e.g.             │
-│                                                                'LJ050-0269--LJ--eng--ckpt=1000… │
-│                                                                Use --simple-filenames to write  │
-│                                                                just 'LJ050-0269.wav' instead.   │
+│                                                                'LJ050-0269--LJ--eng--ckpt=10000 │
+│                                                                0--pred.wav'. Use                │
+│                                                                --simple-filenames to write just │
+│                                                                'LJ050-0269.wav' instead.        │
 │                                                                [default: synthesis_output]      │
 │ --output-type                  <wav|spec|textgrid|readalong-x  Output format(s) to produce.     │
 │                                ml|readalong-html>              [default: wav]                   │
