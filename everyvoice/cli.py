@@ -990,7 +990,10 @@ def demo(
         ["all"],
         "--output-format",
         "-O",
-        help="[FastSpeech2] Output formats to expose in the demo UI.",
+        metavar="<format>",
+        help="[FastSpeech2] Output formats to expose in the demo UI. One of: '**"
+        + "**', '**".join(format.value for format in AllowedDemoOutputFormats)
+        + "**'. Repeat the flag to specify multiple formats.",
         rich_help_panel="FastSpeech2 (text-to-spec) Options",
     ),
     ui_config_file: Annotated[
