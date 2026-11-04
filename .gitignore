@@ -8,6 +8,7 @@ logs_and_checkpoints
 *egg-info
 gpu_output
 slurm*
+!slurm.py
 everyvoice/data
 docs/build
 .DS_Store
