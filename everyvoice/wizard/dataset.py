@@ -1,7 +1,6 @@
 import glob
 import os
 import random
-import sys
 from collections.abc import Sequence
 from copy import copy, deepcopy
 from enum import Enum
@@ -183,7 +182,13 @@ class FilelistStep(Step):
         return sanitize_paths(response)
 
     def validate(self, response) -> bool:
-        return validate_path(response, is_file=True, exists=True)
+        if not validate_path(response, is_file=True, exists=True):
+            return False
+        if Path(response).stat().st_size == 0:
+            rich_print(f"{response} is empty, please choose another file")
+            return False
+
+        return True
 
 
 class FilelistFormatStep(Step):
@@ -204,11 +209,10 @@ class FilelistFormatStep(Step):
             filelist_path, delimiter=separator, record_limit=10
         )
 
-        if len(initial_records) > 0:
-            column_count = len(initial_records[0])
-        else:
-            rich_print(f"ERROR: File ({filelist_path} is empty. Please double check.")
-            sys.exit(1)
+        assert (
+            len(initial_records) > 0
+        ), f"FilelistStep should have rejected empty file '{filelist_path}'"
+        column_count = len(initial_records[0])
 
         if column_count < 2:
             rich_print(
