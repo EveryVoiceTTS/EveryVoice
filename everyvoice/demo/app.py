@@ -11,6 +11,7 @@ import torch
 import typer
 
 from everyvoice import logger
+from everyvoice.base_cli.checkpoint import load_checkpoint
 from everyvoice.cli import AllowedDemoOutputFormats, peek_text_representation
 from everyvoice.config.type_definitions import (
     DatasetTextRepresentation,
@@ -469,20 +470,22 @@ def make_gradio_display(
 
 
 def load_model_from_checkpoint(
-    text_to_spec_model_path: os.PathLike,
-    spec_to_wav_model_path: os.PathLike,
+    text_to_spec_model_path: Path,
+    spec_to_wav_model_path: Path,
     accelerator: str,
 ) -> tuple[FastSpeech2, HiFiGAN | HiFiGANGenerator, HiFiGANConfig, torch.device]:
     """Load the text-to-speech model and vocoder from their respective checkpoints."""
-    require_ffmpeg()
     device = get_device_from_accelerator(accelerator)
     try:
+        vocoder_ckpt = load_checkpoint(
+            spec_to_wav_model_path, minimal=False, device=device
+        )
         vocoder_ckpt = torch.load(
             spec_to_wav_model_path, map_location=device, weights_only=True
         )
     except Exception as e:
         raise ValueError(
-            f"Error loading HiFiGAN model '{spec_to_wav_model_path}'. It does not appear to be a valid checkpoint."
+            f"Error loading HiFiGAN model '{spec_to_wav_model_path}': {e}"
         ) from e
     try:
         vocoder_model, vocoder_config = load_hifigan_from_checkpoint(
@@ -768,13 +771,14 @@ def create_demo_app_styletts2(
     checkpoint's ``lang2id`` (default ``["all"]``). Ignored for monolingual
     checkpoints — no dropdown is shown in that case.
     """
+    require_ffmpeg()
+
     from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
         load_reference_style,
         load_styletts2_model,
     )
     from everyvoice.utils.heavy import get_device_from_accelerator
 
-    require_ffmpeg()
     device = get_device_from_accelerator(accelerator)
 
     model, mel_transform = load_styletts2_model(model_path, device)
@@ -837,8 +841,8 @@ def create_demo_app_styletts2(
 
 
 def create_demo_app(
-    text_to_spec_model_path: os.PathLike,
-    spec_to_wav_model_path: os.PathLike,
+    text_to_spec_model_path: Path,
+    spec_to_wav_model_path: Path,
     languages: list[str],
     speakers: list[str],
     outputs: list,  # list[str | AllowedDemoOutputFormats]
@@ -849,7 +853,8 @@ def create_demo_app(
     app_ui_config: dict | None = None,
     **kwargs,
 ) -> gr.Blocks:
-    # Early argument validation where possible
+    # Early argument and requirement validation where possible
+    require_ffmpeg()
     possible_outputs = [x.value for x in SynthesizeOutputFormats]
 
     if outputs == [AllowedDemoOutputFormats["all"].value] or outputs == [

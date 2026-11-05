@@ -83,7 +83,7 @@ class TestDemo:
 
     def test_demo_with_bad_models(self) -> None:
         devnull = Path(os.devnull)
-        with raises(ValueError, match="It does not appear to be a valid checkpoint"):
+        with raises(ValueError, match="Error loading"):
             create_demo_app(devnull, devnull, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
 
         with raises(ValueError, match="maybe it's not actually a HiFiGAN model"):

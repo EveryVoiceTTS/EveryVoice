@@ -16,3 +16,11 @@ class OutOfVocabularySymbolError(EveryVoiceError):
 
 class BadDataError(EveryVoiceError):
     pass
+
+
+class ModelError(EveryVoiceError):
+    pass
+
+
+class DependencyError(EveryVoiceError):
+    pass

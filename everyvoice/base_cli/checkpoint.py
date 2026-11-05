@@ -27,21 +27,39 @@ def summarize_statedict(ckpt: dict) -> dict:
     return model_keys
 
 
-def load_checkpoint(model_path: Path, minimal=True) -> dict[str, Any]:
+def check_file_not_empty(model_path: str | Path):
+    """Raise ValueError if path does not exist or is an empty file.
+
+    torch.load yields a core dump on an empty file, avoid that with a early checks
     """
-    Loads a checkpoint and performs minor clean up of the checkpoint.
-    Removes the `optimizer_states`'s `state` and `param_groups`'s `params`.
-    Removes `state_dict` from the checkpoint.
+    path = Path(model_path)
+    if not path.exists():
+        raise ValueError(f"Model {model_path} does not exist")
+    if path.stat().st_size == 0:
+        raise ValueError(f"File '{model_path}' is empty")
+
+
+def load_checkpoint(
+    model_path: Path, minimal: bool = True, device: Any = None
+) -> dict[str, Any]:
     """
+    Load a checkpoint.
+
+    Args:
+        model_path: checkpoint/model path
+        minimal: if set, perform minor clean up of the checkpoint.
+                 Remove the `optimizer_states`'s `state` and `param_groups`'s `params`.
+                 Remove `state_dict` from the checkpoint.
+        device (torch.device|None): load to device, CPU if None
+    """
+    check_file_not_empty(model_path)
+
     import torch
 
-    # torch.load on en empty file yields a core dump, avoid that with an early check
-    if not model_path.exists() or model_path.stat().st_size == 0:
-        raise ValueError(f"Model {model_path} does not exist or is empty")
+    if device is None:
+        device = torch.device("cpu")
 
-    checkpoint = torch.load(
-        model_path, map_location=torch.device("cpu"), weights_only=True
-    )
+    checkpoint = torch.load(model_path, map_location=device, weights_only=True)
 
     if minimal:
         # Some clean up of useless stuff.
