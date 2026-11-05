@@ -17,7 +17,7 @@ from pydantic import ValidationError
 from everyvoice import logger
 from everyvoice.base_cli.checkpoint import load_checkpoint
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
-from everyvoice.exceptions import InvalidConfiguration
+from everyvoice.exceptions import ConfigError, ModelError
 from everyvoice.model.e2e.config import StyleTTS2Config
 from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.lightning import (
     StyleTTS2,
@@ -83,7 +83,7 @@ def load_config_base_command(
 
     try:
         config = model_config.load_config_from_path(config_file)
-    except ValidationError as error:
+    except ValidationError:
         # NOTE: To trigger this error handling code from the command line,
         # provide a mismatched config file, e.g.:
         #   `everyvoice preprocess  config/everyvoice-spec-to-wav.yaml`
@@ -97,13 +97,15 @@ def load_config_base_command(
                 config = config_type.load_config_from_path(  # type: ignore[attr-defined]
                     config_file
                 )
-                raise InvalidConfiguration(
+                raise ConfigError(
                     f"We are expecting a {model_config.__name__} but it looks like '{config_file}' is a {config_type.__name__}"
                 )
             except ValidationError:
                 pass
-
-        raise InvalidConfiguration(
+        else:
+            raise
+    except Exception as error:
+        raise ConfigError(
             f"there was a problem with your config file '{config_file}':\n{error}"
         ) from error
 
@@ -274,11 +276,9 @@ def train_base_command(
     else:
         try:
             model_obj = model.load_from_checkpoint(last_ckpt)
-        except (TypeError, ValidationError) as e:
-            import sys
-
+        except Exception as e:
             logger.error(f"Unable to load {last_ckpt}: {e}")
-            sys.exit(1)
+            raise ModelError(f"Unable to load checkpoint '{last_ckpt}': {e}") from e
         logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
         if isinstance(model_obj, StyleTTS2) or isinstance(config, StyleTTS2Config):
@@ -304,7 +304,7 @@ def train_base_command(
         if "types_changed" in optimizer_diff:
             optimizer_config_diff += list(optimizer_diff["types_changed"].items())
         if model_config_diff:
-            raise InvalidConfiguration(textwrap.dedent(f"""
+            raise ConfigError(textwrap.dedent(f"""
                 Sorry, you are a trying to fine-tune a model with a different architecture defined in your configuration than was used during pre-training.
 
                 Please fix your configuration or use a different model.

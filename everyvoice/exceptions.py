@@ -2,10 +2,6 @@ class EveryVoiceError(Exception):
     pass
 
 
-class InvalidConfiguration(EveryVoiceError):
-    pass
-
-
 class ConfigError(EveryVoiceError):
     pass
 

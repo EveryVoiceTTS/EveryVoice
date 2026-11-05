@@ -281,10 +281,9 @@ def evaluate(
     if (audio_file and audio_directory) or (
         audio_file is None and audio_directory is None
     ):
-        print(
-            "Sorry, please choose to evaluate either a single file or an entire directory."
+        raise typer.BadParameter(
+            "Exactly one of --audio-file or --audio-directory is required."
         )
-        sys.exit(1)
 
     def calculate_row(single_audio):
         stoi, pesq, si_sdr = calculate_objective_metrics_from_single_path(

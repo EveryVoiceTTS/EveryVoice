@@ -552,6 +552,7 @@
 │                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/g │
 │                               pu_intermediate.html                                              │
 │                               [default: ddp]                                                    │
+│ --debug        -D             Display debugging information                                     │
 │ --help         -h             Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -584,6 +585,7 @@
 │                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/g │
 │                               pu_intermediate.html                                              │
 │                               [default: ddp]                                                    │
+│ --debug        -D             Display debugging information                                     │
 │ --help         -h             Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -623,6 +625,7 @@
 │                                                 https://pytorch-lightning.readthedocs.io/en/sta │
 │                                                 ble/accelerators/gpu_intermediate.html          │
 │                                                 [default: ddp]                                  │
+│ --debug        -D                               Display debugging information                   │
 │ --help         -h                               Show this message and exit.                     │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 

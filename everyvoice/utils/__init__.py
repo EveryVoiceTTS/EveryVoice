@@ -138,10 +138,9 @@ def filter_dataset_based_on_target_text_representation_level(
         )
         dataset = filtered_dataset
     if batch_size > len(filtered_dataset):
-        logger.error(
+        raise exceptions.BadDataError(
             f"Sorry you do not have enough {target_text_representation_level} data in your current {name} filelist to run the model with a batch size of {batch_size}."
         )
-        sys.exit(1)
     return dataset
 
 
@@ -152,10 +151,9 @@ def check_dataset_size(batch_size: int, number_of_samples: int, name: str):
             if "val" in name
             else ""
         )
-        logger.error(
+        raise exceptions.BadDataError(
             f"Your {name} dataset only has {number_of_samples} samples, but you have a defined batch size of {batch_size}. Please either add more data or decrease your batch size. {reduce_train_split}"
         )
-        sys.exit(1)
 
 
 def return_configs_from_dir(dir: Path) -> dict[str, Path]:
@@ -191,7 +189,7 @@ def load_config_from_json_or_yaml_path(path: Path):
     with open(path, "r", encoding="utf8") as f:
         config = json.load(f) if path.suffix == ".json" else yaml.safe_load(f)
     if not config:
-        raise exceptions.InvalidConfiguration(f"Your configuration at {path} was empty")
+        raise exceptions.ConfigError(f"Your configuration at {path} was empty")
     return config
 
 
@@ -349,7 +347,7 @@ def sniff_and_return_filelist_data(path):
 
 
 def generic_dict_loader(
-    path: str | os.PathLike,
+    path: str | Path,
     delimiter="|",
     quoting=csv.QUOTE_NONE,
     escapechar="\\",
