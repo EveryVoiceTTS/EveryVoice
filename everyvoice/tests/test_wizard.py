@@ -999,21 +999,14 @@ class TestWizard(WizardTestBase):
             name="empty filelist",
             steps=[
                 dataset.FilelistStep(),
-                dataset.FilelistFormatStep(),
             ],
         )
         filelist = str(self.data_dir / "empty.psv")
 
         filelist_step = tour.steps[0]
-        with monkeypatch(filelist_step, "prompt", Say(filelist)):
-            filelist_step.run()
-
-        format_step = tour.steps[1]
         with pytest.raises(SystemExit) as excinfo:
-            with patch_menu_prompt(1) as stdout:
-                format_step.run()
-            output = stdout.getvalue()
-            assert "is empty" in output
+            with monkeypatch(filelist_step, "prompt", Say(filelist)):
+                filelist_step.run()
         assert excinfo.value.code == 1
 
     def test_wrong_fileformat_psv(self):

@@ -99,6 +99,9 @@ def train_base_command_interface(
             help="The strategy for data parallelization: https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html",
         ),
     ] = "ddp",
+    debug: Annotated[
+        bool, typer.Option("--debug", "-D", help="Display debugging information")
+    ] = False,
 ):
     pass
 

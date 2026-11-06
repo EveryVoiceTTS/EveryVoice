@@ -7,6 +7,7 @@ from pytest import fixture, main, raises
 from everyvoice.config.type_definitions import TargetTrainingTextRepresentationLevel
 from everyvoice.dataloader import BaseDataModule
 from everyvoice.dataloader.imbalanced_sampler import ImbalancedDatasetSampler
+from everyvoice.exceptions import BadDataError
 from everyvoice.model.vocoder.config import VocoderConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
     HiFiGANTrainingConfig,
@@ -17,8 +18,11 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
     SpecDataset,
 )
 from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
-from everyvoice.tests.stubs import TEST_CONTACT, mute_logger
-from everyvoice.utils import filter_dataset_based_on_target_text_representation_level
+from everyvoice.tests.stubs import TEST_CONTACT
+from everyvoice.utils import (
+    check_dataset_size,
+    filter_dataset_based_on_target_text_representation_level,
+)
 
 
 @fixture
@@ -71,24 +75,20 @@ class TestDataLoader(PreprocessedAudioFixture):
 
     def test_filter_dataset(self):
         train_dataset = [{"character_tokens": "b", "phone_tokens": ""}] * 4
-        with raises(SystemExit) as cm:
-            with mute_logger("everyvoice.utils"):
-                filter_dataset_based_on_target_text_representation_level(
-                    TargetTrainingTextRepresentationLevel.characters,
-                    train_dataset,
-                    "training",
-                    6,
-                )
-        assert cm.value.code == 1
-        with raises(SystemExit) as cm:
-            with mute_logger("everyvoice.utils"):
-                filter_dataset_based_on_target_text_representation_level(
-                    TargetTrainingTextRepresentationLevel.ipa_phones,
-                    train_dataset,
-                    "training",
-                    4,
-                )
-        assert cm.value.code == 1
+        with raises(BadDataError):
+            filter_dataset_based_on_target_text_representation_level(
+                TargetTrainingTextRepresentationLevel.characters,
+                train_dataset,
+                "training",
+                6,
+            )
+        with raises(BadDataError):
+            filter_dataset_based_on_target_text_representation_level(
+                TargetTrainingTextRepresentationLevel.ipa_phones,
+                train_dataset,
+                "training",
+                4,
+            )
         train_ds = filter_dataset_based_on_target_text_representation_level(
             TargetTrainingTextRepresentationLevel.characters,
             train_dataset,
@@ -103,6 +103,13 @@ class TestDataLoader(PreprocessedAudioFixture):
         )
         assert len(train_ds) == 4
         assert len(val_ds) == 4
+
+    def test_check_dataset_size(self):
+        assert check_dataset_size(10, 100, "foo") is None
+        with raises(BadDataError):
+            assert check_dataset_size(100, 10, "foo") is None
+        with raises(BadDataError, match="You can also decrease"):
+            assert check_dataset_size(100, 10, "validation") is None
 
     def test_hifi_ft_data_loader(self):
         """TODO: can't make this test until I generate some synthesized samples"""

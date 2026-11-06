@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 import json
 import os
 import platform
@@ -23,9 +22,13 @@ from yaml import CLoader as Loader
 
 from everyvoice import __file__ as EV_FILE
 from everyvoice._version import VERSION
-from everyvoice.base_cli.helpers import save_configuration_to_log_dir
+from everyvoice.base_cli.helpers import (
+    load_config_base_command,
+    save_configuration_to_log_dir,
+)
 from everyvoice.cli import SCHEMAS_TO_OUTPUT, app
 from everyvoice.config.shared_types import ContactInformation
+from everyvoice.exceptions import ConfigError
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
 )
@@ -353,6 +356,15 @@ class TestCLI:
         evaluation_output = TEST_DATA_DIR / "lj" / "wavs" / "evaluation.json"
         assert evaluation_output.exists(), "should print results to a file"
         evaluation_output.unlink()
+
+    def test_evaluate_cli_errors(self):
+        result = self.runner.invoke(app, ["evaluate", "-r", os.devnull])
+        assert result.exit_code != 0
+        assert "Exactly one" in flatten_log(result.output)
+
+        result = self.runner.invoke(app, ["evaluate", "-f", os.devnull, "-d", "."])
+        assert result.exit_code != 0
+        assert "Exactly one" in flatten_log(result.output)
 
     def test_old_inspect_checkpoint(self):
         result = self.runner.invoke(
@@ -829,6 +841,14 @@ class TestBaseCLIHelper:
                     config.training.logger.name
                     == config_reloaded["training"]["logger"]["name"]
                 )
+
+    def test_load_config_base_command(self):
+        with pytest.raises(ConfigError, match="is empty"):
+            load_config_base_command(FastSpeech2Config, [], Path(os.devnull))
+        with pytest.raises(ConfigError, match="does not exist"):
+            load_config_base_command(
+                FastSpeech2Config, [], Path("this/file/does/not/exist.xyz")
+            )
 
 
 if __name__ == "__main__":

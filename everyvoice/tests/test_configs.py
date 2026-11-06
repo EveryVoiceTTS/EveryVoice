@@ -96,7 +96,7 @@ class TestConfig:
             )
             assert isinstance(config.audio, AudioConfig)
             # bad partial
-            with pytest.raises(exceptions.InvalidConfiguration):
+            with pytest.raises(exceptions.ConfigError):
                 with NamedTemporaryFile(prefix="test", mode="w", suffix=".yaml") as tf:
                     tf.write(" ")
                     tf.flush()
@@ -243,7 +243,7 @@ class TestConfig:
         ) as tf:
             tf.write(" ")
             tf.flush()
-            with pytest.raises(exceptions.InvalidConfiguration):
+            with pytest.raises(exceptions.ConfigError):
                 load_config_from_json_or_yaml_path(Path(tf.name))
 
     def test_change_with_indices(self):

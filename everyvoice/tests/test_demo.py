@@ -1,5 +1,6 @@
 import enum
 import json
+import logging
 import os
 import re
 import tempfile
@@ -11,13 +12,15 @@ import typer
 from pytest import fixture, raises
 from typer.testing import CliRunner
 
+import everyvoice.demo.app
 from everyvoice.cli import app
-from everyvoice.demo.app import create_demo_app
+from everyvoice.demo.app import create_demo_app, require_ffmpeg
 from everyvoice.tests.stubs import (
     TEST_DATA_DIR,
     flatten_log,
     mock_function_placeholder,
     mock_function_placeholder2,
+    patch_logger,
 )
 
 
@@ -37,19 +40,19 @@ class TestDemo:
         assert "Usage: root demo [OPTIONS]" in flatten_log(result.output)
 
         # Invalid --output-format value
-        result = self.runner.invoke(
-            app,
-            [
-                "demo",
-                os.devnull,
-                "--vocoder",
-                os.devnull,
-                "--output-format",
-                "not-a-format",
-            ],
-        )
+        result = self.runner.invoke(app, ["demo", "--output-format", "not-a-format"])
         assert result.exit_code != 0
         assert "Invalid value" in flatten_log(result.output)
+
+        # Missing checkpoint
+        result = self.runner.invoke(app, ["demo", "--output-format", "wav"])
+        assert result.exit_code != 0
+        assert "Missing argument 'checkpoint'" in flatten_log(result.output)
+
+        # Empty checkpoint gives a clean exit, not a seg fault
+        result = self.runner.invoke(app, ["demo", os.devnull])
+        assert result.exit_code != 0
+        assert "is empty" in flatten_log(result.output)
 
     EMPTY_DEMO_ARGS: dict[str, Any] = {
         "languages": [],
@@ -83,7 +86,7 @@ class TestDemo:
 
     def test_demo_with_bad_models(self) -> None:
         devnull = Path(os.devnull)
-        with raises(ValueError, match="It does not appear to be a valid checkpoint"):
+        with raises(ValueError, match="Error loading"):
             create_demo_app(devnull, devnull, **self.EMPTY_DEMO_ARGS, outputs=["wav"])  # type: ignore[arg-type]
 
         with raises(ValueError, match="maybe it's not actually a HiFiGAN model"):
@@ -107,6 +110,20 @@ class TestDemo:
                 **self.EMPTY_DEMO_ARGS,  # type: ignore[arg-type]
                 outputs=["wav"],
             )
+
+    def test_no_ffmpeg(self, monkeypatch, caplog):
+        monkeypatch.setenv("PATH", "/foo/bar/bin")
+        with (
+            raises(SystemExit),
+            patch_logger(everyvoice.demo.app),
+            caplog.at_level(logging.ERROR, logger="UnitTesting"),
+        ):
+            require_ffmpeg()
+        assert "ffmpeg not found" in caplog.text
+
+    def test_ffmpeg(self):
+        # no exception raised means ffmpeg is found and the test passes
+        require_ffmpeg()
 
     def mock_create_demo_app(self, *_args, **_kwargs):
         class MockCreateDemoApp:

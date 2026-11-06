@@ -15,7 +15,7 @@ from rich.panel import Panel
 from everyvoice._version import VERSION
 from everyvoice.base_cli import command, default_typer_args
 from everyvoice.base_cli.check_group import check_group
-from everyvoice.base_cli.checkpoint import checkpoint_group
+from everyvoice.base_cli.checkpoint import check_file_not_empty, checkpoint_group
 from everyvoice.base_cli.interfaces import (
     inference_base_command_interface,
     typer_directory_option,
@@ -281,10 +281,9 @@ def evaluate(
     if (audio_file and audio_directory) or (
         audio_file is None and audio_directory is None
     ):
-        print(
-            "Sorry, please choose to evaluate either a single file or an entire directory."
+        raise typer.BadParameter(
+            "Exactly one of --audio-file or --audio-directory is required."
         )
-        sys.exit(1)
 
     def calculate_row(single_audio):
         stoi, pesq, si_sdr = calculate_objective_metrics_from_single_path(
@@ -654,6 +653,7 @@ def _peek_model_class(checkpoint_path: Path) -> str:
     import torch
 
     try:
+        check_file_not_empty(checkpoint_path)
         ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     except Exception as e:
         raise typer.BadParameter(
@@ -673,6 +673,7 @@ def peek_text_representation(checkpoint_path: Path) -> str:
     import torch
 
     try:
+        check_file_not_empty(checkpoint_path)
         ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     except Exception:
         return ""
@@ -783,6 +784,7 @@ def _run_styletts2_demo(
     print("INFO - Starting the StyleTTS2 demo with the following parameters:")
     print(f"  - Checkpoint:     {checkpoint}")
     try:
+        check_file_not_empty(checkpoint)
         _state = torch.load(checkpoint, map_location="cpu", weights_only=False)
         _hp = _state.get("hyper_parameters", {})
         if "config" in _hp:

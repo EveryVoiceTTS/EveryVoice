@@ -2,10 +2,6 @@ class EveryVoiceError(Exception):
     pass
 
 
-class InvalidConfiguration(EveryVoiceError):
-    pass
-
-
 class ConfigError(EveryVoiceError):
     pass
 
@@ -15,4 +11,12 @@ class OutOfVocabularySymbolError(EveryVoiceError):
 
 
 class BadDataError(EveryVoiceError):
+    pass
+
+
+class ModelError(EveryVoiceError):
+    pass
+
+
+class DependencyError(EveryVoiceError):
     pass
