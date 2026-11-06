@@ -19,7 +19,10 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.dataset import (
 )
 from everyvoice.tests.preprocessed_audio_fixture import PreprocessedAudioFixture
 from everyvoice.tests.stubs import TEST_CONTACT
-from everyvoice.utils import filter_dataset_based_on_target_text_representation_level
+from everyvoice.utils import (
+    check_dataset_size,
+    filter_dataset_based_on_target_text_representation_level,
+)
 
 
 @fixture
@@ -100,6 +103,13 @@ class TestDataLoader(PreprocessedAudioFixture):
         )
         assert len(train_ds) == 4
         assert len(val_ds) == 4
+
+    def test_check_dataset_size(self):
+        assert check_dataset_size(10, 100, "foo") is None
+        with raises(BadDataError):
+            assert check_dataset_size(100, 10, "foo") is None
+        with raises(BadDataError, match="You can also decrease"):
+            assert check_dataset_size(100, 10, "validation") is None
 
     def test_hifi_ft_data_loader(self):
         """TODO: can't make this test until I generate some synthesized samples"""

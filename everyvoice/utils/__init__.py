@@ -189,7 +189,7 @@ def load_config_from_json_or_yaml_path(path: Path):
     with open(path, "r", encoding="utf8") as f:
         config = json.load(f) if path.suffix == ".json" else yaml.safe_load(f)
     if not config:
-        raise exceptions.ConfigError(f"Your configuration at {path} was empty")
+        raise exceptions.ConfigError(f"Your configuration at {path} is empty")
     return config
 
 
