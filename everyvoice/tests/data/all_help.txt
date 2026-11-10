@@ -687,7 +687,7 @@
 │ --language                   -l      <str>        Specify which language to use in a            │
 │                                                   multilingual system. [requires --text]        │
 │ --duration-control           -D      <float>      Control the speaking rate of the synthesis.   │
-│                                                   Set a value to multily the durations by,      │
+│                                                   Set a value to multiply the durations by, so  │
 │                                                   lower numbers produce quicker speaking rates, │
 │                                                   larger numbers produce slower speaking rates. │
 │                                                   Default is 1.0                                │

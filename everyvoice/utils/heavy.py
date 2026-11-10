@@ -149,7 +149,7 @@ def get_segments(
 
 
 def get_device_from_accelerator(accelerator: str) -> torch.device:
-    """Given an accelerator name ("auto", "cpu", "gpu", "mps"), return it's torch.device equivalent."""
+    """Given an accelerator name ("auto", "cpu", "gpu", "mps"), return its torch.device equivalent."""
     match accelerator:
         case "auto":
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
