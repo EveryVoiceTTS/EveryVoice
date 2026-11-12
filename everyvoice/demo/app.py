@@ -23,6 +23,10 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.core.synthesi
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
     FastSpeech2,
 )
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_writing_callback import (
+    PredictionWritingCallbackBase,
+    PredictionWritingWavCallback,
+)
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     HiFiGAN,
     HiFiGANConfig,
@@ -80,7 +84,7 @@ def synthesize_audio(
         raise gr.Error("Speaker is not selected. Please select a speaker.")
     if output_format is None:
         raise gr.Error("Output format is not selected. Please select an output format.")
-    _config, _predictions, callbacks = synthesize_helper(
+    _config, callbacks = synthesize_helper(
         model=text_to_spec_model,
         style_reference=style_reference,
         vocoder_model=vocoder_model,
@@ -105,11 +109,13 @@ def synthesize_audio(
     )
 
     wav_writer = callbacks[SynthesizeOutputFormats.wav]
+    assert isinstance(wav_writer, PredictionWritingWavCallback)
     wav_output = wav_writer.last_file_written
 
     file_output = None
     if output_format != SynthesizeOutputFormats.wav:
         file_writer = callbacks[output_format]
+        assert isinstance(file_writer, PredictionWritingCallbackBase)
         file_output = file_writer.get_filename(basename, speaker, language)
 
     if include_file_output:
