@@ -80,7 +80,7 @@ dependencies = [
   "torchaudio==2.7.1",
   "torchinfo==1.8.0",
   "tqdm>=4.66.0",
-  "typer>=0.15.3",
+  "typer>=0.15.3,<0.29", # typer 0.29 changes help formatting, let's wait until we want its features
   "yaspin>=3.1.0",
   "munch>=4.0.0",
   "soundfile>=0.13.1",

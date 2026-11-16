@@ -1189,7 +1189,7 @@ requires-dist = [
     { name = "torchinfo", specifier = "==1.8.0" },
     { name = "tqdm", specifier = ">=4.66.0" },
     { name = "transformers", specifier = ">=4.30" },
-    { name = "typer", specifier = ">=0.15.3" },
+    { name = "typer", specifier = ">=0.15.3,<0.29" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.5" },
     { name = "types-pyyaml", marker = "extra == 'lint'", specifier = ">=6.0.5" },
     { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.27.11" },
