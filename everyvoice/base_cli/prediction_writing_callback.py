@@ -4,8 +4,6 @@ Shared by the FS2 and StyleTTS2 prediction-writing callback hierarchies.
 Subclasses override ``on_predict_batch_end`` with format-specific logic.
 """
 
-from __future__ import annotations
-
 from pathlib import Path
 
 from pytorch_lightning.callbacks import Callback
