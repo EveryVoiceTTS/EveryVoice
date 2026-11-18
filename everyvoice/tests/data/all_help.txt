@@ -687,7 +687,7 @@
 │ --language                   -l      <str>        Specify which language to use in a            │
 │                                                   multilingual system. [requires --text]        │
 │ --duration-control           -D      <float>      Control the speaking rate of the synthesis.   │
-│                                                   Set a value to multily the durations by,      │
+│                                                   Set a value to multiply the durations by, so  │
 │                                                   lower numbers produce quicker speaking rates, │
 │                                                   larger numbers produce slower speaking rates. │
 │                                                   Default is 1.0                                │
@@ -715,7 +715,7 @@
 │                                                   provided by repeating --output-type.          │
 │                                                                                                 │
 │                                                   'wav' is the default and will synthesize to a │
-│                                                   playable audio file. Requires --vocoder-path. │
+│                                                   playable audio file. Requires --vocoder.      │
 │                                                                                                 │
 │                                                   'spec' will generate predicted Mel            │
 │                                                   spectrograms. Tensors are Mel band-oriented   │
@@ -735,12 +735,12 @@
 │                                                   Offline HTML ReadAlong that can be further    │
 │                                                   edited in the ReadAlong Studio Editor, and    │
 │                                                   opened by itself. Also implies '--output-type │
-│                                                   wav'. Requires --vocoder-path.                │
+│                                                   wav'. Requires --vocoder.                     │
 │                                                   [default: wav]                                │
 │ --teacher-forcing-directory  -T      <directory>  ADVANCED. The path to preprocessed folder     │
 │                                                   containing spec and duration folders to use   │
 │                                                   for teacher-forcing the synthesized outputs.  │
-│ --vocoder-path               -v      <file>       The path to a trained vocoder (aka            │
+│ --vocoder                    -V      <file>       The path to a trained vocoder (aka            │
 │                                                   spec-to-wav model).                           │
 │ --batch-size                 -b      <int>        Batch size.                                   │
 │                                                   [default: 4]                                  │
@@ -764,21 +764,22 @@
  Given some Mel spectrograms and a trained model, generate some audio. i.e. perform copy synthesis
 
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
-│ *  --input          -i                        <file>  The path to a torch file containing Mel   │
-│                                                       band-oriented spectral features [K (Mel   │
-│                                                       bands), T (frames)]                       │
-│                                                       [required]                                │
-│ *  --model          -m                        <file>  The path to a trained EveryVoice          │
-│                                                       spec-to-wav model (i.e., a vocoder)       │
-│                                                       [required]                                │
-│    --time-oriented      --no-time-oriented            By default, EveryVoice assumes your       │
-│                                                       spectrograms are of the shape [K (Mel     │
-│                                                       bands), T (frames)]. If instead your      │
-│                                                       spectrograms are of shape [T (frames), K  │
-│                                                       (Mel bands)] then please add this flag to │
-│                                                       transpose the dimensions.                 │
-│                                                       [default: no-time-oriented]               │
-│    --help           -h                                Show this message and exit.               │
+│ *  --input            -i                           <file>  The path to a torch file containing  │
+│                                                            Mel band-oriented spectral features  │
+│                                                            [K (Mel bands), T (frames)]          │
+│                                                            [required]                           │
+│ *  --vocoder,--model  -V,-m                        <file>  The path to a trained EveryVoice     │
+│                                                            spec-to-wav model (i.e., a vocoder)  │
+│                                                            [required]                           │
+│    --time-oriented           --no-time-oriented            By default, EveryVoice assumes your  │
+│                                                            spectrograms are of the shape [K     │
+│                                                            (Mel bands), T (frames)]. If instead │
+│                                                            your spectrograms are of shape [T    │
+│                                                            (frames), K (Mel bands)] then please │
+│                                                            add this flag to transpose the       │
+│                                                            dimensions.                          │
+│                                                            [default: no-time-oriented]          │
+│    --help             -h                                   Show this message and exit.          │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 

@@ -1082,6 +1082,21 @@ docs = [
     { name = "mkdocstrings", version = "1.0.6", source = { registry = "https://pypi.org/simple" }, extra = ["python"], marker = "python_full_version < '3.11'" },
     { name = "mkdocstrings", version = "1.0.8", source = { registry = "https://pypi.org/simple" }, extra = ["python"], marker = "python_full_version >= '3.11'" },
 ]
+lint = [
+    { name = "black" },
+    { name = "diff-cover", version = "10.6.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "diff-cover", version = "11.0.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "flake8" },
+    { name = "gitlint-core" },
+    { name = "isort" },
+    { name = "mypy" },
+    { name = "prek" },
+    { name = "types-pyyaml" },
+    { name = "types-requests" },
+    { name = "types-setuptools" },
+    { name = "types-tabulate" },
+    { name = "types-tqdm" },
+]
 test = [
     { name = "coverage", version = "7.16.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "coverage", version = "7.17.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
@@ -1096,26 +1111,36 @@ torch = [
     { name = "torchaudio", marker = "sys_platform == 'darwin'" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "everyvoice", extra = ["dev"] },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "anytree", specifier = ">=2.12.1" },
     { name = "black", marker = "extra == 'dev'", specifier = "~=26.5" },
+    { name = "black", marker = "extra == 'lint'", specifier = "~=26.5" },
     { name = "clipdetect", specifier = ">=0.1.4" },
     { name = "coverage", marker = "extra == 'dev'" },
     { name = "coverage", marker = "extra == 'test'" },
     { name = "deepdiff", specifier = ">=6.5.0" },
     { name = "diff-cover", marker = "extra == 'dev'" },
+    { name = "diff-cover", marker = "extra == 'lint'" },
     { name = "einops", specifier = "~=0.8.0" },
     { name = "einops-exts" },
     { name = "flake8", marker = "extra == 'dev'", specifier = ">=4.0.1" },
+    { name = "flake8", marker = "extra == 'lint'", specifier = ">=4.0.1" },
     { name = "g2p", specifier = ">=2.3.1,<3" },
     { name = "gitlint-core", marker = "extra == 'dev'", specifier = ">=0.19.0" },
+    { name = "gitlint-core", marker = "extra == 'lint'", specifier = ">=0.19.0" },
     { name = "gradio", specifier = ">=5.9.1" },
     { name = "grapheme", specifier = ">=0.6.0" },
     { name = "ilt-monotonic-align" },
     { name = "ilt-panphon", specifier = ">=0.20.1,<0.21" },
     { name = "ipatok", specifier = ">=0.4.1" },
     { name = "isort", marker = "extra == 'dev'", specifier = ">=5.10.1" },
+    { name = "isort", marker = "extra == 'lint'", specifier = ">=5.10.1" },
     { name = "jsonschema", marker = "extra == 'dev'", specifier = ">=4.17.3" },
     { name = "jsonschema", marker = "extra == 'test'", specifier = ">=4.17.3" },
     { name = "librosa", specifier = "==0.11.0" },
@@ -1132,6 +1157,7 @@ requires-dist = [
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.22.0" },
     { name = "munch", specifier = ">=4.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
+    { name = "mypy", marker = "extra == 'lint'", specifier = ">=1.8.0" },
     { name = "nltk", specifier = "==3.9.3" },
     { name = "packaging", specifier = ">=22.0" },
     { name = "pandas", specifier = "~=2.0" },
@@ -1140,6 +1166,7 @@ requires-dist = [
     { name = "playwright", marker = "extra == 'dev'", specifier = ">=1.52.0" },
     { name = "playwright", marker = "extra == 'test'", specifier = ">=1.52.0" },
     { name = "prek", marker = "extra == 'dev'", specifier = ">=0.3" },
+    { name = "prek", marker = "extra == 'lint'", specifier = ">=0.3" },
     { name = "pydantic", extras = ["email"], specifier = ">=2.4.2,<2.8.0" },
     { name = "pympi-ling" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7" },
@@ -1164,13 +1191,21 @@ requires-dist = [
     { name = "transformers", specifier = ">=4.30" },
     { name = "typer", specifier = ">=0.15.3" },
     { name = "types-pyyaml", marker = "extra == 'dev'", specifier = ">=6.0.5" },
+    { name = "types-pyyaml", marker = "extra == 'lint'", specifier = ">=6.0.5" },
     { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.27.11" },
+    { name = "types-requests", marker = "extra == 'lint'", specifier = ">=2.27.11" },
     { name = "types-setuptools", marker = "extra == 'dev'", specifier = ">=57.4.9" },
+    { name = "types-setuptools", marker = "extra == 'lint'", specifier = ">=57.4.9" },
     { name = "types-tabulate", marker = "extra == 'dev'", specifier = "==0.9.0" },
+    { name = "types-tabulate", marker = "extra == 'lint'", specifier = "==0.9.0" },
     { name = "types-tqdm", marker = "extra == 'dev'", specifier = ">=4.66" },
+    { name = "types-tqdm", marker = "extra == 'lint'", specifier = ">=4.66" },
     { name = "yaspin", specifier = ">=3.1.0" },
 ]
-provides-extras = ["dev", "docs", "test", "torch"]
+provides-extras = ["dev", "docs", "lint", "test", "torch"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "everyvoice", extras = ["dev"] }]
 
 [[package]]
 name = "exceptiongroup"

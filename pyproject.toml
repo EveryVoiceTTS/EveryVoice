@@ -95,7 +95,13 @@ torch = [
   'torch==2.7.1; sys_platform == "darwin"',
   'torchaudio==2.7.1; sys_platform == "darwin"',
 ]
+
+# We need to keep dev as an extra, not just a group, so submodules can see it too
 dev = [
+  "everyvoice[lint]",
+  "everyvoice[test]",
+]
+lint = [
   "black~=26.5",
   "diff-cover",
   "flake8>=4.0.1",
@@ -108,7 +114,6 @@ dev = [
   "types-setuptools>=57.4.9",
   "types-tabulate==0.9.0",
   "types-tqdm>=4.66",
-  "everyvoice[test]",
 ]
 test = [
   "coverage",
@@ -127,6 +132,10 @@ docs = [
   "mkdocs-macros-plugin>=1.0.4",
   "mike>=1.1.2",
 ]
+
+[dependency-groups]
+# Declaring a dev group activates uv automation, e.g., uv run and uv sync auto-include it
+dev = ["everyvoice[dev]"]
 
 [tool.uv]
 override-dependencies = [

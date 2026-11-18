@@ -17,11 +17,15 @@ from everyvoice.config.type_definitions import (
     DatasetTextRepresentation,
     SynthesizeOutputFormats,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.cli.synthesize import (
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.core.synthesize import (
     synthesize_helper,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
     FastSpeech2,
+)
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_writers import (
+    PredictionWriterBase,
+    WavPredictionWriter,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     HiFiGAN,
@@ -49,7 +53,6 @@ def synthesize_audio(
     text_to_spec_model,
     vocoder_model,
     vocoder_config,
-    accelerator,
     device,
     allowlist,
     denylist,
@@ -80,19 +83,18 @@ def synthesize_audio(
         raise gr.Error("Speaker is not selected. Please select a speaker.")
     if output_format is None:
         raise gr.Error("Output format is not selected. Please select an output format.")
-    config, device, predictions, callbacks = synthesize_helper(
+    _config, callbacks = synthesize_helper(
         model=text_to_spec_model,
         style_reference=style_reference,
         vocoder_model=vocoder_model,
         vocoder_config=vocoder_config,
         texts=[text],
         language=language,
-        accelerator=accelerator,
         devices="1",
         device=device,
         global_step=text_to_spec_model.config.training.max_steps,
         vocoder_global_step=vocoder_model.config.training.max_steps,
-        output_type=(output_format, SynthesizeOutputFormats.wav),
+        output_types=(output_format, SynthesizeOutputFormats.wav),
         text_representation=DatasetTextRepresentation(text_representation),
         output_dir=output_dir,
         speaker=speaker,
@@ -105,11 +107,13 @@ def synthesize_audio(
     )
 
     wav_writer = callbacks[SynthesizeOutputFormats.wav]
+    assert isinstance(wav_writer, WavPredictionWriter)
     wav_output = wav_writer.last_file_written
 
     file_output = None
     if output_format != SynthesizeOutputFormats.wav:
         file_writer = callbacks[output_format]
+        assert isinstance(file_writer, PredictionWriterBase)
         file_output = file_writer.get_filename(basename, speaker, language)
 
     if include_file_output:
@@ -560,7 +564,7 @@ def synthesize_audio_styletts2(
 
     # Determine ref_s — prefer user-uploaded audio, then pre-loaded speaker, then default
     if user_reference is not None:
-        from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
+        from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.core.synthesize import (
             load_reference_style,
         )
 
@@ -892,7 +896,6 @@ def create_demo_app(
         vocoder_model=vocoder_model,
         vocoder_config=vocoder_config,
         output_dir=output_dir,
-        accelerator=accelerator,
         device=device,
         allowlist=allowlist,
         denylist=denylist,
