@@ -24,8 +24,8 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import 
     FastSpeech2,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_writing_callback import (
-    PredictionWritingCallbackBase,
-    PredictionWritingWavCallback,
+    PredictionWriterBase,
+    WavPredictionWriter,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     HiFiGAN,
@@ -107,13 +107,13 @@ def synthesize_audio(
     )
 
     wav_writer = callbacks[SynthesizeOutputFormats.wav]
-    assert isinstance(wav_writer, PredictionWritingWavCallback)
+    assert isinstance(wav_writer, WavPredictionWriter)
     wav_output = wav_writer.last_file_written
 
     file_output = None
     if output_format != SynthesizeOutputFormats.wav:
         file_writer = callbacks[output_format]
-        assert isinstance(file_writer, PredictionWritingCallbackBase)
+        assert isinstance(file_writer, PredictionWriterBase)
         file_output = file_writer.get_filename(basename, speaker, language)
 
     if include_file_output:
