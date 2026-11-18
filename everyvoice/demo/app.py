@@ -23,7 +23,7 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.core.synthesi
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
     FastSpeech2,
 )
-from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_writing_callback import (
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_writers import (
     PredictionWriterBase,
     WavPredictionWriter,
 )
