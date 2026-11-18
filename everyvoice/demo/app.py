@@ -94,7 +94,7 @@ def synthesize_audio(
         device=device,
         global_step=text_to_spec_model.config.training.max_steps,
         vocoder_global_step=vocoder_model.config.training.max_steps,
-        output_type=(output_format, SynthesizeOutputFormats.wav),
+        output_types=(output_format, SynthesizeOutputFormats.wav),
         text_representation=DatasetTextRepresentation(text_representation),
         output_dir=output_dir,
         speaker=speaker,
