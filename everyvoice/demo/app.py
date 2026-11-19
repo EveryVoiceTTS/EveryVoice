@@ -44,7 +44,6 @@ def synthesize_audio(
     language,
     speaker,
     output_format,
-    style_reference,
     text_to_spec_model,
     vocoder_model,
     vocoder_config,
@@ -81,7 +80,6 @@ def synthesize_audio(
         raise gr.Error("Output format is not selected. Please select an output format.")
     config, device, predictions, callbacks = synthesize_helper(
         model=text_to_spec_model,
-        style_reference=style_reference,
         vocoder_model=vocoder_model,
         vocoder_config=vocoder_config,
         texts=[text],
@@ -412,9 +410,6 @@ def make_gradio_display(
                         output_format=SynthesizeOutputFormats.wav,
                         include_file_output=False,
                     )
-                if model.config.model.use_global_style_token_module:
-                    with gr.Row():
-                        style_reference = gr.Audio(type="filepath")
                 btn = gr.Button(app_ui_config.get("synthesize_label", "Synthesize"))
             with gr.Column():
                 out_audio = gr.Audio(format="wav")
@@ -427,18 +422,10 @@ def make_gradio_display(
                         elem_id="file_output",
                     )
                     outputs = [out_audio, out_file]
-        # Only include the style reference input if the model supports it
-        if model.config.model.use_global_style_token_module:
-            inputs.append(style_reference)  # type: ignore
-        else:
-            synthesize_audio_preset = partial(
-                synthesize_audio_preset, style_reference=None
-            )
-
         # The text-type radio (when shown) is bound via a small wrapper rather
         # than appended to `inputs` directly: `text_representation` sits after
-        # several conditionally-present/absent parameters (output_format,
-        # style_reference) in synthesize_audio's signature, so its position in
+        # conditionally-present/absent parameters (output_format) in
+        # synthesize_audio's signature, so its position in
         # `inputs` can't be relied on to line up. The wrapper reads the radio's
         # live value as its own first argument and forwards everything else
         # positionally, unchanged, injecting text_representation by keyword.
