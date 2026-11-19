@@ -351,11 +351,6 @@ def evaluate(
             json.dump(results, f)
 
 
-class ModelTypes(str, Enum):
-    text_to_spec = "text-to-spec"
-    spec_to_wav = "spec-to-wav"
-
-
 # Add the export commands
 export_group = typer.Typer(
     **default_typer_args,

@@ -1,3 +1,5 @@
+from enum import Enum
+
 import typer
 import typer.rich_utils
 from rich.measure import Measurement
@@ -65,3 +67,24 @@ if hasattr(typer.rich_utils, "_make_rich_text"):
         return _FoldOverflow(_orig_make_rich_text(**kwargs))
 
     typer.rich_utils._make_rich_text = _make_rich_text_fold
+
+
+def make_enum(values: list[str], name="StrEnumFromList") -> Enum:
+    """Create an Enum for use by Typer to restrict allowed values for a CLI arg/opt
+
+    Usage:
+        The following declaration creates option "--opt" with valid values foo, bar and baz:
+        opt: Annotated[make_enum(["foo", "bar", "baz"]), typer.Option(...)]
+
+    Type checking caveat:
+        mypy doesn't like make_enum because its return value is not a statically resolvable type.
+        Typer uses dynamic resolution, so it has no issues, but for mypy you might need
+            # type: ignore[valid-type]
+        where you create Enums with make_enum.
+
+    Args:
+        values: the Enum values, with each Enum element having its name==its value
+        name: if you want a good repr() and good error messages, give your Enum a good name.
+              Typer ignores the name so don't bother if it's just for a Typer arg/opt
+    """
+    return Enum(name, {value: value for value in values}, type=str)
