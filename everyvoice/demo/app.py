@@ -11,7 +11,7 @@ import torch
 import typer
 
 from everyvoice import logger
-from everyvoice.base_cli.checkpoint import load_checkpoint
+from everyvoice.base_cli.checkpoint import check_file_not_empty, load_checkpoint
 from everyvoice.cli import AllowedDemoOutputFormats, peek_text_representation
 from everyvoice.config.type_definitions import (
     DatasetTextRepresentation,
@@ -477,11 +477,9 @@ def load_model_from_checkpoint(
     """Load the text-to-speech model and vocoder from their respective checkpoints."""
     device = get_device_from_accelerator(accelerator)
     try:
+        check_file_not_empty(spec_to_wav_model_path)
         vocoder_ckpt = load_checkpoint(
             spec_to_wav_model_path, minimal=False, device=device
-        )
-        vocoder_ckpt = torch.load(
-            spec_to_wav_model_path, map_location=device, weights_only=True
         )
     except Exception as e:
         raise ValueError(
@@ -496,6 +494,7 @@ def load_model_from_checkpoint(
             f"Error loading HiFiGAN model '{spec_to_wav_model_path}'. Possible causes: maybe it's not actually a HiFiGAN model? maybe it was trained with an incompatible version of EveryVoice?"
         ) from e
     try:
+        check_file_not_empty(text_to_spec_model_path)
         model: FastSpeech2 = FastSpeech2.load_from_checkpoint(text_to_spec_model_path).to(  # type: ignore
             device
         )

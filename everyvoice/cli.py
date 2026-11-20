@@ -644,7 +644,7 @@ _FS2_CLASS_NAMES = {"FastSpeech2"}
 _STYLETTS2_CLASS_NAMES = {"StyleTTS2", "StyleTTS2Module"}
 
 
-def _peek_model_class(checkpoint_path: Path) -> str:
+def _peek_model_class(checkpoint_path: Path, param_name) -> str:
     """Load a checkpoint header and return the stored model class name.
 
     Returns an empty string for legacy checkpoints that predate the model_info field.
@@ -657,8 +657,7 @@ def _peek_model_class(checkpoint_path: Path) -> str:
         ckpt = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     except Exception as e:
         raise typer.BadParameter(
-            f"Could not read checkpoint '{checkpoint_path}': {e}",
-            param_hint="CHECKPOINT",
+            f"Could not read checkpoint '{checkpoint_path}': {e}", param_hint=param_name
         )
     return ckpt.get("model_info", {}).get("name", "")
 
@@ -792,7 +791,9 @@ def _run_styletts2_demo(
             print(json.dumps(_hp["config"], indent=4, default=str))
         del _state
     except Exception as e:
-        print(f"  - (Could not read checkpoint config: {e})")
+        raise typer.BadParameter(
+            f"Could not read checkpoint config: {e}", param_hint="checkpoint"
+        ) from e
     if speakers_dict:
         for name, path in speakers_dict.items():
             print(f"  - Ref speaker:    {name} = {path}")
@@ -1064,7 +1065,7 @@ def demo(
             "Provide either --allowlist or --denylist, not both.",
         )
 
-    model_class = _peek_model_class(checkpoint)
+    model_class = _peek_model_class(checkpoint, "checkpoint")
 
     if model_class in _VOCODER_CLASS_NAMES:
         raise typer.BadParameter(
@@ -1080,10 +1081,20 @@ def demo(
             param_hint="CHECKPOINT",
         )
 
+    if vocoder is not None:
+        # I tried to use _peek_model_class here and inspect the results, but it's
+        # causing testing and demo crashes that I want to defer to a future time.
+        # Leaving this minimal early check here for now.
+        # TODO: give an error message here if vocoder is not actually a vocoder.
+        try:
+            check_file_not_empty(vocoder)
+        except Exception as e:
+            raise typer.BadParameter(f"Error reading vocoder '{vocoder}': {e}") from e
+
     allowlist_data = _load_list_file(allowlist)
     denylist_data = _load_list_file(denylist)
 
-    shared = dict(
+    shared_args = dict(
         allowlist=allowlist,
         denylist=denylist,
         allowlist_data=allowlist_data,
@@ -1097,7 +1108,13 @@ def demo(
 
     if model_class in _STYLETTS2_CLASS_NAMES:
         _run_styletts2_demo(
-            checkpoint, ref_speaker, reference, speakers, languages, vocoder, **shared  # type: ignore[arg-type]
+            checkpoint,
+            ref_speaker,
+            reference,
+            speakers,
+            languages,
+            vocoder,
+            **shared_args,  # type: ignore[arg-type]
         )
     else:
         _run_fs2_demo(
@@ -1109,7 +1126,7 @@ def demo(
             ui_config_file,
             ref_speaker,
             reference,
-            **shared,  # type: ignore[arg-type]
+            **shared_args,  # type: ignore[arg-type]
             **kwargs,
         )
 

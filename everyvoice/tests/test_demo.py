@@ -30,7 +30,7 @@ class TestDemo:
     def setup_runner(self):
         self.runner = CliRunner()
 
-    def test_demo_with_bad_args(self):
+    def test_demo_with_bad_args(self, dummy_fp_path):
         # No checkpoint → help message
         result = self.runner.invoke(app, ["demo"])
         # Exit code for no-arg-is-help is 0 with click<=8.1.8 and typer<=0.23.2,
@@ -51,6 +51,13 @@ class TestDemo:
 
         # Empty checkpoint gives a clean exit, not a seg fault
         result = self.runner.invoke(app, ["demo", os.devnull])
+        assert result.exit_code != 0
+        assert "is empty" in flatten_log(result.output)
+
+        # Empty vocoder gives a clean exit
+        result = self.runner.invoke(
+            app, ["demo", str(dummy_fp_path), "--vocoder", os.devnull]
+        )
         assert result.exit_code != 0
         assert "is empty" in flatten_log(result.output)
 
@@ -462,7 +469,7 @@ class TestDemo:
                 ["default"],
             )
 
-    def test_demo_dispatch_styletts2_rejects_vocoder_flag(self):
+    def test_demo_dispatch_styletts2_rejects_vocoder_flag(self, dummy_vocoder_path):
         """Passing --vocoder with a StyleTTS2 checkpoint should produce a clear error."""
         with tempfile.TemporaryDirectory() as tmpdir_str:
             import torch
@@ -480,8 +487,7 @@ class TestDemo:
                 },
                 fake_ckpt,
             )
-            fake_vocoder = tmpdir / "hifigan.ckpt"
-            fake_vocoder.touch()
+            fake_vocoder = dummy_vocoder_path
 
             result = self.runner.invoke(
                 app,

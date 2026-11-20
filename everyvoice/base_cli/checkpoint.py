@@ -27,16 +27,16 @@ def summarize_statedict(ckpt: dict) -> dict:
     return model_keys
 
 
-def check_file_not_empty(model_path: str | Path):
-    """Raise ValueError if path does not exist or is an empty file.
+def check_file_not_empty(file_path: str | Path):
+    """Raise ValueError if file_path does not exist or is an empty file.
 
     torch.load yields a core dump on an empty file, avoid that with a early checks
     """
-    path = Path(model_path)
+    path = Path(file_path)
     if not path.exists():
-        raise ValueError(f"Model {model_path} does not exist")
+        raise ValueError(f"File '{file_path}' does not exist")
     if path.stat().st_size == 0:
-        raise ValueError(f"File '{model_path}' is empty")
+        raise ValueError(f"File '{file_path}' is empty")
 
 
 def load_checkpoint(

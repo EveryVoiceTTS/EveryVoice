@@ -277,7 +277,6 @@ def train_base_command(
         try:
             model_obj = model.load_from_checkpoint(last_ckpt)
         except Exception as e:
-            logger.error(f"Unable to load {last_ckpt}: {e}")
             raise ModelError(f"Unable to load checkpoint '{last_ckpt}': {e}") from e
         logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
