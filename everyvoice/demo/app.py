@@ -354,7 +354,7 @@ def make_gradio_display(
     if app_instructions:
         helper_text += f"<h5 style='color:#777;margin-bottom:0;padding-bottom:0;'>How to use this app</h5><p style='color:#999;margin-top:0.1em;padding-top:0;'>{app_instructions}</p>"
         print(f"\n\tUsing app instructions from app config JSON: {app_instructions}")
-    with gr.Blocks() as demo:
+    with gr.Blocks(analytics_enabled=False) as demo:
         gr.Markdown(f"""
             <h1 align="center">{app_title}</h1>
             {helper_text}
@@ -659,7 +659,7 @@ def make_gradio_display_styletts2(
     has_speakers = bool(speaker_list)
     interactive_speaker = len(speaker_list) > 1
 
-    with gr.Blocks() as demo:
+    with gr.Blocks(analytics_enabled=False) as demo:
         gr.Markdown("<h1 align='center'>EveryVoice StyleTTS2 Demo</h1>")
         with gr.Row():
             with gr.Column():
