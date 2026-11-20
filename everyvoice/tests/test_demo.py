@@ -186,15 +186,8 @@ class TestDemo:
         )
 
         class model:
-            from types import SimpleNamespace
-
             lang2id = {"default": 0}
             speaker2id = {"default": 0}
-            model_data = {"use_global_style_token_module": False}
-            config_data = {"model": SimpleNamespace(**model_data)}
-            config = SimpleNamespace(
-                **config_data,
-            )
 
         return model, {}, {}, "cpu"  # Mock return values for the test
 

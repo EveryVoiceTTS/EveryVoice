@@ -440,17 +440,19 @@ class TestLoadingConfig:
     @CONFIGS_TO_TEST
     def test_config_versionless(self, ConfigType, filename):
         """
-        Validate that we can load a config that doesn't have a `VERSION` as a version 1.0 config.
+        Validate that we can load a config that doesn't have a `VERSION`, and
+        that it is upgraded to the latest version.
         """
 
         arguments = ConfigType.load_config_from_path(
             self.config_dir / f"{filename}.yaml"
         ).model_dump()
+        latest_version = arguments["VERSION"]
         del arguments["VERSION"]
 
         assert "VERSION" not in arguments
         c = ConfigType(**arguments)
-        assert c.VERSION == "1.0"
+        assert c.VERSION == latest_version
 
     @CONFIGS_TO_TEST
     def test_config_newer_version(self, ConfigType, filename):
