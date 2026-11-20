@@ -335,8 +335,9 @@
                                          Segmentation help
 
  This command will align a long audio file with some text. Your text should be separated so that
- each sentence/utterance is on a new line in the text file. This command should work on most
- languages and you should run it before running the new project or preprocessing steps. This
+ each sentence/utterance is on a new line in the text file. Each line will become one audio clip
+ when you run extract, so split long lines if you want shorter clips. This command should work on
+ most languages and you should run it before running the new project or preprocessing steps. This
  command will create a Praat TextGrid file. You must install Praat
  (https://www.fon.hum.uva.nl/praat/) if you want to inspect the alignments.
 
@@ -345,15 +346,20 @@
 │ *    audio_path      <file>  [required]                                                         │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ───────────────────────────────────────────────────────────────────────────────────────╮
-│ --sample-rate               <int>  The target sample rate for the model.                        │
-│                                    [default: 16000]                                             │
-│ --word-padding              <int>  How many frames to pad around words.                         │
-│                                    [default: 0]                                                 │
-│ --sentence-padding          <int>  How many frames to pad around sentences (additive with       │
-│                                    word-padding).                                               │
-│                                    [default: 0]                                                 │
-│ --debug             -D             Print debug statements                                       │
-│ --help              -h             Show this message and exit.                                  │
+│ --sample-rate               <int>                 The target sample rate for the model.         │
+│                                                   [default: 16000]                              │
+│ --word-padding              <int>                 How many frames to pad around words.          │
+│                                                   [default: 0]                                  │
+│ --sentence-padding          <int>                 How many frames to pad around sentences       │
+│                                                   (additive with word-padding).                 │
+│                                                   [default: 0]                                  │
+│ --sentence-silence          <float range> [x>=0]  Add up to this many seconds of the            │
+│                                                   surrounding silence before and after each     │
+│                                                   sentence, without overlapping neighbouring    │
+│                                                   sentences.                                    │
+│                                                   [default: 0.5]                                │
+│ --debug             -D                            Print debug statements                        │
+│ --help              -h                            Show this message and exit.                   │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
 
@@ -365,6 +371,9 @@
 
  This command will take the alignment from the align command and extract it into multiple
  utterances in the format required for training a TTS system.
+
+ Each line of the text file given to align becomes one utterance, so to get shorter utterances,
+ split long lines in your text file into several lines before running align.
 
 ╭─ Arguments ─────────────────────────────────────────────────────────────────────────────────────╮
 │ *    text_grid_path      <file>       [required]                                                │
