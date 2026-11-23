@@ -1,6 +1,7 @@
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.api import (
     SynthesisBatch,
     Utterance,
+    combine_chunks,
     load_config,
     load_model,
     preprocess,
@@ -16,6 +17,7 @@ __all__ = [
     "load_model",
     "synthesize",
     "unbatch",
+    "combine_chunks",
     "SynthesisBatch",
     "Utterance",
 ]
