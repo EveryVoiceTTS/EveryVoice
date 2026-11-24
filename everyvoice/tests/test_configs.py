@@ -598,3 +598,47 @@ class TestHiFiGANTrainingConfig:
 
 if __name__ == "__main__":
     pytest.main(sys.argv)
+
+
+class TestModelCheckpointDump:
+    """Checkpoints must contain no paths: loading a checkpoint validates its
+    paths, and a directory path that doesn't exist gets created."""
+
+    @staticmethod
+    def find_path_values(dumped, where="config") -> list[str]:
+        if isinstance(dumped, Path):
+            return [where]
+        if isinstance(dumped, dict):
+            return [
+                found
+                for key, value in dumped.items()
+                for found in TestModelCheckpointDump.find_path_values(
+                    value, f"{where}.{key}"
+                )
+            ]
+        if isinstance(dumped, (list, tuple)):
+            return [
+                found
+                for i, value in enumerate(dumped)
+                for found in TestModelCheckpointDump.find_path_values(
+                    value, f"{where}[{i}]"
+                )
+            ]
+        return []
+
+    @pytest.mark.parametrize(
+        "config_class", [FeaturePredictionConfig, VocoderConfig, E2EConfig]
+    )
+    def test_no_paths(self, config_class):
+        dumped = config_class(contact=TEST_CONTACT).model_checkpoint_dump()
+        assert self.find_path_values(dumped) == []
+        # These defaults are kept as str (unvalidated, so as not to create
+        # them), but they are paths all the same
+        assert "save_dir" not in dumped["training"]["logger"]
+        assert "save_dir" not in dumped["preprocessing"]
+
+    def test_loading_creates_no_directories(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        dumped = FeaturePredictionConfig(contact=TEST_CONTACT).model_checkpoint_dump()
+        FeaturePredictionConfig(**dumped)
+        assert list(tmp_path.iterdir()) == []
