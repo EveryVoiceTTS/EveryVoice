@@ -491,3 +491,42 @@ class TestVersion:
 
 if __name__ == "__main__":
     pytest.main(sys.argv)
+
+
+class TestLoadingOldCheckpoints:
+    """Checkpoints saved before path fields were stripped from them by type
+    contain the default save_dir values: loading them must not create those
+    directories in the current directory."""
+
+    @staticmethod
+    def with_default_save_dirs(path: Path, tmp_path: Path) -> Path:
+        checkpoint = torch.load(path, weights_only=True)
+        config = checkpoint["hyper_parameters"]["config"]
+        config["training"]["logger"]["save_dir"] = "logs_and_checkpoints"
+        config["preprocessing"]["save_dir"] = "preprocessed/YourDataSet"
+        old_path = tmp_path / f"old-{path.name}"
+        torch.save(checkpoint, old_path)
+        return old_path
+
+    def test_load_from_checkpoint(
+        self, stubbed_model, stubbed_vocoder, tmp_path, monkeypatch
+    ):
+        from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
+            load_hifigan_from_checkpoint,
+        )
+
+        model_path = self.with_default_save_dirs(stubbed_model[1], tmp_path)
+        vocoder_path = self.with_default_save_dirs(stubbed_vocoder[1], tmp_path)
+        cwd = tmp_path / "cwd"
+        cwd.mkdir()
+        monkeypatch.chdir(cwd)
+
+        model = FastSpeech2.load_from_checkpoint(model_path)
+        vocoder = HiFiGAN.load_from_checkpoint(vocoder_path)
+        load_hifigan_from_checkpoint(
+            torch.load(vocoder_path, weights_only=True), torch.device("cpu")
+        )
+
+        assert list(cwd.iterdir()) == []
+        assert model.config.training.logger.save_dir == "logs_and_checkpoints"
+        assert vocoder.config.preprocessing.save_dir == "preprocessed/YourDataSet"
