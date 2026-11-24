@@ -92,8 +92,9 @@ def synthesize_audio(
         language=language,
         devices="1",
         device=device,
-        global_step=text_to_spec_model.config.training.max_steps,
-        vocoder_global_step=vocoder_model.config.training.max_steps,
+        # global_step_at_load is always set for models loaded from checkpoints
+        global_step=text_to_spec_model.global_step_at_load or 0,
+        vocoder_global_step=vocoder_model.global_step_at_load or 0,
         output_types=(output_format, SynthesizeOutputFormats.wav),
         text_representation=DatasetTextRepresentation(text_representation),
         output_dir=output_dir,
