@@ -19,6 +19,24 @@ from everyvoice.wizard import (
 
 from .stubs import CONFIG_DIR
 
+# The global_step written into the stubbed checkpoints. A fresh Trainer saves step
+# 0, which is indistinguishable from an unset step counter; distinct values per
+# model also catch mixing up the text-to-spec model and the vocoder.
+STUBBED_MODEL_GLOBAL_STEP = 987_654
+STUBBED_VOCODER_GLOBAL_STEP = 876_543
+
+
+def save_stub_checkpoint(trainer: Trainer, path: Path, global_step: int) -> None:
+    """Save the model connected to trainer at path, as if trained for global_step
+    steps: Lightning has no supported way to set a Trainer's step without
+    training, so it is set in the saved checkpoint."""
+    import torch
+
+    trainer.save_checkpoint(path)
+    checkpoint = torch.load(path, weights_only=True)
+    checkpoint["global_step"] = global_step
+    torch.save(checkpoint, path)
+
 
 def get_dummy_models(tmp_dir: Path) -> tuple[FastSpeech2, Path, HiFiGAN, Path]:
     """Usage: dummy_fp, dummy_fp_path, dummy_vocoder, dummy_vocoder_path = get_dummy_models(tmp_dir)"""
@@ -61,9 +79,11 @@ def get_dummy_models(tmp_dir: Path) -> tuple[FastSpeech2, Path, HiFiGAN, Path]:
     vocoder_trainer.strategy.connect(vocoder)
     fp_trainer.strategy.connect(spec_model)
     dummy_fp_path = tmp_dir / "fp.ckpt"
-    fp_trainer.save_checkpoint(dummy_fp_path)
+    save_stub_checkpoint(fp_trainer, dummy_fp_path, STUBBED_MODEL_GLOBAL_STEP)
     dummy_vocoder_path = tmp_dir / "vocoder.ckpt"
-    vocoder_trainer.save_checkpoint(dummy_vocoder_path)
+    save_stub_checkpoint(
+        vocoder_trainer, dummy_vocoder_path, STUBBED_VOCODER_GLOBAL_STEP
+    )
     torch.use_deterministic_algorithms(
         False
     )  # restore default, for test_synthesize on GPU

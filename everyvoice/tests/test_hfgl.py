@@ -8,6 +8,7 @@ and can be imported from the submodule's tests, as the fs2 tests do.
 
 import pytest
 import torch
+from pytorch_lightning import Trainer
 
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl import api
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
@@ -19,6 +20,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     synthesize_data,
 )
 from everyvoice.tests.grad_checks import assert_no_grad_tracking, assert_no_param_grads
+from everyvoice.tests.model_stubs import STUBBED_VOCODER_GLOBAL_STEP
 from everyvoice.tests.stubs import TEST_CONTACT
 
 
@@ -56,30 +58,32 @@ def test_synthesize_data_does_not_track_gradients(model_config):
 
 
 @pytest.fixture()
-def generator_only_checkpoint(stubbed_vocoder, tmp_path):
-    """The stubbed vocoder's checkpoint converted for synthesis only, as by
-    `everyvoice export spec-to-wav`: generator weights only."""
+def vocoder_checkpoints(stubbed_vocoder, tmp_path):
+    """The stubbed vocoder's checkpoint, in full and converted for synthesis only
+    (generator weights only), as by `everyvoice export spec-to-wav`."""
     _vocoder, vocoder_path = stubbed_vocoder
     checkpoint = torch.load(vocoder_path, weights_only=True)
     HiFiGAN.convert_ckpt_to_generator(checkpoint)
-    path = tmp_path / "generator.ckpt"
-    torch.save(checkpoint, path)
-    return path
+    generator_path = tmp_path / "generator.ckpt"
+    torch.save(checkpoint, generator_path)
+    return {"full": vocoder_path, "generator-only": generator_path}
 
 
-@pytest.mark.parametrize("checkpoint_type", ["full", "generator-only"])
-def test_load_model(checkpoint_type, stubbed_vocoder, generator_only_checkpoint):
-    stub, stub_path = stubbed_vocoder
-    if checkpoint_type == "full":
-        path, expected_class = stub_path, HiFiGAN
-    else:
-        path, expected_class = generator_only_checkpoint, HiFiGANGenerator
-
-    model = api.load_model(str(path), accelerator="cpu")
+@pytest.mark.parametrize(
+    "checkpoint_type, expected_class",
+    [("full", HiFiGAN), ("generator-only", HiFiGANGenerator)],
+)
+def test_load_model(
+    checkpoint_type, expected_class, stubbed_vocoder, vocoder_checkpoints
+):
+    stub, _stub_path = stubbed_vocoder
+    model = api.load_model(str(vocoder_checkpoints[checkpoint_type]), accelerator="cpu")
 
     assert type(model) is expected_class
     assert model.config.model == stub.config.model
     assert model.config.preprocessing.audio == stub.config.preprocessing.audio
+    assert model.global_step_at_load == STUBBED_VOCODER_GLOBAL_STEP
+    assert model.global_step == 0  # no Trainer attached
     assert not model.generator.training
     # remove_weight_norm() was applied
     assert not [
@@ -91,6 +95,29 @@ def test_load_model(checkpoint_type, stubbed_vocoder, generator_only_checkpoint)
     wavs, sample_rate = synthesize_data(spec, model, model.config)
     assert wavs.shape[0] == 1
     assert sample_rate == model.config.preprocessing.audio.output_sampling_rate
+
+
+class TestGlobalStepAtLoad:
+    def test_fresh_model(self):
+        assert HiFiGAN(HiFiGANConfig(contact=TEST_CONTACT)).global_step_at_load is None
+
+    def test_load_from_checkpoint(self, vocoder_checkpoints):
+        """The path used to fine-tune a vocoder"""
+        model = HiFiGAN.load_from_checkpoint(vocoder_checkpoints["full"])
+        assert model.global_step_at_load == STUBBED_VOCODER_GLOBAL_STEP
+
+    def test_not_saved_in_checkpoints(self, vocoder_checkpoints, tmp_path):
+        model = HiFiGAN.load_from_checkpoint(vocoder_checkpoints["full"])
+        trainer = Trainer(default_root_dir=str(tmp_path), barebones=True)
+        trainer.strategy.connect(model)
+        trainer.save_checkpoint(tmp_path / "resaved.ckpt")
+
+        checkpoint = torch.load(tmp_path / "resaved.ckpt", weights_only=True)
+        assert checkpoint["global_step"] == 0  # the new Trainer's step
+        assert list(checkpoint["hyper_parameters"]) == ["config"]
+        assert str(STUBBED_VOCODER_GLOBAL_STEP) not in repr(
+            checkpoint["hyper_parameters"]
+        )
 
 
 def test_load_model_missing_file(tmp_path):
