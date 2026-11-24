@@ -18,6 +18,7 @@ from pydantic import (
     ValidationInfo,
     model_validator,
 )
+from typing_extensions import Self
 
 from everyvoice.config.utils import (
     PossiblyRelativePath,
@@ -26,6 +27,9 @@ from everyvoice.config.utils import (
 )
 
 _init_context_var = ContextVar("_init_context_var", default=None)
+
+# Validation context key set by ConfigModel.from_checkpoint_dump()
+FROM_CHECKPOINT_CONTEXT = "from_checkpoint"
 
 
 @contextmanager
@@ -94,6 +98,46 @@ class ConfigModel(BaseModel):
         extra="forbid",
         json_schema_extra={"$schema": "http://json-schema.org/draft-07/schema#"},
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _keep_unvalidated_defaults_from_checkpoint(
+        cls, data: Any, info: ValidationInfo
+    ) -> Any:
+        """When loading a config from a checkpoint (see from_checkpoint_dump()),
+        drop the fields with validate_default=False whose value is their default:
+        they then stay unvalidated, as in a config that doesn't set them.
+
+        Checkpoints saved before model_checkpoint_dump() stripped them contain the
+        default save_dir values, e.g., "logs_and_checkpoints", and validating
+        them creates those directories in the current directory.
+        """
+        if not (info.context and info.context.get(FROM_CHECKPOINT_CONTEXT)):
+            return data
+        if not isinstance(data, dict):
+            return data
+        return {
+            name: value
+            for name, value in data.items()
+            if not (
+                name in cls.model_fields
+                and cls.model_fields[name].validate_default is False
+                and value == cls.model_fields[name].default
+            )
+        }
+
+    @classmethod
+    def from_checkpoint_dump(cls, dumped: dict[str, Any]) -> Self:
+        """Build a config from its model_checkpoint_dump(), saved in a checkpoint.
+
+        Use this, not cls(**dumped), whenever a config comes from a checkpoint:
+        see _keep_unvalidated_defaults_from_checkpoint().
+        """
+        # Not model_validate(context=...): PartialLoadConfig.__init__, which
+        # pydantic calls for nested configs too, takes its context from
+        # init_context()
+        with init_context({FROM_CHECKPOINT_CONTEXT: True}):
+            return cls(**dumped)
 
     def model_checkpoint_dump(self):
         """When saving a configuration to a checkpoint, we have to ensure that it is:

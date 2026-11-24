@@ -642,3 +642,44 @@ class TestModelCheckpointDump:
         dumped = FeaturePredictionConfig(contact=TEST_CONTACT).model_checkpoint_dump()
         FeaturePredictionConfig(**dumped)
         assert list(tmp_path.iterdir()) == []
+
+    @staticmethod
+    def old_checkpoint_dump() -> dict:
+        """A config dump as saved in checkpoints before path fields were
+        stripped by type: it has the default save_dir values."""
+        dumped = FeaturePredictionConfig(contact=TEST_CONTACT).model_checkpoint_dump()
+        dumped["training"]["logger"]["save_dir"] = "logs_and_checkpoints"
+        dumped["preprocessing"]["save_dir"] = "preprocessed/YourDataSet"
+        return dumped
+
+    def test_from_checkpoint_dump_round_trip(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        config = FeaturePredictionConfig(contact=TEST_CONTACT)
+        loaded = FeaturePredictionConfig.from_checkpoint_dump(
+            config.model_checkpoint_dump()
+        )
+        assert loaded.model_dump() == config.model_dump()
+        assert list(tmp_path.iterdir()) == []
+
+    def test_from_old_checkpoint_dump_creates_no_directories(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.chdir(tmp_path)
+        loaded = FeaturePredictionConfig.from_checkpoint_dump(
+            self.old_checkpoint_dump()
+        )
+        fresh = FeaturePredictionConfig(contact=TEST_CONTACT)
+        assert loaded.training.logger.save_dir == fresh.training.logger.save_dir
+        assert loaded.preprocessing.save_dir == fresh.preprocessing.save_dir
+        assert list(tmp_path.iterdir()) == []
+        # Building it the usual way validates them, creating the directories
+        FeaturePredictionConfig(**self.old_checkpoint_dump())
+        assert (tmp_path / "logs_and_checkpoints").is_dir()
+
+    def test_from_checkpoint_dump_validates_other_values(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        dumped = self.old_checkpoint_dump()
+        dumped["training"]["logger"]["save_dir"] = "my_logs"
+        loaded = FeaturePredictionConfig.from_checkpoint_dump(dumped)
+        assert loaded.training.logger.save_dir == Path("my_logs")  # validated
+        assert (tmp_path / "my_logs").is_dir()
