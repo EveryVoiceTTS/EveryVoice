@@ -2,7 +2,6 @@
 
 import json
 import numbers
-import sys
 import tempfile
 from enum import Enum
 from pathlib import Path
@@ -487,10 +486,6 @@ class TestVersion:
 
         assert not "10.0" > "9.0"
         assert Version("10.0") > Version("9.0")
-
-
-if __name__ == "__main__":
-    pytest.main(sys.argv)
 
 
 class TestLoadingOldCheckpoints:

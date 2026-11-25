@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import json
-import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -597,10 +596,6 @@ class TestHiFiGANTrainingConfig:
             match=r"Input should be 'original' or 'wgan' \[type=enum, input_value='BAD', input_type=str\]",
         ):
             HiFiGANTrainingConfig(gan_type="BAD")
-
-
-if __name__ == "__main__":
-    pytest.main(sys.argv)
 
 
 class TestModelCheckpointDump:
