@@ -12,6 +12,9 @@ import torch
 
 from everyvoice.config.type_definitions import DatasetTextRepresentation
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
+    LATEST_VERSION as FS2_LATEST_VERSION,
+)
+from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.config import (
     FastSpeech2Config,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import (
@@ -20,6 +23,9 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import 
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.type_definitions_heavy import (
     Stats,
     StatsInfo,
+)
+from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
+    LATEST_VERSION as HFGL_LATEST_VERSION,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import HiFiGANConfig
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import HiFiGAN
@@ -422,10 +428,10 @@ class TestLoadingModel:
 
 
 CONFIGS_TO_TEST = pytest.mark.parametrize(
-    "ConfigType, filename",
+    "ConfigType, filename, latest_version",
     [
-        (FastSpeech2Config, TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX),
-        (HiFiGANConfig, SPEC_TO_WAV_CONFIG_FILENAME_PREFIX),
+        (FastSpeech2Config, TEXT_TO_SPEC_CONFIG_FILENAME_PREFIX, FS2_LATEST_VERSION),
+        (HiFiGANConfig, SPEC_TO_WAV_CONFIG_FILENAME_PREFIX, HFGL_LATEST_VERSION),
     ],
     ids=["FastSpeech2Config", "HiFiGANConfig"],
 )
@@ -438,9 +444,10 @@ class TestLoadingConfig:
         self.config_dir = TEST_DATA_DIR / "relative" / "config"
 
     @CONFIGS_TO_TEST
-    def test_config_versionless(self, ConfigType, filename):
+    def test_config_versionless(self, ConfigType, filename, latest_version):
         """
-        Validate that we can load a config that doesn't have a `VERSION` as a version 1.0 config.
+        Validate that we can load a config that doesn't have a `VERSION`, and
+        that it is upgraded to the latest version.
         """
 
         arguments = ConfigType.load_config_from_path(
@@ -450,10 +457,10 @@ class TestLoadingConfig:
 
         assert "VERSION" not in arguments
         c = ConfigType(**arguments)
-        assert c.VERSION == "1.0"
+        assert c.VERSION == latest_version
 
     @CONFIGS_TO_TEST
-    def test_config_newer_version(self, ConfigType, filename):
+    def test_config_newer_version(self, ConfigType, filename, latest_version):
         """
         Validate that we are detecting that a config is newer.
         """

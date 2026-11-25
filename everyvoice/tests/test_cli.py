@@ -107,6 +107,9 @@ class TestCLI:
         # Team decision 2025-02-10: we won't keep submodule versions in complete lockstep,
         # but we'll match major.minor.
         # But don't check wav2vec2aligner at all, it's much more independent.
+        from everyvoice.model.e2e.StyleTTS2_lightning.styletts2._version import (
+            VERSION as STYLETTS2_VERSION,
+        )
         from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2._version import (
             VERSION as FS2_VERSION,
         )
@@ -120,6 +123,9 @@ class TestCLI:
         assert major_minor(VERSION) == major_minor(
             HFGL_VERSION
         ), "please keep HiFiGAN_iSTFT_lightning and EveryVoice major.minor version in sync"
+        assert major_minor(VERSION) == major_minor(
+            STYLETTS2_VERSION
+        ), "please keep StyleTTS2_lightning and EveryVoice major.minor version in sync"
 
     def test_diagnostic(self):
         with capture_stdout():

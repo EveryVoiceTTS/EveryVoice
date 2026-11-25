@@ -685,10 +685,6 @@
 │                                                   larger numbers produce slower speaking rates. │
 │                                                   Default is 1.0                                │
 │                                                   [default: 1.0]                                │
-│ --style-reference            -S      <file>       The path to an audio file containing a style  │
-│                                                   reference. Your text-to-spec must have been   │
-│                                                   trained with the global style token module to │
-│                                                   use this feature.                             │
 │ --speaker                    -s      <str>        Specify which speaker to use in a             │
 │                                                   multispeaker system. [requires --text]        │
 │ --accelerator                -a      <str>        [default: auto]                               │
@@ -950,14 +946,6 @@
 │                                                                           written               │
 │                                                                           [default:             │
 │                                                                           checked_data]         │
-│ --style-reference      -S                          <file>                 The path to an audio  │
-│                                                                           file containing a     │
-│                                                                           style reference. Your │
-│                                                                           text-to-spec must     │
-│                                                                           have been trained     │
-│                                                                           with the global style │
-│                                                                           token module to use   │
-│                                                                           this feature.         │
 │ --accelerator          -a                          <str>                  [default: auto]       │
 │ --devices              -d                          <str>                  The number of GPUs to │
 │                                                                           use                   │
