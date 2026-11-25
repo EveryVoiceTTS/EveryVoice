@@ -149,12 +149,6 @@
           "title": "Conv Kernel Size",
           "type": "integer"
         },
-        "depthwise": {
-          "default": true,
-          "description": "Whether the feedforward modules use depthwise separable convolutions (see Pine et al. 2022: https://aclanthology.org/2022.acl-long.507/) instead of position-wise linear layers.",
-          "title": "Depthwise",
-          "type": "boolean"
-        },
         "dropout": {
           "default": 0.2,
           "description": "The amount of dropout to apply.",
