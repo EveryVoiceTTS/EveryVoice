@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 import json
-import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any, Optional
 
 import pytest
 import yaml
@@ -23,6 +23,8 @@ from everyvoice.config.preprocessing_config import (
 from everyvoice.config.shared_types import (
     BaseTrainingConfig,
     LoggerConfig,
+    PossiblyRelativePath,
+    _is_path_type,
     init_context,
 )
 from everyvoice.config.text_config import TextConfig
@@ -596,5 +598,107 @@ class TestHiFiGANTrainingConfig:
             HiFiGANTrainingConfig(gan_type="BAD")
 
 
-if __name__ == "__main__":
-    pytest.main(sys.argv)
+class TestModelCheckpointDump:
+    """Checkpoints must contain no paths: loading a checkpoint validates its
+    paths, and a directory path that doesn't exist gets created."""
+
+    @staticmethod
+    def find_path_values(dumped, where="config") -> list[str]:
+        if isinstance(dumped, Path):
+            return [where]
+        if isinstance(dumped, dict):
+            return [
+                found
+                for key, value in dumped.items()
+                for found in TestModelCheckpointDump.find_path_values(
+                    value, f"{where}.{key}"
+                )
+            ]
+        if isinstance(dumped, (list, tuple)):
+            return [
+                found
+                for i, value in enumerate(dumped)
+                for found in TestModelCheckpointDump.find_path_values(
+                    value, f"{where}[{i}]"
+                )
+            ]
+        return []
+
+    @pytest.mark.parametrize(
+        "config_class", [FeaturePredictionConfig, VocoderConfig, E2EConfig]
+    )
+    def test_no_paths(self, config_class):
+        dumped = config_class(contact=TEST_CONTACT).model_checkpoint_dump()
+        assert self.find_path_values(dumped) == []
+        # These defaults are kept as str (unvalidated, so as not to create
+        # them), but they are paths all the same
+        assert "save_dir" not in dumped["training"]["logger"]
+        assert "save_dir" not in dumped["preprocessing"]
+
+    @pytest.mark.parametrize(
+        "annotation, expected",
+        [
+            (Path, True),
+            (PossiblyRelativePath, True),
+            (Optional[PossiblyRelativePath], True),
+            (Path | None, True),
+            # On Python 3.10, isinstance(list[Path], type) is True
+            (list[Path], True),
+            (dict[str, Path], True),
+            (tuple[Path, ...], True),
+            (Optional[list[Path]], True),
+            (str, False),
+            (list[str], False),
+            (dict[str, int], False),
+            (Any, False),
+        ],
+    )
+    def test_is_path_type(self, annotation, expected):
+        assert _is_path_type(annotation) == expected
+
+    def test_loading_creates_no_directories(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        dumped = FeaturePredictionConfig(contact=TEST_CONTACT).model_checkpoint_dump()
+        FeaturePredictionConfig(**dumped)
+        assert list(tmp_path.iterdir()) == []
+
+    @staticmethod
+    def old_checkpoint_dump() -> dict:
+        """A config dump as saved in checkpoints before path fields were
+        stripped by type: it has the default save_dir values."""
+        dumped = FeaturePredictionConfig(contact=TEST_CONTACT).model_checkpoint_dump()
+        dumped["training"]["logger"]["save_dir"] = "logs_and_checkpoints"
+        dumped["preprocessing"]["save_dir"] = "preprocessed/YourDataSet"
+        return dumped
+
+    def test_from_checkpoint_dump_round_trip(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        config = FeaturePredictionConfig(contact=TEST_CONTACT)
+        loaded = FeaturePredictionConfig.from_checkpoint_dump(
+            config.model_checkpoint_dump()
+        )
+        assert loaded.model_dump() == config.model_dump()
+        assert list(tmp_path.iterdir()) == []
+
+    def test_from_old_checkpoint_dump_creates_no_directories(
+        self, tmp_path, monkeypatch
+    ):
+        monkeypatch.chdir(tmp_path)
+        loaded = FeaturePredictionConfig.from_checkpoint_dump(
+            self.old_checkpoint_dump()
+        )
+        fresh = FeaturePredictionConfig(contact=TEST_CONTACT)
+        assert loaded.training.logger.save_dir == fresh.training.logger.save_dir
+        assert loaded.preprocessing.save_dir == fresh.preprocessing.save_dir
+        assert list(tmp_path.iterdir()) == []
+        # Building it the usual way validates them, creating the directories
+        FeaturePredictionConfig(**self.old_checkpoint_dump())
+        assert (tmp_path / "logs_and_checkpoints").is_dir()
+
+    def test_from_checkpoint_dump_validates_other_values(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        dumped = self.old_checkpoint_dump()
+        dumped["training"]["logger"]["save_dir"] = "my_logs"
+        loaded = FeaturePredictionConfig.from_checkpoint_dump(dumped)
+        assert loaded.training.logger.save_dir == Path("my_logs")  # validated
+        assert (tmp_path / "my_logs").is_dir()

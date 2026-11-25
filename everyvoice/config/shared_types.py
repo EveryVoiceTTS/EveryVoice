@@ -7,8 +7,8 @@ from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
-from pathlib import Path
-from typing import Annotated, Any, Optional
+from pathlib import Path, PurePath
+from typing import Annotated, Any, Optional, get_args, get_origin
 
 from pydantic import (
     BaseModel,
@@ -18,6 +18,7 @@ from pydantic import (
     ValidationInfo,
     model_validator,
 )
+from typing_extensions import Self
 
 from everyvoice.config.utils import (
     PossiblyRelativePath,
@@ -26,6 +27,9 @@ from everyvoice.config.utils import (
 )
 
 _init_context_var = ContextVar("_init_context_var", default=None)
+
+# Validation context key set by ConfigModel.from_checkpoint_dump()
+FROM_CHECKPOINT_CONTEXT = "from_checkpoint"
 
 
 @contextmanager
@@ -45,11 +49,97 @@ def init_context(value: dict[str, Any]) -> Iterator[None]:
         _init_context_var.reset(token)
 
 
+def _is_path_type(annotation: Any) -> bool:
+    """Whether a field's declared type is, or may be, a Path, e.g., Path,
+    PossiblyRelativePath, or Optional[PossiblyRelativePath]."""
+    # On Python 3.10, generic aliases like list[Path] are instances of type, so
+    # check get_origin() first to make sure we look inside them.
+    if get_origin(annotation) is None and isinstance(annotation, type):
+        return issubclass(annotation, PurePath)
+    # Unwrap Annotated, Optional, other Unions and containers like list[Path]
+    return any(_is_path_type(arg) for arg in get_args(annotation))
+
+
+def _without_paths(value: Any, dumped: Any) -> Any:
+    """Return dumped, the model_dump() of value, without any paths.
+
+    Removes Path values, and the fields declared as paths in the pydantic models
+    in value, whatever their values. value is walked alongside dumped only to
+    find those declarations: it can be None where it's not available.
+    """
+    if isinstance(dumped, dict):
+        if isinstance(value, BaseModel):
+            fields = type(value).model_fields
+            return {
+                key: _without_paths(getattr(value, key, None), item)
+                for key, item in dumped.items()
+                if not isinstance(item, PurePath)
+                and not (key in fields and _is_path_type(fields[key].annotation))
+            }
+        source = value if isinstance(value, Mapping) else {}
+        return {
+            key: _without_paths(source.get(key), item)
+            for key, item in dumped.items()
+            if not isinstance(item, PurePath)
+        }
+    if isinstance(dumped, (list, tuple)):
+        sources = value if isinstance(value, (list, tuple)) else ()
+        if len(sources) != len(dumped):
+            sources = (None,) * len(dumped)
+        items = [
+            _without_paths(source, item)
+            for source, item in zip(sources, dumped)
+            if not isinstance(item, PurePath)
+        ]
+        return items if isinstance(dumped, list) else tuple(items)
+    return dumped
+
+
 class ConfigModel(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={"$schema": "http://json-schema.org/draft-07/schema#"},
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _keep_unvalidated_defaults_from_checkpoint(
+        cls, data: Any, info: ValidationInfo
+    ) -> Any:
+        """When loading a config from a checkpoint (see from_checkpoint_dump()),
+        drop the fields with validate_default=False whose value is their default:
+        they then stay unvalidated, as in a config that doesn't set them.
+
+        Checkpoints saved before model_checkpoint_dump() stripped them contain the
+        default save_dir values, e.g., "logs_and_checkpoints", and validating
+        them creates those directories in the current directory.
+        """
+        if not (info.context and info.context.get(FROM_CHECKPOINT_CONTEXT)):
+            return data
+        if not isinstance(data, dict):
+            return data
+        return {
+            name: value
+            for name, value in data.items()
+            if not (
+                name in cls.model_fields
+                and cls.model_fields[name].validate_default is False
+                and value == cls.model_fields[name].default
+            )
+        }
+
+    @classmethod
+    def from_checkpoint_dump(cls, dumped: dict[str, Any]) -> Self:
+        """Build a config from its model_checkpoint_dump(), saved in a checkpoint.
+
+        Use this, not cls(**dumped), whenever a config comes from a checkpoint:
+        see _keep_unvalidated_defaults_from_checkpoint().
+        """
+        # Not model_validate(context=...): PartialLoadConfig.__init__, which
+        # pydantic calls for nested configs too, takes its context from
+        # init_context()
+        with init_context({FROM_CHECKPOINT_CONTEXT: True}):
+            return cls(**dumped)
 
     def model_checkpoint_dump(self):
         """When saving a configuration to a checkpoint, we have to ensure that it is:
@@ -61,31 +151,19 @@ class ConfigModel(BaseModel):
               across different environments so we cannot guarantee the presence of any Path
               used during initial training.
 
-        Therefore we dump the model checkpoint (which will serialize functions into a string format)
-        and then recursively search over the dumped checkpoint to remove fields with Path values.
+        Therefore we dump the model checkpoint (which will serialize functions into a
+        string format) and then remove all paths from it, recursively.
+
+        Fields declared as paths are removed whatever their values: a field with
+        validate_default=False keeps its default as given, e.g., the str
+        "logs_and_checkpoints", and loading a checkpoint that contains it would
+        validate it, creating that directory in the current directory.
 
         Returns:
             dict: A JSON-serializable dict containing no paths
         """
-        ckpt = (
-            self.model_dump()
-        )  # can't use mode='json' because we need to filter Paths first
-
-        def delete_paths(ckpt: dict | list | tuple):
-            if isinstance(ckpt, dict):
-                for k, v in ckpt.copy().items():
-                    if not isinstance(v, Path):
-                        ckpt[k] = delete_paths(v)
-                    else:
-                        del ckpt[k]
-            if isinstance(ckpt, list):
-                return [delete_paths(x) for x in ckpt if not isinstance(x, Path)]
-            if isinstance(ckpt, tuple):
-                return tuple(delete_paths(x) for x in ckpt if not isinstance(x, Path))
-            else:
-                return ckpt
-
-        return delete_paths(ckpt)
+        # Can't use mode='json': the Paths must be filtered first
+        return _without_paths(self, self.model_dump())
 
     def update_config(self, new_config: dict):
         """Update the config with new values"""
