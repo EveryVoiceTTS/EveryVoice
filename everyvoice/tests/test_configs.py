@@ -6,6 +6,7 @@ import time
 from collections.abc import Callable
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any, Optional
 
 import pytest
 import yaml
@@ -23,6 +24,8 @@ from everyvoice.config.preprocessing_config import (
 from everyvoice.config.shared_types import (
     BaseTrainingConfig,
     LoggerConfig,
+    PossiblyRelativePath,
+    _is_path_type,
     init_context,
 )
 from everyvoice.config.text_config import TextConfig
@@ -636,6 +639,27 @@ class TestModelCheckpointDump:
         # them), but they are paths all the same
         assert "save_dir" not in dumped["training"]["logger"]
         assert "save_dir" not in dumped["preprocessing"]
+
+    @pytest.mark.parametrize(
+        "annotation, expected",
+        [
+            (Path, True),
+            (PossiblyRelativePath, True),
+            (Optional[PossiblyRelativePath], True),
+            (Path | None, True),
+            # On Python 3.10, isinstance(list[Path], type) is True
+            (list[Path], True),
+            (dict[str, Path], True),
+            (tuple[Path, ...], True),
+            (Optional[list[Path]], True),
+            (str, False),
+            (list[str], False),
+            (dict[str, int], False),
+            (Any, False),
+        ],
+    )
+    def test_is_path_type(self, annotation, expected):
+        assert _is_path_type(annotation) == expected
 
     def test_loading_creates_no_directories(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)

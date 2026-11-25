@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path, PurePath
-from typing import Annotated, Any, Optional, get_args
+from typing import Annotated, Any, Optional, get_args, get_origin
 
 from pydantic import (
     BaseModel,
@@ -52,9 +52,11 @@ def init_context(value: dict[str, Any]) -> Iterator[None]:
 def _is_path_type(annotation: Any) -> bool:
     """Whether a field's declared type is, or may be, a Path, e.g., Path,
     PossiblyRelativePath, or Optional[PossiblyRelativePath]."""
-    if isinstance(annotation, type):
+    # On Python 3.10, generic aliases like list[Path] are instances of type, so
+    # check get_origin() first to make sure we look inside them.
+    if get_origin(annotation) is None and isinstance(annotation, type):
         return issubclass(annotation, PurePath)
-    # Unwrap Annotated, Optional and other Unions
+    # Unwrap Annotated, Optional, other Unions and containers like list[Path]
     return any(_is_path_type(arg) for arg in get_args(annotation))
 
 
