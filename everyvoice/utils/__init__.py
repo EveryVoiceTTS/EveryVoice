@@ -488,3 +488,15 @@ def spinner(message: str = "Loading"):
     ) as spinner:
         yield spinner
         spinner.ok("Done")
+
+
+def check_file_not_empty(file_path: str | Path):
+    """Raise ValueError if file_path does not exist or is an empty file.
+
+    torch.load yields a core dump on an empty file, avoid that with a early checks
+    """
+    path = Path(file_path)
+    if not path.exists():
+        raise ValueError(f"File '{file_path}' does not exist")
+    if path.stat().st_size == 0:
+        raise ValueError(f"File '{file_path}' is empty")

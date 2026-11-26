@@ -11,7 +11,7 @@ import torch
 import typer
 
 from everyvoice import logger
-from everyvoice.base_cli.checkpoint import check_file_not_empty, load_checkpoint
+from everyvoice.base_cli.checkpoint import load_checkpoint
 from everyvoice.cli import AllowedDemoOutputFormats, peek_text_representation
 from everyvoice.config.type_definitions import (
     DatasetTextRepresentation,
@@ -33,7 +33,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     HiFiGANGenerator,
     load_hifigan_from_checkpoint,
 )
-from everyvoice.utils import slugify, truncate_basename
+from everyvoice.utils import check_file_not_empty, slugify, truncate_basename
 from everyvoice.utils.heavy import get_device_from_accelerator
 
 os.environ["no_proxy"] = "localhost,127.0.0.1,::1"

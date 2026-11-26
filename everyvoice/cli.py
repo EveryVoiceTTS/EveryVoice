@@ -15,7 +15,7 @@ from rich.panel import Panel
 from everyvoice._version import VERSION
 from everyvoice.base_cli import command, default_typer_args
 from everyvoice.base_cli.check_group import check_group
-from everyvoice.base_cli.checkpoint import check_file_not_empty, checkpoint_group
+from everyvoice.base_cli.checkpoint import checkpoint_group
 from everyvoice.base_cli.interfaces import (
     inference_base_command_interface,
     typer_directory_option,
@@ -67,6 +67,7 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import (
     synthesize as synthesize_hfg,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.cli import train as train_hfg
+from everyvoice.utils import check_file_not_empty
 from everyvoice.wizard import (
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
     SPEC_TO_WAV_CONFIG_FILENAME_PREFIX,

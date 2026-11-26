@@ -9,6 +9,8 @@ from typing import Annotated, Any
 
 import typer
 
+from everyvoice.utils import check_file_not_empty
+
 from . import command, default_typer_args
 from .interfaces import typer_file_argument
 
@@ -25,18 +27,6 @@ def summarize_statedict(ckpt: dict) -> dict:
 
     model_keys["TOTAL"] = sum(model_keys.values())
     return model_keys
-
-
-def check_file_not_empty(file_path: str | Path):
-    """Raise ValueError if file_path does not exist or is an empty file.
-
-    torch.load yields a core dump on an empty file, avoid that with a early checks
-    """
-    path = Path(file_path)
-    if not path.exists():
-        raise ValueError(f"File '{file_path}' does not exist")
-    if path.stat().st_size == 0:
-        raise ValueError(f"File '{file_path}' is empty")
 
 
 def load_checkpoint(
