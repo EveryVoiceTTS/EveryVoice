@@ -4,7 +4,8 @@ around a Slurm requeue or preemption.
 When Slurm sends the requeue signal (SIGUSR1), Lightning saves a checkpoint and
 requeues the job. save_requeue_ckpt_to_last() makes Lightning save that
 checkpoint as the experiment's last checkpoint, and resolve_resume_ckpt()
-decides whether a run resumes from it.
+decides whether a run resumes from it. check_training_left() checks that
+continuing a checkpoint's training state leaves something to train.
 """
 
 import os
@@ -92,3 +93,38 @@ def resolve_resume_ckpt(
             )
         sys.exit(1)
     return None
+
+
+def check_training_left(
+    ckpt: dict,
+    ckpt_path: Path | str,
+    max_steps: int | None,
+    max_epochs: int,
+    max_epochs_setting: str = "max_epochs",
+) -> None:
+    """Exit if the training progress in ckpt already reaches max_steps or
+    max_epochs, so that continuing it with training.finetune_mode: full-state
+    would train nothing."""
+    # ckpt["epoch"] is the epoch the checkpoint was saved in, which is not yet
+    # counted as finished when it is saved at the end of that epoch
+    epochs_done = (
+        ckpt.get("loops", {})
+        .get("fit_loop", {})
+        .get("epoch_progress", {})
+        .get("current", {})
+        .get("processed", ckpt.get("epoch", 0))
+    )
+    steps_done = ckpt.get("global_step", 0)
+    steps_reached = max_steps is not None and 0 <= max_steps <= steps_done
+    if steps_reached or epochs_done >= max_epochs:
+        limits = f"{max_epochs_setting}={max_epochs}"
+        if max_steps is not None:
+            limits = f"max_steps={max_steps} and {limits}"
+        logger.error(
+            f"'{ckpt_path}' was saved after {steps_done} steps and {epochs_done} epochs, "
+            f"so with {limits} there is nothing left to train. "
+            "With training.finetune_mode: full-state, training continues counting from "
+            "the checkpoint's progress: raise those limits, or set "
+            "training.finetune_mode: weights-only to start counting from 0."
+        )
+        sys.exit(1)

@@ -409,8 +409,18 @@
             }
           ],
           "default": null,
-          "description": "Automatically resume training from a checkpoint loaded from this path.",
+          "description": "Start this experiment from this checkpoint, as set by finetune_mode. To continue an interrupted run, use 'everyvoice train ... --auto-resume'.",
           "title": "Finetune Checkpoint"
+        },
+        "finetune_mode": {
+          "default": "weights-only",
+          "description": "How finetune_checkpoint is loaded when this experiment starts. 'weights-only' loads its weights and starts the optimizer, learning rate schedule and step counter fresh. 'full-state' also continues its optimizer, learning rate schedule, step and epoch, so max_steps and max_epochs count from the checkpoint's step. It also describes how this run trains, so it still applies when --auto-resume continues the run from its own last checkpoint.",
+          "enum": [
+            "weights-only",
+            "full-state"
+          ],
+          "title": "Finetune Mode",
+          "type": "string"
         },
         "training_filelist": {
           "default": "path/to/your/preprocessed/training_filelist.psv",

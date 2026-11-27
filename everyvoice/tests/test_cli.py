@@ -832,7 +832,7 @@ class TestTrainBaseCommandResume:
     def _last_ckpt(self, tmp_path):
         return tmp_path / "log" / "unittest" / "base" / "checkpoints" / "last.ckpt"
 
-    def _write_ckpt(self, path, config):
+    def _write_ckpt(self, path, config, **progress):
         import torch
 
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -840,16 +840,17 @@ class TestTrainBaseCommandResume:
             {
                 "hyper_parameters": {"config": config.model_checkpoint_dump()},
                 "state_dict": {},
+                **progress,
             },
             path,
         )
         return path
 
-    def _run_train_base_command(self, config, auto_resume=False):
+    def _run_train_base_command(self, config, auto_resume=False, model=None):
         train_base_command(
             model_config=type(config),
             data_module=mock.Mock(),
-            model=mock.Mock(),
+            model=model or mock.Mock(),
             monitor="validation/total_loss",
             config_args=[],
             config_file=Path("unused.yaml"),
@@ -873,7 +874,7 @@ class TestTrainBaseCommandResume:
             mock.patch("pytorch_lightning.callbacks.ModelCheckpoint"),
         )
 
-    def _train(self, config, auto_resume=False):
+    def _train(self, config, auto_resume=False, model=None):
         """Run train_base_command; return the mocked fit and the config in the
         checkpoint fit was given, read while fit runs."""
         import torch
@@ -888,7 +889,7 @@ class TestTrainBaseCommandResume:
         p_load, p_save, p_tb, p_trainer, p_ckpt = self._patches(config)
         with p_load, p_save, p_tb, p_trainer as MockTrainer, p_ckpt:
             MockTrainer.return_value.fit.side_effect = fit
-            self._run_train_base_command(config, auto_resume=auto_resume)
+            self._run_train_base_command(config, auto_resume=auto_resume, model=model)
         return MockTrainer.return_value.fit, fit_configs
 
     def test_auto_resume_from_last_ckpt(self, tmp_path):
@@ -961,31 +962,43 @@ class TestTrainBaseCommandResume:
         fit.assert_called_once()
         assert fit_configs[0]["training"]["batch_size"] == 3
 
-    def test_auto_resume_changing_hifigan_finetune_exits(self, tmp_path):
-        """training.finetune changes the discriminator optimizer's parameters."""
+    def test_auto_resume_changing_hifigan_vocoder_matching_exits(self, tmp_path):
+        """Vocoder matching changes the discriminator optimizer's parameters."""
         from everyvoice.model.vocoder.config import HiFiGANConfig
 
         self._write_ckpt(
             self._last_ckpt(tmp_path),
             self._config(tmp_path, config_class=HiFiGANConfig),
         )
-        config = self._config(tmp_path, config_class=HiFiGANConfig, finetune=True)
+        config = self._config(
+            tmp_path, config_class=HiFiGANConfig, finetune_mode="vocoder-matching"
+        )
         with capture_logs() as logs, pytest.raises(SystemExit):
             self._train(config, auto_resume=True)
-        assert "training.finetune" in flatten_log("".join(logs))
+        assert "training.finetune_mode" in flatten_log("".join(logs))
 
-    def test_auto_resume_hifigan_finetune_run(self, tmp_path):
-        """A vocoder-matching run (training.finetune) resumes with its own settings."""
+    def test_auto_resume_hifigan_vocoder_matching_run(self, tmp_path):
+        """A vocoder-matching run resumes with its own settings, even though its
+        finetune_checkpoint is set."""
         from everyvoice.model.vocoder.config import HiFiGANConfig
 
-        config = self._config(tmp_path, config_class=HiFiGANConfig, finetune=True)
+        source = self._write_ckpt(
+            tmp_path / "vocoder.ckpt",
+            self._config(tmp_path, config_class=HiFiGANConfig),
+        )
+        config = self._config(
+            tmp_path,
+            finetune_checkpoint=source,
+            config_class=HiFiGANConfig,
+            finetune_mode="vocoder-matching",
+        )
         self._write_ckpt(self._last_ckpt(tmp_path), config)
         fit, fit_configs = self._train(config, auto_resume=True)
         fit.assert_called_once()
-        assert fit_configs[0]["training"]["finetune"] is True
+        assert fit_configs[0]["training"]["finetune_mode"] == "vocoder-matching"
 
-    def test_hifigan_finetune_freezes_before_configure_optimizers(self):
-        """The discriminator layers training.finetune freezes are frozen when the
+    def test_hifigan_vocoder_matching_freezes_before_configure_optimizers(self):
+        """The discriminator layers vocoder matching freezes are frozen when the
         model is built, so a resumed run's discriminator optimizer holds the same
         parameters as the one saved in its checkpoint."""
         from everyvoice.model.vocoder.config import HiFiGANConfig
@@ -996,12 +1009,117 @@ class TestTrainBaseCommandResume:
         contact = ContactInformation(
             contact_name="Test Runner", contact_email="info@everyvoice.ca"
         )
-        vocoder = HiFiGAN(HiFiGANConfig(contact=contact, training={"finetune": True}))
+        vocoder = HiFiGAN(
+            HiFiGANConfig(
+                contact=contact, training={"finetune_mode": "vocoder-matching"}
+            )
+        )
         disc_params = [*vocoder.msd.parameters(), *vocoder.mpd.parameters()]
         trainable = [p for p in disc_params if p.requires_grad]
         assert 0 < len(trainable) < len(disc_params)
         (_, optim_d), _ = vocoder.configure_optimizers()
         assert sum(len(g["params"]) for g in optim_d.param_groups) == len(trainable)
+
+        # Weights-only fine-tuning of the matched vocoder trains every layer again
+        vocoder.config = HiFiGANConfig(contact=contact)
+        vocoder.update_config_settings()
+        assert all(p.requires_grad for p in disc_params)
+
+    # training.finetune_mode: how a new experiment starts from finetune_checkpoint
+
+    def _model_loading(self, ckpt_config):
+        """A mock model class whose load_from_checkpoint() returns a model with ckpt_config."""
+        model = mock.Mock()
+        model.load_from_checkpoint.return_value.config = ckpt_config
+        return model
+
+    def test_weights_only_with_same_optimizer_warns(self, tmp_path):
+        """Fine-tuning with the optimizer settings unchanged used to continue the
+        full training state, so the new behaviour is pointed out."""
+        source_config = self._config(tmp_path)
+        source = self._write_ckpt(tmp_path / "source.ckpt", source_config)
+        config = self._config(tmp_path, finetune_checkpoint=source)
+        with capture_logs() as logs:
+            fit, _ = self._train(config, model=self._model_loading(source_config))
+        fit.assert_called_once()
+        assert "ckpt_path" not in fit.call_args.kwargs
+        assert "finetune_mode: full-state" in flatten_log("".join(logs))
+
+    def test_weights_only_with_changed_optimizer(self, tmp_path):
+        source_config = self._config(tmp_path)
+        source = self._write_ckpt(tmp_path / "source.ckpt", source_config)
+        config = self._config(
+            tmp_path, finetune_checkpoint=source, optimizer={"learning_rate": 0.123}
+        )
+        with capture_logs() as logs:
+            fit, _ = self._train(config, model=self._model_loading(source_config))
+        fit.assert_called_once()
+        assert "ckpt_path" not in fit.call_args.kwargs
+        assert "finetune_mode: full-state" not in flatten_log("".join(logs))
+
+    def test_full_state(self, tmp_path):
+        """full-state continues the source run's training state, with the current config."""
+        source = self._write_ckpt(
+            tmp_path / "source.ckpt", self._config(tmp_path), global_step=10
+        )
+        config = self._config(
+            tmp_path, finetune_checkpoint=source, finetune_mode="full-state"
+        )
+        fit, fit_configs = self._train(config)
+        fit.assert_called_once()
+        assert fit_configs == [config.model_dump(mode="json")]
+
+    def test_full_state_with_changed_optimizer_exits(self, tmp_path):
+        source = self._write_ckpt(tmp_path / "source.ckpt", self._config(tmp_path))
+        config = self._config(
+            tmp_path,
+            finetune_checkpoint=source,
+            finetune_mode="full-state",
+            optimizer={"learning_rate": 0.123},
+        )
+        with capture_logs() as logs, pytest.raises(SystemExit):
+            self._train(config)
+        log = flatten_log("".join(logs))
+        assert "learning_rate" in log
+        assert "finetune_mode: weights-only" in log
+
+    @pytest.mark.parametrize(
+        "progress",
+        [
+            {"global_step": 100},
+            # Saved at the end of the last epoch: "epoch" is still 1
+            {
+                "epoch": 1,
+                "loops": {
+                    "fit_loop": {"epoch_progress": {"current": {"processed": 2}}}
+                },
+            },
+        ],
+    )
+    def test_full_state_with_nothing_left_to_train_exits(self, tmp_path, progress):
+        source = self._write_ckpt(
+            tmp_path / "source.ckpt", self._config(tmp_path), **progress
+        )
+        config = self._config(
+            tmp_path,
+            finetune_checkpoint=source,
+            finetune_mode="full-state",
+            max_steps=100,
+            max_epochs=2,
+        )
+        with capture_logs() as logs, pytest.raises(SystemExit):
+            self._train(config)
+        assert "nothing left to train" in flatten_log("".join(logs))
+
+    def test_vocoder_matching_without_finetune_checkpoint_exits(self, tmp_path):
+        from everyvoice.model.vocoder.config import HiFiGANConfig
+
+        config = self._config(
+            tmp_path, config_class=HiFiGANConfig, finetune_mode="vocoder-matching"
+        )
+        with capture_logs() as logs, pytest.raises(SystemExit):
+            self._train(config)
+        assert "training.finetune_checkpoint" in flatten_log("".join(logs))
 
 
 @pytest.mark.skipif(

@@ -288,15 +288,30 @@ def train_base_command(
         return
 
     finetune_ckpt = config.training.finetune_checkpoint
+    finetune_mode = config.training.finetune_mode
     if finetune_ckpt is not None and not os.path.exists(finetune_ckpt):
         logger.error(f"finetune_checkpoint '{finetune_ckpt}' does not exist.")
         sys.exit(1)
     # Train from Scratch
     if finetune_ckpt is None:
+        if finetune_mode == "vocoder-matching":
+            logger.error(
+                "training.finetune_mode: vocoder-matching starts from a trained vocoder: "
+                "set training.finetune_checkpoint to its checkpoint."
+            )
+            sys.exit(1)
         model_obj = model(config, **model_kwargs)
         logger.info(f"Model's architecture\n{model_obj}")
         tensorboard_logger.log_hyperparams(config.model_dump())
         trainer.fit(model_obj, data)
+    elif finetune_mode == "full-state":
+        # Start a new experiment continuing another run's full training state
+        logger.info(f"Continuing the full training state in '{finetune_ckpt}'")
+        model_obj = model(config, **model_kwargs)
+        tensorboard_logger.log_hyperparams(config.model_dump())
+        fit_from_full_state(
+            trainer, model_obj, data, finetune_ckpt, config, from_finetune_ckpt=True
+        )
     else:
         try:
             model_obj = model.load_from_checkpoint(finetune_ckpt)
@@ -345,22 +360,20 @@ def train_base_command(
         if hasattr(model_obj, "update_config_settings"):
             model_obj.update_config_settings()
         tensorboard_logger.log_hyperparams(config.model_dump())
-        if optimizer_config_diff:
-            # Finetune from Checkpoint
-            logger.warning(textwrap.dedent(f"""
-                Some of your optimizer hyperparameters have changed from your checkpoint at '{finetune_ckpt}',
-                so we will override your checkpoint hyperparameters and restart the optimizer.
-
-                Your training logs will start from epoch 0/step 0, but will still use the weights from your checkpoint.
-
-                Values Changed: {pformat(optimizer_config_diff)}
+        # TODO: remove this warning in the release after finetune_mode was added
+        if finetune_mode == "weights-only" and not optimizer_config_diff:
+            logger.warning(textwrap.dedent("""
+                finetune_checkpoint now loads weights only by default; the optimizer, LR schedule and step counter restart at 0.
+                To keep them, set training.finetune_mode: full-state.
+                To continue a previous run, train in that run's experiment folder (same training.logger settings) with `everyvoice train ... --auto-resume`.
                 """))
-            # This will only use the weights in the model_obj, the optimizer and current epoch etc will be restarted using
-            # the configuration in model_obj.config, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
-            trainer.fit(model_obj, data)
-        else:
-            logger.info(f"Resuming from checkpoint '{finetune_ckpt}'")
-            fit_from_full_state(trainer, model_obj, data, finetune_ckpt, config)
+        # Finetune from Checkpoint
+        logger.info(
+            f"Fine-tuning from the weights in '{finetune_ckpt}': training logs start from epoch 0/step 0."
+        )
+        # This will only use the weights in the model_obj, the optimizer and current epoch etc will be restarted using
+        # the configuration in model_obj.config, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
+        trainer.fit(model_obj, data)
 
 
 def _config_diff(ckpt_section, live_section) -> DeepDiff:
@@ -371,7 +384,9 @@ def _config_diff(ckpt_section, live_section) -> DeepDiff:
     )
 
 
-def check_resume_compatible(ckpt_config, live_config, ckpt_path) -> None:
+def check_resume_compatible(
+    ckpt_config, live_config, ckpt_path, from_finetune_ckpt=False
+) -> None:
     """Exit if live_config changes settings a full restore from ckpt_path can't apply.
 
     A full restore loads the checkpoint's optimizer and scheduler state over the
@@ -392,16 +407,16 @@ def check_resume_compatible(ckpt_config, live_config, ckpt_path) -> None:
         for name, (ckpt_section, live_section) in sections.items()
         if (diff := _config_diff(ckpt_section, live_section))
     }
-    # HiFiGAN's training.finetune freezes discriminator layers, which changes
+    # HiFiGAN's vocoder-matching freezes discriminator layers, which changes
     # the parameters its discriminator optimizer holds
-    ckpt_finetune = getattr(ckpt_config.training, "finetune", None)
-    live_finetune = getattr(live_config.training, "finetune", None)
-    if ckpt_finetune != live_finetune:
-        blocking["training.finetune"] = {
+    ckpt_matching = ckpt_config.training.finetune_mode == "vocoder-matching"
+    live_matching = live_config.training.finetune_mode == "vocoder-matching"
+    if ckpt_matching != live_matching:
+        blocking["training.finetune_mode"] = {
             "values_changed": {
-                "training.finetune": {
-                    "old_value": ckpt_finetune,
-                    "new_value": live_finetune,
+                "training.finetune_mode": {
+                    "old_value": ckpt_config.training.finetune_mode,
+                    "new_value": live_config.training.finetune_mode,
                 }
             }
         }
@@ -409,21 +424,29 @@ def check_resume_compatible(ckpt_config, live_config, ckpt_path) -> None:
         changes = "\n".join(
             f"{name}: {pformat(dict(diff))}" for name, diff in blocking.items()
         )
+        if from_finetune_ckpt:
+            way_out = (
+                "set training.finetune_mode: weights-only to load only its weights."
+            )
+        else:
+            way_out = (
+                "start a new experiment with "
+                f"training.finetune_checkpoint set to '{ckpt_path}' to load only its weights."
+            )
         logger.error(
             f"Your configuration changes settings that can't change when training continues "
             f"from the full training state in '{ckpt_path}':\n{changes}\n"
             "The checkpoint's optimizer and learning rate schedule are restored as they are. "
-            "Either revert these settings, or start a new experiment with "
-            f"training.finetune_checkpoint set to '{ckpt_path}' to load only its weights."
+            f"Either revert these settings, or {way_out}"
         )
         sys.exit(1)
 
     other_changes = DeepDiff(
         ckpt_config.training.model_dump(
-            exclude={"optimizer", "logger", "finetune_checkpoint"}
+            exclude={"optimizer", "logger", "finetune_checkpoint", "finetune_mode"}
         ),
         live_config.training.model_dump(
-            exclude={"optimizer", "logger", "finetune_checkpoint"}
+            exclude={"optimizer", "logger", "finetune_checkpoint", "finetune_mode"}
         ),
         exclude_types=[Path],
     )
@@ -433,19 +456,32 @@ def check_resume_compatible(ckpt_config, live_config, ckpt_path) -> None:
         )
 
 
-def fit_from_full_state(trainer, model_obj, data, ckpt_path, config) -> None:
+def fit_from_full_state(
+    trainer, model_obj, data, ckpt_path, config, from_finetune_ckpt=False
+) -> None:
     """Fit model_obj continuing the full training state (weights, optimizer, LR
-    schedule, step, epoch) in ckpt_path, with the current config."""
+    schedule, step, epoch) in ckpt_path, with the current config.
+
+    from_finetune_ckpt: ckpt_path is finetune_checkpoint (finetune_mode:
+    full-state), not this experiment's own last checkpoint.
+    """
     import tempfile
 
     import torch
+
+    from everyvoice.base_cli.slurm import check_training_left
 
     ckpt = torch.load(ckpt_path, map_location=torch.device("cpu"), weights_only=True)
     check_resume_compatible(
         type(config).from_checkpoint_dump(ckpt["hyper_parameters"]["config"]),
         config,
         ckpt_path,
+        from_finetune_ckpt=from_finetune_ckpt,
     )
+    if from_finetune_ckpt:
+        check_training_left(
+            ckpt, ckpt_path, config.training.max_steps, config.training.max_epochs
+        )
     # We need to create a temporary checkpoint with torch.save because on_save_checkpoint
     # removes all paths for checkpoint portability. However, some paths, like "vocoder_path"
     # should be still accessible when training is resumed.

@@ -82,10 +82,12 @@ everyvoice train text-to-wav config/{{ config_filename('text-to-wav') }} --mode 
 everyvoice train text-to-wav config/{{ config_filename('text-to-wav') }} --mode second
 ```
 
+Stage 2 starts from the weights Stage 1 saved in its experiment folder, `logs_and_checkpoints/E2E-Experiment/base/checkpoints/stage-1-last.ckpt` (set by `training.first_stage_path`, relative to the experiment folder), so run both stages with the same `training.logger` settings.
+
 !!! tip
     While your model is training, you can use TensorBoard to view the logs, which will show information about the progress of training. To use TensorBoard, make sure that your conda environment is activated and run `tensorboard --logdir path/to/logs_and_checkpoints`. Then your logs will be viewable at [http://localhost:6006](http://localhost:6006).
 
-By default, training uses PyTorch Lightning's "auto" strategy. If you are on a machine where you know the hardware, you can specify it:
+By default, training lets PyTorch Lightning pick the accelerator and the number of devices ("auto"). If you are on a machine where you know the hardware, you can specify them:
 
 ```bash
 everyvoice train text-to-wav config/{{ config_filename('text-to-wav') }} --mode first -d 4 -a gpu
@@ -93,12 +95,34 @@ everyvoice train text-to-wav config/{{ config_filename('text-to-wav') }} --mode 
 
 Which would use the GPU accelerator (`-a gpu`) and specify 4 devices/chips (`-d 4`).
 
+### Resuming an interrupted stage
+
+Each stage saves its last checkpoint in the experiment's `checkpoints` folder: `stage-1-last.ckpt`, `stage-2-last.ckpt`, or `finetune-last.ckpt` for `--mode finetune`. To continue a stage that was interrupted, run the same command again with `--auto-resume`:
+
+```bash
+everyvoice train text-to-wav config/{{ config_filename('text-to-wav') }} --mode second --auto-resume
+```
+
+This continues the stage from its last checkpoint, with its optimizer, learning rate schedule and epoch, using the same `--mode`. If the stage has no last checkpoint yet, `--auto-resume` starts it from the beginning, so you can always pass it. Without `--auto-resume`, training stops with an error instead of overwriting an existing last checkpoint. See [Resuming an interrupted run](./finetune.md#resuming-an-interrupted-run) for what you can change when resuming.
+
+### Fine-tuning a trained model
+
+To fine-tune a trained StyleTTS2 model, e.g. on new data or a new speaker, start a new experiment from its Stage 2 checkpoint with `--mode finetune`. Set `training.finetune_checkpoint` to the checkpoint, and use a different `training.logger.version` so the new experiment doesn't train in the original model's folder:
+
+```bash
+everyvoice train text-to-wav config/{{ config_filename('text-to-wav') }} --mode finetune \
+    -c training.finetune_checkpoint=logs_and_checkpoints/E2E-Experiment/base/checkpoints/stage-2-last.ckpt \
+    -c training.logger.version=finetuned
+```
+
+By default (`training.finetune_mode: weights-only`), this loads only the checkpoint's weights: the optimizer, learning rate schedule and epoch count start fresh. `--mode finetune` trains for `training.max_epochs` epochs (`epochs_1st` and `epochs_2nd` only apply to Stage 1 and Stage 2), so set it to the number of fine-tuning epochs you want. See [How to fine-tune](./finetune.md) for the other `training.finetune_mode` options.
+
 ## Step 4: Synthesize Speech in Your Language!
 
 StyleTTS2 generates speech by sampling a speaking style from a short reference audio clip. The reference audio should be a clean recording of a few seconds, but it doesn't need to match the text you want to synthesize. You can use any recording from your training data as a reference.
 
 ```bash
-everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/stage-2-last.ckpt \
+everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/checkpoints/stage-2-last.ckpt \
     --reference path/to/reference.wav \
     --text "your text here"
 ```
@@ -106,7 +130,7 @@ everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/stage
 You can pass `--text` multiple times to synthesize several utterances at once:
 
 ```bash
-everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/stage-2-last.ckpt \
+everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/checkpoints/stage-2-last.ckpt \
     --reference path/to/reference.wav \
     --text "First sentence." \
     --text "Second sentence."
@@ -131,7 +155,7 @@ Both `characters` and `ipa_phones` (`model.target_text_representation_level`) wo
 At synthesis time, pass `--language` to select which language embedding to condition on:
 
 ```bash
-everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/stage-2-last.ckpt \
+everyvoice synthesize text-to-wav logs_and_checkpoints/E2E-Experiment/base/checkpoints/stage-2-last.ckpt \
     --reference path/to/reference.wav \
     --text "your text here" \
     --language eng
@@ -141,7 +165,7 @@ The value must match a language seen during training. The same flag is available
 
 ## Optional: Evaluation
 
-If you want to evaluate the model you just built, you can make use of the `everyvoice evaluate` command. In order to use it, you have to first generate some audio (see Step 5) and then you can evaluate either a single file with `everyvoice evaluate -f your_file.wav` or a directory of audio files with `everyvoice evaluate -d path_to_wavs/`. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in [this](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680) paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: `everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav`. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.
+If you want to evaluate the model you just built, you can make use of the `everyvoice evaluate` command. In order to use it, you have to first generate some audio (see Step 4) and then you can evaluate either a single file with `everyvoice evaluate -f your_file.wav` or a directory of audio files with `everyvoice evaluate -d path_to_wavs/`. This will report predictions for three metrics: Wideband Perceptual Estimation of Speech Quality (PESQ), Short-Time Objective Intelligibility (STOI), and Scale-Invariant Signal-to-Distortion Ratio (SI-SDR) using the model described in [this](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=10096680) paper. You can also provide a non-matching reference to predict a Mean Opinion Score (MOS) for your generated audio: `everyvoice evaluate  -d path_to_wavs/ -r path_to_reference.wav`. The reference should be a path to non-generated, good quality audio but it doesn't need to match the exact utterance that was generated.
 
 Please refer to `everyvoice evaluate --help` for more information.
 
