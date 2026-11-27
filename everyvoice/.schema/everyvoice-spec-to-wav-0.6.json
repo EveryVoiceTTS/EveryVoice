@@ -527,8 +527,19 @@
             }
           ],
           "default": null,
-          "description": "Automatically resume training from a checkpoint loaded from this path.",
+          "description": "Start this experiment from this checkpoint, as set by finetune_mode. To continue an interrupted run, use 'everyvoice train ... --auto-resume'.",
           "title": "Finetune Checkpoint"
+        },
+        "finetune_mode": {
+          "default": "weights-only",
+          "description": "How finetune_checkpoint is loaded when this experiment starts. 'weights-only' loads its weights and starts the optimizer, learning rate schedule and step counter fresh. 'full-state' also continues its optimizer, learning rate schedule, step and epoch, so max_steps and max_epochs count from the checkpoint's step. 'vocoder-matching' loads its weights like 'weights-only', then trains on the spectrograms in 'preprocessed/synthesized_spec' instead of 'preprocessed/spec', with the early discriminator layers frozen: use it to match a pretrained spec-to-wav (vocoder) model to the outputs of a trained text-to-spec (feature prediction network) model. It also describes how this run trains, so it still applies when --auto-resume continues the run from its own last checkpoint.",
+          "enum": [
+            "weights-only",
+            "full-state",
+            "vocoder-matching"
+          ],
+          "title": "Finetune Mode",
+          "type": "string"
         },
         "training_filelist": {
           "default": "path/to/your/preprocessed/training_filelist.psv",
@@ -610,12 +621,6 @@
           "default": false,
           "description": "Whether to use a sampler which oversamples from the minority language or speaker class for balanced training.",
           "title": "Use Weighted Sampler",
-          "type": "boolean"
-        },
-        "finetune": {
-          "default": false,
-          "description": "Whether to read spectrograms from 'preprocessed/synthesized_spec' instead of 'preprocessed/spec'. This is used when finetuning a pretrained spec-to-wav (vocoder) model using the outputs of a trained text-to-spec (feature prediction network) model.",
-          "title": "Finetune",
           "type": "boolean"
         }
       },
