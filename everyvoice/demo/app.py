@@ -12,6 +12,7 @@ import typer
 
 from everyvoice import logger
 from everyvoice.base_cli.checkpoint import load_checkpoint
+from everyvoice.base_cli.prediction_writer import BasePredictionWriter
 from everyvoice.cli import AllowedDemoOutputFormats, peek_text_representation
 from everyvoice.config.type_definitions import (
     DatasetTextRepresentation,
@@ -24,7 +25,6 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.model import 
     FastSpeech2,
 )
 from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_writers import (
-    PredictionWriterBase,
     WavPredictionWriter,
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
@@ -114,7 +114,7 @@ def synthesize_audio(
     file_output = None
     if output_format != SynthesizeOutputFormats.wav:
         file_writer = callbacks[output_format]
-        assert isinstance(file_writer, PredictionWriterBase)
+        assert isinstance(file_writer, BasePredictionWriter)
         file_output = file_writer.get_filename(basename, speaker, language)
 
     if include_file_output:
