@@ -96,7 +96,6 @@ training:
   filelist_loader: everyvoice.utils.generic_dict_loader
   finetune_checkpoint: null
   first_stage_path: first_stage.pth
-  load_only_params: false
   logger: {name: BaseExperiment, save_dir: logs_and_checkpoints, sub_dir_callable: everyvoice.utils.get_current_time,
     version: base}
   losses: {diff_epoch: 20, joint_epoch: 50, lambda_ce: 20.0, lambda_diff: 1.0, lambda_dur: 1.0,
@@ -113,7 +112,6 @@ training:
   optimizer: {bert_lr: 1.0e-05, ft_lr: 1.0e-05, lr: 0.0001}
   root_path: .
   save_top_k_ckpts: 5
-  second_stage_load_pretrained: true
   slmadv: {batch_percentage: 0.5, iter: 10, max_len: 500, min_len: 100, scale: 0.01,
     sig: 1.5, thresh: 5.0}
   train_data_workers: 4

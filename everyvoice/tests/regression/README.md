@@ -51,35 +51,7 @@ and customize it with the right partition and account for you.
 
 ## Surviving requeue and preemption
 
-`everyvoice train` relies on PyTorch Lightning's built-in Slurm support to save
-a checkpoint and requeue itself before the job is killed, whether that's from
-hitting the time limit, preemption, or `scancel`. To enable it, add to your
-`sbatch` script (or `go-<clustername>.sh`):
-
-```sh
-#SBATCH --requeue
-#SBATCH --signal=B:USR1@300
-```
-
-`B:` sends the signal to the batch shell so it reaches the training process,
-and `@300` asks Slurm to send `SIGUSR1` 300 seconds before it sends `SIGTERM`
-(and, if `--requeue` is set, calls `scontrol requeue` for you). Make sure the
-grace period is long enough for a full checkpoint (model + optimizer state) to
-write on your cluster's filesystem — start conservative and tune down once
-you've observed the actual write time for your model.
-
-The checkpoint is saved as the experiment's last checkpoint: `last.ckpt` in the
-run's `checkpoints` directory, or `stage-1-last.ckpt`, `stage-2-last.ckpt` or
-`finetune-last.ckpt` for StyleTTS2, depending on `--mode`. It replaces the
-previous one only once it is completely written, so an interrupted save never
-destroys the last good checkpoint.
-
-A requeued job resumes from that checkpoint automatically: Slurm sets
-`SLURM_RESTART_COUNT`, which turns on `--auto-resume`. It continues its own
-progress, even when `training.finetune_checkpoint` is set.
-
-A newly submitted job into the same experiment (same `training.logger`
-settings) needs `--auto-resume` to continue from the last checkpoint; without
-it, training stops instead of overwriting that checkpoint. `--auto-resume`
-starts a new run when there is no checkpoint yet, so your `sbatch` script can
-always pass it.
+To have training save a checkpoint and requeue itself before a job reaches its
+time limit, see
+[Requeueing on Slurm](https://docs.everyvoice.ca/latest/guides/finetune/#requeueing-on-slurm)
+in the documentation.

@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import cached_property
 from pathlib import Path, PurePath
-from typing import Annotated, Any, Optional, get_args, get_origin
+from typing import Annotated, Any, Literal, Optional, get_args, get_origin
 
 from pydantic import (
     BaseModel,
@@ -293,7 +293,14 @@ class BaseTrainingConfig(PartialLoadConfig):
     )
     finetune_checkpoint: PossiblyRelativePath | None = Field(
         default=None,
-        description="Automatically resume training from a checkpoint loaded from this path.",
+        description="Start this experiment from this checkpoint, as set by finetune_mode. To continue an interrupted run, use 'everyvoice train ... --auto-resume'.",
+    )
+    finetune_mode: Literal["weights-only", "full-state"] = Field(
+        default="weights-only",
+        description="How finetune_checkpoint is loaded when this experiment starts."
+        " 'weights-only' loads its weights and starts the optimizer, learning rate schedule and step counter fresh."
+        " 'full-state' also continues its optimizer, learning rate schedule, step and epoch, so max_steps and max_epochs count from the checkpoint's step."
+        " It also describes how this run trains, so it still applies when --auto-resume continues the run from its own last checkpoint.",
     )
     training_filelist: PossiblyRelativePath = Field(
         default="path/to/your/preprocessed/training_filelist.psv",

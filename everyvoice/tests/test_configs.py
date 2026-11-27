@@ -38,6 +38,8 @@ from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.config import (
 from everyvoice.tests.stubs import (
     TEST_CONTACT,
     TEST_DATA_DIR,
+    capture_logs,
+    flatten_log,
     mute_logger,
 )
 from everyvoice.utils import (
@@ -45,6 +47,7 @@ from everyvoice.utils import (
     load_config_from_json_or_yaml_path,
     lower,
     nfc_normalize,
+    update_config_from_cli_args,
 )
 from everyvoice.wizard import (
     PREPROCESSING_CONFIG_FILENAME_PREFIX,
@@ -596,6 +599,41 @@ class TestHiFiGANTrainingConfig:
             match=r"Input should be 'original' or 'wgan' \[type=enum, input_value='BAD', input_type=str\]",
         ):
             HiFiGANTrainingConfig(gan_type="BAD")
+
+    def test_finetune_true_is_vocoder_matching(self):
+        """The deprecated finetune: true is converted, with a warning."""
+        with capture_logs() as logs:
+            config = HiFiGANTrainingConfig(finetune=True)
+        assert config.finetune_mode == "vocoder-matching"
+        assert "finetune_mode: vocoder-matching" in flatten_log("".join(logs))
+
+    def test_finetune_false_is_dropped(self):
+        with capture_logs() as logs:
+            config = HiFiGANTrainingConfig(finetune=False)
+        assert config.finetune_mode == "weights-only"
+        assert "deprecated" in flatten_log("".join(logs))
+
+    def test_finetune_true_conflicts_with_full_state(self):
+        with pytest.raises(ValidationError, match="conflicts"):
+            HiFiGANTrainingConfig(finetune=True, finetune_mode="full-state")
+
+    def test_cli_finetune_true_is_vocoder_matching(self):
+        """-c training.finetune=True is combined with a config that has the
+        default finetune_mode."""
+        config = VocoderConfig(contact=TEST_CONTACT)
+        with mute_logger("everyvoice"):
+            update_config_from_cli_args(["training.finetune=True"], config)
+        assert config.training.finetune_mode == "vocoder-matching"
+
+    def test_checkpoint_with_finetune_loads(self):
+        """Checkpoints saved before finetune_mode existed hold training.finetune."""
+        dumped = VocoderConfig(contact=TEST_CONTACT).model_checkpoint_dump()
+        del dumped["training"]["finetune_mode"]
+        dumped["training"]["finetune"] = True
+        with capture_logs() as logs:
+            config = VocoderConfig.from_checkpoint_dump(dumped)
+        assert config.training.finetune_mode == "vocoder-matching"
+        assert "deprecated" not in flatten_log("".join(logs))
 
 
 class TestModelCheckpointDump:
