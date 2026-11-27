@@ -56,7 +56,7 @@ dependencies = [
   "ilt-panphon>=0.20.1,<0.21",
   "ipatok>=0.4.1",
   "librosa==0.11.0",
-  "lightning>=2.1.0",
+  "lightning>=2.5.3",
   "loguru>=0.6.0",
   "matplotlib>=3.9.0",
   "merge-args",

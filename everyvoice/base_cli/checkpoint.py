@@ -106,11 +106,11 @@ def summarize_hfgl_generator_model(model_path: Path, checkpoint: dict) -> None:
 def summarize_styletts2_model(model_path: Path, checkpoint: dict) -> None:
     from torchinfo import summary
 
-    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.lightning import (
-        StyleTTS2,
+    from everyvoice.model.e2e.StyleTTS2_lightning.styletts2.cli.synthesize import (
+        load_styletts2_model,
     )
 
-    model = StyleTTS2.load_from_checkpoint(model_path)
+    model, _ = load_styletts2_model(model_path, "cpu")
     print(summary(model, None, verbose=0))
 
 

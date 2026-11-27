@@ -552,6 +552,9 @@
 │                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/g │
 │                               pu_intermediate.html                                              │
 │                               [default: ddp]                                                    │
+│ --auto-resume                 Continue this experiment from its last checkpoint if it has one;  │
+│                               otherwise start a new run. Enabled automatically when Slurm       │
+│                               requeues the job.                                                 │
 │ --help         -h             Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -582,6 +585,9 @@
 │                               https://pytorch-lightning.readthedocs.io/en/stable/accelerators/g │
 │                               pu_intermediate.html                                              │
 │                               [default: ddp]                                                    │
+│ --auto-resume                 Continue this experiment from its last checkpoint if it has one;  │
+│                               otherwise start a new run. Enabled automatically when Slurm       │
+│                               requeues the job.                                                 │
 │ --help         -h             Show this message and exit.                                       │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 
@@ -619,6 +625,10 @@
 │                                                 https://pytorch-lightning.readthedocs.io/en/sta │
 │                                                 ble/accelerators/gpu_intermediate.html          │
 │                                                 [default: ddp]                                  │
+│ --auto-resume                                   Continue this experiment from its last          │
+│                                                 checkpoint if it has one; otherwise start a new │
+│                                                 run. Enabled automatically when Slurm requeues  │
+│                                                 the job.                                        │
 │ --help         -h                               Show this message and exit.                     │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────────╯
 

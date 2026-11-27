@@ -36,8 +36,10 @@ Then you:
 
 3. Lower the learning rate (we suggest starting at 0.00001)
 
-4. Train the vocoder again with finetuning set to True (train for at least 25000 steps, but preferrably 100000 steps):
+4. Train the vocoder again with finetuning set to True (train for at least 25000 steps, but preferrably 100000 steps). Train it in a new experiment folder by setting a different `training.logger.version`, so the fine-tuned vocoder doesn't overwrite the checkpoints of the vocoder you are fine-tuning:
 
     ```bash
-    everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml -c training.finetune=True
+    everyvoice train spec-to-wav config/everyvoice-spec-to-wav.yaml -c training.finetune=True -c training.logger.version=matched
     ```
+
+    If training is interrupted, run the same command with `--auto-resume` to continue it.
