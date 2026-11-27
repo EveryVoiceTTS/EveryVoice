@@ -29,7 +29,6 @@ from everyvoice.model.feature_prediction.FastSpeech2_lightning.fs2.prediction_wr
 )
 from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.utils import (
     HiFiGAN,
-    HiFiGANConfig,
     HiFiGANGenerator,
     load_hifigan_from_checkpoint,
 )
@@ -52,7 +51,6 @@ def synthesize_audio(
     style_reference,
     text_to_spec_model,
     vocoder_model,
-    vocoder_config,
     device,
     allowlist,
     denylist,
@@ -87,7 +85,6 @@ def synthesize_audio(
         model=text_to_spec_model,
         style_reference=style_reference,
         vocoder_model=vocoder_model,
-        vocoder_config=vocoder_config,
         texts=[text],
         language=language,
         devices="1",
@@ -478,7 +475,7 @@ def load_model_from_checkpoint(
     text_to_spec_model_path: Path,
     spec_to_wav_model_path: Path,
     accelerator: str,
-) -> tuple[FastSpeech2, HiFiGAN | HiFiGANGenerator, HiFiGANConfig, torch.device]:
+) -> tuple[FastSpeech2, HiFiGAN | HiFiGANGenerator, torch.device]:
     """Load the text-to-speech model and vocoder from their respective checkpoints."""
     device = get_device_from_accelerator(accelerator)
     try:
@@ -491,7 +488,7 @@ def load_model_from_checkpoint(
             f"Error loading HiFiGAN model '{spec_to_wav_model_path}': {e}"
         ) from e
     try:
-        vocoder_model, vocoder_config = load_hifigan_from_checkpoint(
+        vocoder_model, _vocoder_config = load_hifigan_from_checkpoint(
             vocoder_ckpt, device
         )
     except TypeError as e:
@@ -509,7 +506,7 @@ def load_model_from_checkpoint(
         ) from e
 
     model.eval()
-    return model, vocoder_model, vocoder_config, device
+    return model, vocoder_model, device
 
 
 def synthesize_audio_styletts2(
@@ -879,7 +876,7 @@ def create_demo_app(
                 )
             output_list.append(value)
 
-    model, vocoder_model, vocoder_config, device = load_model_from_checkpoint(
+    model, vocoder_model, device = load_model_from_checkpoint(
         text_to_spec_model_path, spec_to_wav_model_path, accelerator
     )
 
@@ -894,7 +891,6 @@ def create_demo_app(
         synthesize_audio,
         text_to_spec_model=model,
         vocoder_model=vocoder_model,
-        vocoder_config=vocoder_config,
         output_dir=output_dir,
         device=device,
         allowlist=allowlist,

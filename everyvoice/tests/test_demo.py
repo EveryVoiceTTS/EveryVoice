@@ -201,7 +201,7 @@ class TestDemo:
 
     def mock_demo_load_model_from_checkpoint(
         *_arg, **kwargs
-    ) -> tuple:  # [FastSpeech2, torch.nn.Module, dict, torch.device]:
+    ) -> tuple:  # [FastSpeech2, torch.nn.Module, torch.device]:
         print(
             "mock_demo_load_model_from_checkpoint called with args:",
             _arg,
@@ -220,7 +220,7 @@ class TestDemo:
                 **config_data,
             )
 
-        return model, {}, {}, "cpu"  # Mock return values for the test
+        return model, {}, "cpu"  # Mock return values for the test
 
     def test_create_demo_app_with_ui_config_file(
         self, stubbed_model, stubbed_vocoder
