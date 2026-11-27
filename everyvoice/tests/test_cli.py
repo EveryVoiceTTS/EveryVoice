@@ -806,24 +806,48 @@ class TestCLI:
         )
 
 
-class TestTrainBaseCommandSlurmResume:
-    """everyvoice/base_cli/helpers.py train_base_command: saving/resuming
-    around a SLURM requeue or preemption (SIGUSR1/SIGTERM)."""
+class TestTrainBaseCommandResume:
+    """everyvoice/base_cli/helpers.py train_base_command: resuming an experiment
+    from its last checkpoint with --auto-resume or after a Slurm requeue."""
 
-    def _config(self, tmp_path, finetune_checkpoint=None):
-        return FastSpeech2Config(
+    @pytest.fixture(autouse=True)
+    def _not_requeued(self, monkeypatch):
+        monkeypatch.delenv("SLURM_RESTART_COUNT", raising=False)
+
+    def _config(
+        self, tmp_path, finetune_checkpoint=None, config_class=None, **training
+    ):
+        config_class = config_class or FastSpeech2Config
+        return config_class(
             contact=ContactInformation(
                 contact_name="Test Runner", contact_email="info@everyvoice.ca"
             ),
             training={
                 "logger": {"save_dir": tmp_path / "log", "name": "unittest"},
                 "finetune_checkpoint": finetune_checkpoint,
+                **training,
             },
         )
 
-    def _run_train_base_command(self, config):
+    def _last_ckpt(self, tmp_path):
+        return tmp_path / "log" / "unittest" / "base" / "checkpoints" / "last.ckpt"
+
+    def _write_ckpt(self, path, config):
+        import torch
+
+        path.parent.mkdir(parents=True, exist_ok=True)
+        torch.save(
+            {
+                "hyper_parameters": {"config": config.model_checkpoint_dump()},
+                "state_dict": {},
+            },
+            path,
+        )
+        return path
+
+    def _run_train_base_command(self, config, auto_resume=False):
         train_base_command(
-            model_config=FastSpeech2Config,
+            model_config=type(config),
             data_module=mock.Mock(),
             model=mock.Mock(),
             monitor="validation/total_loss",
@@ -834,6 +858,7 @@ class TestTrainBaseCommandSlurmResume:
             nodes=1,
             strategy="auto",
             gradient_clip_val=None,
+            auto_resume=auto_resume,
         )
 
     def _patches(self, config):
@@ -848,51 +873,216 @@ class TestTrainBaseCommandSlurmResume:
             mock.patch("pytorch_lightning.callbacks.ModelCheckpoint"),
         )
 
-    def test_resumes_from_latest_slurm_hpc_checkpoint(self, tmp_path, monkeypatch):
-        """When running under Slurm, the newest hpc checkpoint saved in this job's
-        folder (by Lightning just before a requeue/preemption) must take priority
-        over finetune_checkpoint."""
-        monkeypatch.setenv("SLURM_JOB_ID", "123")
-        config = self._config(
-            tmp_path, finetune_checkpoint=str(tmp_path / "finetune.ckpt")
-        )
-        job_dir = tmp_path / "log" / "unittest" / "base" / "checkpoints" / "123"
-        job_dir.mkdir(parents=True)
-        (job_dir / "hpc_ckpt_2-step=20.ckpt").touch()
-        (job_dir / "hpc_ckpt_10-step=100.ckpt").touch()
-        (job_dir / "hpc_ckpt_1.ckpt").touch()
+    def _train(self, config, auto_resume=False):
+        """Run train_base_command; return the mocked fit and the config in the
+        checkpoint fit was given, read while fit runs."""
+        import torch
+
+        fit_configs = []
+
+        def fit(*args, ckpt_path=None):
+            if ckpt_path is not None:
+                ckpt = torch.load(ckpt_path, weights_only=True)
+                fit_configs.append(ckpt["hyper_parameters"]["config"])
+
         p_load, p_save, p_tb, p_trainer, p_ckpt = self._patches(config)
         with p_load, p_save, p_tb, p_trainer as MockTrainer, p_ckpt:
-            self._run_train_base_command(config)
-            assert MockTrainer.call_args.kwargs["default_root_dir"] == job_dir
-            fit = MockTrainer.return_value.fit
-            fit.assert_called_once()
-            assert fit.call_args.kwargs["ckpt_path"] == (
-                job_dir / "hpc_ckpt_10-step=100.ckpt"
-            )
+            MockTrainer.return_value.fit.side_effect = fit
+            self._run_train_base_command(config, auto_resume=auto_resume)
+        return MockTrainer.return_value.fit, fit_configs
 
-    def test_falls_back_when_no_slurm_hpc_checkpoint(self, tmp_path, monkeypatch):
-        """When Slurm is detected but no HPC checkpoint exists yet, training
-        should fall through to the normal startup logic instead of failing."""
-        monkeypatch.setenv("SLURM_JOB_ID", "123")
+    def test_auto_resume_from_last_ckpt(self, tmp_path):
+        """--auto-resume continues from last.ckpt, with the current config."""
         config = self._config(tmp_path)
-        p_load, p_save, p_tb, p_trainer, p_ckpt = self._patches(config)
-        with p_load, p_save, p_tb, p_trainer as MockTrainer, p_ckpt:
-            self._run_train_base_command(config)
-            fit = MockTrainer.return_value.fit
-            fit.assert_called_once()
-            assert "ckpt_path" not in fit.call_args.kwargs
+        self._write_ckpt(self._last_ckpt(tmp_path), config)
+        fit, fit_configs = self._train(config, auto_resume=True)
+        fit.assert_called_once()
+        assert fit.call_args.kwargs["ckpt_path"].endswith(".ckpt")
+        assert fit_configs == [config.model_dump(mode="json")]
 
-    def test_hpc_ckpts_named_by_step(self, tmp_path):
-        """Lightning's requeue checkpoints get the global step in their name."""
-        from everyvoice.base_cli.slurm import name_hpc_ckpts_by_step
+    def test_auto_resume_without_last_ckpt_starts_new_run(self, tmp_path):
+        """With no last.ckpt, --auto-resume logs the path it looked for and starts a new run."""
+        config = self._config(tmp_path)
+        with capture_logs() as logs:
+            fit, _ = self._train(config, auto_resume=True)
+        fit.assert_called_once()
+        assert "ckpt_path" not in fit.call_args.kwargs
+        assert str(self._last_ckpt(tmp_path).resolve()) in flatten_log("".join(logs))
 
-        (tmp_path / "hpc_ckpt_1-step=10.ckpt").touch()
-        trainer = mock.Mock(global_step=42, is_global_zero=True)
-        name_hpc_ckpts_by_step(trainer)
-        assert trainer._checkpoint_connector.hpc_save_path(tmp_path) == str(
-            tmp_path / "hpc_ckpt_2-step=42.ckpt"
+    def test_slurm_requeue_resumes_over_finetune_checkpoint(
+        self, tmp_path, monkeypatch
+    ):
+        """A requeued job continues its own progress, not finetune_checkpoint."""
+        monkeypatch.setenv("SLURM_RESTART_COUNT", "1")
+        finetune_ckpt = self._write_ckpt(
+            tmp_path / "finetune.ckpt", self._config(tmp_path)
         )
+        config = self._config(tmp_path, finetune_checkpoint=finetune_ckpt)
+        self._write_ckpt(self._last_ckpt(tmp_path), config)
+        fit, fit_configs = self._train(config)
+        fit.assert_called_once()
+        assert fit_configs == [config.model_dump(mode="json")]
+
+    def test_existing_last_ckpt_without_auto_resume_exits(self, tmp_path):
+        """A new run never overwrites an experiment's last checkpoint."""
+        config = self._config(tmp_path)
+        self._write_ckpt(self._last_ckpt(tmp_path), config)
+        with capture_logs() as logs, pytest.raises(SystemExit):
+            self._train(config)
+        assert "--auto-resume" in flatten_log("".join(logs))
+
+    def test_finetune_from_own_last_ckpt_exits(self, tmp_path):
+        """Fine-tuning from this experiment's own last.ckpt asks for a new experiment folder."""
+        last_ckpt = self._write_ckpt(self._last_ckpt(tmp_path), self._config(tmp_path))
+        config = self._config(tmp_path, finetune_checkpoint=last_ckpt)
+        with capture_logs() as logs, pytest.raises(SystemExit):
+            self._train(config)
+        assert "training.logger.version" in flatten_log("".join(logs))
+
+    def test_missing_finetune_checkpoint_exits(self, tmp_path):
+        config = self._config(tmp_path, finetune_checkpoint=tmp_path / "missing.ckpt")
+        with capture_logs() as logs, pytest.raises(SystemExit):
+            self._train(config)
+        assert "missing.ckpt" in flatten_log("".join(logs))
+
+    def test_auto_resume_with_changed_learning_rate_exits(self, tmp_path):
+        """The restored optimizer state would silently override a changed learning rate."""
+        self._write_ckpt(self._last_ckpt(tmp_path), self._config(tmp_path))
+        config = self._config(tmp_path, optimizer={"learning_rate": 0.123})
+        with capture_logs() as logs, pytest.raises(SystemExit):
+            self._train(config, auto_resume=True)
+        assert "learning_rate" in flatten_log("".join(logs))
+
+    def test_auto_resume_with_changed_batch_size(self, tmp_path):
+        """Changes that apply on resume, like the batch size, are allowed."""
+        self._write_ckpt(self._last_ckpt(tmp_path), self._config(tmp_path))
+        config = self._config(tmp_path, batch_size=3)
+        fit, fit_configs = self._train(config, auto_resume=True)
+        fit.assert_called_once()
+        assert fit_configs[0]["training"]["batch_size"] == 3
+
+    def test_auto_resume_changing_hifigan_finetune_exits(self, tmp_path):
+        """training.finetune changes the discriminator optimizer's parameters."""
+        from everyvoice.model.vocoder.config import HiFiGANConfig
+
+        self._write_ckpt(
+            self._last_ckpt(tmp_path),
+            self._config(tmp_path, config_class=HiFiGANConfig),
+        )
+        config = self._config(tmp_path, config_class=HiFiGANConfig, finetune=True)
+        with capture_logs() as logs, pytest.raises(SystemExit):
+            self._train(config, auto_resume=True)
+        assert "training.finetune" in flatten_log("".join(logs))
+
+    def test_auto_resume_hifigan_finetune_run(self, tmp_path):
+        """A vocoder-matching run (training.finetune) resumes with its own settings."""
+        from everyvoice.model.vocoder.config import HiFiGANConfig
+
+        config = self._config(tmp_path, config_class=HiFiGANConfig, finetune=True)
+        self._write_ckpt(self._last_ckpt(tmp_path), config)
+        fit, fit_configs = self._train(config, auto_resume=True)
+        fit.assert_called_once()
+        assert fit_configs[0]["training"]["finetune"] is True
+
+    def test_hifigan_finetune_freezes_before_configure_optimizers(self):
+        """The discriminator layers training.finetune freezes are frozen when the
+        model is built, so a resumed run's discriminator optimizer holds the same
+        parameters as the one saved in its checkpoint."""
+        from everyvoice.model.vocoder.config import HiFiGANConfig
+        from everyvoice.model.vocoder.HiFiGAN_iSTFT_lightning.hfgl.model import (
+            HiFiGAN,
+        )
+
+        contact = ContactInformation(
+            contact_name="Test Runner", contact_email="info@everyvoice.ca"
+        )
+        vocoder = HiFiGAN(HiFiGANConfig(contact=contact, training={"finetune": True}))
+        disc_params = [*vocoder.msd.parameters(), *vocoder.mpd.parameters()]
+        trainable = [p for p in disc_params if p.requires_grad]
+        assert 0 < len(trainable) < len(disc_params)
+        (_, optim_d), _ = vocoder.configure_optimizers()
+        assert sum(len(g["params"]) for g in optim_d.param_groups) == len(trainable)
+
+
+@pytest.mark.parametrize(
+    "lightning_namespace", ["pytorch_lightning", "lightning.pytorch"]
+)
+@pytest.mark.parametrize("last_name", ["last", "stage-2-last"])
+def test_sigusr1_saves_to_last_ckpt(
+    tmp_path, monkeypatch, lightning_namespace, last_name
+):
+    """Lightning's real Slurm signal handler saves to the "last" checkpoint.
+
+    This drives Lightning's private signal handler, so a Lightning release that
+    stops using the hpc_save_path hook fails here instead of silently saving
+    requeue checkpoints elsewhere.
+    """
+    import importlib
+    import signal
+
+    from everyvoice.base_cli.slurm import save_requeue_ckpt_to_last
+
+    pl = importlib.import_module(lightning_namespace)
+    monkeypatch.setenv("SLURM_JOB_ID", "123")
+    trainer = pl.Trainer(accelerator="cpu", logger=False, enable_checkpointing=False)
+    cb = pl.callbacks.ModelCheckpoint(dirpath=tmp_path, save_last=True)
+    cb.CHECKPOINT_NAME_LAST = last_name
+    save_requeue_ckpt_to_last(trainer, cb)
+    with (
+        mock.patch.object(trainer, "save_checkpoint") as save,
+        mock.patch(
+            f"{lightning_namespace}.trainer.connectors.signal_connector.call",
+            return_value=0,
+        ) as requeue,
+    ):
+        trainer._signal_connector._slurm_sigusr_handler_fn(signal.SIGUSR1, None)
+    save.assert_called_once_with(str(tmp_path / f"{last_name}.ckpt"))
+    requeue.assert_called_once()
+
+
+class TestAtomicCheckpointIO:
+    def test_replaces_checkpoint(self, tmp_path):
+        import torch
+
+        from everyvoice.base_cli.checkpoint_io import save_atomically
+
+        path = tmp_path / "last.ckpt"
+        save_atomically({"step": 1}, path)
+        save_atomically({"step": 2}, path)
+        assert torch.load(path, weights_only=True) == {"step": 2}
+        assert list(tmp_path.iterdir()) == [path]
+
+    def test_failed_save_keeps_existing_checkpoint(self, tmp_path):
+        import torch
+
+        from everyvoice.base_cli.checkpoint_io import save_atomically
+
+        path = tmp_path / "last.ckpt"
+        save_atomically({"step": 1}, path)
+        with mock.patch("torch.save", side_effect=RuntimeError("disk full")):
+            with pytest.raises(RuntimeError):
+                save_atomically({"step": 2}, path)
+        assert torch.load(path, weights_only=True) == {"step": 1}
+        assert list(tmp_path.iterdir()) == [path]
+
+    @pytest.mark.parametrize(
+        "lightning_namespace", ["pytorch_lightning", "lightning.pytorch"]
+    )
+    def test_used_by_ddp_strategy(self, lightning_namespace):
+        import importlib
+
+        from everyvoice.base_cli.checkpoint_io import atomic_checkpoint_io
+
+        pl = importlib.import_module(lightning_namespace)
+        plugin = atomic_checkpoint_io(pl.plugins.io.TorchCheckpointIO)
+        trainer = pl.Trainer(
+            accelerator="cpu",
+            devices=1,
+            strategy=pl.strategies.DDPStrategy(),
+            plugins=[plugin],
+            logger=False,
+        )
+        assert trainer.strategy.checkpoint_io is plugin
 
 
 class TestBaseCLIHelper:

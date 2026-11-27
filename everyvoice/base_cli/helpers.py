@@ -6,9 +6,11 @@ inferring information from the function signature while still keeping code DRY.
 """
 
 import os
+import sys
 import textwrap
 from pathlib import Path
 from pprint import pformat
+from typing import Any
 
 from deepdiff import DeepDiff
 from pydantic import ValidationError
@@ -178,15 +180,16 @@ def train_base_command(
     nodes: int,
     strategy: str,
     gradient_clip_val: float | None,
+    auto_resume: bool = False,
     model_kwargs={},
 ):
     from tqdm import tqdm
 
     from everyvoice.base_cli.callback import ResetValidationDataloaderCallback
+    from everyvoice.base_cli.checkpoint_io import atomic_checkpoint_io
     from everyvoice.base_cli.slurm import (
-        latest_hpc_ckpt,
-        name_hpc_ckpts_by_step,
-        slurm_job_ckpt_dir,
+        resolve_resume_ckpt,
+        save_requeue_ckpt_to_last,
     )
 
     config = load_config_base_command(model_config, config_args, config_file)
@@ -205,6 +208,7 @@ def train_base_command(
     pbar.update()
     pbar.refresh()
     from pytorch_lightning.loggers import TensorBoardLogger
+    from pytorch_lightning.plugins.io import TorchCheckpointIO
 
     pbar.update()
     pbar.refresh()
@@ -220,12 +224,17 @@ def train_base_command(
     )
 
     lr_monitor = LearningRateMonitor(logging_interval="step")
-    # Same checkpoints dir Lightning's ModelCheckpoint resolves from the logger
-    job_ckpt_dir = slurm_job_ckpt_dir(
+    # The checkpoint the "last" ModelCheckpoint saves, in the checkpoints dir
+    # Lightning's ModelCheckpoint resolves from the logger
+    last_ckpt = (
         Path(config.training.logger.save_dir)
         / config.training.logger.name
         / config.training.logger.version
         / "checkpoints"
+        / "last.ckpt"
+    )
+    resume_ckpt = resolve_resume_ckpt(
+        auto_resume, last_ckpt, config.training.finetune_checkpoint
     )
     logger.info("Starting training.")
     # This callback will always save the last checkpoint
@@ -235,7 +244,7 @@ def train_base_command(
         save_last=True,
         every_n_train_steps=config.training.ckpt_steps,
         every_n_epochs=config.training.ckpt_epochs,
-        enable_version_counter=True,
+        enable_version_counter=False,
         save_on_train_epoch_end=True,
     )
     # This callback will only save the top-k checkpoints
@@ -266,39 +275,33 @@ def train_base_command(
         num_nodes=nodes,
         detect_anomaly=False,  # used for debugging, but triples training time
         gradient_clip_val=gradient_clip_val,
-        # Lightning saves its Slurm requeue checkpoints in default_root_dir
-        default_root_dir=job_ckpt_dir,
+        plugins=[atomic_checkpoint_io(TorchCheckpointIO)],
     )
-    name_hpc_ckpts_by_step(trainer)
+    save_requeue_ckpt_to_last(trainer, last_ckpt_callback)
     data = data_module(config)
 
-    # A checkpoint saved just before a SLURM requeue/preemption (via SIGUSR1)
-    # takes priority over finetune_checkpoint, so a requeued job resumes the
-    # progress made this run instead of restarting from the finetune source.
-    if (hpc_ckpt := latest_hpc_ckpt(job_ckpt_dir)) is not None:
-        logger.info(f"Resuming requeued Slurm job from {hpc_ckpt}")
-        trainer.fit(model(config, **model_kwargs), data, ckpt_path=hpc_ckpt)
+    # Continue this experiment from its own last checkpoint
+    if resume_ckpt is not None:
+        model_obj = model(config, **model_kwargs)
+        tensorboard_logger.log_hyperparams(config.model_dump())
+        fit_from_full_state(trainer, model_obj, data, resume_ckpt, config)
         return
 
-    last_ckpt = (
-        config.training.finetune_checkpoint
-        if config.training.finetune_checkpoint is not None
-        and os.path.exists(config.training.finetune_checkpoint)
-        else None
-    )
+    finetune_ckpt = config.training.finetune_checkpoint
+    if finetune_ckpt is not None and not os.path.exists(finetune_ckpt):
+        logger.error(f"finetune_checkpoint '{finetune_ckpt}' does not exist.")
+        sys.exit(1)
     # Train from Scratch
-    if last_ckpt is None:
+    if finetune_ckpt is None:
         model_obj = model(config, **model_kwargs)
         logger.info(f"Model's architecture\n{model_obj}")
         tensorboard_logger.log_hyperparams(config.model_dump())
         trainer.fit(model_obj, data)
     else:
         try:
-            model_obj = model.load_from_checkpoint(last_ckpt)
+            model_obj = model.load_from_checkpoint(finetune_ckpt)
         except (TypeError, ValidationError) as e:
-            import sys
-
-            logger.error(f"Unable to load {last_ckpt}: {e}")
+            logger.error(f"Unable to load {finetune_ckpt}: {e}")
             sys.exit(1)
         logger.info(f"Model's architecture\n{model_obj}")
         # Check if the trainer has changed (but ignore subdir since it is specific to the run)
@@ -345,7 +348,7 @@ def train_base_command(
         if optimizer_config_diff:
             # Finetune from Checkpoint
             logger.warning(textwrap.dedent(f"""
-                Some of your optimizer hyperparameters have changed from your checkpoint at '{last_ckpt}',
+                Some of your optimizer hyperparameters have changed from your checkpoint at '{finetune_ckpt}',
                 so we will override your checkpoint hyperparameters and restart the optimizer.
 
                 Your training logs will start from epoch 0/step 0, but will still use the weights from your checkpoint.
@@ -356,24 +359,102 @@ def train_base_command(
             # the configuration in model_obj.config, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
             trainer.fit(model_obj, data)
         else:
-            import tempfile
+            logger.info(f"Resuming from checkpoint '{finetune_ckpt}'")
+            fit_from_full_state(trainer, model_obj, data, finetune_ckpt, config)
 
-            import torch
 
-            logger.info(f"Resuming from checkpoint '{last_ckpt}'")
-            # We need to create a temporary checkpoint with torch.save because on_save_checkpoint
-            # removes all paths for checkpoint portability. However, some paths, like "vocoder_path"
-            # should be still accessible when training is resumed.
-            new_config_with_paths = model_obj.config.model_dump(mode="json")
-            old_ckpt = torch.load(
-                last_ckpt, map_location=torch.device("cpu"), weights_only=True
-            )
-            old_ckpt["hyper_parameters"]["config"] = new_config_with_paths
-            # TODO: check if we need to do the same thing with stats and any thing else registered on the model
-            with tempfile.NamedTemporaryFile() as tmp:
-                torch.save(old_ckpt, tmp.name)
-                # This will resume the weights, optimizer, and steps from last_ckpt, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
-                trainer.fit(model_obj, data, ckpt_path=tmp.name)
+def _config_diff(ckpt_section, live_section) -> DeepDiff:
+    return DeepDiff(
+        ckpt_section.model_dump(),
+        live_section.model_dump(),
+        exclude_types=[Path],
+    )
+
+
+def check_resume_compatible(ckpt_config, live_config, ckpt_path) -> None:
+    """Exit if live_config changes settings a full restore from ckpt_path can't apply.
+
+    A full restore loads the checkpoint's optimizer and scheduler state over the
+    optimizers built from live_config, so optimizer changes would be silently
+    ignored, and changes to the architecture or to which parameters are trained
+    make the restore fail. Other changes, e.g. to the batch size, the data or
+    max_steps, do apply, and are logged.
+    """
+    sections = {
+        "training.optimizer": (
+            ckpt_config.training.optimizer,
+            live_config.training.optimizer,
+        ),
+        "model": (ckpt_config.model, live_config.model),
+    }
+    blocking: dict[str, Any] = {
+        name: diff
+        for name, (ckpt_section, live_section) in sections.items()
+        if (diff := _config_diff(ckpt_section, live_section))
+    }
+    # HiFiGAN's training.finetune freezes discriminator layers, which changes
+    # the parameters its discriminator optimizer holds
+    ckpt_finetune = getattr(ckpt_config.training, "finetune", None)
+    live_finetune = getattr(live_config.training, "finetune", None)
+    if ckpt_finetune != live_finetune:
+        blocking["training.finetune"] = {
+            "values_changed": {
+                "training.finetune": {
+                    "old_value": ckpt_finetune,
+                    "new_value": live_finetune,
+                }
+            }
+        }
+    if blocking:
+        changes = "\n".join(
+            f"{name}: {pformat(dict(diff))}" for name, diff in blocking.items()
+        )
+        logger.error(
+            f"Your configuration changes settings that can't change when training continues "
+            f"from the full training state in '{ckpt_path}':\n{changes}\n"
+            "The checkpoint's optimizer and learning rate schedule are restored as they are. "
+            "Either revert these settings, or start a new experiment with "
+            f"training.finetune_checkpoint set to '{ckpt_path}' to load only its weights."
+        )
+        sys.exit(1)
+
+    other_changes = DeepDiff(
+        ckpt_config.training.model_dump(
+            exclude={"optimizer", "logger", "finetune_checkpoint"}
+        ),
+        live_config.training.model_dump(
+            exclude={"optimizer", "logger", "finetune_checkpoint"}
+        ),
+        exclude_types=[Path],
+    )
+    if other_changes:
+        logger.info(
+            f"Training settings changed since '{ckpt_path}' was saved:\n{other_changes.pretty()}"
+        )
+
+
+def fit_from_full_state(trainer, model_obj, data, ckpt_path, config) -> None:
+    """Fit model_obj continuing the full training state (weights, optimizer, LR
+    schedule, step, epoch) in ckpt_path, with the current config."""
+    import tempfile
+
+    import torch
+
+    ckpt = torch.load(ckpt_path, map_location=torch.device("cpu"), weights_only=True)
+    check_resume_compatible(
+        type(config).from_checkpoint_dump(ckpt["hyper_parameters"]["config"]),
+        config,
+        ckpt_path,
+    )
+    # We need to create a temporary checkpoint with torch.save because on_save_checkpoint
+    # removes all paths for checkpoint portability. However, some paths, like "vocoder_path"
+    # should be still accessible when training is resumed.
+    ckpt["hyper_parameters"]["config"] = config.model_dump(mode="json")
+    # TODO: check if we need to do the same thing with stats and any thing else registered on the model
+    with tempfile.NamedTemporaryFile(suffix=".ckpt") as tmp:
+        torch.save(ckpt, tmp.name)
+        # This will resume the weights, optimizer, and steps from ckpt_path, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
+        trainer.fit(model_obj, data, ckpt_path=tmp.name)
 
 
 def inference_base_command(

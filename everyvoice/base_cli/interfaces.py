@@ -99,6 +99,13 @@ def train_base_command_interface(
             help="The strategy for data parallelization: https://pytorch-lightning.readthedocs.io/en/stable/accelerators/gpu_intermediate.html",
         ),
     ] = "ddp",
+    auto_resume: Annotated[
+        bool,
+        typer.Option(
+            "--auto-resume",
+            help="Continue this experiment from its last checkpoint if it has one; otherwise start a new run. Enabled automatically when Slurm requeues the job.",
+        ),
+    ] = False,
 ):
     pass
 
