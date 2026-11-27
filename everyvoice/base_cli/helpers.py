@@ -451,10 +451,13 @@ def fit_from_full_state(trainer, model_obj, data, ckpt_path, config) -> None:
     # should be still accessible when training is resumed.
     ckpt["hyper_parameters"]["config"] = config.model_dump(mode="json")
     # TODO: check if we need to do the same thing with stats and any thing else registered on the model
-    with tempfile.NamedTemporaryFile(suffix=".ckpt") as tmp:
-        torch.save(ckpt, tmp.name)
+    # A file in a temporary directory, not a NamedTemporaryFile: Windows can't
+    # open a NamedTemporaryFile a second time while it is open
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_ckpt = os.path.join(tmp_dir, "resume.ckpt")
+        torch.save(ckpt, tmp_ckpt)
         # This will resume the weights, optimizer, and steps from ckpt_path, see https://github.com/Lightning-AI/pytorch-lightning/issues/5339
-        trainer.fit(model_obj, data, ckpt_path=tmp.name)
+        trainer.fit(model_obj, data, ckpt_path=tmp_ckpt)
 
 
 def inference_base_command(

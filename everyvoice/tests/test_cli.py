@@ -1004,6 +1004,10 @@ class TestTrainBaseCommandResume:
         assert sum(len(g["params"]) for g in optim_d.param_groups) == len(trainable)
 
 
+@pytest.mark.skipif(
+    platform.system() == "Windows",
+    reason="Windows has no SIGUSR1, and Lightning's Slurm requeue needs it",
+)
 @pytest.mark.parametrize(
     "lightning_namespace", ["pytorch_lightning", "lightning.pytorch"]
 )
